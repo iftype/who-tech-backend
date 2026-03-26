@@ -3,14 +3,30 @@ import prisma from '../../db/prisma.js';
 
 const parser = new Parser();
 
-const RSS_SUFFIXES = ['/rss', '/feed', '/rss.xml', '/feed.xml', ''];
+function resolveRSSUrl(blogUrl: string): string[] {
+  const url = new URL(blogUrl);
+
+  // Velog: https://velog.io/@username → https://v2.velog.io/rss/@username
+  if (url.hostname === 'velog.io') {
+    return [`https://v2.velog.io/rss${url.pathname}`];
+  }
+
+  // Tistory: https://xxx.tistory.com → /rss
+  if (url.hostname.endsWith('.tistory.com')) {
+    return [`${blogUrl.replace(/\/$/, '')}/rss`];
+  }
+
+  // GitHub Pages, 기타: 공통 suffix 시도
+  const base = blogUrl.replace(/\/$/, '');
+  return [`${base}/feed.xml`, `${base}/rss.xml`, `${base}/feed`, `${base}/rss`];
+}
 
 async function fetchRSSItems(blogUrl: string): Promise<{ title?: string; link?: string; pubDate?: string }[]> {
-  const base = blogUrl.replace(/\/$/, '');
+  const candidates = resolveRSSUrl(blogUrl);
 
-  for (const suffix of RSS_SUFFIXES) {
+  for (const rssUrl of candidates) {
     try {
-      const feed = await parser.parseURL(base + suffix);
+      const feed = await parser.parseURL(rssUrl);
       return feed.items;
     } catch {
       continue;
