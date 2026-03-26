@@ -17,7 +17,11 @@
     "test:coverage": "NODE_OPTIONS=--experimental-vm-modules jest --coverage"
   },
   "dependencies": {
-    "express": "^4.21.2"
+    "@octokit/rest": "^22.0.1",
+    "@prisma/client": "^6.19.2",
+    "express": "^4.21.2",
+    "node-cron": "^4.2.1",
+    "prisma": "^6.19.2"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.6.1",
@@ -27,6 +31,7 @@
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",
     "@types/node": "^22.10.7",
+    "@types/node-cron": "^3.0.11",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
     "husky": "^9.1.7",
