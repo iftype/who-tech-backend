@@ -1,6 +1,6 @@
 import type { Octokit } from '@octokit/rest';
 import prisma from '../db/prisma.js';
-import { fetchOrgRepos, fetchRepoPRs, isMissionRepo, parseNickname, detectCohort } from './github.service.js';
+import { fetchRepoPRs, parseNickname, detectCohort } from './github.service.js';
 import type { CohortRule, ParsedSubmission } from '../types/index.js';
 
 type RawPR = {
@@ -94,31 +94,26 @@ export async function syncWorkspace(
 ): Promise<{ totalSynced: number; reposSynced: number }> {
   const workspace = await prisma.workspace.findUniqueOrThrow({ where: { id: workspaceId } });
   const cohortRules: CohortRule[] = JSON.parse(workspace.cohortRules);
-  const nicknameRegex = new RegExp(workspace.nicknameRegex);
+  const workspaceRegex = new RegExp(workspace.nicknameRegex);
 
-  const repos = await fetchOrgRepos(octokit, workspace.githubOrg);
+  const repos = await prisma.missionRepo.findMany({ where: { workspaceId } });
 
   let totalSynced = 0;
-  let reposSynced = 0;
 
   for (const repo of repos) {
-    const prs = await fetchRepoPRs(octokit, workspace.githubOrg, repo.name, 10);
-    if (!isMissionRepo(prs.map((pr) => ({ base: { ref: pr.base.ref }, user: { login: pr.user?.login ?? '' } })))) {
-      continue;
-    }
+    const nicknameRegex = repo.nicknameRegex ? new RegExp(repo.nicknameRegex) : workspaceRegex;
 
     const { synced } = await syncRepo(
       octokit,
       workspaceId,
       workspace.githubOrg,
       repo.name,
-      repo.html_url,
+      repo.repoUrl,
       nicknameRegex,
       cohortRules,
     );
 
     totalSynced += synced;
-    reposSynced++;
   }
 
   await prisma.workspace.update({
@@ -126,5 +121,5 @@ export async function syncWorkspace(
     data: {},
   });
 
-  return { totalSynced, reposSynced };
+  return { totalSynced, reposSynced: repos.length };
 }

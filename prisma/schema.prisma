@@ -35,12 +35,13 @@ model Member {
 }
 
 model MissionRepo {
-  id          Int          @id @default(autoincrement())
-  name        String
-  repoUrl     String
-  workspaceId Int
-  workspace   Workspace    @relation(fields: [workspaceId], references: [id])
-  submissions Submission[]
+  id            Int          @id @default(autoincrement())
+  name          String
+  repoUrl       String
+  nicknameRegex String?      // null이면 Workspace.nicknameRegex fallback
+  workspaceId   Int
+  workspace     Workspace    @relation(fields: [workspaceId], references: [id])
+  submissions   Submission[]
 
   @@unique([name, workspaceId])
 }

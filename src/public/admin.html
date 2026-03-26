@@ -17,12 +17,20 @@
       button { padding: 8px 16px; border: none; border-radius: 4px; font-size: 14px; cursor: pointer; }
       .btn-primary { background: #0070f3; color: #fff; }
       .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
-      .btn-danger { background: #e53e3e; color: #fff; }
-      .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 12px; background: #e8f5e9; color: #2e7d32; margin-left: 8px; }
+      .btn-danger { background: #e53e3e; color: #fff; font-size: 12px; padding: 4px 10px; }
+      .btn-sm { font-size: 12px; padding: 4px 10px; background: #f0f0f0; }
       #login { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; }
       #login .box { background: #fff; padding: 32px; border-radius: 8px; width: 320px; }
       #login h2 { margin-bottom: 16px; }
       #toast { position: fixed; bottom: 24px; right: 24px; background: #333; color: #fff; padding: 10px 16px; border-radius: 6px; font-size: 14px; display: none; }
+      .repo-list { margin-bottom: 12px; }
+      .repo-item { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+      .repo-item:last-child { border-bottom: none; }
+      .repo-name { font-weight: bold; flex: 1; }
+      .repo-regex { font-size: 12px; color: #999; font-family: monospace; flex: 2; }
+      .repo-add { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+      .repo-add input { margin-bottom: 0; }
+      label { font-size: 13px; color: #666; display: block; margin-bottom: 4px; }
     </style>
   </head>
   <body>
@@ -46,16 +54,30 @@
 
       <div class="card">
         <h2>수동 Sync</h2>
-        <p style="font-size:13px;color:#666;margin-bottom:12px">woowacourse 조직의 미션 레포 전체 PR을 수집합니다.</p>
+        <p style="font-size:13px;color:#666;margin-bottom:12px">등록된 미션 레포 전체 PR을 수집합니다.</p>
         <button class="btn-primary" id="sync-btn" onclick="triggerSync()">Sync 실행</button>
         <div id="sync-result" style="margin-top:8px;font-size:13px;color:#666"></div>
       </div>
 
       <div class="card">
+        <h2>미션 레포 관리</h2>
+        <div class="repo-list" id="repo-list"></div>
+        <div style="border-top:1px solid #eee;padding-top:12px">
+          <label>레포 추가</label>
+          <div class="repo-add">
+            <input type="text" id="repo-name" placeholder="레포 이름 (예: javascript-lotto)" />
+            <input type="text" id="repo-url" placeholder="URL (예: https://github.com/woowacourse/...)" />
+          </div>
+          <input type="text" id="repo-regex" placeholder="닉네임 정규식 (비우면 Workspace 기본값 사용)" />
+          <button class="btn-primary" onclick="addRepo()">추가</button>
+        </div>
+      </div>
+
+      <div class="card">
         <h2>Workspace 설정</h2>
-        <label style="font-size:13px;color:#666">닉네임 정규식</label>
+        <label>닉네임 정규식 (기본값)</label>
         <input type="text" id="nickname-regex" />
-        <label style="font-size:13px;color:#666">기수 규칙 (JSON)</label>
+        <label>기수 규칙 (JSON)</label>
         <textarea id="cohort-rules" rows="4"></textarea>
         <button class="btn-primary" onclick="saveWorkspace()">저장</button>
       </div>
@@ -75,6 +97,7 @@
               document.getElementById('main').style.display = 'block';
               loadStatus();
               loadWorkspace();
+              loadRepos();
             } else {
               alert('잘못된 비밀키입니다.');
             }
@@ -98,6 +121,71 @@
             document.getElementById('nickname-regex').value = data.nicknameRegex;
             document.getElementById('cohort-rules').value = JSON.stringify(data.cohortRules, null, 2);
           });
+      }
+
+      function loadRepos() {
+        fetch('/admin/repos', { headers: { Authorization: `Bearer ${token}` } })
+          .then(r => r.json())
+          .then(repos => {
+            const list = document.getElementById('repo-list');
+            if (repos.length === 0) {
+              list.innerHTML = '<div style="font-size:13px;color:#999">등록된 레포가 없습니다.</div>';
+              return;
+            }
+            list.innerHTML = repos.map(repo => `
+              <div class="repo-item">
+                <span class="repo-name">${repo.name}</span>
+                <span class="repo-regex">${repo.nicknameRegex ?? '기본 정규식'}</span>
+                <button class="btn-sm" onclick="editRepoRegex(${repo.id}, '${repo.nicknameRegex ?? ''}')">수정</button>
+                <button class="btn-danger" onclick="deleteRepo(${repo.id})">삭제</button>
+              </div>
+            `).join('');
+          });
+      }
+
+      function addRepo() {
+        const name = document.getElementById('repo-name').value.trim();
+        const repoUrl = document.getElementById('repo-url').value.trim();
+        const nicknameRegex = document.getElementById('repo-regex').value.trim() || null;
+
+        if (!name || !repoUrl) { alert('레포 이름과 URL을 입력하세요.'); return; }
+
+        fetch('/admin/repos', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, repoUrl, nicknameRegex }),
+        })
+          .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+          .then(() => {
+            document.getElementById('repo-name').value = '';
+            document.getElementById('repo-url').value = '';
+            document.getElementById('repo-regex').value = '';
+            loadRepos();
+            toast(`${name} 추가됨`);
+          })
+          .catch(() => alert('이미 존재하거나 오류가 발생했습니다.'));
+      }
+
+      function editRepoRegex(id, current) {
+        const regex = prompt('닉네임 정규식 (비우면 기본값 사용):', current);
+        if (regex === null) return;
+
+        fetch(`/admin/repos/${id}`, {
+          method: 'PATCH',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nicknameRegex: regex || null }),
+        })
+          .then(() => { loadRepos(); toast('수정됐어요'); });
+      }
+
+      function deleteRepo(id) {
+        if (!confirm('삭제하면 관련 수집 데이터도 모두 삭제됩니다. 계속할까요?')) return;
+
+        fetch(`/admin/repos/${id}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
+        })
+          .then(() => { loadRepos(); toast('삭제됐어요'); });
       }
 
       function triggerSync() {
