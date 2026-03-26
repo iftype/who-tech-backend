@@ -47,9 +47,17 @@
 
       <div class="card">
         <h2>수집 현황</h2>
-        <div class="stat" id="member-count">-</div>
-        <div class="sub">수집된 멤버 수</div>
-        <div class="sub" id="last-sync" style="margin-top:8px">마지막 sync: -</div>
+        <div style="display:flex;gap:32px;margin-bottom:8px">
+          <div>
+            <div class="stat" id="member-count">-</div>
+            <div class="sub">수집된 멤버 수</div>
+          </div>
+          <div>
+            <div class="stat" id="repo-count">-</div>
+            <div class="sub">등록된 레포 수</div>
+          </div>
+        </div>
+        <div class="sub" id="last-sync">마지막 sync: -</div>
       </div>
 
       <div class="card">
@@ -120,6 +128,7 @@
           .then(r => r.json())
           .then(data => {
             document.getElementById('member-count').textContent = data.memberCount;
+            document.getElementById('repo-count').textContent = data.repoCount;
             document.getElementById('last-sync').textContent =
               '마지막 sync: ' + (data.lastSyncAt ? new Date(data.lastSyncAt).toLocaleString('ko-KR') : '없음');
           });

@@ -8,9 +8,10 @@ const router = Router();
 
 router.get('/status', async (_req, res) => {
   const workspace = await prisma.workspace.findFirst({ where: { name: WORKSPACE_NAME } });
-  const memberCount = await prisma.member.count();
+  const [memberCount, repoCount] = await Promise.all([prisma.member.count(), prisma.missionRepo.count()]);
   res.json({
     memberCount,
+    repoCount,
     lastSyncAt: workspace?.updatedAt ?? null,
   });
 });
