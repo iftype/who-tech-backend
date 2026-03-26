@@ -1,0 +1,14 @@
+language: ko
+reviews:
+  auto_review:
+    enabled: true
+    drafts: false
+  tools:
+    github-checks:
+      enabled: true
+  auto_incremental_review: true
+chat:
+  auto_reply: true
+code_generation:
+  unit_tests:
+    enabled: false
