@@ -38,6 +38,8 @@ model MissionRepo {
   id            Int          @id @default(autoincrement())
   name          String
   repoUrl       String
+  track         String       // frontend | backend | android
+  type          String       @default("individual") // individual | integration
   nicknameRegex String?      // null이면 Workspace.nicknameRegex fallback
   workspaceId   Int
   workspace     Workspace    @relation(fields: [workspaceId], references: [id])

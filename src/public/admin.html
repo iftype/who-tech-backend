@@ -68,6 +68,17 @@
             <input type="text" id="repo-name" placeholder="레포 이름 (예: javascript-lotto)" />
             <input type="text" id="repo-url" placeholder="URL (예: https://github.com/woowacourse/...)" />
           </div>
+          <div class="repo-add">
+            <select id="repo-track" style="padding:8px 10px;border:1px solid #ddd;border-radius:4px;font-size:14px">
+              <option value="frontend">frontend</option>
+              <option value="backend">backend</option>
+              <option value="android">android</option>
+            </select>
+            <select id="repo-type" style="padding:8px 10px;border:1px solid #ddd;border-radius:4px;font-size:14px">
+              <option value="individual">individual</option>
+              <option value="integration">integration</option>
+            </select>
+          </div>
           <input type="text" id="repo-regex" placeholder="닉네임 정규식 (비우면 Workspace 기본값 사용)" />
           <button class="btn-primary" onclick="addRepo()">추가</button>
         </div>
@@ -135,6 +146,7 @@
             list.innerHTML = repos.map(repo => `
               <div class="repo-item">
                 <span class="repo-name">${repo.name}</span>
+                <span class="repo-regex">${repo.track} · ${repo.type}</span>
                 <span class="repo-regex">${repo.nicknameRegex ?? '기본 정규식'}</span>
                 <button class="btn-sm" onclick="editRepoRegex(${repo.id}, '${repo.nicknameRegex ?? ''}')">수정</button>
                 <button class="btn-danger" onclick="deleteRepo(${repo.id})">삭제</button>
@@ -146,6 +158,8 @@
       function addRepo() {
         const name = document.getElementById('repo-name').value.trim();
         const repoUrl = document.getElementById('repo-url').value.trim();
+        const track = document.getElementById('repo-track').value;
+        const type = document.getElementById('repo-type').value;
         const nicknameRegex = document.getElementById('repo-regex').value.trim() || null;
 
         if (!name || !repoUrl) { alert('레포 이름과 URL을 입력하세요.'); return; }
@@ -153,7 +167,7 @@
         fetch('/admin/repos', {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, repoUrl, nicknameRegex }),
+          body: JSON.stringify({ name, repoUrl, track, type, nicknameRegex }),
         })
           .then(r => { if (!r.ok) throw new Error(); return r.json(); })
           .then(() => {

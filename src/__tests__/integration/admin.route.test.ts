@@ -66,12 +66,15 @@ describe('레포 관리 CRUD', () => {
   let repoId: number;
 
   it('POST /admin/repos: 레포를 추가한다', async () => {
-    const res = await request(app)
-      .post('/admin/repos')
-      .set('Authorization', `Bearer ${ADMIN_SECRET}`)
-      .send({ name: 'javascript-lotto', repoUrl: 'https://github.com/woowacourse/javascript-lotto' });
+    const res = await request(app).post('/admin/repos').set('Authorization', `Bearer ${ADMIN_SECRET}`).send({
+      name: 'javascript-lotto',
+      repoUrl: 'https://github.com/woowacourse/javascript-lotto',
+      track: 'frontend',
+    });
     expect(res.status).toBe(201);
     expect(res.body.name).toBe('javascript-lotto');
+    expect(res.body.track).toBe('frontend');
+    expect(res.body.type).toBe('individual');
     expect(res.body.nicknameRegex).toBeNull();
     repoId = res.body.id;
   });

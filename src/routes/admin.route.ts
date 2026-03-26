@@ -59,9 +59,11 @@ router.get('/repos', async (_req, res) => {
 
 // 레포 추가
 router.post('/repos', async (req, res) => {
-  const { name, repoUrl, nicknameRegex } = req.body as {
+  const { name, repoUrl, track, type, nicknameRegex } = req.body as {
     name: string;
     repoUrl: string;
+    track: string;
+    type?: string;
     nicknameRegex?: string;
   };
 
@@ -71,6 +73,8 @@ router.post('/repos', async (req, res) => {
     data: {
       name,
       repoUrl,
+      track,
+      type: type ?? 'individual',
       nicknameRegex: nicknameRegex ?? null,
       workspaceId: workspace.id,
     },
