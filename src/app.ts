@@ -1,7 +1,10 @@
 import express from 'express';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import adminRouter from './routes/admin.route.js';
+import { adminAuth } from './shared/middleware/auth.js';
+import workspaceRouter from './features/workspace/workspace.route.js';
+import repoRouter from './features/repo/repo.route.js';
+import syncRouter from './features/sync/sync.route.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -14,6 +17,9 @@ app.get('/', (_req, res) => {
   res.json({ message: 'who-tech-course API' });
 });
 
-app.use('/admin', adminRouter);
+app.use('/admin', adminAuth);
+app.use('/admin/workspace', workspaceRouter);
+app.use('/admin/repos', repoRouter);
+app.use('/admin', syncRouter);
 
 export default app;
