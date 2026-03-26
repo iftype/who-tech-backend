@@ -1,14 +1,29 @@
 import { Router } from 'express';
 import { asyncHandler } from '../../shared/http.js';
-import { parseId, parseNullableString, parseRepoCreateInput } from '../../shared/validation.js';
-import { createRepo, deleteRepo, listRepos, syncRepoById, updateRepoNicknameRegex } from './repo.service.js';
+import { parseId, parseRepoCreateInput, parseRepoUpdateInput } from '../../shared/validation.js';
+import {
+  createRepo,
+  deleteRepo,
+  listRepos,
+  refreshRepoCandidates,
+  syncRepoById,
+  updateRepoMatchingRules,
+} from './repo.service.js';
 
 const router = Router();
 
 router.get(
   '/',
   asyncHandler(async (_req, res) => {
-    res.json(await listRepos());
+    const status = typeof _req.query['status'] === 'string' ? _req.query['status'] : undefined;
+    res.json(await listRepos(status));
+  }),
+);
+
+router.post(
+  '/discover',
+  asyncHandler(async (_req, res) => {
+    res.json(await refreshRepoCandidates());
   }),
 );
 
@@ -24,8 +39,8 @@ router.patch(
   '/:id',
   asyncHandler(async (req, res) => {
     const id = parseId(req.params['id']);
-    const nicknameRegex = parseNullableString((req.body as { nicknameRegex?: unknown }).nicknameRegex, 'nicknameRegex');
-    res.json(await updateRepoNicknameRegex(id, nicknameRegex));
+    const input = parseRepoUpdateInput(req.body);
+    res.json(await updateRepoMatchingRules(id, input));
   }),
 );
 

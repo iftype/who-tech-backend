@@ -23,6 +23,8 @@ model Member {
   id          Int          @id @default(autoincrement())
   githubId    String
   nickname    String?
+  manualNickname String?
+  nicknameStats String?    // JSON: [{"nickname":"...", "count":2, "lastSeenAt":"..."}]
   cohort      Int?
   blog        String?
   workspaceId Int
@@ -37,11 +39,16 @@ model Member {
 
 model MissionRepo {
   id            Int          @id @default(autoincrement())
+  githubRepoId  Int?         @unique
   name          String
   repoUrl       String
+  description   String?
   track         String       // frontend | backend | android
   type          String       @default("individual") // individual | integration
+  status        String       @default("active") // active | candidate | excluded
+  candidateReason String?
   nicknameRegex String?      // null이면 Workspace.nicknameRegex fallback
+  cohortRegexRules String?   // JSON: [{"cohort": 7, "nicknameRegex": "..."}, ...]
   workspaceId   Int
   workspace     Workspace    @relation(fields: [workspaceId], references: [id])
   submissions   Submission[]
