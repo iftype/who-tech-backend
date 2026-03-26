@@ -6,6 +6,7 @@ import workspaceRouter from './features/workspace/workspace.route.js';
 import repoRouter from './features/repo/repo.route.js';
 import syncRouter from './features/sync/sync.route.js';
 import blogRouter from './features/blog/blog.route.js';
+import memberRouter from './features/member/member.route.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -23,5 +24,6 @@ app.use('/admin/workspace', workspaceRouter);
 app.use('/admin/repos', repoRouter);
 app.use('/admin', syncRouter);
 app.use('/admin', blogRouter);
+app.use('/admin/members', memberRouter);
 
 export default app;
