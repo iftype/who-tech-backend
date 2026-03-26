@@ -46,19 +46,12 @@ export async function syncRepo(
   octokit: Octokit,
   workspaceId: number,
   org: string,
-  repoName: string,
-  repoUrl: string,
+  repo: { id: number; name: string },
   nicknameRegex: RegExp,
   cohortRules: CohortRule[],
 ): Promise<{ synced: number }> {
-  const prs = await fetchRepoPRs(octokit, org, repoName);
+  const prs = await fetchRepoPRs(octokit, org, repo.name);
   const submissions = parsePRsToSubmissions(prs, nicknameRegex, cohortRules);
-
-  const missionRepo = await prisma.missionRepo.upsert({
-    where: { name_workspaceId: { name: repoName, workspaceId } },
-    create: { name: repoName, repoUrl, workspaceId },
-    update: {},
-  });
 
   let synced = 0;
 
@@ -70,14 +63,14 @@ export async function syncRepo(
     });
 
     await prisma.submission.upsert({
-      where: { prNumber_missionRepoId: { prNumber: s.prNumber, missionRepoId: missionRepo.id } },
+      where: { prNumber_missionRepoId: { prNumber: s.prNumber, missionRepoId: repo.id } },
       create: {
         prNumber: s.prNumber,
         prUrl: s.prUrl,
         title: s.title,
         submittedAt: s.submittedAt,
         memberId: member.id,
-        missionRepoId: missionRepo.id,
+        missionRepoId: repo.id,
       },
       update: {},
     });
@@ -103,15 +96,7 @@ export async function syncWorkspace(
   for (const repo of repos) {
     const nicknameRegex = repo.nicknameRegex ? new RegExp(repo.nicknameRegex) : workspaceRegex;
 
-    const { synced } = await syncRepo(
-      octokit,
-      workspaceId,
-      workspace.githubOrg,
-      repo.name,
-      repo.repoUrl,
-      nicknameRegex,
-      cohortRules,
-    );
+    const { synced } = await syncRepo(octokit, workspaceId, workspace.githubOrg, repo, nicknameRegex, cohortRules);
 
     totalSynced += synced;
   }

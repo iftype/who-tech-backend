@@ -148,7 +148,7 @@
                 <span class="repo-name">${repo.name}</span>
                 <span class="repo-regex">${repo.track} · ${repo.type}</span>
                 <span class="repo-regex">${repo.nicknameRegex ?? '기본 정규식'}</span>
-                <button class="btn-sm" onclick="editRepoRegex(${repo.id}, '${repo.nicknameRegex ?? ''}')">수정</button>
+                <button class="btn-sm" onclick="editRepoRegex(${repo.id}, ${JSON.stringify(repo.nicknameRegex ?? '')})">수정</button>
                 <button class="btn-danger" onclick="deleteRepo(${repo.id})">삭제</button>
               </div>
             `).join('');

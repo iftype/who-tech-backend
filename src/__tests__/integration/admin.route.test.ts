@@ -65,7 +65,26 @@ describe('PUT /admin/workspace', () => {
 describe('레포 관리 CRUD', () => {
   let repoId: number;
 
+  beforeEach(async () => {
+    const workspace = await prisma.workspace.findFirstOrThrow({ where: { name: 'woowacourse' } });
+    const repo = await prisma.missionRepo.create({
+      data: {
+        name: 'javascript-lotto',
+        repoUrl: 'https://github.com/woowacourse/javascript-lotto',
+        track: 'frontend',
+        type: 'individual',
+        workspaceId: workspace.id,
+      },
+    });
+    repoId = repo.id;
+  });
+
+  afterEach(async () => {
+    await prisma.missionRepo.deleteMany({ where: { name: 'javascript-lotto' } });
+  });
+
   it('POST /admin/repos: 레포를 추가한다', async () => {
+    await prisma.missionRepo.deleteMany({ where: { name: 'javascript-lotto' } });
     const res = await request(app).post('/admin/repos').set('Authorization', `Bearer ${ADMIN_SECRET}`).send({
       name: 'javascript-lotto',
       repoUrl: 'https://github.com/woowacourse/javascript-lotto',
@@ -76,7 +95,6 @@ describe('레포 관리 CRUD', () => {
     expect(res.body.track).toBe('frontend');
     expect(res.body.type).toBe('individual');
     expect(res.body.nicknameRegex).toBeNull();
-    repoId = res.body.id;
   });
 
   it('GET /admin/repos: 레포 목록을 반환한다', async () => {
@@ -107,5 +125,6 @@ describe('레포 관리 CRUD', () => {
   it('DELETE /admin/repos/:id: 레포를 삭제한다', async () => {
     const res = await request(app).delete(`/admin/repos/${repoId}`).set('Authorization', `Bearer ${ADMIN_SECRET}`);
     expect(res.status).toBe(204);
+    repoId = 0;
   });
 });

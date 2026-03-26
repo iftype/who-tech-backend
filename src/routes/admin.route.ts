@@ -86,7 +86,16 @@ router.post('/repos', async (req, res) => {
 // 레포 수정 (nicknameRegex)
 router.patch('/repos/:id', async (req, res) => {
   const id = Number(req.params['id']);
+  if (isNaN(id)) {
+    res.status(400).json({ message: 'invalid id' });
+    return;
+  }
+
   const { nicknameRegex } = req.body as { nicknameRegex: string | null };
+  if (typeof nicknameRegex !== 'string' && nicknameRegex !== null) {
+    res.status(400).json({ message: 'invalid nicknameRegex' });
+    return;
+  }
 
   const repo = await prisma.missionRepo.update({
     where: { id },
@@ -99,7 +108,16 @@ router.patch('/repos/:id', async (req, res) => {
 // 레포 삭제
 router.delete('/repos/:id', async (req, res) => {
   const id = Number(req.params['id']);
-  await prisma.missionRepo.delete({ where: { id } });
+  if (isNaN(id)) {
+    res.status(400).json({ message: 'invalid id' });
+    return;
+  }
+
+  await prisma.$transaction([
+    prisma.submission.deleteMany({ where: { missionRepoId: id } }),
+    prisma.missionRepo.delete({ where: { id } }),
+  ]);
+
   res.status(204).end();
 });
 
