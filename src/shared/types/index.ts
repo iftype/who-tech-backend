@@ -3,9 +3,20 @@ export interface CohortRule {
   cohort: number;
 }
 
+export interface CohortRegexRule {
+  cohort: number;
+  nicknameRegex: string;
+}
+
+export interface NicknameStat {
+  nickname: string;
+  count: number;
+  lastSeenAt: string;
+}
+
 export interface ParsedSubmission {
   githubId: string;
-  nickname: string | null;
+  nickname: string;
   prNumber: number;
   prUrl: string;
   title: string;

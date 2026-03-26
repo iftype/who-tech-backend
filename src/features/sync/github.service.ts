@@ -1,8 +1,14 @@
 import { Octokit } from '@octokit/rest';
 import type { CohortRule } from '../../shared/types/index.js';
+import { normalizeNickname } from '../../shared/nickname.js';
 
 export function parseNickname(title: string, regex: RegExp): string | null {
-  return title.match(regex)?.[1]?.trim() ?? null;
+  const rawNickname = title.match(regex)?.[1]?.trim();
+  if (!rawNickname) {
+    return null;
+  }
+
+  return normalizeNickname(rawNickname);
 }
 
 export function detectCohort(submittedAt: Date, cohortRules: CohortRule[]): number | null {

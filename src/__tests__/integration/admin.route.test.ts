@@ -85,16 +85,21 @@ describe('레포 관리 CRUD', () => {
 
   it('POST /admin/repos: 레포를 추가한다', async () => {
     await prisma.missionRepo.deleteMany({ where: { name: 'javascript-lotto' } });
-    const res = await request(app).post('/admin/repos').set('Authorization', `Bearer ${ADMIN_SECRET}`).send({
-      name: 'javascript-lotto',
-      repoUrl: 'https://github.com/woowacourse/javascript-lotto',
-      track: 'frontend',
-    });
+    const res = await request(app)
+      .post('/admin/repos')
+      .set('Authorization', `Bearer ${ADMIN_SECRET}`)
+      .send({
+        name: 'javascript-lotto',
+        repoUrl: 'https://github.com/woowacourse/javascript-lotto',
+        track: 'frontend',
+        cohortRegexRules: [{ cohort: 7, nicknameRegex: '\\[.+\\] (.+) 제출합니다' }],
+      });
     expect(res.status).toBe(201);
     expect(res.body.name).toBe('javascript-lotto');
     expect(res.body.track).toBe('frontend');
     expect(res.body.type).toBe('individual');
     expect(res.body.nicknameRegex).toBeNull();
+    expect(res.body.cohortRegexRules).toEqual([{ cohort: 7, nicknameRegex: '\\[.+\\] (.+) 제출합니다' }]);
   });
 
   it('GET /admin/repos: 레포 목록을 반환한다', async () => {
@@ -108,18 +113,23 @@ describe('레포 관리 CRUD', () => {
     const res = await request(app)
       .patch(`/admin/repos/${repoId}`)
       .set('Authorization', `Bearer ${ADMIN_SECRET}`)
-      .send({ nicknameRegex: '\\[.+\\] (.+) 미션 제출합니다 \\(8기\\)' });
+      .send({
+        nicknameRegex: '\\[.+\\] (.+) 미션 제출합니다 \\(8기\\)',
+        cohortRegexRules: [{ cohort: 7, nicknameRegex: '\\[.+\\] (.+) 제출합니다 \\(7기\\)' }],
+      });
     expect(res.status).toBe(200);
     expect(res.body.nicknameRegex).toBe('\\[.+\\] (.+) 미션 제출합니다 \\(8기\\)');
+    expect(res.body.cohortRegexRules).toEqual([{ cohort: 7, nicknameRegex: '\\[.+\\] (.+) 제출합니다 \\(7기\\)' }]);
   });
 
-  it('PATCH /admin/repos/:id: nicknameRegex를 null로 초기화한다', async () => {
+  it('PATCH /admin/repos/:id: nicknameRegex와 cohortRegexRules를 초기화한다', async () => {
     const res = await request(app)
       .patch(`/admin/repos/${repoId}`)
       .set('Authorization', `Bearer ${ADMIN_SECRET}`)
-      .send({ nicknameRegex: null });
+      .send({ nicknameRegex: null, cohortRegexRules: null });
     expect(res.status).toBe(200);
     expect(res.body.nicknameRegex).toBeNull();
+    expect(res.body.cohortRegexRules).toEqual([]);
   });
 
   it('DELETE /admin/repos/:id: 레포를 삭제한다', async () => {
