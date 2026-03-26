@@ -1,5 +1,5 @@
 import { describe, it, expect } from '@jest/globals';
-import { parseNickname, detectCohort, isMissionRepo } from '../../services/github.service.js';
+import { parseNickname, detectCohort } from '../../features/sync/github.service.js';
 
 describe('parseNickname', () => {
   it('PR 제목에서 닉네임을 추출한다', () => {
@@ -36,24 +36,5 @@ describe('detectCohort', () => {
 
   it('매핑되지 않는 연도는 null을 반환한다', () => {
     expect(detectCohort(new Date('2018-01-01'), cohortRules)).toBeNull();
-  });
-});
-
-describe('isMissionRepo', () => {
-  it('base branch가 username인 PR이 있으면 true를 반환한다', () => {
-    const prs = [{ base: { ref: 'bigcloud07' }, user: { login: 'bigcloud07' } }];
-    expect(isMissionRepo(prs)).toBe(true);
-  });
-
-  it('base branch가 main/develop이면 false를 반환한다', () => {
-    const prs = [
-      { base: { ref: 'main' }, user: { login: 'someuser' } },
-      { base: { ref: 'develop' }, user: { login: 'anotheruser' } },
-    ];
-    expect(isMissionRepo(prs)).toBe(false);
-  });
-
-  it('PR이 없으면 false를 반환한다', () => {
-    expect(isMissionRepo([])).toBe(false);
   });
 });

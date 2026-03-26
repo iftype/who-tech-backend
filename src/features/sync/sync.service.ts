@@ -1,7 +1,7 @@
 import type { Octokit } from '@octokit/rest';
-import prisma from '../db/prisma.js';
+import prisma from '../../db/prisma.js';
 import { fetchRepoPRs, parseNickname, detectCohort } from './github.service.js';
-import type { CohortRule, ParsedSubmission } from '../types/index.js';
+import type { CohortRule, ParsedSubmission } from '../../shared/types/index.js';
 
 type RawPR = {
   number: number;
@@ -95,16 +95,11 @@ export async function syncWorkspace(
 
   for (const repo of repos) {
     const nicknameRegex = repo.nicknameRegex ? new RegExp(repo.nicknameRegex) : workspaceRegex;
-
     const { synced } = await syncRepo(octokit, workspaceId, workspace.githubOrg, repo, nicknameRegex, cohortRules);
-
     totalSynced += synced;
   }
 
-  await prisma.workspace.update({
-    where: { id: workspaceId },
-    data: {},
-  });
+  await prisma.workspace.update({ where: { id: workspaceId }, data: {} });
 
   return { totalSynced, reposSynced: repos.length };
 }

@@ -6,7 +6,7 @@
 
 - **Runtime**: Node.js 20 + TypeScript
 - **Framework**: Express
-- **ORM**: Prisma (예정)
+- **ORM**: Prisma
 - **DB**: SQLite
 - **Infra**: Oracle Cloud AMD, Nginx, PM2
 
@@ -14,7 +14,14 @@
 
 ```
 src/
-└── index.ts       # 진입점
+├── index.ts          # 진입점
+├── app.ts            # Express 앱 설정
+├── db/               # Prisma 클라이언트, 시딩
+├── jobs/             # 크론잡 (하루 1회 sync)
+├── middleware/       # 인증 미들웨어
+├── routes/           # API 라우터
+├── services/         # 비즈니스 로직 (GitHub API, sync)
+└── types/            # 공통 타입 정의
 ```
 
 ## 로컬 개발 환경 설정
