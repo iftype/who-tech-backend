@@ -1,10 +1,11 @@
 import { Router } from 'express';
 import prisma from '../../db/prisma.js';
+import { WORKSPACE_NAME } from '../../shared/constants.js';
 
 const router = Router();
 
 router.get('/', async (_req, res) => {
-  const workspace = await prisma.workspace.findFirstOrThrow({ where: { name: 'woowacourse' } });
+  const workspace = await prisma.workspace.findFirstOrThrow({ where: { name: WORKSPACE_NAME } });
   const repos = await prisma.missionRepo.findMany({
     where: { workspaceId: workspace.id },
     orderBy: { name: 'asc' },
@@ -21,7 +22,7 @@ router.post('/', async (req, res) => {
     nicknameRegex?: string;
   };
 
-  const workspace = await prisma.workspace.findFirstOrThrow({ where: { name: 'woowacourse' } });
+  const workspace = await prisma.workspace.findFirstOrThrow({ where: { name: WORKSPACE_NAME } });
 
   const repo = await prisma.missionRepo.create({
     data: {
