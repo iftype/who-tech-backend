@@ -23,6 +23,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
+  await prisma.missionRepo.deleteMany();
   await prisma.workspace.deleteMany();
   await prisma.$disconnect();
 });
@@ -58,5 +59,72 @@ describe('PUT /admin/workspace', () => {
       .send({ nicknameRegex: '\\[.+\\] (.+) 미션 제출합니다' });
     expect(res.status).toBe(200);
     expect(res.body.nicknameRegex).toBe('\\[.+\\] (.+) 미션 제출합니다');
+  });
+});
+
+describe('레포 관리 CRUD', () => {
+  let repoId: number;
+
+  beforeEach(async () => {
+    const workspace = await prisma.workspace.findFirstOrThrow({ where: { name: 'woowacourse' } });
+    const repo = await prisma.missionRepo.create({
+      data: {
+        name: 'javascript-lotto',
+        repoUrl: 'https://github.com/woowacourse/javascript-lotto',
+        track: 'frontend',
+        type: 'individual',
+        workspaceId: workspace.id,
+      },
+    });
+    repoId = repo.id;
+  });
+
+  afterEach(async () => {
+    await prisma.missionRepo.deleteMany({ where: { name: 'javascript-lotto' } });
+  });
+
+  it('POST /admin/repos: 레포를 추가한다', async () => {
+    await prisma.missionRepo.deleteMany({ where: { name: 'javascript-lotto' } });
+    const res = await request(app).post('/admin/repos').set('Authorization', `Bearer ${ADMIN_SECRET}`).send({
+      name: 'javascript-lotto',
+      repoUrl: 'https://github.com/woowacourse/javascript-lotto',
+      track: 'frontend',
+    });
+    expect(res.status).toBe(201);
+    expect(res.body.name).toBe('javascript-lotto');
+    expect(res.body.track).toBe('frontend');
+    expect(res.body.type).toBe('individual');
+    expect(res.body.nicknameRegex).toBeNull();
+  });
+
+  it('GET /admin/repos: 레포 목록을 반환한다', async () => {
+    const res = await request(app).get('/admin/repos').set('Authorization', `Bearer ${ADMIN_SECRET}`);
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body.length).toBeGreaterThan(0);
+  });
+
+  it('PATCH /admin/repos/:id: 레포 정규식을 수정한다', async () => {
+    const res = await request(app)
+      .patch(`/admin/repos/${repoId}`)
+      .set('Authorization', `Bearer ${ADMIN_SECRET}`)
+      .send({ nicknameRegex: '\\[.+\\] (.+) 미션 제출합니다 \\(8기\\)' });
+    expect(res.status).toBe(200);
+    expect(res.body.nicknameRegex).toBe('\\[.+\\] (.+) 미션 제출합니다 \\(8기\\)');
+  });
+
+  it('PATCH /admin/repos/:id: nicknameRegex를 null로 초기화한다', async () => {
+    const res = await request(app)
+      .patch(`/admin/repos/${repoId}`)
+      .set('Authorization', `Bearer ${ADMIN_SECRET}`)
+      .send({ nicknameRegex: null });
+    expect(res.status).toBe(200);
+    expect(res.body.nicknameRegex).toBeNull();
+  });
+
+  it('DELETE /admin/repos/:id: 레포를 삭제한다', async () => {
+    const res = await request(app).delete(`/admin/repos/${repoId}`).set('Authorization', `Bearer ${ADMIN_SECRET}`);
+    expect(res.status).toBe(204);
+    repoId = 0;
   });
 });
