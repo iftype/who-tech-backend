@@ -5,7 +5,8 @@ CREATE TABLE "Workspace" (
     "githubOrg" TEXT NOT NULL,
     "nicknameRegex" TEXT NOT NULL,
     "cohortRules" TEXT NOT NULL,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL
 );
 
 -- CreateTable
@@ -14,6 +15,7 @@ CREATE TABLE "Member" (
     "githubId" TEXT NOT NULL,
     "nickname" TEXT,
     "cohort" INTEGER,
+    "blog" TEXT,
     "workspaceId" INTEGER NOT NULL,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL,
