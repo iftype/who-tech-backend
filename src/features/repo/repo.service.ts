@@ -202,6 +202,11 @@ export function createRepoService(deps: {
     },
 
     deleteRepo: (id: number) => missionRepoRepo.deleteWithSubmissions(id),
+
+    deleteAllRepos: async () => {
+      const workspace = await workspaceService.getOrThrow();
+      return missionRepoRepo.deleteAllWithSubmissions(workspace.id);
+    },
   };
 }
 

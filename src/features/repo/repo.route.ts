@@ -50,6 +50,14 @@ export function createRepoRouter(service: RepoService) {
   );
 
   router.delete(
+    '/',
+    asyncHandler(async (_req, res) => {
+      await service.deleteAllRepos();
+      res.status(204).end();
+    }),
+  );
+
+  router.delete(
     '/:id',
     asyncHandler(async (req, res) => {
       await service.deleteRepo(parseId(req.params['id']));

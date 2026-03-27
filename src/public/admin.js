@@ -232,6 +232,17 @@ function editRepo(id) {
     .catch(() => alert('레포 수정에 실패했습니다.'));
 }
 
+function deleteAllRepos() {
+  if (!confirm('모든 레포와 관련 submission을 삭제합니다. 계속할까요?')) return;
+
+  fetch('/admin/repos', { method: 'DELETE', headers: authHeaders() })
+    .then(() => {
+      toast('전체 레포 삭제 완료');
+      return Promise.all([loadRepos(), loadStatus()]);
+    })
+    .catch(() => alert('전체 삭제에 실패했습니다.'));
+}
+
 function deleteRepo(id) {
   if (!confirm('레포와 관련 submission을 함께 삭제합니다. 계속할까요?')) return;
 
