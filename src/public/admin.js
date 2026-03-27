@@ -1191,11 +1191,15 @@ function loadCohortRepos() {
 
 function renderCohortRepos() {
   const tbody = document.getElementById('cohort-repo-table-body');
-  if (!cohortRepoList.length) {
+  const trackFilter = document.getElementById('cohort-repo-track-filter')?.value ?? '';
+  const filtered = trackFilter
+    ? cohortRepoList.filter((e) => e.missionRepo.track === trackFilter)
+    : cohortRepoList;
+  if (!filtered.length) {
     tbody.innerHTML = `<tr><td colspan="5" class="muted" style="text-align:center;padding:16px">추가된 레포 없음</td></tr>`;
     return;
   }
-  tbody.innerHTML = cohortRepoList.map((entry) => `
+  tbody.innerHTML = filtered.map((entry) => `
     <tr>
       <td class="muted small">${entry.order}</td>
       <td><strong>${escapeHtml(entry.missionRepo.name)}</strong></td>
@@ -1263,8 +1267,10 @@ function autoFillCohortRepos() {
 
 function populateCohortRepoSelect() {
   const select = document.getElementById('cohort-repo-select');
+  const trackFilter = document.getElementById('cohort-repo-track-filter')?.value ?? '';
+  const filtered = trackFilter ? repoList.filter((r) => r.track === trackFilter) : repoList;
   select.innerHTML = '<option value="">레포 선택</option>' +
-    repoList
+    filtered
       .map((r) => `<option value="${r.id}">[${r.status}] ${escapeHtml(r.name)}${r.level != null ? ` (레벨${r.level})` : ''}</option>`)
       .join('');
 }
