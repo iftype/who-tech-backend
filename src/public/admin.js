@@ -729,19 +729,11 @@ function renderMembers() {
         ` : '-'}
       </td>
       <td>
-        <details>
-          <summary>${member._count.submissions}건 보기</summary>
-          ${member.submissions.length > 0 ? `
-            <div class="pr-list">
-              ${member.submissions.map((submission) => `
-                <div class="post-item">
-                  <a href="${submission.prUrl}" target="_blank">${escapeHtml(submission.title)}</a>
-                  <div class="muted">${escapeHtml(submission.missionRepo.name)} · ${escapeHtml(submission.missionRepo.track == null ? '공통' : submission.missionRepo.track)}</div>
-                </div>
-              `).join('')}
-            </div>
-          ` : '<div class="muted" style="margin-top:8px">제출 내역이 없습니다.</div>'}
-        </details>
+        ${
+          member._count.submissions > 0
+            ? `<button class="btn-sm btn-ghost" onclick="openSubmissionModal(${member.id}, '${escapeHtml(member.nickname ?? member.githubId)}')">${member._count.submissions}건 보기</button>`
+            : '<span class="muted">0건</span>'
+        }
       </td>
       <td>
         ${member.blog
@@ -979,6 +971,40 @@ function openBlogModal(memberId, name) {
 
 function closeBlogModal() {
   document.getElementById('blog-modal').style.display = 'none';
+}
+
+function openSubmissionModal(memberId, name) {
+  const modal = document.getElementById('submission-modal');
+  const title = document.getElementById('submission-modal-title');
+  const body = document.getElementById('submission-modal-body');
+  const member = memberList.find((item) => item.id === memberId);
+
+  title.textContent = `${name} 제출 내역`;
+
+  if (!member || member.submissions.length === 0) {
+    body.innerHTML = '<div class="sub" style="padding:16px">제출 내역이 없습니다.</div>';
+    modal.style.display = 'flex';
+    return;
+  }
+
+  body.innerHTML = `
+    <div style="padding:16px">
+      <div class="pr-list" style="min-width:0">
+        ${member.submissions.map((submission) => `
+          <div class="post-item" style="padding:10px 0;border-bottom:1px solid #f1f5f9">
+            <a href="${submission.prUrl}" target="_blank">${escapeHtml(submission.title)}</a>
+            <div class="muted">${escapeHtml(submission.missionRepo.name)} · ${escapeHtml(submission.missionRepo.track == null ? '공통' : submission.missionRepo.track)}</div>
+            <div class="muted">#${submission.prNumber} · ${new Date(submission.submittedAt).toLocaleDateString('ko-KR')}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+  modal.style.display = 'flex';
+}
+
+function closeSubmissionModal() {
+  document.getElementById('submission-modal').style.display = 'none';
 }
 
 function deleteAllMembers() {
