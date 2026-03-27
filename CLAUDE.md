@@ -87,7 +87,7 @@ POST /admin/blog/backfill             — GitHub profile blog 백필 (?limit=30)
 ## GitHub Actions
 
 - `test.yml` — PR 시 unit 테스트 (develop/main 대상)
-- `deploy.yml` — develop 푸시 시 SSH 자동 배포 (prisma migrate → pm2 restart)
+- `deploy.yml` — develop 푸시 시 SSH 자동 배포 (`git checkout -- .` → pull → npm install → prisma migrate → pm2 restart)
 - `sync.yml` — `workflow_dispatch` 수동 트리거 전용 (cron 없음)
   - Secrets 필요: `SYNC_URL` (서버 URL), `ADMIN_SECRET`
 - `blog-check.yml` — 매시간 cron `POST /admin/blog/sync` 호출 (GitHub API 미사용, RSS only)
