@@ -20,6 +20,7 @@
     "seed": "tsx src/db/seed.ts"
   },
   "dependencies": {
+    "@octokit/plugin-throttling": "^11.0.3",
     "@octokit/rest": "^22.0.1",
     "@prisma/client": "^6.19.2",
     "express": "^4.21.2",
