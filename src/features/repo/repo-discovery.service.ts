@@ -20,7 +20,17 @@ export type DiscoveredMissionRepo = {
   candidateReason: string;
 };
 
-const INCLUDE_PREFIXES = ['javascript-', 'react-', 'java-', 'spring-', 'android-', 'kotlin-', 'jwp-', 'ts-'];
+const INCLUDE_PREFIXES = [
+  'javascript-',
+  'react-',
+  'java-',
+  'spring-',
+  'android-',
+  'kotlin-',
+  'compose-',
+  'jwp-',
+  'ts-',
+];
 
 const INCLUDE_KEYWORDS = ['basecamp', 'airline', 'roomescape', 'shopping', 'learning', 'mission', 'rendering'];
 const EXCLUDE_KEYWORDS = [
