@@ -141,7 +141,9 @@ export function createRepoService(deps: {
       return toResponse(repo);
     },
 
-    syncRepoById: async (id: number): Promise<{ synced: number }> => {
+    syncRepoById: async (
+      id: number,
+    ): Promise<{ synced: number; failures: { prNumber: number; prUrl: string; error: string }[] }> => {
       const context = await workspaceService.getSyncContext();
       const repo = await missionRepoRepo.findByIdOrThrow(id);
       return syncService.syncRepo(
