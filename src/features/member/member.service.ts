@@ -53,7 +53,15 @@ export function createMemberService(deps: {
         githubId: input.githubId,
         ...(input.nickname ? { nickname: input.nickname, manualNickname: input.nickname } : {}),
         ...(input.cohort != null ? { cohort: input.cohort } : {}),
-        ...(input.blog ? { blog: normalizeBlogUrl(input.blog) } : {}),
+        ...(input.blog
+          ? {
+              blog: normalizeBlogUrl(input.blog),
+              rssStatus: 'unknown',
+              rssUrl: null,
+              rssCheckedAt: null,
+              rssError: null,
+            }
+          : {}),
         roles: JSON.stringify(input.roles?.length ? input.roles : ['crew']),
         workspaceId: workspace.id,
       });
@@ -66,7 +74,15 @@ export function createMemberService(deps: {
     ) => {
       const member = await memberRepo.updateWithRelations(id, {
         ...(input.manualNickname !== undefined ? { manualNickname: input.manualNickname } : {}),
-        ...(input.blog !== undefined ? { blog: normalizeBlogUrl(input.blog) } : {}),
+        ...(input.blog !== undefined
+          ? {
+              blog: normalizeBlogUrl(input.blog),
+              rssStatus: 'unknown',
+              rssUrl: null,
+              rssCheckedAt: null,
+              rssError: null,
+            }
+          : {}),
         ...(input.roles !== undefined ? { roles: JSON.stringify(input.roles) } : {}),
       });
       return toResponse(member);
