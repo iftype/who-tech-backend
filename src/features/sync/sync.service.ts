@@ -4,6 +4,7 @@ import type { MissionRepoRepository } from '../../db/repositories/mission-repo.r
 import type { SubmissionRepository } from '../../db/repositories/submission.repository.js';
 import type { WorkspaceRepository } from '../../db/repositories/workspace.repository.js';
 import { findNicknameRegexByCohort, parseCohortRegexRules, parseCohorts } from '../../shared/cohort-regex.js';
+import { HttpError } from '../../shared/http.js';
 import { mergeNicknameStat, resolveDisplayNickname } from '../../shared/nickname.js';
 import { fetchRepoPRs, fetchUserBlogUrl, parseNickname, detectCohort } from './github.service.js';
 import type { CohortRegexRule, CohortRule, ParsedSubmission } from '../../shared/types/index.js';
@@ -75,7 +76,13 @@ export function createSyncService(deps: {
   ): Promise<{ synced: number; failures: { prNumber: number; prUrl: string; error: string }[] }> => {
     const isCommonMission = repo.track === null || repo.track === undefined;
     const since = repo.lastSyncAt ?? undefined;
-    const prs = await fetchRepoPRs(octokit, org, repo.name, ...(since ? [{ since }] : []));
+    let prs: Awaited<ReturnType<typeof fetchRepoPRs>>;
+    try {
+      prs = await fetchRepoPRs(octokit, org, repo.name, ...(since ? [{ since }] : []));
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
+      throw new HttpError(500, `repo sync fetch failed: ${repo.name} — ${detail}`);
+    }
     const fallbackRegex = repo.nicknameRegex ? new RegExp(repo.nicknameRegex) : workspaceRegex;
     const submissions = parsePRsToSubmissions(
       prs,
