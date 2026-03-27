@@ -101,6 +101,7 @@
                 <th>이름</th>
                 <th>상태</th>
                 <th>트랙/타입</th>
+                <th>기수</th>
                 <th>설명 / 후보 사유</th>
                 <th>정규식</th>
                 <th>마지막 sync</th>
@@ -119,6 +120,7 @@
                 <th>이름</th>
                 <th>상태</th>
                 <th>트랙/타입</th>
+                <th>기수</th>
                 <th>설명 / 후보 사유</th>
                 <th>정규식</th>
                 <th>마지막 sync</th>
@@ -182,6 +184,7 @@
             <option value="">모든 역할</option>
             <option value="crew">크루</option>
             <option value="coach">코치</option>
+            <option value="reviewer">리뷰어</option>
           </select>
           <select id="member-track-filter" onchange="loadMembers()">
             <option value="">모든 트랙</option>
@@ -200,10 +203,11 @@
           <input type="text" id="new-member-github" placeholder="GitHub ID" />
           <input type="text" id="new-member-nickname" placeholder="닉네임 (선택)" />
           <input type="number" id="new-member-cohort" placeholder="기수 (선택)" min="1" />
-          <select id="new-member-role">
-            <option value="crew">크루</option>
-            <option value="coach">코치</option>
-          </select>
+          <div class="role-checkboxes">
+            <label><input type="checkbox" id="new-member-role-crew" value="crew" checked> 크루</label>
+            <label><input type="checkbox" id="new-member-role-coach" value="coach"> 코치</label>
+            <label><input type="checkbox" id="new-member-role-reviewer" value="reviewer"> 리뷰어</label>
+          </div>
           <input type="text" id="new-member-blog" placeholder="블로그 URL (선택)" />
           <button class="btn-primary" onclick="addMember()">멤버 추가</button>
         </div>

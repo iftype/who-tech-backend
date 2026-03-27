@@ -28,7 +28,7 @@ model Member {
   nicknameStats  String?      // JSON: [{"nickname":"...", "count":2, "lastSeenAt":"..."}]
   cohort         Int?
   blog           String?
-  role           String       @default("crew") // crew | coach
+  roles          String       @default("[\"crew\"]") // JSON: ["crew"] | ["coach"] | ["crew","reviewer"] 등
   workspaceId    Int
   workspace   Workspace    @relation(fields: [workspaceId], references: [id])
   submissions      Submission[]
@@ -52,6 +52,8 @@ model MissionRepo {
   candidateReason String?
   nicknameRegex String?      // null이면 Workspace.nicknameRegex fallback
   cohortRegexRules String?   // JSON: [{"cohort": 7, "nicknameRegex": "..."}, ...]
+  cohorts       String?      // JSON: [7, 8] — 이 레포가 해당하는 기수 목록
+  order         Int          @default(0)   // 관리자 정렬 순서
   syncMode      String       @default("continuous") // continuous | once
   lastSyncAt    DateTime?
   workspaceId   Int

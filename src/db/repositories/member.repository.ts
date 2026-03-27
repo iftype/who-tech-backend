@@ -19,7 +19,8 @@ export function createMemberRepository(db: PrismaClient) {
         where: {
           workspaceId,
           ...(filters?.cohort ? { cohort: filters.cohort } : {}),
-          ...(filters?.role ? { role: filters.role } : {}),
+          // roles is JSON array string — check if it contains the role value
+          ...(filters?.role ? { roles: { contains: `"${filters.role}"` } } : {}),
           ...(filters?.hasBlog === true ? { blog: { not: null } } : {}),
           ...(filters?.hasBlog === false ? { blog: null } : {}),
           ...(filters?.track ? { submissions: { some: { missionRepo: { track: filters.track } } } } : {}),
@@ -51,7 +52,7 @@ export function createMemberRepository(db: PrismaClient) {
 
     upsert: (args: Prisma.MemberUpsertArgs) => db.member.upsert(args),
 
-    updateWithRelations: (id: number, data: { manualNickname?: string | null; blog?: string | null; role?: string }) =>
+    updateWithRelations: (id: number, data: { manualNickname?: string | null; blog?: string | null; roles?: string }) =>
       db.member.update({ where: { id }, data, include: memberWithRelationsInclude }),
 
     patch: (id: number, data: { blog?: string | null }) => db.member.update({ where: { id }, data }),

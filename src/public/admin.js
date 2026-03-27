@@ -8,6 +8,10 @@ let regexModalRepoId = null;
 let regexModalResult = null;
 let regexModalMode = 'detect'; // 'detect' | 'edit'
 
+function roleLabel(role) {
+  return role === 'coach' ? '코치' : role === 'reviewer' ? '리뷰어' : '크루';
+}
+
 function login() {
   token = document.getElementById('secret-input').value;
   fetch('/admin/status', { headers: authHeaders() })
@@ -118,6 +122,9 @@ function setRepoTab(tab) {
 function repoRow(repo) {
   const syncedAt = repo.lastSyncAt ? new Date(repo.lastSyncAt).toLocaleString('ko-KR') : '없음';
   const regexText = escapeHtml(formatRepoRegex(repo));
+  const cohortsHtml = repo.cohorts?.length
+    ? repo.cohorts.map((c) => `<span class="pill cohort">${c}기</span>`).join(' ')
+    : '<span class="muted">-</span>';
   return `
     <tr>
       <td>
@@ -133,6 +140,7 @@ function repoRow(repo) {
           <span class="muted">${repo.type}</span>
         </div>
       </td>
+      <td>${cohortsHtml}</td>
       <td>
         <div class="stack">
           <span>${escapeHtml(repo.description ?? '-')}</span>
@@ -143,6 +151,8 @@ function repoRow(repo) {
       <td class="muted small">${syncedAt}</td>
       <td>
         <div class="actions">
+          <button class="btn-sm btn-ghost" onclick="moveRepo(${repo.id}, 'up')" title="위로">↑</button>
+          <button class="btn-sm btn-ghost" onclick="moveRepo(${repo.id}, 'down')" title="아래로">↓</button>
           <button class="btn-sm btn-secondary" onclick="syncRepo(${repo.id}, this)">Sync</button>
           <button class="btn-sm btn-ghost" onclick="detectRepoRegex(${repo.id})">감지</button>
           <button class="btn-sm btn-ghost" onclick="editRepo(${repo.id})">수정</button>
@@ -176,11 +186,11 @@ function renderRepos() {
 
   tbodyContinuous.innerHTML = continuous.length
     ? continuous.map(repoRow).join('')
-    : `<tr><td colspan="7" class="muted">없음</td></tr>`;
+    : `<tr><td colspan="8" class="muted">없음</td></tr>`;
 
   tbodyOnce.innerHTML = once.length
     ? once.map(repoRow).join('')
-    : `<tr><td colspan="7" class="muted">없음</td></tr>`;
+    : `<tr><td colspan="8" class="muted">없음</td></tr>`;
 }
 
 function activateRepo(id, syncMode) {
@@ -295,6 +305,9 @@ function editRepo(id) {
   if (type === null) return;
   const description = prompt('설명', repo.description ?? '');
   if (description === null) return;
+  const cohortsInput = prompt('기수 (쉼표로 구분, 예: 7,8)', repo.cohorts?.join(', ') ?? '');
+  if (cohortsInput === null) return;
+  const cohorts = cohortsInput ? cohortsInput.split(',').map((c) => Number(c.trim())).filter((n) => !isNaN(n)) : null;
   const nicknameRegex = prompt('기본 닉네임 정규식', repo.nicknameRegex ?? '');
   if (nicknameRegex === null) return;
   const cohortRegexRules = prompt(
@@ -311,6 +324,7 @@ function editRepo(id) {
       track,
       type,
       description: description || null,
+      cohorts,
       nicknameRegex: nicknameRegex || null,
       cohortRegexRules: parseJsonOrNull(cohortRegexRules),
     }),
@@ -342,6 +356,36 @@ function deleteRepo(id) {
       return Promise.all([loadRepos(), loadStatus()]);
     })
     .catch(() => alert('레포 삭제에 실패했습니다.'));
+}
+
+function moveRepo(id, direction) {
+  const sorted = [...repoList].sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || a.name.localeCompare(b.name));
+  const repo = sorted.find((r) => r.id === id);
+  if (!repo) return;
+
+  const section = sorted.filter((r) => r.syncMode === repo.syncMode);
+  const idx = section.findIndex((r) => r.id === id);
+  const neighborIdx = direction === 'up' ? idx - 1 : idx + 1;
+  if (neighborIdx < 0 || neighborIdx >= section.length) return;
+
+  const neighbor = section[neighborIdx];
+  const myOrder = repo.order ?? 0;
+  const neighborOrder = neighbor.order ?? 0;
+
+  Promise.all([
+    fetch(`/admin/repos/${id}`, {
+      method: 'PATCH',
+      headers: authHeaders('application/json'),
+      body: JSON.stringify({ order: neighborOrder }),
+    }),
+    fetch(`/admin/repos/${neighbor.id}`, {
+      method: 'PATCH',
+      headers: authHeaders('application/json'),
+      body: JSON.stringify({ order: myOrder }),
+    }),
+  ])
+    .then(() => loadRepos())
+    .catch(() => alert('순서 변경에 실패했습니다.'));
 }
 
 function syncRepo(id, button) {
@@ -530,7 +574,7 @@ function renderMembers() {
           <span class="muted">manual: ${escapeHtml(member.manualNickname ?? '-')}</span>
         </div>
       </td>
-      <td><span class="pill ${member.role ?? 'crew'}">${member.role === 'coach' ? '코치' : '크루'}</span></td>
+      <td>${(member.roles?.length ? member.roles : ['crew']).map((r) => `<span class="pill ${r}">${roleLabel(r)}</span>`).join(' ')}</td>
       <td>${member.cohort ? `<span class="pill cohort">${member.cohort}기</span>` : '-'}</td>
       <td>
         ${member.tracks.length > 0 ? `
@@ -609,13 +653,16 @@ function addMember() {
   const nickname = document.getElementById('new-member-nickname').value.trim() || null;
   const cohortVal = document.getElementById('new-member-cohort').value.trim();
   const cohort = cohortVal ? Number(cohortVal) : null;
-  const role = document.getElementById('new-member-role').value;
+  const roles = ['crew', 'coach', 'reviewer'].filter(
+    (r) => document.getElementById(`new-member-role-${r}`).checked,
+  );
+  if (roles.length === 0) roles.push('crew');
   const blog = document.getElementById('new-member-blog').value.trim() || null;
 
   fetch('/admin/members', {
     method: 'POST',
     headers: authHeaders('application/json'),
-    body: JSON.stringify({ githubId, nickname, cohort, role, blog }),
+    body: JSON.stringify({ githubId, nickname, cohort, roles, blog }),
   })
     .then((res) => {
       if (!res.ok) throw new Error('failed');
@@ -638,8 +685,9 @@ function editMember(id) {
   const blog = prompt('블로그 링크', member.blog ?? '');
   if (blog === null) return;
 
-  const role = prompt('역할 (crew / coach)', member.role ?? 'crew');
-  if (role === null) return;
+  const rolesInput = prompt('역할 (crew / coach / reviewer, 쉼표로 구분)', (member.roles ?? ['crew']).join(', '));
+  if (rolesInput === null) return;
+  const roles = rolesInput.split(',').map((r) => r.trim()).filter(Boolean);
 
   fetch(`/admin/members/${id}`, {
     method: 'PATCH',
@@ -647,7 +695,7 @@ function editMember(id) {
     body: JSON.stringify({
       manualNickname: manualNickname.trim() || null,
       blog: blog.trim() || null,
-      role: role.trim() || 'crew',
+      roles: roles.length ? roles : ['crew'],
     }),
   })
     .then((response) => {

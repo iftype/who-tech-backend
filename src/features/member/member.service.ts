@@ -15,7 +15,18 @@ export function createMemberService(deps: {
     ...member,
     nickname: resolveDisplayNickname(member.manualNickname, member.nicknameStats, member.nickname),
     tracks: [...new Set(member.submissions.map((s) => s.missionRepo.track).filter((t) => t !== null))],
+    roles: parseRoles(member.roles),
   });
+
+  function parseRoles(raw: string | null | undefined): string[] {
+    if (!raw) return ['crew'];
+    try {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : ['crew'];
+    } catch {
+      return ['crew'];
+    }
+  }
 
   return {
     listMembers: async (filters?: {
@@ -35,7 +46,7 @@ export function createMemberService(deps: {
       nickname?: string | null;
       cohort?: number | null;
       blog?: string | null;
-      role?: string;
+      roles?: string[];
     }) => {
       const workspace = await workspaceService.getOrThrow();
       const member = await memberRepo.create({
@@ -43,7 +54,7 @@ export function createMemberService(deps: {
         ...(input.nickname ? { nickname: input.nickname, manualNickname: input.nickname } : {}),
         ...(input.cohort != null ? { cohort: input.cohort } : {}),
         ...(input.blog ? { blog: normalizeBlogUrl(input.blog) } : {}),
-        role: input.role ?? 'crew',
+        roles: JSON.stringify(input.roles?.length ? input.roles : ['crew']),
         workspaceId: workspace.id,
       });
       return toResponse(member);
@@ -51,12 +62,12 @@ export function createMemberService(deps: {
 
     updateMember: async (
       id: number,
-      input: { manualNickname?: string | null; blog?: string | null; role?: string },
+      input: { manualNickname?: string | null; blog?: string | null; roles?: string[] },
     ) => {
       const member = await memberRepo.updateWithRelations(id, {
         ...(input.manualNickname !== undefined ? { manualNickname: input.manualNickname } : {}),
         ...(input.blog !== undefined ? { blog: normalizeBlogUrl(input.blog) } : {}),
-        ...(input.role !== undefined ? { role: input.role } : {}),
+        ...(input.roles !== undefined ? { roles: JSON.stringify(input.roles) } : {}),
       });
       return toResponse(member);
     },

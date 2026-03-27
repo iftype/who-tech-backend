@@ -19,13 +19,24 @@ export function createRepoService(deps: {
   const toResponse = (repo: Awaited<ReturnType<MissionRepoRepository['findByIdOrThrow']>>) => ({
     ...repo,
     cohortRegexRules: parseCohortRegexRules(repo.cohortRegexRules),
+    cohorts: parseCohorts(repo.cohorts),
   });
+
+  function parseCohorts(raw: string | null | undefined): number[] {
+    if (!raw) return [];
+    try {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
 
   return {
     listRepos: async (status?: string) => {
       const workspace = await workspaceService.getOrThrow();
       const repos = await missionRepoRepo.findMany({ workspaceId: workspace.id, ...(status ? { status } : {}) }, [
-        { status: 'asc' },
+        { order: 'asc' },
         { name: 'asc' },
       ]);
       return repos.map(toResponse);
@@ -43,6 +54,8 @@ export function createRepoService(deps: {
       candidateReason?: string | null;
       nicknameRegex?: string;
       cohortRegexRules?: CohortRegexRule[];
+      cohorts?: number[];
+      order?: number;
     }) => {
       const workspace = await workspaceService.getOrThrow();
       const repo = await missionRepoRepo.create({
@@ -57,6 +70,8 @@ export function createRepoService(deps: {
         candidateReason: input.candidateReason ?? null,
         nicknameRegex: input.nicknameRegex ?? null,
         cohortRegexRules: stringifyCohortRegexRules(input.cohortRegexRules),
+        ...(input.cohorts?.length ? { cohorts: JSON.stringify(input.cohorts) } : {}),
+        ...(input.order !== undefined ? { order: input.order } : {}),
         workspaceId: workspace.id,
       });
       return toResponse(repo);
@@ -73,6 +88,8 @@ export function createRepoService(deps: {
         candidateReason?: string | null;
         nicknameRegex?: string | null;
         cohortRegexRules?: CohortRegexRule[] | null;
+        cohorts?: number[] | null;
+        order?: number;
       },
     ) => {
       const repo = await missionRepoRepo.update(id, {
@@ -86,6 +103,10 @@ export function createRepoService(deps: {
         ...(input.cohortRegexRules !== undefined
           ? { cohortRegexRules: stringifyCohortRegexRules(input.cohortRegexRules) }
           : {}),
+        ...(input.cohorts !== undefined
+          ? { cohorts: input.cohorts === null ? null : JSON.stringify(input.cohorts) }
+          : {}),
+        ...(input.order !== undefined ? { order: input.order } : {}),
       });
       return toResponse(repo);
     },

@@ -34,7 +34,7 @@ export function createMemberRouter(service: MemberService) {
         nickname?: string | null;
         cohort?: number | null;
         blog?: string | null;
-        role?: string;
+        roles?: string[];
       };
       if (!body.githubId || typeof body.githubId !== 'string') {
         res.status(400).json({ error: 'githubId required' });
@@ -55,7 +55,7 @@ export function createMemberRouter(service: MemberService) {
     '/:id',
     asyncHandler(async (req, res) => {
       const id = parseId(req.params['id']);
-      const body = req.body as { manualNickname?: string | null; blog?: string | null; role?: string };
+      const body = req.body as { manualNickname?: string | null; blog?: string | null; roles?: string[] };
       res.json(await service.updateMember(id, body));
     }),
   );
