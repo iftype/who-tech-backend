@@ -152,6 +152,13 @@ function isPrecourseRepo(repo) {
   return repo.name.toLowerCase().includes('precourse');
 }
 
+function getRepoTabCategory(repo) {
+  if (isPrecourseRepo(repo)) return 'precourse';
+  if (repo.status === 'excluded') return 'excluded';
+  if (repo.track == null) return 'common';
+  return 'base';
+}
+
 function patchRepo(id, data) {
   return fetch(`/admin/repos/${id}`, {
     method: 'PATCH',
@@ -171,6 +178,11 @@ function patchRepo(id, data) {
 function moveRepoCategory(id, target) {
   const repo = repoList.find((item) => item.id === id);
   if (!repo) return;
+
+  if (target === 'precourse') {
+    toast('프리코스 탭은 레포 이름에 precourse가 포함되면 자동 분류됩니다.');
+    return;
+  }
 
   if (target === 'excluded') {
     patchRepo(id, { status: 'excluded' });
@@ -286,20 +298,20 @@ function inlineEditDescription(el, id) {
 function repoRow(repo) {
   const syncedAt = repo.lastSyncAt ? new Date(repo.lastSyncAt).toLocaleString('ko-KR') : '없음';
   const hasCustomRegex = !!(repo.nicknameRegex || repo.cohortRegexRules?.length);
-  const categoryButtons = repo.status === 'excluded'
-    ? `
-      <button class="btn-sm btn-secondary" onclick="moveRepoCategory(${repo.id}, 'base')">기준</button>
-      <button class="btn-sm btn-secondary" onclick="moveRepoCategory(${repo.id}, 'common')">공통</button>
-    `
-    : repo.track === null
-      ? `
-        <button class="btn-sm btn-secondary" onclick="moveRepoCategory(${repo.id}, 'base')">기준</button>
-        <button class="btn-sm btn-ghost" onclick="moveRepoCategory(${repo.id}, 'excluded')">제외</button>
-      `
-      : `
-        <button class="btn-sm btn-secondary" onclick="moveRepoCategory(${repo.id}, 'common')">공통</button>
-        <button class="btn-sm btn-ghost" onclick="moveRepoCategory(${repo.id}, 'excluded')">제외</button>
-      `;
+  const currentCategory = getRepoTabCategory(repo);
+  const tabButtons = [
+    { key: 'base', label: '기준', disabled: repo.track == null || currentCategory === 'precourse' },
+    { key: 'precourse', label: '프리코스', disabled: !isPrecourseRepo(repo) },
+    { key: 'common', label: '공통', disabled: currentCategory === 'precourse' },
+    { key: 'excluded', label: '제외', disabled: currentCategory === 'precourse' },
+  ]
+    .map(({ key, label, disabled }) => {
+      const active = currentCategory === key;
+      const classes = `btn-sm tab-choice${active ? ' active' : ''}`;
+      const attrs = disabled && !active ? 'disabled' : `onclick="moveRepoCategory(${repo.id}, '${key}')"`; 
+      return `<button class="${classes}" ${attrs}>${label}</button>`;
+    })
+    .join('');
   const cohortsHtml = repo.cohorts?.length
     ? repo.cohorts.map((c) => `<span class="pill cohort">${c}기</span>`).join(' ')
     : '<span class="muted">-</span>';
@@ -341,9 +353,11 @@ function repoRow(repo) {
       <td>
         <div class="actions">
           <button class="btn-sm btn-secondary" onclick="syncRepo(${repo.id}, this)">Sync</button>
-          ${categoryButtons}
           <button class="btn-sm btn-ghost" onclick="detectRepoRegex(${repo.id})">감지</button>
           <button class="btn-sm btn-danger" onclick="deleteRepo(${repo.id})">삭제</button>
+        </div>
+        <div class="tab-choice-group" style="margin-top:6px">
+          ${tabButtons}
         </div>
       </td>
     </tr>
