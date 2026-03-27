@@ -3,7 +3,7 @@ import type { MemberRepository } from '../../db/repositories/member.repository.j
 import type { MissionRepoRepository } from '../../db/repositories/mission-repo.repository.js';
 import type { SubmissionRepository } from '../../db/repositories/submission.repository.js';
 import type { WorkspaceRepository } from '../../db/repositories/workspace.repository.js';
-import { findNicknameRegexByCohort, parseCohortRegexRules } from '../../shared/cohort-regex.js';
+import { findNicknameRegexByCohort, parseCohortRegexRules, parseCohorts } from '../../shared/cohort-regex.js';
 import { mergeNicknameStat, resolveDisplayNickname } from '../../shared/nickname.js';
 import { fetchRepoPRs, fetchUserBlogUrl, parseNickname, detectCohort } from './github.service.js';
 import type { CohortRegexRule, CohortRule, ParsedSubmission } from '../../shared/types/index.js';
@@ -159,14 +159,7 @@ export function createSyncService(deps: {
     // 전체 sync는 한번만 돌릴 레포 중 아직 sync되지 않은 것만 실행
     const activeRepos = repos.filter((r) => {
       if (r.status !== 'active' || r.syncMode !== 'once' || r.lastSyncAt !== null) return false;
-      if (cohort != null) {
-        try {
-          const repoCohorts: number[] = r.cohorts ? JSON.parse(r.cohorts) : [];
-          if (!repoCohorts.includes(cohort)) return false;
-        } catch {
-          return false;
-        }
-      }
+      if (cohort != null && !parseCohorts(r.cohorts).includes(cohort)) return false;
       return true;
     });
 

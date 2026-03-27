@@ -16,7 +16,7 @@ export function createSyncRouter(service: SyncAdminService) {
     '/sync',
     asyncHandler(async (req, res) => {
       const cohort = typeof req.body?.cohort === 'number' ? req.body.cohort : undefined;
-      res.json(await service.syncAdminWorkspace(cohort));
+      res.json(await service.syncWorkspace(undefined, cohort));
     }),
   );
 
@@ -33,7 +33,7 @@ export function createSyncRouter(service: SyncAdminService) {
     };
 
     service
-      .syncAdminWorkspaceStream((step) => send('progress', step), cohort && !Number.isNaN(cohort) ? cohort : undefined)
+      .syncWorkspace((step) => send('progress', step), cohort && !Number.isNaN(cohort) ? cohort : undefined)
       .then((result) => {
         send('done', result);
         res.end();

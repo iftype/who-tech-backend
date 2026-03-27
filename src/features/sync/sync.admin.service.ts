@@ -20,13 +20,8 @@ export function createSyncAdminService(deps: {
       return { memberCount, repoCount, lastSyncAt: workspace?.updatedAt ?? null };
     },
 
-    syncAdminWorkspace: async (cohort?: number) => {
-      const workspace = await workspaceService.getOrThrow();
-      return syncService.syncWorkspace(octokit, workspace.id, undefined, cohort);
-    },
-
-    syncAdminWorkspaceStream: async (
-      onProgress: (step: { repo: string; done: number; total: number; synced: number }) => void,
+    syncWorkspace: async (
+      onProgress?: (step: { repo: string; done: number; total: number; synced: number }) => void,
       cohort?: number,
     ) => {
       const workspace = await workspaceService.getOrThrow();

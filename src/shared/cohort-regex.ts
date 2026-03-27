@@ -16,6 +16,16 @@ export function stringifyCohortRegexRules(rules: CohortRegexRule[] | null | unde
   return JSON.stringify(rules);
 }
 
+export function parseCohorts(raw: string | null | undefined): number[] {
+  if (!raw) return [];
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as number[]) : [];
+  } catch {
+    return [];
+  }
+}
+
 export function findNicknameRegexByCohort(cohortRegexRules: CohortRegexRule[], cohort: number | null): string | null {
   if (cohort === null) {
     return null;
