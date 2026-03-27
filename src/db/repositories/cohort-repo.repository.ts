@@ -26,6 +26,12 @@ export function createCohortRepoRepository(db: PrismaClient) {
 
     delete: (id: number) => db.cohortRepo.delete({ where: { id } }),
 
+    findExistingIds: (workspaceId: number, cohort: number) =>
+      db.cohortRepo.findMany({ where: { workspaceId, cohort }, select: { missionRepoId: true } }),
+
+    createMany: (rows: { cohort: number; order: number; missionRepoId: number; workspaceId: number }[]) =>
+      db.$transaction(rows.map((data) => db.cohortRepo.create({ data }))),
+
     listCohorts: (workspaceId: number) =>
       db.cohortRepo.findMany({
         where: { workspaceId },

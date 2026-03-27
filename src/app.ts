@@ -50,7 +50,7 @@ const syncService = createSyncService({ memberRepo, missionRepoRepo, submissionR
 const memberService = createMemberService({ memberRepo, blogPostRepo, workspaceService });
 const repoService = createRepoService({ missionRepoRepo, workspaceService, syncService, octokit });
 const blogService = createBlogService({ memberRepo, blogPostRepo });
-const cohortRepoService = createCohortRepoService({ cohortRepoRepo, workspaceService });
+const cohortRepoService = createCohortRepoService({ cohortRepoRepo, missionRepoRepo, workspaceService });
 const blogAdminService = createBlogAdminService({ memberRepo, workspaceService, blogService, octokit });
 const syncAdminService = createSyncAdminService({
   memberRepo,

@@ -1158,6 +1158,19 @@ function deleteCohortRepo(id) {
     .catch(() => alert('삭제 실패'));
 }
 
+function autoFillCohortRepos() {
+  const cohort = cohortRepoSelectedCohort ?? Number(document.getElementById('cohort-repo-cohort').value);
+  if (!cohort) { alert('기수를 먼저 선택하세요.'); return; }
+  fetch('/admin/cohort-repos/auto-fill', {
+    method: 'POST',
+    headers: authHeaders('application/json'),
+    body: JSON.stringify({ cohort }),
+  })
+    .then((r) => r.json())
+    .then((data) => { toast(`${data.added}개 레포 자동 추가됨`); loadCohortRepos(); })
+    .catch(() => alert('자동 채우기 실패'));
+}
+
 function populateCohortRepoSelect() {
   const select = document.getElementById('cohort-repo-select');
   select.innerHTML = '<option value="">레포 선택</option>' +

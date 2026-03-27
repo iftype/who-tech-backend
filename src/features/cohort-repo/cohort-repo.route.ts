@@ -26,6 +26,18 @@ export function createCohortRepoRouter(service: CohortRepoService) {
   );
 
   router.post(
+    '/auto-fill',
+    asyncHandler(async (req, res) => {
+      const cohort = typeof req.body?.cohort === 'number' ? req.body.cohort : NaN;
+      if (Number.isNaN(cohort)) {
+        res.status(400).json({ error: 'cohort required' });
+        return;
+      }
+      res.json(await service.autoFill(cohort));
+    }),
+  );
+
+  router.post(
     '/',
     asyncHandler(async (req, res) => {
       const { cohort, missionRepoId, order } = req.body as { cohort: number; missionRepoId: number; order?: number };
