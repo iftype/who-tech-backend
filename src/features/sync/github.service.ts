@@ -1,5 +1,8 @@
 import { Octokit } from '@octokit/rest';
+import { throttling } from '@octokit/plugin-throttling';
 import type { CohortRule } from '../../shared/types/index.js';
+
+const ThrottledOctokit = Octokit.plugin(throttling);
 import { normalizeBlogUrl } from '../../shared/blog.js';
 import { normalizeNickname } from '../../shared/nickname.js';
 
@@ -18,7 +21,19 @@ export function detectCohort(submittedAt: Date, cohortRules: CohortRule[]): numb
 }
 
 export function createOctokit(token?: string): Octokit {
-  return new Octokit({ auth: token });
+  return new ThrottledOctokit({
+    auth: token,
+    throttle: {
+      onRateLimit: (retryAfter, options, octokit) => {
+        octokit.log.warn(`rate limit: ${options.method} ${options.url} — retry after ${retryAfter}s`);
+        return true;
+      },
+      onSecondaryRateLimit: (retryAfter, options, octokit) => {
+        octokit.log.warn(`secondary rate limit: ${options.method} ${options.url} — retry after ${retryAfter}s`);
+        return true;
+      },
+    },
+  }) as unknown as Octokit;
 }
 
 export async function fetchRepoPRs(
