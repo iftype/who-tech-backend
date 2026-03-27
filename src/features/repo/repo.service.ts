@@ -177,7 +177,7 @@ export function createRepoService(deps: {
             track: existing.track ?? candidate.track,
             type: existing.type || candidate.type,
             candidateReason: candidate.candidateReason,
-            ...(existing.status === 'excluded' ? {} : { status: existing.status }),
+            ...(existing.status === 'active' ? {} : { status: candidate.status }),
           });
           updated += 1;
         } else {
@@ -188,7 +188,7 @@ export function createRepoService(deps: {
             description: candidate.description,
             track: candidate.track,
             type: candidate.type,
-            status: 'candidate',
+            status: candidate.status,
             syncMode: 'once',
             candidateReason: candidate.candidateReason,
             workspaceId: workspace.id,
