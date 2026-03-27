@@ -934,6 +934,26 @@ function closeRegexModal() {
   regexModalResult = null;
 }
 
+async function detectRegexAll() {
+  const btn = document.getElementById('detect-regex-all-btn');
+  btn.disabled = true;
+  btn.textContent = '감지 중...';
+  try {
+    const res = await fetch('/admin/repos/detect-regex-all', { method: 'POST', headers: authHeaders() });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const results = await res.json();
+    const applied = results.filter((r) => !r.skipped);
+    const skipped = results.filter((r) => r.skipped);
+    toast(`정규식 적용 완료: ${applied.length}개 / 스킵 ${skipped.length}개`);
+    await loadRepos();
+  } catch (e) {
+    alert(`정규식 자동감지 실패: ${e}`);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '정규식 자동감지+적용';
+  }
+}
+
 function closeValidateModal() {
   document.getElementById('validate-regex-modal').style.display = 'none';
 }
