@@ -135,6 +135,114 @@ function setRepoTab(tab) {
   renderRepos();
 }
 
+function patchRepo(id, data) {
+  return fetch(`/admin/repos/${id}`, {
+    method: 'PATCH',
+    headers: authHeaders('application/json'),
+    body: JSON.stringify(data),
+  })
+    .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
+    .then((updated) => {
+      const idx = repoList.findIndex((r) => r.id === id);
+      if (idx !== -1) repoList[idx] = { ...repoList[idx], ...updated };
+      renderRepos();
+      toast('저장됨');
+    })
+    .catch(() => toast('저장 실패'));
+}
+
+function inlineSelect(el, options, current, onSave) {
+  const prev = el.innerHTML;
+  const sel = document.createElement('select');
+  sel.className = 'inline-sel';
+  options.forEach(({ value, label }) => {
+    const o = document.createElement('option');
+    o.value = value ?? '';
+    o.textContent = label;
+    if ((value ?? '') === (current ?? '')) o.selected = true;
+    sel.appendChild(o);
+  });
+  el.innerHTML = '';
+  el.appendChild(sel);
+  sel.focus();
+  let done = false;
+  sel.onclick = (e) => e.stopPropagation();
+  sel.onchange = () => { done = true; onSave(sel.value || null); };
+  sel.onblur = () => { if (!done) { done = true; el.innerHTML = prev; } };
+  sel.onkeydown = (e) => { if (e.key === 'Escape') { done = true; el.innerHTML = prev; } };
+}
+
+function inlineText(el, current, onSave, inputType = 'text') {
+  const prev = el.innerHTML;
+  const inp = document.createElement('input');
+  inp.className = 'inline-inp';
+  inp.type = inputType;
+  inp.value = current ?? '';
+  el.innerHTML = '';
+  el.appendChild(inp);
+  inp.onclick = (e) => e.stopPropagation();
+  inp.focus();
+  inp.select();
+  let done = false;
+  const save = () => {
+    if (done) return;
+    done = true;
+    const val = inp.value.trim();
+    if (val === String(current ?? '')) { el.innerHTML = prev; return; }
+    onSave(val || null);
+  };
+  inp.onkeydown = (e) => {
+    if (e.key === 'Enter') save();
+    if (e.key === 'Escape') { done = true; el.innerHTML = prev; }
+  };
+  inp.onblur = save;
+}
+
+function inlineEditStatus(el, id) {
+  const repo = repoList.find((r) => r.id === id);
+  if (!repo) return;
+  inlineSelect(el, [{ value: 'active', label: 'active' }, { value: 'candidate', label: 'candidate' }, { value: 'excluded', label: 'excluded' }], repo.status, (val) => patchRepo(id, { status: val }));
+}
+
+function inlineEditSyncMode(el, id) {
+  const repo = repoList.find((r) => r.id === id);
+  if (!repo) return;
+  inlineSelect(el, [{ value: 'continuous', label: '계속' }, { value: 'once', label: '1회' }], repo.syncMode, (val) => patchRepo(id, { syncMode: val }));
+}
+
+function inlineEditTrack(el, id) {
+  const repo = repoList.find((r) => r.id === id);
+  if (!repo) return;
+  inlineSelect(el, [{ value: null, label: '공통' }, { value: 'frontend', label: 'frontend' }, { value: 'backend', label: 'backend' }, { value: 'android', label: 'android' }], repo.track, (val) => patchRepo(id, { track: val }));
+}
+
+function inlineEditType(el, id) {
+  const repo = repoList.find((r) => r.id === id);
+  if (!repo) return;
+  inlineSelect(el, [{ value: 'individual', label: 'individual' }, { value: 'integration', label: 'integration' }], repo.type, (val) => patchRepo(id, { type: val }));
+}
+
+function inlineEditLevel(el, id) {
+  const repo = repoList.find((r) => r.id === id);
+  if (!repo) return;
+  inlineText(el, repo.level != null ? String(repo.level) : '', (val) => patchRepo(id, { level: val ? Number(val) : null }), 'number');
+}
+
+function inlineEditCohorts(el, id) {
+  const repo = repoList.find((r) => r.id === id);
+  if (!repo) return;
+  inlineText(el, repo.cohorts?.join(', ') ?? '', (val) => {
+    const cohorts = val ? val.split(',').map((c) => Number(c.trim())).filter((n) => !isNaN(n) && n > 0) : null;
+    patchRepo(id, { cohorts });
+  });
+}
+
+function inlineEditDescription(el, id) {
+  const repo = repoList.find((r) => r.id === id);
+  if (!repo) return;
+  inlineText(el, repo.description ?? '', (val) => patchRepo(id, { description: val }));
+}
+
 function repoRow(repo) {
   const syncedAt = repo.lastSyncAt ? new Date(repo.lastSyncAt).toLocaleString('ko-KR') : '없음';
   const hasCustomRegex = !!(repo.nicknameRegex || repo.cohortRegexRules?.length);
@@ -149,17 +257,26 @@ function repoRow(repo) {
           <a class="link" href="${repo.repoUrl}" target="_blank">${repo.repoUrl}</a>
         </div>
       </td>
-      <td><span class="pill ${repo.status}">${repo.status}</span></td>
       <td>
         <div class="stack">
-          <span>${repo.track == null ? '공통' : repo.track}</span>
-          <span class="muted">${repo.type}${repo.level != null ? ` · 레벨${repo.level}` : ''}</span>
+          <span class="pill ${repo.status} editable" onclick="inlineEditStatus(this, ${repo.id})">${repo.status}</span>
+          <span class="editable muted small" onclick="inlineEditSyncMode(this, ${repo.id})">${repo.syncMode === 'once' ? '1회' : '계속'}</span>
         </div>
       </td>
-      <td>${cohortsHtml}</td>
       <td>
         <div class="stack">
-          <span>${escapeHtml(repo.description ?? '-')}</span>
+          <span class="editable" onclick="inlineEditTrack(this, ${repo.id})">${repo.track == null ? '공통' : repo.track}</span>
+          <span class="muted">
+            <span class="editable" onclick="inlineEditType(this, ${repo.id})">${repo.type}</span><span class="editable" onclick="inlineEditLevel(this, ${repo.id})">${repo.level != null ? ` · 레벨${repo.level}` : ' · 레벨-'}</span>
+          </span>
+        </div>
+      </td>
+      <td>
+        <span class="editable" onclick="inlineEditCohorts(this, ${repo.id})">${cohortsHtml}</span>
+      </td>
+      <td>
+        <div class="stack">
+          <span class="editable" onclick="inlineEditDescription(this, ${repo.id})">${escapeHtml(repo.description ?? '-')}</span>
           <span class="muted">${escapeHtml(repo.candidateReason ?? '-')}</span>
         </div>
       </td>
@@ -171,7 +288,6 @@ function repoRow(repo) {
         <div class="actions">
           <button class="btn-sm btn-secondary" onclick="syncRepo(${repo.id}, this)">Sync</button>
           <button class="btn-sm btn-ghost" onclick="detectRepoRegex(${repo.id})">감지</button>
-          <button class="btn-sm btn-ghost" onclick="editRepo(${repo.id})">수정</button>
           <button class="btn-sm btn-danger" onclick="deleteRepo(${repo.id})">삭제</button>
         </div>
       </td>
@@ -337,52 +453,6 @@ function editRepoRegex(id) {
   modal.style.display = 'flex';
 }
 
-function editRepo(id) {
-  const repo = repoList.find((item) => item.id === id);
-  if (!repo) return;
-
-  const status = prompt('상태(active/candidate/excluded)', repo.status);
-  if (status === null) return;
-  const track = prompt('트랙(frontend/backend/android)', repo.track);
-  if (track === null) return;
-  const type = prompt('타입(individual/integration)', repo.type);
-  if (type === null) return;
-  const description = prompt('설명', repo.description ?? '');
-  if (description === null) return;
-  const cohortsInput = prompt('기수 (쉼표로 구분, 예: 7,8)', repo.cohorts?.join(', ') ?? '');
-  if (cohortsInput === null) return;
-  const cohorts = cohortsInput ? cohortsInput.split(',').map((c) => Number(c.trim())).filter((n) => !isNaN(n)) : null;
-  const levelInput = prompt('레벨 (1/2/3/4, 없으면 빈칸)', repo.level != null ? String(repo.level) : '');
-  if (levelInput === null) return;
-  const level = levelInput.trim() ? Number(levelInput.trim()) : null;
-  const nicknameRegex = prompt('기본 닉네임 정규식', repo.nicknameRegex ?? '');
-  if (nicknameRegex === null) return;
-  const cohortRegexRules = prompt(
-    '기수별 정규식 JSON',
-    repo.cohortRegexRules?.length ? JSON.stringify(repo.cohortRegexRules) : '',
-  );
-  if (cohortRegexRules === null) return;
-
-  fetch(`/admin/repos/${id}`, {
-    method: 'PATCH',
-    headers: authHeaders('application/json'),
-    body: JSON.stringify({
-      status,
-      track,
-      type,
-      description: description || null,
-      cohorts,
-      level,
-      nicknameRegex: nicknameRegex || null,
-      cohortRegexRules: parseJsonOrNull(cohortRegexRules),
-    }),
-  })
-    .then(() => {
-      toast('레포 수정 완료');
-      return loadRepos();
-    })
-    .catch(() => alert('레포 수정에 실패했습니다.'));
-}
 
 function deleteAllRepos() {
   if (!confirm('모든 레포와 관련 submission을 삭제합니다. 계속할까요?')) return;
@@ -1121,11 +1191,15 @@ function loadCohortRepos() {
 
 function renderCohortRepos() {
   const tbody = document.getElementById('cohort-repo-table-body');
-  if (!cohortRepoList.length) {
+  const trackFilter = document.getElementById('cohort-repo-track-filter')?.value ?? '';
+  const filtered = trackFilter
+    ? cohortRepoList.filter((e) => e.missionRepo.track === trackFilter)
+    : cohortRepoList;
+  if (!filtered.length) {
     tbody.innerHTML = `<tr><td colspan="5" class="muted" style="text-align:center;padding:16px">추가된 레포 없음</td></tr>`;
     return;
   }
-  tbody.innerHTML = cohortRepoList.map((entry) => `
+  tbody.innerHTML = filtered.map((entry) => `
     <tr>
       <td class="muted small">${entry.order}</td>
       <td><strong>${escapeHtml(entry.missionRepo.name)}</strong></td>
@@ -1193,8 +1267,10 @@ function autoFillCohortRepos() {
 
 function populateCohortRepoSelect() {
   const select = document.getElementById('cohort-repo-select');
+  const trackFilter = document.getElementById('cohort-repo-track-filter')?.value ?? '';
+  const filtered = trackFilter ? repoList.filter((r) => r.track === trackFilter) : repoList;
   select.innerHTML = '<option value="">레포 선택</option>' +
-    repoList
+    filtered
       .map((r) => `<option value="${r.id}">[${r.status}] ${escapeHtml(r.name)}${r.level != null ? ` (레벨${r.level})` : ''}</option>`)
       .join('');
 }
