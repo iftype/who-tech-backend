@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-let token = '';
+let token = localStorage.getItem('admin_token') ?? '';
 let repoList = [];
 let memberList = [];
 let memberSearchTimer = null;
@@ -19,15 +19,25 @@ function login() {
   token = document.getElementById('secret-input').value;
   fetch('/admin/status', { headers: authHeaders() })
     .then((response) => {
-      if (!response.ok) {
-        throw new Error('unauthorized');
-      }
-
+      if (!response.ok) throw new Error('unauthorized');
+      localStorage.setItem('admin_token', token);
       document.getElementById('login').style.display = 'none';
       document.getElementById('main').style.display = 'block';
       return Promise.all([loadStatus(), loadWorkspace(), loadRepos(), loadMembers()]);
     })
     .catch(() => alert('잘못된 비밀키입니다.'));
+}
+
+function tryAutoLogin() {
+  if (!token) return;
+  fetch('/admin/status', { headers: authHeaders() })
+    .then((response) => {
+      if (!response.ok) { localStorage.removeItem('admin_token'); return; }
+      document.getElementById('login').style.display = 'none';
+      document.getElementById('main').style.display = 'block';
+      return Promise.all([loadStatus(), loadWorkspace(), loadRepos(), loadMembers()]);
+    })
+    .catch(() => { localStorage.removeItem('admin_token'); });
 }
 
 function authHeaders(contentType) {
