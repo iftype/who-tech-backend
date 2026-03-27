@@ -149,6 +149,7 @@ export function createSyncService(deps: {
     octokit: Octokit,
     workspaceId: number,
     onProgress?: (step: { repo: string; done: number; total: number; synced: number }) => void,
+    cohort?: number,
   ): Promise<{ totalSynced: number; reposSynced: number }> => {
     const workspace = await workspaceRepo.findByIdOrThrow(workspaceId);
     const cohortRules: CohortRule[] = JSON.parse(workspace.cohortRules);
@@ -156,7 +157,18 @@ export function createSyncService(deps: {
 
     const repos = await missionRepoRepo.findMany({ workspaceId });
     // 전체 sync는 한번만 돌릴 레포 중 아직 sync되지 않은 것만 실행
-    const activeRepos = repos.filter((r) => r.status === 'active' && r.syncMode === 'once' && r.lastSyncAt === null);
+    const activeRepos = repos.filter((r) => {
+      if (r.status !== 'active' || r.syncMode !== 'once' || r.lastSyncAt !== null) return false;
+      if (cohort != null) {
+        try {
+          const repoCohorts: number[] = r.cohorts ? JSON.parse(r.cohorts) : [];
+          if (!repoCohorts.includes(cohort)) return false;
+        } catch {
+          return false;
+        }
+      }
+      return true;
+    });
 
     let totalSynced = 0;
     for (let i = 0; i < activeRepos.length; i++) {

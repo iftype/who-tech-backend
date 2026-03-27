@@ -126,7 +126,7 @@ function setRepoTab(tab) {
 
 function repoRow(repo) {
   const syncedAt = repo.lastSyncAt ? new Date(repo.lastSyncAt).toLocaleString('ko-KR') : '없음';
-  const regexText = escapeHtml(formatRepoRegex(repo));
+  const hasCustomRegex = !!(repo.nicknameRegex || repo.cohortRegexRules?.length);
   const cohortsHtml = repo.cohorts?.length
     ? repo.cohorts.map((c) => `<span class="pill cohort">${c}기</span>`).join(' ')
     : '<span class="muted">-</span>';
@@ -153,7 +153,7 @@ function repoRow(repo) {
         </div>
       </td>
       <td style="cursor:pointer" onclick="editRepoRegex(${repo.id})" title="클릭해서 정규식 수정">
-        ${regexText ? '<span class="pill active" style="font-size:11px">있음</span>' : '<span class="muted">없음</span>'}
+        ${hasCustomRegex ? '<span class="pill active" style="font-size:11px">있음</span>' : '<span class="pill" style="font-size:11px;background:#f1f5f9;color:#64748b">기본값</span>'}
       </td>
       <td class="muted small">${syncedAt}</td>
       <td>
@@ -437,7 +437,9 @@ function triggerSync() {
   progressBar.style.width = '0%';
   progressLabel.textContent = '준비 중...';
 
-  const url = `/admin/sync/stream?token=${encodeURIComponent(token)}`;
+  const cohortVal = document.getElementById('sync-cohort').value.trim();
+  const cohortParam = cohortVal ? `&cohort=${encodeURIComponent(cohortVal)}` : '';
+  const url = `/admin/sync/stream?token=${encodeURIComponent(token)}${cohortParam}`;
   const es = new EventSource(url);
 
   es.addEventListener('progress', (e) => {
@@ -525,7 +527,9 @@ function triggerBlogBackfill() {
   const button = document.getElementById('blog-backfill-btn');
   button.disabled = true;
   button.textContent = '조회 중...';
-  fetch('/admin/blog/backfill?limit=30', { method: 'POST', headers: authHeaders() })
+  const cohortVal = document.getElementById('sync-cohort').value.trim();
+  const cohortParam = cohortVal ? `&cohort=${encodeURIComponent(cohortVal)}` : '';
+  fetch(`/admin/blog/backfill?limit=30${cohortParam}`, { method: 'POST', headers: authHeaders() })
     .then((response) => response.json())
     .then((data) => {
       const failureText = data.failures.length > 0
@@ -638,6 +642,7 @@ function renderMembers() {
       </td>
       <td>
         <div class="actions">
+          <button class="btn-sm btn-ghost" onclick="editMemberRoles(${member.id})">역할</button>
           <button class="btn-sm btn-ghost" onclick="editMember(${member.id})">수정</button>
           <button class="btn-sm btn-danger" onclick="deleteMember(${member.id})">삭제</button>
         </div>
@@ -705,27 +710,42 @@ function editMember(id) {
   const blog = prompt('블로그 링크', member.blog ?? '');
   if (blog === null) return;
 
-  const rolesInput = prompt('역할 (crew / coach / reviewer, 쉼표로 구분)', (member.roles ?? ['crew']).join(', '));
-  if (rolesInput === null) return;
-  const roles = rolesInput.split(',').map((r) => r.trim()).filter(Boolean);
-
   fetch(`/admin/members/${id}`, {
     method: 'PATCH',
     headers: authHeaders('application/json'),
     body: JSON.stringify({
       manualNickname: manualNickname.trim() || null,
       blog: blog.trim() || null,
-      roles: roles.length ? roles : ['crew'],
     }),
   })
     .then((response) => {
-      if (!response.ok) {
-        throw new Error('failed');
-      }
+      if (!response.ok) throw new Error('failed');
       toast('멤버 수정 완료');
       return loadMembers();
     })
     .catch(() => alert('멤버 수정에 실패했습니다.'));
+}
+
+function editMemberRoles(id) {
+  const member = memberList.find((item) => item.id === id);
+  if (!member) return;
+
+  const current = (member.roles ?? ['crew']).join(', ');
+  const rolesInput = prompt('역할 (crew / coach / reviewer, 쉼표로 구분)', current);
+  if (rolesInput === null) return;
+  const roles = rolesInput.split(',').map((r) => r.trim()).filter(Boolean);
+
+  fetch(`/admin/members/${id}`, {
+    method: 'PATCH',
+    headers: authHeaders('application/json'),
+    body: JSON.stringify({ roles: roles.length ? roles : ['crew'] }),
+  })
+    .then((response) => {
+      if (!response.ok) throw new Error('failed');
+      toast('역할 수정 완료');
+      return loadMembers();
+    })
+    .catch(() => alert('역할 수정에 실패했습니다.'));
 }
 
 function openBlogModal(memberId, name) {
@@ -937,14 +957,14 @@ async function startValidateAllRegex() {
     progress.innerHTML = `<span class="sub">검증 중 ${i + 1} / ${activeRepos.length} — ${escapeHtml(repo.name)}</span>`;
 
     try {
-      const result = await fetch(`/admin/repos/${repo.id}/validate-regex`, { headers: authHeaders() }).then((r) =>
-        r.json(),
-      );
-      if (result.total > 0 && result.unmatched > 0) {
+      const res = await fetch(`/admin/repos/${repo.id}/validate-regex`, { headers: authHeaders() });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const result = await res.json();
+      if (result.unmatched > 0) {
         issues.push(result);
       }
-    } catch {
-      // 개별 실패는 건너뜀
+    } catch (e) {
+      issues.push({ id: repo.id, name: repo.name, error: String(e), total: 0, matched: 0, unmatched: 0, samples: [] });
     }
   }
 
@@ -960,6 +980,19 @@ async function startValidateAllRegex() {
 }
 
 function renderValidateIssue(result) {
+  if (result.error) {
+    return `
+    <div style="padding:12px 0">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <strong>${escapeHtml(result.name)}</strong>
+          <span class="muted" style="margin-left:8px;color:#dc2626">${escapeHtml(result.error)}</span>
+        </div>
+        <button class="btn-sm btn-secondary" onclick="dismissValidateIssue(${result.id})">건너뛰기</button>
+      </div>
+    </div>`;
+  }
+
   const samplesHtml = result.samples
     .map(
       (s) => `

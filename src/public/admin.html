@@ -44,6 +44,7 @@
             <div class="sub">전체 sync와 단건 테스트를 여기서 실행합니다.</div>
           </div>
           <div class="actions">
+            <input type="number" id="sync-cohort" placeholder="기수 (전체)" min="1" style="width:110px" title="기수 입력 시 해당 기수 레포만 Sync/백필" />
             <button class="btn-secondary" id="blog-backfill-btn" onclick="triggerBlogBackfill()">블로그 링크 백필</button>
             <button class="btn-secondary" id="blog-sync-btn" onclick="triggerBlogSync()">블로그 Sync</button>
             <button class="btn-toggle" id="blog-sync-toggle" onclick="toggleBlogSync()">블로그 자동수집 ON</button>
