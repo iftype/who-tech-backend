@@ -72,7 +72,7 @@ export function createSyncService(deps: {
     },
     workspaceRegex: RegExp,
     cohortRules: CohortRule[],
-  ): Promise<{ synced: number }> => {
+  ): Promise<{ synced: number; failures: { prNumber: number; prUrl: string; error: string }[] }> => {
     const isCommonMission = repo.track === null || repo.track === undefined;
     const since = repo.lastSyncAt ?? undefined;
     const prs = await fetchRepoPRs(octokit, org, repo.name, ...(since ? [{ since }] : []));
@@ -85,64 +85,73 @@ export function createSyncService(deps: {
     );
     const blogCache = new Map<string, string | null>();
     let synced = 0;
+    const failures: { prNumber: number; prUrl: string; error: string }[] = [];
 
     for (const s of submissions) {
-      const existingMember = await memberRepo.findByGithubId(s.githubId, workspaceId);
+      try {
+        const existingMember = await memberRepo.findByGithubId(s.githubId, workspaceId);
 
-      // 공통 미션: 이미 알려진 멤버에만 submission 연결
-      if (isCommonMission && !existingMember) continue;
+        // 공통 미션: 이미 알려진 멤버에만 submission 연결
+        if (isCommonMission && !existingMember) continue;
 
-      const nicknameStats = mergeNicknameStat(existingMember?.nicknameStats, s.nickname, s.submittedAt);
-      const displayNickname = resolveDisplayNickname(
-        existingMember?.manualNickname,
-        JSON.stringify(nicknameStats),
-        existingMember?.nickname ?? null,
-      );
+        const nicknameStats = mergeNicknameStat(existingMember?.nicknameStats, s.nickname, s.submittedAt);
+        const displayNickname = resolveDisplayNickname(
+          existingMember?.manualNickname,
+          JSON.stringify(nicknameStats),
+          existingMember?.nickname ?? null,
+        );
 
-      let blog = existingMember?.blog ?? null;
-      if (!blog) {
-        if (!blogCache.has(s.githubId)) {
-          blogCache.set(s.githubId, await fetchUserBlogUrl(octokit, s.githubId).catch(() => null));
+        let blog = existingMember?.blog ?? null;
+        if (!blog) {
+          if (!blogCache.has(s.githubId)) {
+            blogCache.set(s.githubId, await fetchUserBlogUrl(octokit, s.githubId).catch(() => null));
+          }
+          blog = blogCache.get(s.githubId) ?? null;
         }
-        blog = blogCache.get(s.githubId) ?? null;
-      }
 
-      const member = await memberRepo.upsert({
-        where: { githubId_workspaceId: { githubId: s.githubId, workspaceId } },
-        create: {
-          githubId: s.githubId,
-          nickname: displayNickname,
-          cohort: s.cohort,
-          blog,
-          nicknameStats: JSON.stringify(nicknameStats),
-          workspaceId,
-        },
-        update: {
-          nickname: displayNickname,
-          cohort: s.cohort,
-          ...(existingMember?.blog ? {} : { blog }),
-          nicknameStats: JSON.stringify(nicknameStats),
-        },
-      });
+        const member = await memberRepo.upsert({
+          where: { githubId_workspaceId: { githubId: s.githubId, workspaceId } },
+          create: {
+            githubId: s.githubId,
+            nickname: displayNickname,
+            cohort: s.cohort,
+            blog,
+            nicknameStats: JSON.stringify(nicknameStats),
+            workspaceId,
+          },
+          update: {
+            nickname: displayNickname,
+            cohort: s.cohort,
+            ...(existingMember?.blog ? {} : { blog }),
+            nicknameStats: JSON.stringify(nicknameStats),
+          },
+        });
 
-      await submissionRepo.upsert({
-        where: { prNumber_missionRepoId: { prNumber: s.prNumber, missionRepoId: repo.id } },
-        create: {
+        await submissionRepo.upsert({
+          where: { prNumber_missionRepoId: { prNumber: s.prNumber, missionRepoId: repo.id } },
+          create: {
+            prNumber: s.prNumber,
+            prUrl: s.prUrl,
+            title: s.title,
+            submittedAt: s.submittedAt,
+            memberId: member.id,
+            missionRepoId: repo.id,
+          },
+          update: {},
+        });
+
+        synced++;
+      } catch (err) {
+        failures.push({
           prNumber: s.prNumber,
           prUrl: s.prUrl,
-          title: s.title,
-          submittedAt: s.submittedAt,
-          memberId: member.id,
-          missionRepoId: repo.id,
-        },
-        update: {},
-      });
-
-      synced++;
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
     }
 
     await missionRepoRepo.touch(repo.id);
-    return { synced };
+    return { synced, failures };
   };
 
   const syncWorkspace = async (

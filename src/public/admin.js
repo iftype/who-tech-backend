@@ -489,14 +489,24 @@ function syncRepo(id, button) {
   button.textContent = '...';
   addLog(`${name} sync 중...`, 'run');
   fetch(`/admin/repos/${id}/sync`, { method: 'POST', headers: authHeaders() })
-    .then((response) => response.json())
+    .then((response) => {
+      if (!response.ok) return response.json().then((err) => Promise.reject(err));
+      return response.json();
+    })
     .then((data) => {
       toast(`${data.synced}건 수집됨`);
       document.getElementById('sync-result').textContent = `${data.synced}건 수집 완료`;
       addLog(`${name} sync 완료 — ${data.synced}건`, 'ok');
+      if (data.failures?.length) {
+        data.failures.forEach((f) => addLog(`  └ PR #${f.prNumber} 실패: ${f.error}`, 'err'));
+      }
       return Promise.all([loadStatus(), loadMembers()]);
     })
-    .catch(() => { toast('단건 sync 실패'); addLog(`${name} sync 실패`, 'err'); })
+    .catch((err) => {
+      const detail = err?.message ?? String(err);
+      toast('단건 sync 실패');
+      addLog(`${name} sync 실패: ${detail}`, 'err');
+    })
     .finally(() => {
       button.disabled = false;
       button.textContent = 'Sync';
