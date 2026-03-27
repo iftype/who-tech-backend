@@ -166,6 +166,7 @@ function inlineSelect(el, options, current, onSave) {
   el.appendChild(sel);
   sel.focus();
   let done = false;
+  sel.onclick = (e) => e.stopPropagation();
   sel.onchange = () => { done = true; onSave(sel.value || null); };
   sel.onblur = () => { if (!done) { done = true; el.innerHTML = prev; } };
   sel.onkeydown = (e) => { if (e.key === 'Escape') { done = true; el.innerHTML = prev; } };
@@ -179,6 +180,7 @@ function inlineText(el, current, onSave, inputType = 'text') {
   inp.value = current ?? '';
   el.innerHTML = '';
   el.appendChild(inp);
+  inp.onclick = (e) => e.stopPropagation();
   inp.focus();
   inp.select();
   let done = false;
