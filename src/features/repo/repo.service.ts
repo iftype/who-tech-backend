@@ -136,6 +136,7 @@ export function createRepoService(deps: {
             track: candidate.track,
             type: candidate.type,
             status: 'candidate',
+            syncMode: 'once',
             candidateReason: candidate.candidateReason,
             workspaceId: workspace.id,
           });
