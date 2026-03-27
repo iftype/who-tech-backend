@@ -1175,7 +1175,6 @@ function populateCohortRepoSelect() {
   const select = document.getElementById('cohort-repo-select');
   select.innerHTML = '<option value="">레포 선택</option>' +
     repoList
-      .filter((r) => r.status === 'active')
-      .map((r) => `<option value="${r.id}">${escapeHtml(r.name)}${r.level != null ? ` (레벨${r.level})` : ''}</option>`)
+      .map((r) => `<option value="${r.id}">[${r.status}] ${escapeHtml(r.name)}${r.level != null ? ` (레벨${r.level})` : ''}</option>`)
       .join('');
 }
