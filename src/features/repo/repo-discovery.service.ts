@@ -100,7 +100,9 @@ function inferTrack(name: string): string {
     name.startsWith('ts-') ||
     name.includes('rendering') ||
     name.includes('airline') ||
-    name.includes('basecamp')
+    name.includes('basecamp') ||
+    name.includes('canvas') ||
+    name.includes('gemini')
   ) {
     return 'frontend';
   }
