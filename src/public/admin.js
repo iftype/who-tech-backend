@@ -163,8 +163,27 @@ function patchRepo(id, data) {
     .catch(() => toast('저장 실패'));
 }
 
-function toggleRepoExcluded(id, excluded) {
-  patchRepo(id, { status: excluded ? 'excluded' : 'candidate' });
+function moveRepoCategory(id, target) {
+  const repo = repoList.find((item) => item.id === id);
+  if (!repo) return;
+
+  if (target === 'excluded') {
+    patchRepo(id, { status: 'excluded' });
+    return;
+  }
+
+  if (target === 'common') {
+    patchRepo(id, { status: repo.status === 'excluded' ? 'candidate' : repo.status, track: null });
+    return;
+  }
+
+  if (target === 'base') {
+    if (repo.track == null) {
+      toast('기준 레포로 옮기려면 먼저 트랙을 지정하세요.');
+      return;
+    }
+    patchRepo(id, { status: repo.status === 'excluded' ? 'candidate' : repo.status });
+  }
 }
 
 function inlineSelect(el, options, current, onSave) {
@@ -262,9 +281,20 @@ function inlineEditDescription(el, id) {
 function repoRow(repo) {
   const syncedAt = repo.lastSyncAt ? new Date(repo.lastSyncAt).toLocaleString('ko-KR') : '없음';
   const hasCustomRegex = !!(repo.nicknameRegex || repo.cohortRegexRules?.length);
-  const excludeButton = repo.status === 'excluded'
-    ? `<button class="btn-sm btn-secondary" onclick="toggleRepoExcluded(${repo.id}, false)">추가</button>`
-    : `<button class="btn-sm btn-ghost" onclick="toggleRepoExcluded(${repo.id}, true)">제외</button>`;
+  const categoryButtons = repo.status === 'excluded'
+    ? `
+      <button class="btn-sm btn-secondary" onclick="moveRepoCategory(${repo.id}, 'base')">기준</button>
+      <button class="btn-sm btn-secondary" onclick="moveRepoCategory(${repo.id}, 'common')">공통</button>
+    `
+    : repo.track === null
+      ? `
+        <button class="btn-sm btn-secondary" onclick="moveRepoCategory(${repo.id}, 'base')">기준</button>
+        <button class="btn-sm btn-ghost" onclick="moveRepoCategory(${repo.id}, 'excluded')">제외</button>
+      `
+      : `
+        <button class="btn-sm btn-secondary" onclick="moveRepoCategory(${repo.id}, 'common')">공통</button>
+        <button class="btn-sm btn-ghost" onclick="moveRepoCategory(${repo.id}, 'excluded')">제외</button>
+      `;
   const cohortsHtml = repo.cohorts?.length
     ? repo.cohorts.map((c) => `<span class="pill cohort">${c}기</span>`).join(' ')
     : '<span class="muted">-</span>';
@@ -306,7 +336,7 @@ function repoRow(repo) {
       <td>
         <div class="actions">
           <button class="btn-sm btn-secondary" onclick="syncRepo(${repo.id}, this)">Sync</button>
-          ${excludeButton}
+          ${categoryButtons}
           <button class="btn-sm btn-ghost" onclick="detectRepoRegex(${repo.id})">감지</button>
           <button class="btn-sm btn-danger" onclick="deleteRepo(${repo.id})">삭제</button>
         </div>
@@ -327,8 +357,8 @@ function renderRepos() {
 
   const filtered = repoList.filter((repo) => {
     const isCommon = repo.track === null;
-    if (repoTab === 'base' && isCommon) return false;
-    if (repoTab === 'common' && !isCommon) return false;
+    if (repoTab === 'base' && (isCommon || repo.status === 'excluded')) return false;
+    if (repoTab === 'common' && (!isCommon || repo.status === 'excluded')) return false;
     if (repoTab === 'excluded' && repo.status !== 'excluded') return false;
     const status = repoTab === 'excluded' ? 'excluded' : statusFilter;
     if (search && !repo.name.toLowerCase().includes(search)) return false;
