@@ -370,14 +370,16 @@ function discoverRepos() {
   const button = document.getElementById('discover-btn');
   button.disabled = true;
   button.textContent = '불러오는 중...';
+  addLog('레포 후보 불러오는 중...', 'run');
 
   fetch('/admin/repos/discover', { method: 'POST', headers: authHeaders() })
     .then((response) => response.json())
     .then((result) => {
       toast(`후보 ${result.discovered}개 분석, 생성 ${result.created}개, 갱신 ${result.updated}개`);
+      addLog(`레포 후보 완료 — 분석 ${result.discovered}개, 신규 ${result.created}개, 갱신 ${result.updated}개`, 'ok');
       return loadRepos();
     })
-    .catch(() => toast('후보 불러오기 실패'))
+    .catch(() => { toast('후보 불러오기 실패'); addLog('레포 후보 불러오기 실패', 'err'); })
     .finally(() => {
       button.disabled = false;
       button.textContent = '후보 불러오기';
@@ -460,6 +462,7 @@ function deleteAllRepos() {
   fetch('/admin/repos', { method: 'DELETE', headers: authHeaders() })
     .then(() => {
       toast('전체 레포 삭제 완료');
+      addLog('전체 레포 삭제 완료', 'ok');
       return Promise.all([loadRepos(), loadStatus()]);
     })
     .catch(() => alert('전체 삭제에 실패했습니다.'));
@@ -467,10 +470,12 @@ function deleteAllRepos() {
 
 function deleteRepo(id) {
   if (!confirm('레포와 관련 submission을 함께 삭제합니다. 계속할까요?')) return;
+  const repo = repoList.find((r) => r.id === id);
 
   fetch(`/admin/repos/${id}`, { method: 'DELETE', headers: authHeaders() })
     .then(() => {
       toast('레포 삭제 완료');
+      addLog(`레포 삭제 — ${repo?.name ?? `#${id}`}`, 'ok');
       return Promise.all([loadRepos(), loadStatus()]);
     })
     .catch(() => alert('레포 삭제에 실패했습니다.'));
@@ -478,16 +483,20 @@ function deleteRepo(id) {
 
 
 function syncRepo(id, button) {
+  const repo = repoList.find((r) => r.id === id);
+  const name = repo?.name ?? `#${id}`;
   button.disabled = true;
   button.textContent = '...';
+  addLog(`${name} sync 중...`, 'run');
   fetch(`/admin/repos/${id}/sync`, { method: 'POST', headers: authHeaders() })
     .then((response) => response.json())
     .then((data) => {
       toast(`${data.synced}건 수집됨`);
       document.getElementById('sync-result').textContent = `${data.synced}건 수집 완료`;
+      addLog(`${name} sync 완료 — ${data.synced}건`, 'ok');
       return Promise.all([loadStatus(), loadMembers()]);
     })
-    .catch(() => toast('단건 sync 실패'))
+    .catch(() => { toast('단건 sync 실패'); addLog(`${name} sync 실패`, 'err'); })
     .finally(() => {
       button.disabled = false;
       button.textContent = 'Sync';
@@ -505,6 +514,7 @@ function triggerSync() {
   progressWrap.style.display = 'block';
   progressBar.style.width = '0%';
   progressLabel.textContent = '준비 중...';
+  addLog('전체 Sync 시작', 'run');
 
   const cohortVal = document.getElementById('sync-cohort').value.trim();
   const cohortParam = cohortVal ? `&cohort=${encodeURIComponent(cohortVal)}` : '';
@@ -525,6 +535,7 @@ function triggerSync() {
     progressLabel.textContent = `완료: ${reposSynced}개 레포, ${totalSynced}건 수집됨`;
     document.getElementById('sync-result').textContent = `완료: ${reposSynced}개 레포, ${totalSynced}건 수집됨`;
     toast(`전체 sync 완료 (${totalSynced}건)`);
+    addLog(`전체 Sync 완료 — ${reposSynced}개 레포, ${totalSynced}건 수집`, 'ok');
     es.close();
     button.disabled = false;
     button.textContent = '전체 Sync';
@@ -536,6 +547,7 @@ function triggerSync() {
     progressLabel.textContent = `오류: ${msg}`;
     document.getElementById('sync-result').textContent = '전체 sync 실패';
     toast('전체 sync 실패');
+    addLog(`전체 Sync 실패: ${msg}`, 'err');
     es.close();
     button.disabled = false;
     button.textContent = '전체 Sync';
@@ -561,14 +573,16 @@ function triggerTsAndLearningTest() {
   const button = document.getElementById('ts-learning-sync-btn');
   button.disabled = true;
   button.textContent = '테스트 중...';
+  addLog('ts-and-learning 테스트 sync 중...', 'run');
   fetch(`/admin/repos/${repo.id}/sync`, { method: 'POST', headers: authHeaders() })
     .then((response) => response.json())
     .then((data) => {
       document.getElementById('sync-result').textContent = `ts-and-learning ${data.synced}건 수집`;
       toast(`ts-and-learning 테스트 완료 (${data.synced}건)`);
+      addLog(`ts-and-learning 테스트 완료 — ${data.synced}건`, 'ok');
       return Promise.all([loadStatus(), loadMembers()]);
     })
-    .catch(() => toast('ts-and-learning 테스트 실패'))
+    .catch(() => { toast('ts-and-learning 테스트 실패'); addLog('ts-and-learning 테스트 실패', 'err'); })
     .finally(() => {
       button.disabled = false;
       button.textContent = 'ts-and-learning 테스트';
@@ -579,13 +593,15 @@ function triggerBlogSync() {
   const button = document.getElementById('blog-sync-btn');
   button.disabled = true;
   button.textContent = '동기화 중...';
+  addLog('블로그 Sync 중...', 'run');
   fetch('/admin/blog/sync', { method: 'POST', headers: authHeaders() })
     .then((response) => response.json())
     .then((data) => {
       toast(`블로그 ${data.synced}건 수집, ${data.deleted}건 삭제`);
+      addLog(`블로그 Sync 완료 — 수집 ${data.synced}건, 삭제 ${data.deleted}건`, 'ok');
       return loadMembers();
     })
-    .catch(() => toast('블로그 sync 실패'))
+    .catch(() => { toast('블로그 sync 실패'); addLog('블로그 Sync 실패', 'err'); })
     .finally(() => {
       button.disabled = false;
       button.textContent = '블로그 Sync';
@@ -598,6 +614,7 @@ function triggerBlogBackfill() {
   button.textContent = '조회 중...';
   const cohortVal = document.getElementById('sync-cohort').value.trim();
   const cohortParam = cohortVal ? `&cohort=${encodeURIComponent(cohortVal)}` : '';
+  addLog(`블로그 링크 백필 중${cohortVal ? ` (${cohortVal}기)` : ''}...`, 'run');
   fetch(`/admin/blog/backfill?limit=30${cohortParam}`, { method: 'POST', headers: authHeaders() })
     .then((response) => response.json())
     .then((data) => {
@@ -607,9 +624,10 @@ function triggerBlogBackfill() {
       document.getElementById('sync-result').textContent =
         `블로그 링크 확인 ${data.checked}명, 저장 ${data.updated}명, 비어 있음 ${data.missing}명, 실패 ${data.failed}명${failureText}`;
       toast(`블로그 링크 백필 완료 (${data.updated}명 저장)`);
+      addLog(`블로그 백필 완료 — 확인 ${data.checked}명, 저장 ${data.updated}명, 없음 ${data.missing}명, 실패 ${data.failed}명`, 'ok');
       return loadMembers();
     })
-    .catch(() => toast('블로그 링크 백필 실패'))
+    .catch(() => { toast('블로그 링크 백필 실패'); addLog('블로그 백필 실패', 'err'); })
     .finally(() => {
       button.disabled = false;
       button.textContent = '블로그 링크 백필';
@@ -867,6 +885,7 @@ function deleteAllMembers() {
   fetch('/admin/members', { method: 'DELETE', headers: authHeaders() })
     .then(() => {
       toast('전체 멤버 삭제 완료');
+      addLog('전체 멤버 삭제 완료', 'ok');
       return Promise.all([loadMembers(), loadStatus()]);
     })
     .catch(() => alert('전체 삭제에 실패했습니다.'));
@@ -874,10 +893,12 @@ function deleteAllMembers() {
 
 function deleteMember(id) {
   if (!confirm('멤버와 관련 submission/blog 데이터를 함께 삭제합니다. 계속할까요?')) return;
+  const member = memberList.find((m) => m.id === id);
 
   fetch(`/admin/members/${id}`, { method: 'DELETE', headers: authHeaders() })
     .then(() => {
       toast('멤버 삭제 완료');
+      addLog(`멤버 삭제 — ${member?.githubId ?? `#${id}`}`, 'ok');
       return Promise.all([loadMembers(), loadStatus()]);
     })
     .catch(() => alert('멤버 삭제에 실패했습니다.'));
@@ -901,8 +922,8 @@ function saveWorkspace() {
       cohortRules,
     }),
   })
-    .then(() => toast('Workspace 저장 완료'))
-    .catch(() => toast('Workspace 저장 실패'));
+    .then(() => { toast('Workspace 저장 완료'); addLog('Workspace 설정 저장 완료', 'ok'); })
+    .catch(() => { toast('Workspace 저장 실패'); addLog('Workspace 저장 실패', 'err'); });
 }
 
 function parseJsonOrNull(value) {
@@ -935,6 +956,37 @@ function toast(message) {
   setTimeout(() => {
     el.style.display = 'none';
   }, 2600);
+}
+
+function addLog(msg, type = 'info') {
+  const body = document.getElementById('log-body');
+  if (!body) return;
+  const now = new Date();
+  const ts = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+  const tags = { ok: ' OK ', err: 'ERR', run: 'RUN', info: ' ·· ' };
+  const entry = document.createElement('div');
+  entry.className = 'log-entry';
+  entry.innerHTML = `<span class="log-ts">${ts}</span><span class="log-tag ${type}">[${tags[type] ?? ' ·· '}]</span><span class="log-msg ${type}">${escapeHtml(msg)}</span>`;
+  body.appendChild(entry);
+  while (body.children.length > 200) body.removeChild(body.firstChild);
+  body.scrollTop = body.scrollHeight;
+  if (body.classList.contains('collapsed')) {
+    body.classList.remove('collapsed');
+    document.getElementById('log-toggle-btn').textContent = '접기 ▾';
+  }
+}
+
+function clearActivityLog() {
+  const body = document.getElementById('log-body');
+  if (body) body.innerHTML = '';
+}
+
+function toggleActivityLog() {
+  const body = document.getElementById('log-body');
+  const btn = document.getElementById('log-toggle-btn');
+  if (!body || !btn) return;
+  const collapsed = body.classList.toggle('collapsed');
+  btn.textContent = collapsed ? '펼치기 ▸' : '접기 ▾';
 }
 
 function detectRepoRegex(id) {
@@ -1008,6 +1060,7 @@ async function detectRegexAll() {
   const btn = document.getElementById('detect-regex-all-btn');
   btn.disabled = true;
   btn.textContent = '감지 중...';
+  addLog('정규식 자동감지 중...', 'run');
   try {
     const res = await fetch('/admin/repos/detect-regex-all', { method: 'POST', headers: authHeaders() });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -1015,9 +1068,11 @@ async function detectRegexAll() {
     const applied = results.filter((r) => !r.skipped);
     const skipped = results.filter((r) => r.skipped);
     toast(`정규식 적용 완료: ${applied.length}개 / 스킵 ${skipped.length}개`);
+    addLog(`정규식 자동감지 완료 — 적용 ${applied.length}개, 스킵 ${skipped.length}개`, 'ok');
     await loadRepos();
   } catch (e) {
     alert(`정규식 자동감지 실패: ${e}`);
+    addLog(`정규식 자동감지 실패: ${e}`, 'err');
   } finally {
     btn.disabled = false;
     btn.textContent = '정규식 자동감지+적용';
@@ -1039,6 +1094,7 @@ async function startValidateAllRegex() {
   btn.disabled = true;
 
   const activeRepos = repoList.filter((r) => r.status === 'active');
+  addLog(`정규식 검증 시작 — active 레포 ${activeRepos.length}개`, 'run');
   const issues = [];
 
   for (let i = 0; i < activeRepos.length; i++) {
@@ -1058,6 +1114,7 @@ async function startValidateAllRegex() {
   }
 
   progress.innerHTML = `<span class="sub">완료 — ${activeRepos.length}개 검증, 이슈 ${issues.length}개</span>`;
+  addLog(`정규식 검증 완료 — ${activeRepos.length}개 검증, 이슈 ${issues.length}개`, issues.length > 0 ? 'err' : 'ok');
   btn.disabled = false;
 
   if (issues.length === 0) {
@@ -1271,6 +1328,62 @@ function deleteCohortRepo(id) {
     .catch(() => alert('삭제 실패'));
 }
 
+function triggerCohortSync() {
+  const cohort = cohortRepoSelectedCohort ?? Number(document.getElementById('cohort-repo-cohort').value);
+  if (!cohort) { alert('기수를 먼저 선택하세요.'); return; }
+
+  const btn = document.getElementById('cohort-sync-btn');
+  const progressWrap = document.getElementById('sync-progress-wrap');
+  const progressBar = document.getElementById('sync-progress-bar');
+  const progressLabel = document.getElementById('sync-progress-label');
+  btn.disabled = true;
+  btn.textContent = '동기화 중...';
+  progressWrap.style.display = 'block';
+  progressBar.style.width = '0%';
+  progressLabel.textContent = '준비 중...';
+  addLog(`${cohort}기 Sync 시작`, 'run');
+
+  const url = `/admin/sync/stream?token=${encodeURIComponent(token)}&cohort=${cohort}`;
+  const es = new EventSource(url);
+
+  es.addEventListener('progress', (e) => {
+    const { repo, done, total, synced } = JSON.parse(e.data);
+    const pct = Math.round((done / total) * 100);
+    progressBar.style.width = `${pct}%`;
+    progressLabel.textContent = `(${done}/${total}) ${repo} — ${synced}건`;
+  });
+
+  es.addEventListener('done', (e) => {
+    const { reposSynced, totalSynced } = JSON.parse(e.data);
+    progressBar.style.width = '100%';
+    progressLabel.textContent = `완료: ${reposSynced}개 레포, ${totalSynced}건 수집됨`;
+    toast(`${cohort}기 sync 완료 (${totalSynced}건)`);
+    addLog(`${cohort}기 Sync 완료 — ${reposSynced}개 레포, ${totalSynced}건 수집`, 'ok');
+    es.close();
+    btn.disabled = false;
+    btn.textContent = '이 기수 Sync';
+    Promise.all([loadStatus(), loadMembers()]);
+  });
+
+  es.addEventListener('error', (e) => {
+    const msg = e.data ? JSON.parse(e.data).message : 'sync 실패';
+    progressLabel.textContent = `오류: ${msg}`;
+    toast(`${cohort}기 sync 실패`);
+    addLog(`${cohort}기 Sync 실패: ${msg}`, 'err');
+    es.close();
+    btn.disabled = false;
+    btn.textContent = '이 기수 Sync';
+  });
+
+  es.onerror = () => {
+    if (es.readyState === EventSource.CLOSED) return;
+    progressLabel.textContent = '연결 오류';
+    es.close();
+    btn.disabled = false;
+    btn.textContent = '이 기수 Sync';
+  };
+}
+
 function autoFillCohortRepos() {
   const cohort = cohortRepoSelectedCohort ?? Number(document.getElementById('cohort-repo-cohort').value);
   if (!cohort) { alert('기수를 먼저 선택하세요.'); return; }
@@ -1280,8 +1393,8 @@ function autoFillCohortRepos() {
     body: JSON.stringify({ cohort }),
   })
     .then((r) => r.json())
-    .then((data) => { toast(`${data.added}개 레포 자동 추가됨`); loadCohortRepos(); })
-    .catch(() => alert('자동 채우기 실패'));
+    .then((data) => { toast(`${data.added}개 레포 자동 추가됨`); addLog(`기수 레포 자동 채우기 완료 — ${cohort}기, ${data.added}개 추가`, 'ok'); loadCohortRepos(); })
+    .catch(() => { alert('자동 채우기 실패'); addLog(`기수 레포 자동 채우기 실패 — ${cohort}기`, 'err'); });
 }
 
 function populateCohortRepoSelect() {
