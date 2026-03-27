@@ -24,11 +24,18 @@ export function stringifyNicknameStats(stats: NicknameStat[]): string | null {
   return JSON.stringify(stats);
 }
 
+export function isValidNickname(nickname: string): boolean {
+  if (/\d+\s*단계/.test(nickname)) return false;
+  if (nickname.length > 20) return false;
+  return true;
+}
+
 export function mergeNicknameStat(
   existingValue: string | null | undefined,
   nickname: string,
   submittedAt: Date,
 ): NicknameStat[] {
+  if (!isValidNickname(nickname)) return parseNicknameStats(existingValue);
   const normalizedNickname = normalizeNickname(nickname);
   const stats = parseNicknameStats(existingValue);
   const existing = stats.find((item) => item.nickname === normalizedNickname);
