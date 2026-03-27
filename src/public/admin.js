@@ -719,7 +719,7 @@ function renderMembers() {
           <span class="muted">manual: ${escapeHtml(member.manualNickname ?? '-')}</span>
         </div>
       </td>
-      <td>${(member.roles?.length ? member.roles : ['crew']).map((r) => `<span class="pill ${r}">${roleLabel(r)}</span>`).join(' ')}</td>
+      <td>${renderMemberRoleButtons(member)}</td>
       <td>${member.cohort ? `<span class="pill cohort">${member.cohort}기</span>` : '-'}</td>
       <td>
         ${member.tracks.length > 0 ? `
@@ -766,7 +766,6 @@ function renderMembers() {
       </td>
       <td>
         <div class="actions">
-          <button class="btn-sm btn-ghost" onclick="editMemberRoles(${member.id})">역할</button>
           <button class="btn-sm btn-ghost" onclick="editMember(${member.id})">수정</button>
           <button class="btn-sm btn-danger" onclick="deleteMember(${member.id})">삭제</button>
         </div>
@@ -790,6 +789,20 @@ function renderMembers() {
     .map(([k, v]) => `${k} ${v}명`)
     .join(' · ');
   summary.textContent = `총 ${memberList.length}명` + (cohortSummary ? `  |  ${cohortSummary}` : '');
+}
+
+function renderMemberRoleButtons(member) {
+  const roles = member.roles?.length ? member.roles : ['crew'];
+  return `
+    <div class="role-toggle-group">
+      ${['crew', 'coach', 'reviewer'].map((role) => `
+        <button
+          class="btn-sm role-toggle ${roles.includes(role) ? `active ${role}` : ''}"
+          onclick="toggleMemberRole(${member.id}, '${role}')"
+        >${roleLabel(role)}</button>
+      `).join('')}
+    </div>
+  `;
 }
 
 function renderRssStatus(member) {
@@ -892,6 +905,36 @@ function editMemberRoles(id) {
       return loadMembers();
     })
     .catch(() => alert('역할 수정에 실패했습니다.'));
+}
+
+function toggleMemberRole(id, role) {
+  const member = memberList.find((item) => item.id === id);
+  if (!member) return;
+
+  const currentRoles = member.roles?.length ? [...member.roles] : ['crew'];
+  let nextRoles = currentRoles.includes(role)
+    ? currentRoles.filter((item) => item !== role)
+    : [...currentRoles, role];
+
+  if (nextRoles.length === 0) {
+    nextRoles = ['crew'];
+  }
+
+  fetch(`/admin/members/${id}`, {
+    method: 'PATCH',
+    headers: authHeaders('application/json'),
+    body: JSON.stringify({ roles: nextRoles }),
+  })
+    .then((response) => {
+      if (!response.ok) return parseErrorResponse(response);
+      toast('역할 수정 완료');
+      return loadMembers();
+    })
+    .catch((err) => {
+      const detail = err?.message ?? String(err);
+      toast('역할 수정 실패');
+      addLog(`역할 수정 실패: ${member.githubId} — ${detail}`, 'err');
+    });
 }
 
 function openBlogModal(memberId, name) {
