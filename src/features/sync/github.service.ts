@@ -36,6 +36,14 @@ export function createOctokit(token?: string): Octokit {
   }) as unknown as Octokit;
 }
 
+function errorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return String(error);
+}
+
 export async function fetchRepoPRs(
   octokit: Octokit,
   org: string,
@@ -47,15 +55,22 @@ export async function fetchRepoPRs(
   let page = 1;
 
   while (true) {
-    const { data } = await octokit.pulls.list({
-      owner: org,
-      repo,
-      state: 'all',
-      sort: 'created',
-      direction: 'desc',
-      per_page: perPage,
-      page,
-    });
+    let data: Awaited<ReturnType<typeof octokit.pulls.list>>['data'];
+    try {
+      ({ data } = await octokit.pulls.list({
+        owner: org,
+        repo,
+        state: 'all',
+        sort: 'created',
+        direction: 'desc',
+        per_page: perPage,
+        page,
+      }));
+    } catch (error) {
+      const status =
+        typeof error === 'object' && error !== null && 'status' in error ? ` status=${String(error.status)}` : '';
+      throw new Error(`fetch_prs failed: ${org}/${repo} page=${page}${status} ${errorMessage(error)}`);
+    }
 
     if (data.length === 0) break;
 

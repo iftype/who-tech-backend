@@ -501,7 +501,7 @@ function syncRepo(id, button) {
   addLog(`${name} sync 중...`, 'run');
   fetch(`/admin/repos/${id}/sync`, { method: 'POST', headers: authHeaders() })
     .then((response) => {
-      if (!response.ok) return response.json().then((err) => Promise.reject(err));
+      if (!response.ok) return parseErrorResponse(response);
       return response.json();
     })
     .then((data) => {
