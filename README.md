@@ -14,15 +14,48 @@
 
 ```
 src/
-├── index.ts          # 진입점
-├── app.ts            # Express 앱 설정
-├── db/               # Prisma 클라이언트, 시딩
-├── jobs/             # 크론잡 (하루 1회 sync)
-├── middleware/       # 인증 미들웨어
-├── routes/           # API 라우터
-├── services/         # 비즈니스 로직 (GitHub API, sync)
-└── types/            # 공통 타입 정의
+├── index.ts                      # 진입점
+├── app.ts                        # Composition root — DB/서비스/라우터 조립
+├── db/
+│   ├── prisma.ts                 # PrismaClient 싱글톤
+│   ├── seed.ts                   # 초기 데이터
+│   └── repositories/             # DB 접근 계층 (factory 함수)
+│       ├── workspace.repository.ts
+│       ├── member.repository.ts
+│       ├── mission-repo.repository.ts
+│       ├── submission.repository.ts
+│       └── blog-post.repository.ts
+├── features/                     # 기능 단위 모듈
+│   ├── workspace/                # workspace.service.ts, workspace.route.ts
+│   ├── member/                   # member.service.ts, member.route.ts
+│   ├── repo/                     # repo.service.ts, repo.route.ts, repo-discovery.service.ts
+│   ├── sync/                     # sync.service.ts, sync.admin.service.ts, sync.route.ts, github.service.ts
+│   └── blog/                     # blog.service.ts, blog.admin.service.ts, blog.route.ts
+├── shared/                       # 공통 유틸
+│   ├── http.ts                   # asyncHandler, HttpError, badRequest
+│   ├── validation.ts             # 요청 파싱/검증
+│   ├── middleware/               # auth.ts, error.ts
+│   ├── blog.ts                   # URL 정규화
+│   ├── nickname.ts               # 닉네임 통계/정규화
+│   ├── cohort-regex.ts           # 기수별 정규식 파싱
+│   ├── constants.ts
+│   └── types/
+└── public/
+    └── admin.html                # 어드민 UI (단일 파일)
 ```
+
+### 의존성 주입 구조
+
+```
+app.ts (composition root)
+  ├── new PrismaClient()
+  ├── createOctokit()
+  ├── create*Repository(db)     ← Prisma 직접 접근은 repository만
+  ├── create*Service(repos)     ← repository 주입
+  └── create*Router(service)    ← service 주입
+```
+
+각 service/router는 factory 함수로 구성되어 테스트 시 mock repository 주입이 가능합니다.
 
 ## 로컬 개발 환경 설정
 
