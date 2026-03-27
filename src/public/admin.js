@@ -7,6 +7,9 @@ let repoTab = 'base';
 let regexModalRepoId = null;
 let regexModalResult = null;
 let regexModalMode = 'detect'; // 'detect' | 'edit'
+let repoPageContinuous = 1;
+let repoPageOnce = 1;
+const REPO_PAGE_SIZE = 20;
 
 function roleLabel(role) {
   return role === 'coach' ? '코치' : role === 'reviewer' ? '리뷰어' : '크루';
@@ -112,6 +115,8 @@ function loadRepos() {
 
 function setRepoTab(tab) {
   repoTab = tab;
+  repoPageContinuous = 1;
+  repoPageOnce = 1;
   document.getElementById('tab-base').classList.toggle('active', tab === 'base');
   document.getElementById('tab-common').classList.toggle('active', tab === 'common');
   const trackFilter = document.getElementById('repo-track-filter');
@@ -162,6 +167,11 @@ function repoRow(repo) {
   `;
 }
 
+function resetRepoPages() {
+  repoPageContinuous = 1;
+  repoPageOnce = 1;
+}
+
 function renderRepos() {
   const search = document.getElementById('repo-search').value.trim().toLowerCase();
   const status = document.getElementById('repo-status-filter').value;
@@ -180,16 +190,39 @@ function renderRepos() {
   const continuous = filtered.filter((r) => r.syncMode !== 'once');
   const once = filtered.filter((r) => r.syncMode === 'once');
 
-  const tbodyContinuous = document.getElementById('repo-table-body-continuous');
-  const tbodyOnce = document.getElementById('repo-table-body-once');
+  renderPagedRepos('repo-table-body-continuous', 'repo-pagination-continuous', continuous, repoPageContinuous, (p) => {
+    repoPageContinuous = p;
+    renderRepos();
+  });
+  renderPagedRepos('repo-table-body-once', 'repo-pagination-once', once, repoPageOnce, (p) => {
+    repoPageOnce = p;
+    renderRepos();
+  });
+}
 
-  tbodyContinuous.innerHTML = continuous.length
-    ? continuous.map(repoRow).join('')
+function renderPagedRepos(tbodyId, paginationId, repos, page, onPageChange) {
+  const tbody = document.getElementById(tbodyId);
+  const paginationEl = document.getElementById(paginationId);
+  const totalPages = Math.max(1, Math.ceil(repos.length / REPO_PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paged = repos.slice((safePage - 1) * REPO_PAGE_SIZE, safePage * REPO_PAGE_SIZE);
+
+  tbody.innerHTML = paged.length
+    ? paged.map(repoRow).join('')
     : `<tr><td colspan="8" class="muted">없음</td></tr>`;
 
-  tbodyOnce.innerHTML = once.length
-    ? once.map(repoRow).join('')
-    : `<tr><td colspan="8" class="muted">없음</td></tr>`;
+  if (totalPages <= 1) {
+    paginationEl.innerHTML = '';
+    return;
+  }
+
+  paginationEl.innerHTML = `
+    <div class="pagination">
+      <button class="btn-sm btn-ghost" ${safePage <= 1 ? 'disabled' : ''} onclick="(${onPageChange.toString()})(${safePage - 1})">이전</button>
+      <span class="sub">${safePage} / ${totalPages} (${repos.length}개)</span>
+      <button class="btn-sm btn-ghost" ${safePage >= totalPages ? 'disabled' : ''} onclick="(${onPageChange.toString()})(${safePage + 1})">다음</button>
+    </div>
+  `;
 }
 
 function activateRepo(id, syncMode) {

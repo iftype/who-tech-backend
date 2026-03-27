@@ -78,14 +78,14 @@
         </div>
 
         <div class="toolbar">
-          <input id="repo-search" placeholder="레포 이름 검색" oninput="renderRepos()" />
-          <select id="repo-status-filter" onchange="renderRepos()">
+          <input id="repo-search" placeholder="레포 이름 검색" oninput="resetRepoPages(); renderRepos()" />
+          <select id="repo-status-filter" onchange="resetRepoPages(); renderRepos()">
             <option value="">모든 상태</option>
             <option value="active">active</option>
             <option value="candidate">candidate</option>
             <option value="excluded">excluded</option>
           </select>
-          <select id="repo-track-filter" onchange="renderRepos()">
+          <select id="repo-track-filter" onchange="resetRepoPages(); renderRepos()">
             <option value="">모든 트랙</option>
             <option value="frontend">frontend</option>
             <option value="backend">backend</option>
@@ -111,6 +111,7 @@
             <tbody id="repo-table-body-continuous"></tbody>
           </table>
         </div>
+        <div id="repo-pagination-continuous"></div>
 
         <div class="repo-section-label" style="margin-top:20px">한 번만 돌릴 레포 <span class="sub">(최초 1회 후 skip)</span></div>
         <div class="table-wrap">
@@ -130,6 +131,7 @@
             <tbody id="repo-table-body-once"></tbody>
           </table>
         </div>
+        <div id="repo-pagination-once"></div>
       </div>
 
       <div class="card" style="margin-top: 16px">
@@ -178,7 +180,7 @@
           <input id="member-search" placeholder="GitHub ID 또는 닉네임 검색" oninput="debouncedLoadMembers()" />
           <select id="member-cohort-filter" onchange="loadMembers()">
             <option value="">모든 기수</option>
-            <option value="8">8기</option>
+            <option value="8" selected>8기</option>
             <option value="7">7기</option>
             <option value="6">6기</option>
             <option value="5">5기</option>
