@@ -1,8 +1,4 @@
-type NicknameStat = {
-  nickname: string;
-  count: number;
-  lastSeenAt: string;
-};
+import type { NicknameStat } from './types/index.js';
 
 export function normalizeNickname(nickname: string): string {
   return nickname.replace(/\s*\([^)]*\)\s*$/, '').trim();
@@ -38,21 +34,19 @@ export function mergeNicknameStat(
   if (!isValidNickname(nickname)) return parseNicknameStats(existingValue);
   const normalizedNickname = normalizeNickname(nickname);
   const stats = parseNicknameStats(existingValue);
-  const existing = stats.find((item) => item.nickname === normalizedNickname);
-
-  if (existing) {
-    existing.count += 1;
-    existing.lastSeenAt = submittedAt.toISOString();
-    return sortNicknameStats(stats);
+  if (stats.some((item) => item.nickname === normalizedNickname)) {
+    return sortNicknameStats(
+      stats.map((item) =>
+        item.nickname === normalizedNickname
+          ? { ...item, count: item.count + 1, lastSeenAt: submittedAt.toISOString() }
+          : item,
+      ),
+    );
   }
 
   return sortNicknameStats([
     ...stats,
-    {
-      nickname: normalizedNickname,
-      count: 1,
-      lastSeenAt: submittedAt.toISOString(),
-    },
+    { nickname: normalizedNickname, count: 1, lastSeenAt: submittedAt.toISOString() },
   ]);
 }
 

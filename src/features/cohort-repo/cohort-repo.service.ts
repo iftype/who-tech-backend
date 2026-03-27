@@ -1,6 +1,7 @@
 import type { CohortRepoRepository } from '../../db/repositories/cohort-repo.repository.js';
 import type { MissionRepoRepository } from '../../db/repositories/mission-repo.repository.js';
 import type { WorkspaceService } from '../workspace/workspace.service.js';
+import { parseCohorts } from '../../shared/cohort-regex.js';
 
 export function createCohortRepoService(deps: {
   cohortRepoRepo: CohortRepoRepository;
@@ -35,15 +36,7 @@ export function createCohortRepoService(deps: {
       const allRepos = await missionRepoRepo.findMany({ workspaceId: workspace.id, status: 'active' });
 
       // cohorts JSON에 해당 기수 포함된 레포만 필터
-      const matching = allRepos.filter((r) => {
-        if (!r.cohorts) return false;
-        try {
-          const cohorts: number[] = JSON.parse(r.cohorts);
-          return cohorts.includes(cohort);
-        } catch {
-          return false;
-        }
-      });
+      const matching = allRepos.filter((r) => parseCohorts(r.cohorts).includes(cohort));
 
       if (!matching.length) return { added: 0 };
 

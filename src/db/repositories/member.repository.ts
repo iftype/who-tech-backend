@@ -44,7 +44,7 @@ export function createMemberRepository(db: PrismaClient) {
     findByGithubId: (githubId: string, workspaceId: number) =>
       db.member.findUnique({
         where: { githubId_workspaceId: { githubId, workspaceId } },
-        select: { id: true, manualNickname: true, nicknameStats: true, blog: true },
+        select: { id: true, nickname: true, manualNickname: true, nicknameStats: true, blog: true },
       }),
 
     create: (data: Prisma.MemberUncheckedCreateInput) =>
