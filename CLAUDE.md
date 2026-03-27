@@ -66,6 +66,7 @@ PATCH /admin/repos/:id                — track, status, syncMode, cohorts, leve
 DELETE /admin/repos                   — 전체 레포 + 관련 submission 삭제
 DELETE /admin/repos/:id               — 레포 + 관련 submission 트랜잭션 삭제
 POST /admin/repos/:id/sync            — 단건 레포 sync
+GET  /admin/repos/:id/validate-regex  — 현재 정규식을 최근 PR(1페이지)에 적용 → matched/unmatched 통계
 GET  /admin/repos/:id/detect-regex    — PR 샘플 기반 닉네임 정규식 자동 감지
 POST /admin/sync                      — once+미수집 레포만 대상으로 전체 sync (SSE 없이)
 GET  /admin/sync/stream               — sync 진행 SSE (?token= 인증, progress/done/error 이벤트)
@@ -73,6 +74,7 @@ GET  /admin/members                   — 멤버 목록 (?q=&cohort=&hasBlog=&tr
 POST /admin/members                   — 멤버 수동 생성 (githubId, nickname?, cohort?, roles?, blog?)
 GET  /admin/members/:id/blog-posts    — 블로그 글 목록 (archive 30일 + latest 7일)
 PATCH /admin/members/:id              — manualNickname, blog, roles 수정
+DELETE /admin/members                 — 전체 멤버 + submissions + blogPosts 삭제
 DELETE /admin/members/:id             — 멤버 + submissions + blogPosts 삭제
 POST /admin/blog/sync                 — 블로그 RSS 전체 sync (blogSyncEnabled 체크)
 POST /admin/blog/backfill             — GitHub profile blog 백필 (?limit=30)
