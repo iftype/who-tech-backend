@@ -48,6 +48,17 @@ function authHeaders(contentType) {
   return headers;
 }
 
+function parseErrorResponse(response) {
+  return response
+    .json()
+    .catch(() => ({}))
+    .then((body) => Promise.reject({
+      status: response.status,
+      message: body?.message ?? response.statusText ?? 'request failed',
+      ...body,
+    }));
+}
+
 function loadStatus() {
   return fetch('/admin/status', { headers: authHeaders() })
     .then((response) => response.json())
@@ -605,13 +616,26 @@ function triggerBlogSync() {
   button.textContent = '동기화 중...';
   addLog('블로그 Sync 중...', 'run');
   fetch('/admin/blog/sync', { method: 'POST', headers: authHeaders() })
-    .then((response) => response.json())
+    .then((response) => {
+      if (!response.ok) return parseErrorResponse(response);
+      return response.json();
+    })
     .then((data) => {
       toast(`블로그 ${data.synced}건 수집, ${data.deleted}건 삭제`);
       addLog(`블로그 Sync 완료 — 수집 ${data.synced}건, 삭제 ${data.deleted}건`, 'ok');
+      if (data.failures?.length) {
+        data.failures.forEach((failure) => {
+          const target = failure.rssUrl ?? failure.blog;
+          addLog(`  └ ${failure.githubId} ${failure.step}: ${target} — ${failure.error}`, 'err');
+        });
+      }
       return loadMembers();
     })
-    .catch(() => { toast('블로그 sync 실패'); addLog('블로그 Sync 실패', 'err'); })
+    .catch((err) => {
+      const detail = err?.message ?? String(err);
+      toast('블로그 sync 실패');
+      addLog(`블로그 Sync 실패: ${detail}`, 'err');
+    })
     .finally(() => {
       button.disabled = false;
       button.textContent = '블로그 Sync';
