@@ -41,7 +41,13 @@ export function createBlogAdminService(deps: {
             missing++;
             continue;
           }
-          await memberRepo.patch(member.id, { blog });
+          await memberRepo.patch(member.id, {
+            blog,
+            rssStatus: 'unknown',
+            rssUrl: null,
+            rssCheckedAt: null,
+            rssError: null,
+          });
           updated++;
         } catch (error) {
           const reason =

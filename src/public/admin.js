@@ -700,7 +700,7 @@ function renderMembers() {
   const summary = document.getElementById('member-summary');
 
   if (memberList.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="9" class="muted">조건에 맞는 멤버가 없습니다.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="10" class="muted">조건에 맞는 멤버가 없습니다.</td></tr>`;
     summary.textContent = '총 0명';
     return;
   }
@@ -750,6 +750,9 @@ function renderMembers() {
           : '-'}
       </td>
       <td>
+        ${renderRssStatus(member)}
+      </td>
+      <td>
         ${member.blogPostsLatest.length > 0 ? `
           <div class="post-list">
             ${member.blogPostsLatest.map((post) => `
@@ -787,6 +790,28 @@ function renderMembers() {
     .map(([k, v]) => `${k} ${v}명`)
     .join(' · ');
   summary.textContent = `총 ${memberList.length}명` + (cohortSummary ? `  |  ${cohortSummary}` : '');
+}
+
+function renderRssStatus(member) {
+  if (!member.blog) {
+    return '<span class="muted">블로그 없음</span>';
+  }
+
+  const label = member.rssStatus === 'available'
+    ? 'RSS 가능'
+    : member.rssStatus === 'unavailable'
+      ? 'RSS 없음'
+      : member.rssStatus === 'error'
+        ? '확인 실패'
+        : '확인 전';
+
+  const extra = [
+    member.rssUrl ? `<div class="muted">${escapeHtml(member.rssUrl)}</div>` : '',
+    member.rssError ? `<div class="muted">${escapeHtml(member.rssError)}</div>` : '',
+    member.rssCheckedAt ? `<div class="muted">${new Date(member.rssCheckedAt).toLocaleString('ko-KR')}</div>` : '',
+  ].filter(Boolean).join('');
+
+  return `<div class="stack"><span class="pill rss ${member.rssStatus ?? 'unknown'}">${label}</span>${extra}</div>`;
 }
 
 function addMember() {

@@ -11,25 +11,18 @@ const parser = new Parser({
   },
 });
 
-function resolveRSSUrl(blogUrl: string): string[] {
-  const normalizedBlogUrl = normalizeBlogUrl(blogUrl);
-  if (!normalizedBlogUrl) return [];
-
-  const url = new URL(normalizedBlogUrl);
-
-  if (url.hostname === 'velog.io') return [`https://v2.velog.io/rss${url.pathname}`];
-  if (url.hostname.endsWith('.tistory.com')) return [`${normalizedBlogUrl}/rss`];
-
-  const base = normalizedBlogUrl;
-  return [`${base}/feed.xml`, `${base}/rss.xml`, `${base}/feed`, `${base}/rss`];
-}
-
 type BlogSyncFailure = {
   githubId: string;
   blog: string;
   rssUrl?: string;
   step: 'rss_fetch' | 'blog_post_upsert' | 'cleanup' | 'latest_refresh';
   error: string;
+};
+
+type RssCheckResult = {
+  status: 'available' | 'unavailable' | 'error';
+  rssUrl?: string;
+  error?: string;
 };
 
 function errorMessage(error: unknown): string {
@@ -40,18 +33,138 @@ function errorMessage(error: unknown): string {
   return String(error);
 }
 
+function isFeedPath(pathname: string): boolean {
+  return /\/(feed|rss|rss\.xml|feed\.xml|atom\.xml|index\.xml)$/i.test(pathname);
+}
+
+function sanitizeXml(xml: string): string {
+  return xml.replace(/&(?!(?:amp|lt|gt|quot|apos|#\d+|#x[0-9a-f]+);)/gi, '&amp;');
+}
+
+async function resolveBlogUrl(blogUrl: string): Promise<string | null> {
+  const normalized = normalizeBlogUrl(blogUrl);
+  if (!normalized) {
+    return null;
+  }
+
+  const url = new URL(normalized);
+  if (!['bit.ly', 't.co', 'tinyurl.com'].includes(url.hostname)) {
+    return normalized;
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
+
+  try {
+    const response = await fetch(normalized, {
+      method: 'GET',
+      redirect: 'follow',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; RSS reader)',
+        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      },
+      signal: controller.signal,
+    });
+    return normalizeBlogUrl(response.url) ?? normalized;
+  } catch {
+    return normalized;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+export function resolveRSSUrlsForBlog(blogUrl: string): string[] {
+  const normalizedBlogUrl = normalizeBlogUrl(blogUrl);
+  if (!normalizedBlogUrl) return [];
+
+  const url = new URL(normalizedBlogUrl);
+  if (isFeedPath(url.pathname)) {
+    return [normalizedBlogUrl];
+  }
+
+  if (url.hostname === 'velog.io') {
+    const match = url.pathname.match(/^\/@[^/]+/);
+    if (match) {
+      return [`https://v2.velog.io/rss${match[0]}`];
+    }
+  }
+
+  if (url.hostname.endsWith('.tistory.com')) {
+    return [`${normalizedBlogUrl}/rss`];
+  }
+
+  if (url.hostname === 'medium.com' || url.hostname.endsWith('.medium.com')) {
+    return [`https://medium.com/feed${url.pathname}`];
+  }
+
+  const base = normalizedBlogUrl;
+  return [
+    ...new Set([
+      `${base}/feed.xml`,
+      `${base}/rss.xml`,
+      `${base}/atom.xml`,
+      `${base}/feed`,
+      `${base}/rss`,
+      `${base}/index.xml`,
+    ]),
+  ];
+}
+
+async function fetchFeedText(rssUrl: string): Promise<string> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 20000);
+
+  try {
+    const response = await fetch(rssUrl, {
+      method: 'GET',
+      redirect: 'follow',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; RSS reader)',
+        Accept: 'application/rss+xml, application/xml, text/xml, */*',
+      },
+      signal: controller.signal,
+    });
+
+    if (response.status === 404) {
+      throw new Error('404');
+    }
+
+    if (!response.ok) {
+      throw new Error(`Status code ${response.status}`);
+    }
+
+    return response.text();
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 async function fetchRSSItems(blogUrl: string): Promise<{
   items: { title?: string; link?: string; pubDate?: string }[];
   failure?: Pick<BlogSyncFailure, 'blog' | 'rssUrl' | 'step' | 'error'>;
+  rssCheck: RssCheckResult;
 }> {
-  const candidates = resolveRSSUrl(blogUrl);
+  const resolvedBlogUrl = await resolveBlogUrl(blogUrl);
+  const candidates = resolvedBlogUrl ? resolveRSSUrlsForBlog(resolvedBlogUrl) : [];
+  let lastError: { rssUrl?: string; error: string } | null = null;
 
   for (const rssUrl of candidates) {
     try {
-      return { items: (await parser.parseURL(rssUrl)).items };
+      const xml = await fetchFeedText(rssUrl);
+      const feed = await parser.parseString(sanitizeXml(xml));
+      return { items: feed.items, rssCheck: { status: 'available', rssUrl } };
     } catch (error) {
       const message = errorMessage(error);
       if (message.includes('404')) {
+        continue;
+      }
+
+      if (
+        message.includes('Feed not recognized') ||
+        message.includes('Invalid character in entity name') ||
+        message.includes('Non-whitespace before first tag')
+      ) {
+        lastError = { rssUrl, error: message };
         continue;
       }
 
@@ -63,6 +176,11 @@ async function fetchRSSItems(blogUrl: string): Promise<{
           error: message,
           ...(rssUrl ? { rssUrl } : {}),
         },
+        rssCheck: {
+          status: 'error',
+          ...(rssUrl ? { rssUrl } : {}),
+          error: message,
+        },
       };
     }
   }
@@ -70,22 +188,27 @@ async function fetchRSSItems(blogUrl: string): Promise<{
   if (candidates.length > 0) {
     return {
       items: [],
-      failure: {
-        blog: blogUrl,
-        step: 'rss_fetch',
-        error: 'no valid rss feed found',
-        ...(candidates[candidates.length - 1] ? { rssUrl: candidates[candidates.length - 1] } : {}),
+      rssCheck: {
+        status: lastError ? 'error' : 'unavailable',
+        ...(lastError?.rssUrl ? { rssUrl: lastError.rssUrl } : {}),
+        ...(lastError?.error ? { error: lastError.error } : {}),
       },
+      ...(lastError
+        ? {
+            failure: {
+              blog: blogUrl,
+              step: 'rss_fetch',
+              error: lastError.error,
+              ...(lastError.rssUrl ? { rssUrl: lastError.rssUrl } : {}),
+            },
+          }
+        : {}),
     };
   }
 
   return {
     items: [],
-    failure: {
-      blog: blogUrl,
-      step: 'rss_fetch',
-      error: 'invalid blog url',
-    },
+    rssCheck: { status: 'error', error: 'invalid blog url' },
   };
 }
 
@@ -108,6 +231,12 @@ export function createBlogService(deps: { memberRepo: MemberRepository; blogPost
 
       for (const member of members) {
         const result = await fetchRSSItems(member.blog!);
+        await memberRepo.patch(member.id, {
+          rssStatus: result.rssCheck.status,
+          rssUrl: result.rssCheck.rssUrl ?? null,
+          rssCheckedAt: new Date(),
+          rssError: result.rssCheck.error ?? null,
+        });
         if (result.failure) {
           failures.push({ githubId: member.githubId, ...result.failure });
           continue;

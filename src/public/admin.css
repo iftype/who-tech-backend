@@ -66,6 +66,10 @@ button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 .pill.candidate { background: #fef3c7; color: #92400e; }
 .pill.excluded { background: #e5e7eb; color: #4b5563; }
 .pill.cohort { background: #dbeafe; color: #1d4ed8; }
+.pill.rss.available { background: #dcfce7; color: #166534; }
+.pill.rss.unavailable { background: #fee2e2; color: #991b1b; }
+.pill.rss.error { background: #fef3c7; color: #92400e; }
+.pill.rss.unknown { background: #e5e7eb; color: #4b5563; }
 .pill.crew { background: #f1f5f9; color: #475569; }
 .pill.coach { background: #fae8ff; color: #7e22ce; }
 .pill.reviewer { background: #fef9c3; color: #854d0e; }

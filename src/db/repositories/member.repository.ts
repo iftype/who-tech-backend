@@ -44,7 +44,17 @@ export function createMemberRepository(db: PrismaClient) {
     findByGithubId: (githubId: string, workspaceId: number) =>
       db.member.findUnique({
         where: { githubId_workspaceId: { githubId, workspaceId } },
-        select: { id: true, nickname: true, manualNickname: true, nicknameStats: true, blog: true },
+        select: {
+          id: true,
+          nickname: true,
+          manualNickname: true,
+          nicknameStats: true,
+          blog: true,
+          rssStatus: true,
+          rssUrl: true,
+          rssCheckedAt: true,
+          rssError: true,
+        },
       }),
 
     create: (data: Prisma.MemberUncheckedCreateInput) =>
@@ -52,10 +62,29 @@ export function createMemberRepository(db: PrismaClient) {
 
     upsert: (args: Prisma.MemberUpsertArgs) => db.member.upsert(args),
 
-    updateWithRelations: (id: number, data: { manualNickname?: string | null; blog?: string | null; roles?: string }) =>
-      db.member.update({ where: { id }, data, include: memberWithRelationsInclude }),
+    updateWithRelations: (
+      id: number,
+      data: {
+        manualNickname?: string | null;
+        blog?: string | null;
+        roles?: string;
+        rssStatus?: string;
+        rssUrl?: string | null;
+        rssCheckedAt?: Date | null;
+        rssError?: string | null;
+      },
+    ) => db.member.update({ where: { id }, data, include: memberWithRelationsInclude }),
 
-    patch: (id: number, data: { blog?: string | null }) => db.member.update({ where: { id }, data }),
+    patch: (
+      id: number,
+      data: {
+        blog?: string | null;
+        rssStatus?: string;
+        rssUrl?: string | null;
+        rssCheckedAt?: Date | null;
+        rssError?: string | null;
+      },
+    ) => db.member.update({ where: { id }, data }),
 
     count: () => db.member.count(),
 

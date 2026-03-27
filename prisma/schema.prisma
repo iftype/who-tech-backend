@@ -30,6 +30,10 @@ model Member {
   nicknameStats  String?      // JSON: [{"nickname":"...", "count":2, "lastSeenAt":"..."}]
   cohort         Int?
   blog           String?
+  rssStatus      String       @default("unknown") // unknown | available | unavailable | error
+  rssUrl         String?
+  rssCheckedAt   DateTime?
+  rssError       String?
   roles          String       @default("[\"crew\"]") // JSON: ["crew"] | ["coach"] | ["crew","reviewer"] 등
   workspaceId    Int
   workspace   Workspace    @relation(fields: [workspaceId], references: [id])
