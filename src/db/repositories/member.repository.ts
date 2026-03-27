@@ -13,12 +13,13 @@ export function createMemberRepository(db: PrismaClient) {
   return {
     findWithFilters: (
       workspaceId: number,
-      filters?: { q?: string; cohort?: number; hasBlog?: boolean; track?: string },
+      filters?: { q?: string; cohort?: number; hasBlog?: boolean; track?: string; role?: string },
     ) =>
       db.member.findMany({
         where: {
           workspaceId,
           ...(filters?.cohort ? { cohort: filters.cohort } : {}),
+          ...(filters?.role ? { role: filters.role } : {}),
           ...(filters?.hasBlog === true ? { blog: { not: null } } : {}),
           ...(filters?.hasBlog === false ? { blog: null } : {}),
           ...(filters?.track ? { submissions: { some: { missionRepo: { track: filters.track } } } } : {}),
@@ -45,9 +46,12 @@ export function createMemberRepository(db: PrismaClient) {
         select: { id: true, manualNickname: true, nicknameStats: true, blog: true },
       }),
 
+    create: (data: Prisma.MemberUncheckedCreateInput) =>
+      db.member.create({ data, include: memberWithRelationsInclude }),
+
     upsert: (args: Prisma.MemberUpsertArgs) => db.member.upsert(args),
 
-    updateWithRelations: (id: number, data: { manualNickname?: string | null; blog?: string | null }) =>
+    updateWithRelations: (id: number, data: { manualNickname?: string | null; blog?: string | null; role?: string }) =>
       db.member.update({ where: { id }, data, include: memberWithRelationsInclude }),
 
     patch: (id: number, data: { blog?: string | null }) => db.member.update({ where: { id }, data }),

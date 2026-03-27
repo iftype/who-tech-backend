@@ -13,14 +13,34 @@ export function createMemberRouter(service: MemberService) {
       const cohort = typeof req.query['cohort'] === 'string' ? Number(req.query['cohort']) : undefined;
       const hasBlog = req.query['hasBlog'] === 'true' ? true : req.query['hasBlog'] === 'false' ? false : undefined;
       const track = typeof req.query['track'] === 'string' ? req.query['track'] : undefined;
+      const role = typeof req.query['role'] === 'string' ? req.query['role'] : undefined;
       res.json(
         await service.listMembers({
           ...(q ? { q } : {}),
           ...(cohort && !Number.isNaN(cohort) ? { cohort } : {}),
           ...(hasBlog !== undefined ? { hasBlog } : {}),
           ...(track ? { track } : {}),
+          ...(role ? { role } : {}),
         }),
       );
+    }),
+  );
+
+  router.post(
+    '/',
+    asyncHandler(async (req, res) => {
+      const body = req.body as {
+        githubId: string;
+        nickname?: string | null;
+        cohort?: number | null;
+        blog?: string | null;
+        role?: string;
+      };
+      if (!body.githubId || typeof body.githubId !== 'string') {
+        res.status(400).json({ error: 'githubId required' });
+        return;
+      }
+      res.status(201).json(await service.createMember(body));
     }),
   );
 
@@ -28,7 +48,7 @@ export function createMemberRouter(service: MemberService) {
     '/:id',
     asyncHandler(async (req, res) => {
       const id = parseId(req.params['id']);
-      const body = req.body as { manualNickname?: string | null; blog?: string | null };
+      const body = req.body as { manualNickname?: string | null; blog?: string | null; role?: string };
       res.json(await service.updateMember(id, body));
     }),
   );

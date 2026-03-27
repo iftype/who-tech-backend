@@ -13,16 +13,45 @@ export function createMemberService(deps: { memberRepo: MemberRepository; worksp
   });
 
   return {
-    listMembers: async (filters?: { q?: string; cohort?: number; hasBlog?: boolean; track?: string }) => {
+    listMembers: async (filters?: {
+      q?: string;
+      cohort?: number;
+      hasBlog?: boolean;
+      track?: string;
+      role?: string;
+    }) => {
       const workspace = await workspaceService.getOrThrow();
       const members = await memberRepo.findWithFilters(workspace.id, filters);
       return members.map(toResponse);
     },
 
-    updateMember: async (id: number, input: { manualNickname?: string | null; blog?: string | null }) => {
+    createMember: async (input: {
+      githubId: string;
+      nickname?: string | null;
+      cohort?: number | null;
+      blog?: string | null;
+      role?: string;
+    }) => {
+      const workspace = await workspaceService.getOrThrow();
+      const member = await memberRepo.create({
+        githubId: input.githubId,
+        ...(input.nickname ? { nickname: input.nickname, manualNickname: input.nickname } : {}),
+        ...(input.cohort != null ? { cohort: input.cohort } : {}),
+        ...(input.blog ? { blog: normalizeBlogUrl(input.blog) } : {}),
+        role: input.role ?? 'crew',
+        workspaceId: workspace.id,
+      });
+      return toResponse(member);
+    },
+
+    updateMember: async (
+      id: number,
+      input: { manualNickname?: string | null; blog?: string | null; role?: string },
+    ) => {
       const member = await memberRepo.updateWithRelations(id, {
         ...(input.manualNickname !== undefined ? { manualNickname: input.manualNickname } : {}),
         ...(input.blog !== undefined ? { blog: normalizeBlogUrl(input.blog) } : {}),
+        ...(input.role !== undefined ? { role: input.role } : {}),
       });
       return toResponse(member);
     },

@@ -172,6 +172,11 @@
             <option value="6">6기</option>
             <option value="5">5기</option>
           </select>
+          <select id="member-role-filter" onchange="loadMembers()">
+            <option value="">모든 역할</option>
+            <option value="crew">크루</option>
+            <option value="coach">코치</option>
+          </select>
           <select id="member-track-filter" onchange="loadMembers()">
             <option value="">모든 트랙</option>
             <option value="frontend">frontend</option>
@@ -185,12 +190,25 @@
           </select>
         </div>
 
+        <div class="form-inline" style="margin-bottom:12px">
+          <input type="text" id="new-member-github" placeholder="GitHub ID" />
+          <input type="text" id="new-member-nickname" placeholder="닉네임 (선택)" />
+          <input type="number" id="new-member-cohort" placeholder="기수 (선택)" min="1" />
+          <select id="new-member-role">
+            <option value="crew">크루</option>
+            <option value="coach">코치</option>
+          </select>
+          <input type="text" id="new-member-blog" placeholder="블로그 URL (선택)" />
+          <button class="btn-primary" onclick="addMember()">멤버 추가</button>
+        </div>
+
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
                 <th>GitHub ID</th>
                 <th>닉네임</th>
+                <th>역할</th>
                 <th>기수</th>
                 <th>트랙</th>
                 <th>제출</th>

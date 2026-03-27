@@ -448,12 +448,14 @@ function triggerBlogBackfill() {
 function loadMembers() {
   const q = document.getElementById('member-search').value.trim();
   const cohort = document.getElementById('member-cohort-filter').value;
+  const role = document.getElementById('member-role-filter').value;
   const track = document.getElementById('member-track-filter').value;
   const hasBlog = document.getElementById('member-blog-filter').value;
   const params = new URLSearchParams();
 
   if (q) params.set('q', q);
   if (cohort) params.set('cohort', cohort);
+  if (role) params.set('role', role);
   if (track) params.set('track', track);
   if (hasBlog) params.set('hasBlog', hasBlog);
 
@@ -475,7 +477,7 @@ function renderMembers() {
   const summary = document.getElementById('member-summary');
 
   if (memberList.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="8" class="muted">조건에 맞는 멤버가 없습니다.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9" class="muted">조건에 맞는 멤버가 없습니다.</td></tr>`;
     summary.textContent = '총 0명';
     return;
   }
@@ -494,6 +496,7 @@ function renderMembers() {
           <span class="muted">manual: ${escapeHtml(member.manualNickname ?? '-')}</span>
         </div>
       </td>
+      <td><span class="pill ${member.role ?? 'crew'}">${member.role === 'coach' ? '코치' : '크루'}</span></td>
       <td>${member.cohort ? `<span class="pill cohort">${member.cohort}기</span>` : '-'}</td>
       <td>
         ${member.tracks.length > 0 ? `
@@ -557,6 +560,35 @@ function renderMembers() {
   summary.textContent = `총 ${memberList.length}명` + (cohortSummary ? `  |  ${cohortSummary}` : '');
 }
 
+function addMember() {
+  const githubId = document.getElementById('new-member-github').value.trim();
+  if (!githubId) {
+    alert('GitHub ID를 입력하세요.');
+    return;
+  }
+
+  const nickname = document.getElementById('new-member-nickname').value.trim() || null;
+  const cohortVal = document.getElementById('new-member-cohort').value.trim();
+  const cohort = cohortVal ? Number(cohortVal) : null;
+  const role = document.getElementById('new-member-role').value;
+  const blog = document.getElementById('new-member-blog').value.trim() || null;
+
+  fetch('/admin/members', {
+    method: 'POST',
+    headers: authHeaders('application/json'),
+    body: JSON.stringify({ githubId, nickname, cohort, role, blog }),
+  })
+    .then((res) => {
+      if (!res.ok) throw new Error('failed');
+      ['new-member-github', 'new-member-nickname', 'new-member-cohort', 'new-member-blog'].forEach(
+        (id) => { document.getElementById(id).value = ''; },
+      );
+      toast('멤버 추가 완료');
+      return Promise.all([loadMembers(), loadStatus()]);
+    })
+    .catch(() => alert('멤버 추가에 실패했습니다.'));
+}
+
 function editMember(id) {
   const member = memberList.find((item) => item.id === id);
   if (!member) return;
@@ -567,12 +599,16 @@ function editMember(id) {
   const blog = prompt('블로그 링크', member.blog ?? '');
   if (blog === null) return;
 
+  const role = prompt('역할 (crew / coach)', member.role ?? 'crew');
+  if (role === null) return;
+
   fetch(`/admin/members/${id}`, {
     method: 'PATCH',
     headers: authHeaders('application/json'),
     body: JSON.stringify({
       manualNickname: manualNickname.trim() || null,
       blog: blog.trim() || null,
+      role: role.trim() || 'crew',
     }),
   })
     .then((response) => {
