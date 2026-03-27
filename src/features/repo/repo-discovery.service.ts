@@ -10,13 +10,14 @@ type OrgRepo = {
   private: boolean;
 };
 
-export type DiscoveredMissionRepo = {
+export type DiscoveredRepo = {
   githubRepoId: number;
   name: string;
   repoUrl: string;
   description: string | null;
   track: string | null;
   type: string;
+  status: 'candidate' | 'excluded';
   candidateReason: string;
 };
 
@@ -80,20 +81,28 @@ export async function fetchOrgRepos(octokit: Octokit, org: string, perPage = 100
   return allRepos;
 }
 
-export function discoverMissionRepos(repos: OrgRepo[]): DiscoveredMissionRepo[] {
+export function discoverMissionRepos(repos: OrgRepo[]): DiscoveredRepo[] {
   return repos
     .filter((repo) => !repo.archived && !repo.private)
     .map(classifyMissionRepo)
-    .filter((repo): repo is DiscoveredMissionRepo => repo !== null)
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
-function classifyMissionRepo(repo: OrgRepo): DiscoveredMissionRepo | null {
+function classifyMissionRepo(repo: OrgRepo): DiscoveredRepo {
   const lowerName = repo.name.toLowerCase();
   const lowerDescription = repo.description?.toLowerCase() ?? '';
 
   if (EXCLUDE_KEYWORDS.some((keyword) => lowerName.includes(keyword) || lowerDescription.includes(keyword))) {
-    return null;
+    return {
+      githubRepoId: repo.id,
+      name: repo.name,
+      repoUrl: repo.html_url,
+      description: repo.description,
+      track: inferTrack(lowerName, repo.language),
+      type: inferType(lowerName),
+      status: 'excluded',
+      candidateReason: 'exclude keyword',
+    };
   }
 
   const matchedPrefixes = INCLUDE_PREFIXES.filter((prefix) => lowerName.startsWith(prefix));
@@ -102,7 +111,16 @@ function classifyMissionRepo(repo: OrgRepo): DiscoveredMissionRepo | null {
   );
 
   if (matchedPrefixes.length === 0 && matchedKeywords.length === 0) {
-    return null;
+    return {
+      githubRepoId: repo.id,
+      name: repo.name,
+      repoUrl: repo.html_url,
+      description: repo.description,
+      track: inferTrack(lowerName, repo.language),
+      type: inferType(lowerName),
+      status: 'excluded',
+      candidateReason: 'no mission signal',
+    };
   }
 
   return {
@@ -112,6 +130,7 @@ function classifyMissionRepo(repo: OrgRepo): DiscoveredMissionRepo | null {
     description: repo.description,
     track: inferTrack(lowerName, repo.language),
     type: inferType(lowerName),
+    status: 'candidate',
     candidateReason: [...matchedPrefixes, ...matchedKeywords].join(', '),
   };
 }
