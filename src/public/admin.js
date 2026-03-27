@@ -554,7 +554,12 @@ function renderMembers() {
           ` : '<div class="muted" style="margin-top:8px">제출 내역이 없습니다.</div>'}
         </details>
       </td>
-      <td>${member.blog ? `<a class="link" href="${member.blog}" target="_blank">${member.blog}</a>` : '-'}</td>
+      <td>
+        ${member.blog
+          ? `<a class="link" href="${member.blog}" target="_blank" onclick="event.stopPropagation()">${member.blog}</a>
+             <button class="btn-sm btn-ghost" style="margin-top:4px" onclick="openBlogModal(${member.id}, '${escapeHtml(member.nickname ?? member.githubId)}')">글 보기</button>`
+          : '-'}
+      </td>
       <td>
         ${member.blogPostsLatest.length > 0 ? `
           <div class="post-list">
@@ -653,6 +658,50 @@ function editMember(id) {
       return loadMembers();
     })
     .catch(() => alert('멤버 수정에 실패했습니다.'));
+}
+
+function openBlogModal(memberId, name) {
+  const modal = document.getElementById('blog-modal');
+  const title = document.getElementById('blog-modal-title');
+  const body = document.getElementById('blog-modal-body');
+
+  title.textContent = `${name} 블로그 글`;
+  body.innerHTML = '<div class="sub" style="padding:16px">불러오는 중...</div>';
+  modal.style.display = 'flex';
+
+  fetch(`/admin/members/${memberId}/blog-posts`, { headers: authHeaders() })
+    .then((res) => res.json())
+    .then(({ archive, latest }) => {
+      const renderList = (posts) =>
+        posts.length === 0
+          ? '<div class="muted" style="padding:8px 0">없음</div>'
+          : posts.map((p) => `
+            <div class="post-item" style="padding:8px 0;border-bottom:1px solid #f1f5f9">
+              <a class="link" href="${p.url}" target="_blank">${escapeHtml(p.title)}</a>
+              <div class="muted">${new Date(p.publishedAt).toLocaleDateString('ko-KR')}</div>
+            </div>
+          `).join('');
+
+      body.innerHTML = `
+        <div style="padding:16px">
+          <div style="margin-bottom:20px">
+            <div style="font-weight:600;margin-bottom:8px">최신 스냅샷 (7일) — ${latest.length}건</div>
+            ${renderList(latest)}
+          </div>
+          <div>
+            <div style="font-weight:600;margin-bottom:8px">전체 아카이브 (30일) — ${archive.length}건</div>
+            ${renderList(archive)}
+          </div>
+        </div>
+      `;
+    })
+    .catch(() => {
+      body.innerHTML = '<div class="sub" style="padding:16px">불러오기 실패</div>';
+    });
+}
+
+function closeBlogModal() {
+  document.getElementById('blog-modal').style.display = 'none';
 }
 
 function deleteMember(id) {

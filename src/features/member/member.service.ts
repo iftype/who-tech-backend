@@ -1,10 +1,15 @@
 import type { MemberRepository } from '../../db/repositories/member.repository.js';
+import type { BlogPostRepository } from '../../db/repositories/blog-post.repository.js';
 import type { WorkspaceService } from '../workspace/workspace.service.js';
 import { normalizeBlogUrl } from '../../shared/blog.js';
 import { resolveDisplayNickname } from '../../shared/nickname.js';
 
-export function createMemberService(deps: { memberRepo: MemberRepository; workspaceService: WorkspaceService }) {
-  const { memberRepo, workspaceService } = deps;
+export function createMemberService(deps: {
+  memberRepo: MemberRepository;
+  blogPostRepo: BlogPostRepository;
+  workspaceService: WorkspaceService;
+}) {
+  const { memberRepo, blogPostRepo, workspaceService } = deps;
 
   const toResponse = (member: Awaited<ReturnType<MemberRepository['findWithFilters']>>[number]) => ({
     ...member,
@@ -55,6 +60,8 @@ export function createMemberService(deps: { memberRepo: MemberRepository; worksp
       });
       return toResponse(member);
     },
+
+    getMemberBlogPosts: (id: number) => blogPostRepo.findByMember(id),
 
     deleteMember: (id: number) => memberRepo.deleteWithRelations(id),
   };

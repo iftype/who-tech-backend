@@ -44,6 +44,13 @@ export function createMemberRouter(service: MemberService) {
     }),
   );
 
+  router.get(
+    '/:id/blog-posts',
+    asyncHandler(async (req, res) => {
+      res.json(await service.getMemberBlogPosts(parseId(req.params['id'])));
+    }),
+  );
+
   router.patch(
     '/:id',
     asyncHandler(async (req, res) => {

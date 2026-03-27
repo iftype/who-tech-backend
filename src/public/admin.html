@@ -241,6 +241,19 @@
 
     <div id="toast"></div>
 
+    <div id="blog-modal" class="modal-overlay" style="display:none">
+      <div class="modal" style="max-width:680px">
+        <div class="modal-head">
+          <h3 id="blog-modal-title">블로그 글</h3>
+          <button onclick="closeBlogModal()">✕</button>
+        </div>
+        <div id="blog-modal-body" style="max-height:70vh;overflow-y:auto"></div>
+        <div class="modal-foot">
+          <button class="btn-secondary" onclick="closeBlogModal()">닫기</button>
+        </div>
+      </div>
+    </div>
+
     <div id="regex-modal" class="modal-overlay" style="display:none">
       <div class="modal">
         <div class="modal-head">
