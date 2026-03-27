@@ -1,5 +1,5 @@
 :root {
-  --admin-zoom: 0.75;
+  --admin-zoom: 0.9;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -12,8 +12,8 @@ body {
   color: #1f2937;
 }
 .container {
-  max-width: calc(1480px / var(--admin-zoom));
-  width: calc(100% / var(--admin-zoom));
+  max-width: 1480px;
+  width: 100%;
   margin: 32px auto 220px;
   padding: 0 24px;
   zoom: var(--admin-zoom);
@@ -196,7 +196,6 @@ tr:last-child td { border-bottom: none; }
   border-top: 1px solid #1e293b;
   box-shadow: 0 -4px 24px rgba(0,0,0,0.3);
   zoom: var(--admin-zoom);
-  width: calc(100% / var(--admin-zoom));
 }
 .log-panel-head {
   display: flex;
