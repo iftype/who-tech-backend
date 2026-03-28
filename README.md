@@ -28,9 +28,12 @@ src/
 ├── features/                     # 기능 단위 모듈
 │   ├── workspace/                # workspace.service.ts, workspace.route.ts
 │   ├── member/                   # member.service.ts, member.route.ts
+│   │                             # member.public.service.ts, member.public.route.ts (공개 API)
 │   ├── repo/                     # repo.service.ts, repo.route.ts, repo-discovery.service.ts
 │   ├── sync/                     # sync.service.ts, sync.admin.service.ts, sync.route.ts, github.service.ts
-│   └── blog/                     # blog.service.ts, blog.admin.service.ts, blog.route.ts
+│   ├── blog/                     # blog.service.ts, blog.admin.service.ts, blog.route.ts
+│   ├── cohort-repo/              # cohort-repo.service.ts, cohort-repo.route.ts
+│   └── activity-log/             # activity-log.service.ts, activity-log.route.ts
 ├── shared/                       # 공통 유틸
 │   ├── http.ts                   # asyncHandler, HttpError, badRequest
 │   ├── validation.ts             # 요청 파싱/검증
@@ -75,13 +78,13 @@ npm run dev       # tsx watch로 핫리로드
 
 ### DB / Migration
 
-- 현재 Prisma migration은 baseline 1개로 관리합니다.
-  - [`prisma/migrations/20260328190000_baseline/migration.sql`](/Users/iftype/Projects/Side/who-tech-course/backend/prisma/migrations/20260328190000_baseline/migration.sql)
+- baseline migration 1개로 관리합니다.
+  - `prisma/migrations/20260328190000_baseline/` — 현재 전체 스키마 기준선
 - 로컬 DB를 새로 만들 때는 아래 순서를 권장합니다.
 
 ```bash
 rm -f prisma/dev.db prisma/prisma/dev.db
-npx prisma db execute --schema prisma/schema.prisma --file prisma/migrations/20260328190000_baseline/migration.sql
+npx prisma migrate deploy
 node --import tsx src/db/seed.ts
 ```
 
@@ -168,25 +171,46 @@ ssh oracle "pm2 restart backend" # 재시작
 | 전체 / 단건 Sync     | SSE 진행률 표시, 레포별 수동 sync 지원                              |
 | 블로그 동기화        | ON/OFF 토글, RSS 상태 저장, 최근 글 30일 보관 + 최신 7일 스냅샷     |
 | 멤버 관리            | 역할 토글, manual nickname, 블로그, RSS 상태, 프로필 이미지 표시    |
+| 프로필 갱신          | GitHub 프로필(avatar/blog/login) stale 갱신 + 멤버 단건 새로고침    |
+
+## 공개 API
+
+인증 없이 사용 가능한 엔드포인트입니다.
+
+| 엔드포인트               | 설명                                   |
+| ------------------------ | -------------------------------------- |
+| `GET /members`           | 멤버 검색 (`?q=&cohort=&track=&role=`) |
+| `GET /members/feed`      | 최근 블로그 피드 (`?cohort=&track=`)   |
+| `GET /members/:githubId` | 멤버 상세 (archive, blogPosts 포함)    |
+
+`GET /members/:githubId` 응답의 `archive` 필드는 해당 멤버 기수의 `CohortRepo` 순서 기반으로 레벨별 그룹핑된 미션 PR 목록입니다.
 
 ## 현재 데이터 모델 포인트
 
-- `MissionRepo.tabCategory`
-  - `base | common | excluded | precourse`
-- `MissionRepo.status`
-  - `active | candidate | excluded`
-- `Member.avatarUrl`
-  - GitHub profile의 `avatar_url` 문자열 저장
-- `Member.rssStatus`
-  - `unknown | available | unavailable | error`
+- `MissionRepo.tabCategory` — `base | common | excluded | precourse`
+- `MissionRepo.status` — `active | candidate | excluded`
+- `Member.githubUserId` — GitHub login 변경에도 유지되는 내부 식별자
+- `Member.previousGithubIds` — 과거 GitHub login 이력 JSON
+- `Member.avatarUrl` — GitHub profile의 `avatar_url` 저장 (파일 저장 아님)
+- `Member.profileFetchedAt` / `Member.profileRefreshError` — 프로필 갱신 시각 / 실패 원인
+- `Member.rssStatus` — `unknown | available | unavailable | error`
+- `Member.lastPostedAt` — RSS 수집 시 가장 최근 글의 publishedAt 저장 (30일 초과 시에도 유지)
 
-프로필 이미지는 이미지 파일을 저장하지 않고 GitHub avatar URL만 저장합니다.
+## 프로필 갱신 원칙
+
+- PR sync 시 `githubUserId`가 있으면 해당 값을 기준으로 멤버를 식별합니다.
+- GitHub login(`githubId`)이 바뀌어도 같은 `githubUserId`면 기존 멤버를 갱신합니다.
+- 예전 login은 `previousGithubIds`에 남겨 검색/상세 조회 fallback에 사용합니다.
+- 공개 API에는 `githubUserId`를 노출하지 않습니다.
+- 어드민에서는:
+  - `Members > 프로필 새로고침` — stale 프로필 일괄 갱신
+  - 각 멤버 행의 `프로필` 버튼 — 단건 강제 새로고침
 
 ## 버전 로드맵
 
 | 버전 | 주요 기능                                                | 상태    |
 | ---- | -------------------------------------------------------- | ------- |
 | v1   | 크루 검색, 미션 레포/PR 조회, 어드민 페이지, 블로그 수집 | 완료    |
-| v2   | 멤버 검색 API, 기수별 레포 아카이브 페이지               | 진행 중 |
+| v2   | 공개 API (멤버 검색/상세/피드), 프론트엔드 구현          | 진행 중 |
 | v3   | GitHub 로그인, 팔로우                                    | 미정    |
 | v4   | 오픈미션 워크스페이스 분리                               | 미정    |
