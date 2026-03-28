@@ -25,6 +25,7 @@ export function createMemberService(deps: {
     );
     return {
       ...safeMember,
+      githubUserId: member.githubUserId,
       nickname: resolveDisplayNickname(member.manualNickname, member.nicknameStats, member.nickname),
       tracks: [...new Set(member.submissions.map((s) => s.missionRepo.track).filter((t) => t !== null))],
       roles: parseRoles(member.roles),

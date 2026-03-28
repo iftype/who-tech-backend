@@ -859,7 +859,7 @@ function renderMembers() {
             : `<span class="avatar-fallback">${escapeHtml((member.githubId ?? '?').slice(0, 2).toUpperCase())}</span>`}
           <div class="stack">
             <strong>${escapeHtml(member.githubId)}</strong>
-            <a class="link" href="https://github.com/${member.githubId}" target="_blank">GitHub</a>
+            <a class="link" href="${member.githubUserId ? `https://api.github.com/user/${member.githubUserId}` : `https://github.com/${member.githubId}`}" target="_blank">GitHub${member.githubUserId ? ` #${member.githubUserId}` : ''}</a>
           </div>
         </div>
       </td>
