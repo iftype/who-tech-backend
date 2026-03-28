@@ -38,6 +38,10 @@ export function createBlogPostRepository(db: PrismaClient) {
               nicknameStats: true,
               avatarUrl: true,
               cohort: true,
+              roles: true,
+              submissions: {
+                select: { missionRepo: { select: { track: true } } },
+              },
             },
           },
         },

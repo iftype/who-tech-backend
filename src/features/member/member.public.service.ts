@@ -46,13 +46,28 @@ export function createMemberPublicService(deps: {
       const tracks = [...new Set(member.submissions.map((s) => s.missionRepo.track).filter((t) => t !== null))];
 
       // 기수별 레포 순서 기반 아카이브 구성
-      const submissionMap = new Map(member.submissions.map((s) => [s.missionRepoId, s]));
+      // missionRepoId별로 모든 submissions를 수집 (오래된 순 → step1, step2, ...)
+      const submissionsByRepo = new Map<
+        number,
+        Array<{ prUrl: string; prNumber: number; title: string; submittedAt: Date }>
+      >();
+      for (const s of [...member.submissions].reverse()) {
+        if (!submissionsByRepo.has(s.missionRepoId)) submissionsByRepo.set(s.missionRepoId, []);
+        submissionsByRepo.get(s.missionRepoId)!.push({
+          prUrl: s.prUrl,
+          prNumber: s.prNumber,
+          title: s.title,
+          submittedAt: s.submittedAt,
+        });
+      }
+
       const archive: {
         level: number | null;
         repos: {
           name: string;
           track: string | null;
-          submission: { prUrl: string; prNumber: number; title: string; submittedAt: Date } | null;
+          tabCategory: string;
+          submissions: Array<{ prUrl: string; prNumber: number; title: string; submittedAt: Date }> | null;
         }[];
       }[] = [];
 
@@ -63,22 +78,45 @@ export function createMemberPublicService(deps: {
         for (const cr of cohortRepos) {
           const level = cr.missionRepo.level;
           if (!levelMap.has(level)) levelMap.set(level, []);
-          const submission = submissionMap.get(cr.missionRepoId);
           levelMap.get(level)!.push({
             name: cr.missionRepo.name,
             track: cr.missionRepo.track,
-            submission: submission
-              ? {
-                  prUrl: submission.prUrl,
-                  prNumber: submission.prNumber,
-                  title: submission.title,
-                  submittedAt: submission.submittedAt,
-                }
-              : null,
+            tabCategory: cr.missionRepo.tabCategory,
+            submissions: submissionsByRepo.get(cr.missionRepoId) ?? null,
           });
         }
 
         // level 오름차순, null은 마지막
+        const sortedLevels = [...levelMap.keys()].sort((a, b) => {
+          if (a === null) return 1;
+          if (b === null) return -1;
+          return a - b;
+        });
+        for (const level of sortedLevels) {
+          archive.push({ level, repos: levelMap.get(level)! });
+        }
+      }
+
+      // CohortRepo 미등록 상태면 raw submissions 기반 fallback archive 생성
+      if (archive.length === 0 && member.submissions.length > 0) {
+        const levelMap = new Map<number | null, (typeof archive)[number]['repos']>();
+        for (const s of [...member.submissions].reverse()) {
+          const level = s.missionRepo.level;
+          const name = s.missionRepo.name;
+          if (!levelMap.has(level)) levelMap.set(level, []);
+          const existing = levelMap.get(level)!.find((r) => r.name === name);
+          const step = { prUrl: s.prUrl, prNumber: s.prNumber, title: s.title, submittedAt: s.submittedAt };
+          if (existing) {
+            existing.submissions!.push(step);
+          } else {
+            levelMap.get(level)!.push({
+              name,
+              track: s.missionRepo.track,
+              tabCategory: s.missionRepo.tabCategory,
+              submissions: [step],
+            });
+          }
+        }
         const sortedLevels = [...levelMap.keys()].sort((a, b) => {
           if (a === null) return 1;
           if (b === null) return -1;
@@ -115,6 +153,8 @@ export function createMemberPublicService(deps: {
           nickname: resolveDisplayNickname(p.member.manualNickname, p.member.nicknameStats, p.member.nickname),
           avatarUrl: p.member.avatarUrl,
           cohort: p.member.cohort,
+          roles: JSON.parse((p.member.roles as string) || '["crew"]') as string[],
+          tracks: [...new Set(p.member.submissions.map((s) => s.missionRepo.track).filter((t) => t !== null))],
         },
       }));
     },
