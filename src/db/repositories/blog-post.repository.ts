@@ -19,6 +19,30 @@ export function createBlogPostRepository(db: PrismaClient) {
         }),
       ]).then(([archive, latest]) => ({ archive, latest })),
 
+    findFeed: (workspaceId: number, filters?: { cohort?: number; track?: string }) =>
+      db.blogPostLatest.findMany({
+        where: {
+          member: {
+            workspaceId,
+            ...(filters?.cohort ? { cohort: filters.cohort } : {}),
+            ...(filters?.track ? { submissions: { some: { missionRepo: { track: filters.track } } } } : {}),
+          },
+        },
+        orderBy: { publishedAt: 'desc' },
+        include: {
+          member: {
+            select: {
+              githubId: true,
+              nickname: true,
+              manualNickname: true,
+              nicknameStats: true,
+              avatarUrl: true,
+              cohort: true,
+            },
+          },
+        },
+      }),
+
     refreshLatest: async (since: Date) => {
       const recent = await db.blogPost.findMany({ where: { publishedAt: { gte: since } } });
       await db.blogPostLatest.deleteMany({});
