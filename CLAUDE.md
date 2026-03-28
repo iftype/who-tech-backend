@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 우아한테크코스 크루(멤버) 검색 서비스의 백엔드. GitHub 조직(`woowacourse`)의 미션 레포 PR을 수집해 멤버 정보를 저장한다.
 
-- **조직**: https://github.com/who-tech-course
+- **레포**: https://github.com/iftype/who-tech-backend
 - **서버**: Oracle Cloud AMD, iftype.store, SSH: `ssh oracle`
 - **PM2 앱 이름**: `backend`
 
@@ -49,8 +49,9 @@ MissionRepo (DB 등록) → fetchRepoPRs (GitHub API) → parsePRsToSubmissions 
 - `Workspace`: githubOrg, nicknameRegex(기본값), cohortRules(JSON), blogSyncEnabled(bool)
 - `MissionRepo`: track(frontend|backend|android|**null=공통**), type(individual|integration), status(active|candidate|excluded), syncMode(continuous|once), lastSyncAt, nicknameRegex(선택), cohortRegexRules(JSON), cohorts(JSON 기수배열 e.g. `[7,8]` — sync 필터용), level(Int? 1~4)
 - `CohortRepo`: cohort, order, missionRepoId, workspaceId — 아카이브 생성용 기수별 레포 순서 (수동 관리)
-- `Member`: githubId, nickname, manualNickname, nicknameStats(JSON), cohort, blog, roles(JSON 배열 e.g. `["crew","reviewer"]`)
-- `Submission`: prNumber, prUrl, memberId, missionRepoId
+- `Member`: githubId, nickname, manualNickname, nicknameStats(JSON), avatarUrl, cohort, blog, rssStatus(unknown|available|unavailable|error), rssUrl, rssCheckedAt, rssError, lastPostedAt(RSS에서 수집한 가장 최근 글 날짜), roles(JSON 배열 e.g. `["crew","reviewer"]`)
+- `MissionRepo`: name, repoUrl, track(nullable), type, tabCategory(base|common|excluded|precourse), status(active|candidate|excluded), syncMode(continuous|once), lastSyncAt, nicknameRegex, cohortRegexRules(JSON), cohorts(JSON 기수배열), level(Int? 1~4)
+- `Submission`: prNumber, prUrl, title, submittedAt, memberId, missionRepoId
 - `BlogPost`: url, title, publishedAt, memberId (30일 보관)
 - `BlogPostLatest`: url, title, publishedAt, memberId (7일 스냅샷, sync마다 전체 갱신)
 
@@ -94,6 +95,17 @@ DELETE /admin/logs                    — 전체 로그 삭제
 모든 `/admin` 엔드포인트는 `Authorization: Bearer <ADMIN_SECRET>` 필요.
 어드민 UI: `GET /admin/ui/admin.html`
 
+### 공개 API (인증 불필요)
+
+```
+GET  /members                     — 멤버 검색 (?q=&cohort=&track=&role=) → [{githubId, nickname, avatarUrl, cohort, roles, tracks}]
+GET  /members/feed                — 최근 블로그 피드 (?cohort=&track=) → [{url, title, publishedAt, member}]
+GET  /members/:githubId           — 멤버 상세 → {githubId, nickname, avatarUrl, cohort, roles, tracks, blog, lastPostedAt, submissions, blogPosts}
+```
+
+`submissions` 응답: `[{ prUrl, prNumber, title, submittedAt, missionRepo: { name, track, level, tabCategory } }]`
+`blogPosts` 응답: `BlogPostLatest` 최근 10개 (7일 스냅샷 기준)
+
 ## 테스트 구조
 
 - `__tests__/unit/` — mock 기반, DB 불필요. CI(`test.yml`)에서 실행
@@ -129,7 +141,6 @@ ADMIN_SECRET=...
 
 ## 예정 작업
 
-- 멤버 검색 API: `GET /members/search?q=`, `GET /members/:githubId`
-- 멤버 아카이브 페이지: 기수 + 레벨별 레포 PR 목록을 마크다운 표로 생성
+- 멤버 아카이브 API: 기수 + 레벨별 레포 PR 목록을 마크다운 표로 생성
   - `CohortRepo.order`, `MissionRepo.level` 기반으로 그룹핑/정렬
 - 블로그 새 글 알림 (GitHub Actions → 슬랙 등)
