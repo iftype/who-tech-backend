@@ -25,8 +25,13 @@ export function createBlogAdminService(deps: {
 
     backfillWorkspaceBlogLinks: async (limit = 30, cohort?: number) => {
       const workspace = await workspaceService.getOrThrow();
+      // blog 없거나, 있어도 RSS 확인 안 된 멤버(unavailable/unknown) 재처리
       const members = await memberRepo.findMany({
-        where: { workspaceId: workspace.id, blog: null, ...(cohort != null ? { cohort } : {}) },
+        where: {
+          workspaceId: workspace.id,
+          OR: [{ blog: null }, { rssStatus: { in: ['unavailable', 'unknown'] } }],
+          ...(cohort != null ? { cohort } : {}),
+        },
         orderBy: [{ submissions: { _count: 'desc' } }, { id: 'asc' }],
         take: limit,
         select: { id: true, githubId: true, githubUserId: true, nickname: true, previousGithubIds: true },
