@@ -15,20 +15,34 @@ export function createMemberService(deps: {
 }) {
   const { memberRepo, blogPostRepo, workspaceService, octokit } = deps;
 
-  const toResponse = (member: Awaited<ReturnType<MemberRepository['findWithFilters']>>[number]) => {
-    const rawMember = member as typeof member & {
-      githubUserId?: number | null;
-      previousGithubIds?: string | null;
-    };
-    const safeMember = Object.fromEntries(
-      Object.entries(rawMember).filter(([key]) => key !== 'githubUserId' && key !== 'previousGithubIds'),
-    );
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const toResponse = (member: any) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const cohorts = (member.memberCohorts || []).map((mc: any) => ({
+      cohort: mc.cohort,
+      roles: parseRoles(mc.roles),
+    }));
+    const primaryCohort = [...cohorts].sort((a, b) => b.cohort - a.cohort)[0];
+
     return {
-      ...safeMember,
+      id: member.id,
+      githubId: member.githubId,
       githubUserId: member.githubUserId,
       nickname: resolveDisplayNickname(member.manualNickname, member.nicknameStats, member.nickname),
-      tracks: [...new Set(member.submissions.map((s) => s.missionRepo.track).filter((t) => t !== null))],
-      roles: parseRoles(member.roles),
+      manualNickname: member.manualNickname,
+      avatarUrl: member.avatarUrl,
+      blog: member.blog,
+      lastPostedAt: member.lastPostedAt,
+      profileFetchedAt: member.profileFetchedAt,
+      profileRefreshError: member.profileRefreshError,
+      cohorts,
+      cohort: primaryCohort?.cohort ?? null,
+      roles: primaryCohort?.roles ?? ['crew'],
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      tracks: [
+        ...new Set((member.submissions || []).map((s: any) => s.missionRepo.track).filter((t: any) => t !== null)),
+      ],
+      _count: member._count,
     };
   };
 
@@ -92,7 +106,6 @@ export function createMemberService(deps: {
         githubUserId: null,
         previousGithubIds: null,
         ...(input.nickname ? { nickname: input.nickname, manualNickname: input.nickname } : {}),
-        ...(input.cohort != null ? { cohort: input.cohort } : {}),
         ...(input.blog
           ? {
               blog: normalizeBlogUrl(input.blog),
@@ -102,17 +115,26 @@ export function createMemberService(deps: {
               rssError: null,
             }
           : {}),
-        roles: JSON.stringify(input.roles?.length ? input.roles : ['crew']),
         workspaceId: workspace.id,
       });
-      return toResponse(member);
+
+      if (input.cohort != null) {
+        await memberRepo.upsertCohort(
+          member.id,
+          input.cohort,
+          JSON.stringify(input.roles?.length ? input.roles : ['crew']),
+        );
+      }
+
+      const updated = await memberRepo.findByIdWithRelations(member.id);
+      return toResponse(updated);
     },
 
     updateMember: async (
       id: number,
-      input: { manualNickname?: string | null; blog?: string | null; roles?: string[] },
+      input: { manualNickname?: string | null; blog?: string | null; roles?: string[]; cohort?: number },
     ) => {
-      const member = await memberRepo.updateWithRelations(id, {
+      await memberRepo.updateWithRelations(id, {
         ...(input.manualNickname !== undefined ? { manualNickname: input.manualNickname } : {}),
         ...(input.blog !== undefined
           ? {
@@ -123,9 +145,14 @@ export function createMemberService(deps: {
               rssError: null,
             }
           : {}),
-        ...(input.roles !== undefined ? { roles: JSON.stringify(input.roles) } : {}),
       });
-      return toResponse(member);
+
+      if (input.cohort != null && input.roles !== undefined) {
+        await memberRepo.upsertCohort(id, input.cohort, JSON.stringify(input.roles));
+      }
+
+      const updated = await memberRepo.findByIdWithRelations(id);
+      return toResponse(updated);
     },
 
     getMemberBlogPosts: (id: number) => blogPostRepo.findByMember(id),

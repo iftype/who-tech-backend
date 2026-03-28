@@ -185,32 +185,32 @@ export function createSyncService(deps: {
           githubId,
         );
 
+        const memberData = {
+          githubId,
+          githubUserId,
+          previousGithubIds,
+          nickname: displayNickname,
+          avatarUrl,
+          nicknameStats: JSON.stringify(nicknameStats),
+          profileFetchedAt,
+          profileRefreshError,
+        };
+
         const member = existingMember
           ? await memberRepo.update(existingMember.id, {
-              githubId,
-              githubUserId,
-              previousGithubIds,
-              nickname: displayNickname,
-              cohort: s.cohort,
-              avatarUrl,
+              ...memberData,
               ...(existingMember?.blog ? {} : { blog }),
-              nicknameStats: JSON.stringify(nicknameStats),
-              profileFetchedAt,
-              profileRefreshError,
             })
           : await memberRepo.create({
-              githubId,
-              githubUserId,
-              previousGithubIds,
-              nickname: displayNickname,
-              cohort: s.cohort,
-              avatarUrl,
+              ...memberData,
               blog,
-              nicknameStats: JSON.stringify(nicknameStats),
-              profileFetchedAt,
-              profileRefreshError,
               workspaceId,
             });
+
+        if (s.cohort) {
+          const defaultRoles = JSON.stringify(['crew']);
+          await memberRepo.upsertCohort(member.id, s.cohort, defaultRoles);
+        }
 
         await submissionRepo.upsert({
           where: { prNumber_missionRepoId: { prNumber: s.prNumber, missionRepoId: repo.id } },

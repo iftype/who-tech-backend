@@ -888,7 +888,11 @@ function renderMembers() {
         </div>
       </td>
       <td>${renderMemberRoleButtons(member)}</td>
-      <td>${member.cohort ? `<span class="pill cohort">${member.cohort}기</span>` : '-'}</td>
+      <td>
+        <div class="stack">
+          ${(member.cohorts || []).map((c) => `<span class="pill cohort">${c.cohort}기</span>`).join('') || '-'}
+        </div>
+      </td>
       <td>
         ${member.tracks.length > 0 ? `
           <div class="track-list">
@@ -936,8 +940,11 @@ function renderMembers() {
 
   const cohortCounts = {};
   for (const m of memberList) {
-    const key = m.cohort ? `${m.cohort}기` : '기수 미상';
-    cohortCounts[key] = (cohortCounts[key] ?? 0) + 1;
+    const cohorts = m.cohorts?.length ? m.cohorts.map((c) => c.cohort) : [null];
+    for (const c of cohorts) {
+      const key = c ? `${c}기` : '기수 미상';
+      cohortCounts[key] = (cohortCounts[key] ?? 0) + 1;
+    }
   }
   const cohortSummary = Object.entries(cohortCounts)
     .sort((a, b) => {
@@ -1118,6 +1125,12 @@ function toggleMemberRole(id, role) {
   const member = memberList.find((item) => item.id === id);
   if (!member) return;
 
+  const cohort = member.cohort; // 도우미용으로 현재 가장 높은 기수 또는 필터링된 기수 사용
+  if (!cohort) {
+    alert('기수 정보가 없는 멤버는 역할을 수정할 수 없습니다.');
+    return;
+  }
+
   const currentRoles = member.roles?.length ? [...member.roles] : ['crew'];
   let nextRoles = currentRoles.includes(role)
     ? currentRoles.filter((item) => item !== role)
@@ -1130,7 +1143,7 @@ function toggleMemberRole(id, role) {
   fetch(`/admin/members/${id}`, {
     method: 'PATCH',
     headers: authHeaders('application/json'),
-    body: JSON.stringify({ roles: nextRoles }),
+    body: JSON.stringify({ roles: nextRoles, cohort }),
   })
     .then((response) => {
       if (!response.ok) return parseErrorResponse(response);
