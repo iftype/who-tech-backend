@@ -81,7 +81,12 @@ export function createMemberRouter(service: MemberService) {
     '/:id',
     asyncHandler(async (req, res) => {
       const id = parseId(req.params['id']);
-      const body = req.body as { manualNickname?: string | null; blog?: string | null; roles?: string[] };
+      const body = req.body as {
+        manualNickname?: string | null;
+        blog?: string | null;
+        roles?: string[];
+        cohort?: number;
+      };
       res.json(await service.updateMember(id, body));
     }),
   );

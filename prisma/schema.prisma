@@ -43,6 +43,7 @@ model Member {
   blogPostsLatest BlogPostLatest[]
   workspace       Workspace        @relation(fields: [workspaceId], references: [id])
   submissions     Submission[]
+  memberCohorts   MemberCohort[]
 
   @@unique([githubId, workspaceId])
 }
@@ -124,4 +125,14 @@ model ActivityLog {
   workspaceId Int
   createdAt   DateTime  @default(now())
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+model MemberCohort {
+  id        Int      @id @default(autoincrement())
+  memberId  Int
+  cohort    Int
+  roles     String   @default("[\"crew\"]") // JSON array string
+  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([memberId, cohort])
 }

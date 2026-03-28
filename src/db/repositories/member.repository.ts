@@ -3,6 +3,7 @@ import type { PrismaClient, Prisma } from '@prisma/client';
 const memberWithRelationsInclude = {
   _count: { select: { submissions: true } },
   blogPostsLatest: { orderBy: { publishedAt: 'desc' as const } },
+  memberCohorts: true,
   submissions: {
     orderBy: { submittedAt: 'desc' as const },
     include: { missionRepo: { select: { name: true, track: true } } },
@@ -18,9 +19,9 @@ export function createMemberRepository(db: PrismaClient) {
       db.member.findMany({
         where: {
           workspaceId,
-          ...(filters?.cohort ? { cohort: filters.cohort } : {}),
-          // roles is JSON array string — check if it contains the role value
-          ...(filters?.role ? { roles: { contains: `"${filters.role}"` } } : {}),
+          ...(filters?.cohort ? { memberCohorts: { some: { cohort: filters.cohort } } } : {}),
+          // roles filtering across all cohorts or specific to the filtered cohort
+          ...(filters?.role ? { memberCohorts: { some: { roles: { contains: `"${filters.role}"` } } } } : {}),
           ...(filters?.hasBlog === true ? { blog: { not: null } } : {}),
           ...(filters?.hasBlog === false ? { blog: null } : {}),
           ...(filters?.track ? { submissions: { some: { missionRepo: { track: filters.track } } } } : {}),
@@ -35,7 +36,7 @@ export function createMemberRepository(db: PrismaClient) {
               }
             : {}),
         },
-        orderBy: [{ cohort: 'desc' }, { nickname: 'asc' }],
+        orderBy: [{ nickname: 'asc' }],
         include: memberWithRelationsInclude,
       }),
 
@@ -128,6 +129,13 @@ export function createMemberRepository(db: PrismaClient) {
         lastPostedAt?: Date | null;
       },
     ) => db.member.update({ where: { id }, data }),
+
+    upsertCohort: (memberId: number, cohort: number, roles: string) =>
+      db.memberCohort.upsert({
+        where: { memberId_cohort: { memberId, cohort } },
+        create: { memberId, cohort, roles },
+        update: { roles },
+      }),
 
     findPublicDetail: (githubId: string, workspaceId: number) =>
       db.member.findFirst({
