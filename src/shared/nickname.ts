@@ -1,7 +1,11 @@
 import type { NicknameStat } from './types/index.js';
 
 export function normalizeNickname(nickname: string): string {
-  return nickname.replace(/\s*\([^)]*\)\s*$/, '').trim();
+  return nickname
+    .replace(/\s*\([^)]*\)\s*$/, '') // 빌리(정환희) → 빌리
+    .replace(/^[\[({]+|[\])}]+$/g, '') // [버건디] → 버건디
+    .replace(/[!?.,:;]+$/g, '') // 버건디! → 버건디
+    .trim();
 }
 
 export function parseNicknameStats(value: string | null | undefined): NicknameStat[] {

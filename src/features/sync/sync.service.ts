@@ -7,7 +7,7 @@ import { findNicknameRegexByCohort, parseCohortRegexRules, parseCohorts } from '
 import { mergePreviousGithubIds, shouldRefreshProfile } from '../../shared/github-profile.js';
 import { HttpError } from '../../shared/http.js';
 import { mergeNicknameStat, resolveDisplayNickname } from '../../shared/nickname.js';
-import { fetchRepoPRs, fetchUserProfile, parseNickname, detectCohort } from './github.service.js';
+import { fetchRepoPRs, fetchUserBlogCandidates, parseNickname, detectCohort } from './github.service.js';
 import type { CohortRegexRule, CohortRule, ParsedSubmission } from '../../shared/types/index.js';
 
 type RawPR = {
@@ -135,7 +135,14 @@ export function createSyncService(deps: {
           const cacheKey = githubUserId != null ? `id:${githubUserId}` : `login:${s.githubId}`;
           if (!profileCache.has(cacheKey)) {
             try {
-              profileCache.set(cacheKey, await fetchUserProfile(octokit, { githubUserId, username: s.githubId }));
+              const { profile, candidates } = await fetchUserBlogCandidates(octokit, {
+                githubUserId,
+                username: s.githubId,
+              });
+              profileCache.set(cacheKey, {
+                ...profile,
+                blog: candidates[0] ?? null,
+              });
               profileRefreshError = null;
             } catch (error) {
               profileRefreshError = error instanceof Error ? error.message : String(error);
