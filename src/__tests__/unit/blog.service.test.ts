@@ -11,7 +11,7 @@ describe('resolveRSSUrlsForBlog', () => {
   });
 
   it('이미 feed 경로면 그대로 사용한다', () => {
-    expect(resolveRSSUrlsForBlog('https://sihyung92.oopy.io/feed')).toEqual(['https://sihyung92.oopy.io/feed']);
+    expect(resolveRSSUrlsForBlog('https://myblog.com/feed')).toEqual(['https://myblog.com/feed']);
   });
 
   it('github pages 블로그는 여러 common candidate를 생성한다', () => {

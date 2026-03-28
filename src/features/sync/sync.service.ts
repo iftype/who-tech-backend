@@ -8,6 +8,7 @@ import { mergePreviousGithubIds, shouldRefreshProfile } from '../../shared/githu
 import { HttpError } from '../../shared/http.js';
 import { mergeNicknameStat, resolveDisplayNickname } from '../../shared/nickname.js';
 import { fetchRepoPRs, fetchUserBlogCandidates, parseNickname, detectCohort } from './github.service.js';
+import { probeRss } from '../blog/blog.service.js';
 import type { CohortRegexRule, CohortRule, ParsedSubmission } from '../../shared/types/index.js';
 
 type RawPR = {
@@ -139,9 +140,17 @@ export function createSyncService(deps: {
                 githubUserId,
                 username: s.githubId,
               });
+              let validBlog = null;
+              for (const url of candidates) {
+                const rssCheck = await probeRss(url);
+                if (rssCheck.status === 'available') {
+                  validBlog = url;
+                  break;
+                }
+              }
               profileCache.set(cacheKey, {
                 ...profile,
-                blog: candidates[0] ?? null,
+                blog: validBlog || (candidates[0] ?? null),
               });
               profileRefreshError = null;
             } catch (error) {
