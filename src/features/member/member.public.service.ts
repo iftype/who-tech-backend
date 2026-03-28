@@ -33,6 +33,8 @@ export function createMemberPublicService(deps: {
         cohort: m.cohort,
         roles: parseRoles(m.roles),
         tracks: [...new Set(m.submissions.map((s) => s.missionRepo.track).filter((t) => t !== null))],
+        blog: m.blog,
+        lastPostedAt: m.lastPostedAt,
       }));
     },
 

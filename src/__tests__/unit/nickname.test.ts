@@ -1,5 +1,35 @@
 import { describe, expect, it } from '@jest/globals';
-import { isValidNickname, mergeNicknameStat, resolveDisplayNickname } from '../../shared/nickname.js';
+import {
+  isValidNickname,
+  mergeNicknameStat,
+  normalizeNickname,
+  resolveDisplayNickname,
+} from '../../shared/nickname.js';
+
+describe('normalizeNickname', () => {
+  it('trailing (note) 제거', () => {
+    expect(normalizeNickname('빌리(정환희)')).toBe('빌리');
+  });
+
+  it('대괄호 제거', () => {
+    expect(normalizeNickname('[버건디]')).toBe('버건디');
+  });
+
+  it('trailing 특수문자 제거', () => {
+    expect(normalizeNickname('버건디!')).toBe('버건디');
+    expect(normalizeNickname('버건디.')).toBe('버건디');
+    expect(normalizeNickname('버건디,')).toBe('버건디');
+  });
+
+  it('중간 하이픈은 유지', () => {
+    expect(normalizeNickname('manbo-p')).toBe('manbo-p');
+  });
+
+  it('정상 닉네임은 그대로', () => {
+    expect(normalizeNickname('제리')).toBe('제리');
+    expect(normalizeNickname('yeongunheo')).toBe('yeongunheo');
+  });
+});
 
 describe('nickname stats', () => {
   it('가장 많이 나온 닉네임을 대표값으로 선택한다', () => {
