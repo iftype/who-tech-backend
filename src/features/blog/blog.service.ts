@@ -231,11 +231,17 @@ export function createBlogService(deps: { memberRepo: MemberRepository; blogPost
 
       for (const member of members) {
         const result = await fetchRSSItems(member.blog!);
+        const latestDate = result.items
+          .map((item) => (item.pubDate ? new Date(item.pubDate) : null))
+          .filter((d): d is Date => d !== null && !isNaN(d.getTime()))
+          .sort((a, b) => b.getTime() - a.getTime())[0];
+
         await memberRepo.patch(member.id, {
           rssStatus: result.rssCheck.status,
           rssUrl: result.rssCheck.rssUrl ?? null,
           rssCheckedAt: new Date(),
           rssError: result.rssCheck.error ?? null,
+          ...(latestDate ? { lastPostedAt: latestDate } : {}),
         });
         if (result.failure) {
           failures.push({ githubId: member.githubId, ...result.failure });
