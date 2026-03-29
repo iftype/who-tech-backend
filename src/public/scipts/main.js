@@ -32,6 +32,7 @@ import {
   deleteRepo,
   discoverRepos,
   editRepoRegex,
+  filterCohortRepoSelect,
   inlineEditCohorts,
   inlineEditDescription,
   inlineEditLevel,
@@ -121,6 +122,7 @@ Object.assign(window, {
   deleteCohortRepo,
   dismissValidateIssue,
   populateCohortRepoSelect,
+  filterCohortRepoSelect,
 });
 
 document.getElementById('secret-input').addEventListener('keydown', (event) => {
