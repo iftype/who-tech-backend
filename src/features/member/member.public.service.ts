@@ -87,16 +87,7 @@ export function createMemberPublicService(deps: {
         }[];
       }[] = [];
 
-      // Collect all defined missionRepoIds from CohortRepo
-      const definedMissionRepoIds = new Set<number>();
-      for (const { cohort } of cohorts) {
-        const cohortRepos = await cohortRepoRepo.findByCohort(workspace.id, cohort);
-        for (const cr of cohortRepos) {
-          definedMissionRepoIds.add(cr.missionRepoId);
-        }
-      }
-
-      // Build archive for cohorts with defined repos
+      // Build archive only for cohorts with defined repos in CohortRepo
       for (const { cohort } of cohorts) {
         const cohortRepos = await cohortRepoRepo.findByCohort(workspace.id, cohort);
         if (cohortRepos.length === 0) continue;
@@ -127,38 +118,6 @@ export function createMemberPublicService(deps: {
           })),
         };
         archive.push(cohortArchive);
-      }
-
-      // Fallback: only if NO repos are defined in CohortRepo at all
-      if (definedMissionRepoIds.size === 0 && member.submissions.length > 0) {
-        const levelMap = new Map<number | null, ArchiveRepo[]>();
-        for (const s of [...member.submissions].reverse()) {
-          const level = s.missionRepo.level;
-          const name = s.missionRepo.name;
-          if (!levelMap.has(level)) levelMap.set(level, []);
-          const existing = levelMap.get(level)!.find((r) => r.name === name);
-          const step = { prUrl: s.prUrl, prNumber: s.prNumber, title: s.title, submittedAt: s.submittedAt };
-          if (existing) {
-            existing.submissions!.push(step);
-          } else {
-            levelMap.get(level)!.push({
-              name,
-              track: s.missionRepo.track,
-              tabCategory: s.missionRepo.tabCategory,
-              submissions: [step],
-            });
-          }
-        }
-        const sortedLevels = [...levelMap.keys()].sort((a, b) => {
-          if (a === null) return 1;
-          if (b === null) return -1;
-          return a - b;
-        });
-        const fallbackLevels = sortedLevels.map((level) => ({
-          level,
-          repos: levelMap.get(level)!,
-        }));
-        archive.push({ cohort: 0, levels: fallbackLevels });
       }
 
       return {
