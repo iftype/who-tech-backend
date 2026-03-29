@@ -30,10 +30,23 @@ export function createMemberPublicRouter(service: MemberPublicService) {
     asyncHandler(async (req, res) => {
       const cohort = typeof req.query['cohort'] === 'string' ? Number(req.query['cohort']) : undefined;
       const track = typeof req.query['track'] === 'string' ? req.query['track'] : undefined;
+
+      // range 파라미터 파싱 로직 추가
+      const rangeParam = typeof req.query['range'] === 'string' ? req.query['range'] : undefined;
+
+      let days = 7;
+      if (rangeParam) {
+        const parsedDays = parseInt(rangeParam.replace('d', ''), 10);
+        if (!isNaN(parsedDays)) {
+          days = Math.min(parsedDays, 30); // 최대 30일 제한
+        }
+      }
+
       res.json(
         await service.getFeed({
           ...(cohort && !Number.isNaN(cohort) ? { cohort } : {}),
           ...(track ? { track } : {}),
+          days, // 서비스 호출 시 days 전달
         }),
       );
     }),
