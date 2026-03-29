@@ -19,10 +19,30 @@ export function loadMembers() {
   if (hasBlog) params.set('hasBlog', hasBlog);
 
   return fetch(`/admin/members?${params.toString()}`, { headers: authHeaders() })
-    .then((response) => response.json())
+    .then(async (response) => {
+      const body = await response.json().catch(() => null);
+      if (!response.ok) {
+        const msg = body?.message ?? response.statusText ?? '멤버 목록 요청 실패';
+        throw new Error(msg);
+      }
+      return body;
+    })
     .then((members) => {
+      if (!Array.isArray(members)) {
+        console.error('GET /admin/members: expected array', members);
+        adminState.memberList = [];
+        renderMembers();
+        toast('멤버 목록 형식이 올바르지 않습니다.');
+        return;
+      }
       adminState.memberList = members;
       renderMembers();
+    })
+    .catch((err) => {
+      console.error(err);
+      adminState.memberList = [];
+      renderMembers();
+      toast(err?.message ? `멤버 목록: ${err.message}` : '멤버 목록을 불러오지 못했습니다.');
     });
 }
 
@@ -74,10 +94,12 @@ export function renderMembers() {
       </td>
       <td>
         ${
-          member.tracks.length > 0
+          (member.tracks ?? []).length > 0
             ? `
           <div class="track-list">
-            ${member.tracks.map((track) => `<span class="track-badge ${track}">${track == null ? '공통' : track}</span>`).join('')}
+            ${(member.tracks ?? [])
+              .map((track) => `<span class="track-badge ${track}">${track == null ? '공통' : track}</span>`)
+              .join('')}
           </div>
         `
             : '-'
@@ -85,7 +107,7 @@ export function renderMembers() {
       </td>
       <td>
         ${
-          member._count.submissions > 0
+          (member._count?.submissions ?? 0) > 0
             ? `<button class="btn-sm btn-ghost" onclick="openSubmissionModal(${member.id}, '${escapeHtml(member.nickname ?? member.githubId)}')">${member._count.submissions}건 보기</button>`
             : '<span class="muted">0건</span>'
         }
@@ -103,7 +125,7 @@ export function renderMembers() {
       </td>
       <td>
         ${
-          member?.blogPostsLatest.length > 0
+          (member.blogPostsLatest ?? []).length > 0
             ? `
           <div class="post-list">
             ${member.blogPostsLatest
@@ -417,7 +439,7 @@ export function openSubmissionModal(memberId, name) {
 
   title.textContent = `${name} 제출 내역`;
 
-  if (!member || member.submissions.length === 0) {
+  if (!member || !(member.submissions ?? []).length) {
     body.innerHTML = '<div class="sub" style="padding:16px">제출 내역이 없습니다.</div>';
     modal.style.display = 'flex';
     return;

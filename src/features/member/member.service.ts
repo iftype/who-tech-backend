@@ -39,10 +39,16 @@ export function createMemberService(deps: {
       lastPostedAt: member.lastPostedAt,
       profileFetchedAt: member.profileFetchedAt,
       profileRefreshError: member.profileRefreshError,
+      rssStatus: member.rssStatus,
+      rssUrl: member.rssUrl,
+      rssCheckedAt: member.rssCheckedAt,
+      rssError: member.rssError,
       cohorts,
       cohort: primaryCohort?.cohort ?? null,
       roles: primaryCohort?.roles ?? ['crew'],
       tracks: [...new Set(member.submissions.map((s) => s.missionRepo.track).filter((t) => t !== null))],
+      blogPostsLatest: member.blogPostsLatest,
+      submissions: member.submissions,
       _count: member._count,
     };
   };
