@@ -142,9 +142,15 @@ export function createMemberPublicService(deps: {
       };
     },
 
-    getFeed: async (filters?: { cohort?: number; track?: string }) => {
+    getFeed: async (filters?: { cohort?: number; track?: string; days?: number }) => {
       const workspace = await workspaceService.getOrThrow();
-      const posts = await blogPostRepo.findFeed(workspace.id, filters);
+
+      // days를 repository에 전달 (기본값 7)
+      const posts = await blogPostRepo.findFeed(workspace.id, {
+        ...filters,
+        days: filters?.days ?? 7,
+      });
+
       return posts.map((p) => {
         const cohortMap = new Map<number, string[]>();
         for (const mc of p.member.memberCohorts) {

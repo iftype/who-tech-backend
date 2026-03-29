@@ -24,28 +24,18 @@ export type BlogPostWithMember = Prisma.BlogPostLatestGetPayload<{
   include: typeof blogPostWithMemberInclude;
 }>;
 
+// ... 기존 include 설정 동일
+
 export function createBlogPostRepository(db: PrismaClient) {
   return {
-    upsert: (args: Prisma.BlogPostUpsertArgs) => db.blogPost.upsert(args),
-    deleteBefore: (date: Date) => db.blogPost.deleteMany({ where: { publishedAt: { lt: date } } }),
+    findFeed: (workspaceId: number, filters?: { cohort?: number; track?: string; days?: number }) => {
+      const days = filters?.days ?? 7;
+      const since = new Date();
+      since.setDate(since.getDate() - days);
 
-    findByMember: (memberId: number) =>
-      Promise.all([
-        db.blogPost.findMany({
-          where: { memberId },
-          orderBy: { publishedAt: 'desc' },
-          select: { url: true, title: true, publishedAt: true },
-        }),
-        db.blogPostLatest.findMany({
-          where: { memberId },
-          orderBy: { publishedAt: 'desc' },
-          select: { url: true, title: true, publishedAt: true },
-        }),
-      ]).then(([archive, latest]) => ({ archive, latest })),
-
-    findFeed: (workspaceId: number, filters?: { cohort?: number; track?: string }) =>
-      db.blogPostLatest.findMany({
+      return db.blogPost.findMany({
         where: {
+          publishedAt: { gte: since },
           member: {
             workspaceId,
             ...(filters?.cohort ? { memberCohorts: { some: { cohort: { number: filters.cohort } } } } : {}),
@@ -54,7 +44,8 @@ export function createBlogPostRepository(db: PrismaClient) {
         },
         orderBy: { publishedAt: 'desc' },
         include: blogPostWithMemberInclude,
-      }),
+      });
+    },
 
     refreshLatest: async (since: Date) => {
       const recent = await db.blogPost.findMany({ where: { publishedAt: { gte: since } } });
