@@ -81,6 +81,10 @@ app.get('/', (_req, res) => {
   res.json({ message: 'who.tech API' });
 });
 
+app.get('/guide', (_req, res) => {
+  res.sendFile(join(publicDir, 'guide.html'));
+});
+
 app.use('/members', createMemberPublicRouter(memberPublicService));
 
 app.use('/admin', adminAuth);
