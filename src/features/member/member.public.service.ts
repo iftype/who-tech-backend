@@ -96,11 +96,15 @@ export function createMemberPublicService(deps: {
         for (const cr of cohortRepos) {
           const level = cr.missionRepo.level;
           if (!levelMap.has(level)) levelMap.set(level, []);
-          // Detect precourse in repo name if not already set
-          const tabCategory =
-            cr.missionRepo.tabCategory === 'precourse' || cr.missionRepo.name.toLowerCase().includes('precourse')
-              ? 'precourse'
-              : cr.missionRepo.tabCategory;
+          // Precourse check first (highest priority)
+          let tabCategory: string;
+          if (cr.missionRepo.name.toLowerCase().includes('precourse')) {
+            tabCategory = 'precourse';
+          } else if (cr.missionRepo.tabCategory === 'precourse') {
+            tabCategory = 'precourse';
+          } else {
+            tabCategory = cr.missionRepo.tabCategory;
+          }
           levelMap.get(level)!.push({
             name: cr.missionRepo.name,
             track: cr.missionRepo.track,
