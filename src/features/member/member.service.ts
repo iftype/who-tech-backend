@@ -64,7 +64,7 @@ export function createMemberService(deps: {
       username: member.githubId,
     });
 
-    const updated = await memberRepo.updateWithRelations(id, {
+    const updated = await memberRepo.update(id, {
       githubId: profile.githubId,
       githubUserId: profile.githubUserId,
       previousGithubIds: mergePreviousGithubIds(member.previousGithubIds, member.githubId, profile.githubId),
@@ -136,7 +136,7 @@ export function createMemberService(deps: {
       id: number,
       input: { manualNickname?: string | null; blog?: string | null; roles?: string[]; cohort?: number },
     ) => {
-      await memberRepo.updateWithRelations(id, {
+      await memberRepo.update(id, {
         ...(input.manualNickname !== undefined ? { manualNickname: input.manualNickname } : {}),
         ...(input.blog !== undefined
           ? {

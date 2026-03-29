@@ -51,7 +51,7 @@ export function createMemberPublicService(deps: {
 
     getMemberDetail: async (githubId: string) => {
       const workspace = await workspaceService.getOrThrow();
-      const member = await memberRepo.findPublicDetail(githubId, workspace.id);
+      const member = await memberRepo.findByGithubId(githubId, workspace.id);
       if (!member) return null;
 
       const nickname = resolveDisplayNickname(member.manualNickname, member.nicknameStats, member.nickname);
@@ -148,7 +148,7 @@ export function createMemberPublicService(deps: {
       // days를 repository에 전달 (기본값 7)
       const posts = await blogPostRepo.findFeed(workspace.id, {
         ...filters,
-        days: filters?.days ?? 7,
+        days: filters?.days ?? 30,
       });
 
       return posts.map((p) => {

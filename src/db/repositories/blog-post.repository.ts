@@ -61,7 +61,7 @@ export function createBlogPostRepository(db: PrismaClient) {
      * 이제 BlogPostLatest를 쓰지 않고 BlogPost 원본에서 직접 7일(또는 days)치를 가져옵니다.
      */
     findFeed: (workspaceId: number, filters?: { limit?: number; cohort?: number; track?: string; days?: number }) => {
-      const days = filters?.days ?? 7;
+      const days = filters?.days ?? 30;
       const since = new Date();
       since.setDate(since.getDate() - days);
 
