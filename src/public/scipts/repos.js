@@ -28,10 +28,14 @@ export function setRepoTab(tab) {
 }
 
 export function getRepoTabCategory(repo) {
-  // precourse가 포함되면 precourse 탭으로
-  if (repo.name?.toLowerCase().includes('precourse') || repo.tabCategory === 'precourse') {
+  // Precourse check first (highest priority)
+  if (repo.name?.toLowerCase().includes('precourse')) {
     return 'precourse';
   }
+  if (repo.tabCategory === 'precourse') {
+    return 'precourse';
+  }
+  // Then check stored category or infer from status/track
   return repo.tabCategory ?? (repo.status === 'excluded' ? 'excluded' : repo.track == null ? 'common' : 'base');
 }
 
