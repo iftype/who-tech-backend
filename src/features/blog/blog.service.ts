@@ -227,9 +227,8 @@ export function createBlogService(deps: { memberRepo: MemberRepository; blogPost
     ): Promise<{ synced: number; deleted: number; failures: BlogSyncFailure[] }> => {
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
       const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-      const members = await memberRepo.findMany({
-        where: { workspaceId, blog: { not: null } },
-        select: { id: true, githubId: true, blog: true },
+      const members = await memberRepo.findWithFilters(workspaceId, {
+        hasBlog: true,
       });
 
       let synced = 0;
