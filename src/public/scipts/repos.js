@@ -28,6 +28,10 @@ export function setRepoTab(tab) {
 }
 
 export function getRepoTabCategory(repo) {
+  // precourse가 포함되면 precourse 탭으로
+  if (repo.name?.toLowerCase().includes('precourse') || repo.tabCategory === 'precourse') {
+    return 'precourse';
+  }
   return repo.tabCategory ?? (repo.status === 'excluded' ? 'excluded' : repo.track == null ? 'common' : 'base');
 }
 
@@ -522,6 +526,29 @@ export function populateCohortRepoSelect() {
   if (!select) return;
   const trackFilter = document.getElementById('cohort-repo-track-filter')?.value ?? '';
   const filtered = trackFilter ? adminState.repoList.filter((r) => r.track === trackFilter) : adminState.repoList;
+  select.innerHTML =
+    '<option value="">레포 선택</option>' +
+    filtered
+      .map(
+        (r) =>
+          `<option value="${r.id}">[${r.status}] ${escapeHtml(r.name)}${r.level != null ? ` (레벨${r.level})` : ''}</option>`,
+      )
+      .join('');
+}
+
+export function filterCohortRepoSelect() {
+  const searchInput = document.getElementById('cohort-repo-search');
+  const select = document.getElementById('cohort-repo-select');
+  if (!searchInput || !select) return;
+  
+  const query = searchInput.value.trim().toLowerCase();
+  const trackFilter = document.getElementById('cohort-repo-track-filter')?.value ?? '';
+  let filtered = trackFilter ? adminState.repoList.filter((r) => r.track === trackFilter) : adminState.repoList;
+  
+  if (query) {
+    filtered = filtered.filter((r) => r.name.toLowerCase().includes(query));
+  }
+  
   select.innerHTML =
     '<option value="">레포 선택</option>' +
     filtered
