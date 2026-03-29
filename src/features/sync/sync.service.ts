@@ -185,27 +185,23 @@ export function createSyncService(deps: {
           githubId,
         );
 
-        const memberData = {
+        if (!githubUserId) {
+          // githubUserId가 없는 특이 케이스 대응 (보통은 s.githubUserId나 existingMember에 있음)
+          throw new Error(`githubUserId is missing for user: ${s.githubId}`);
+        }
+
+        const member = await memberRepo.upsert(workspaceId, githubUserId, {
           githubId,
           githubUserId,
-          previousGithubIds,
+          previousGithubIds: previousGithubIds ?? null, // exactOptionalPropertyTypes 대응
           nickname: displayNickname,
-          avatarUrl,
+          avatarUrl: avatarUrl ?? null,
           nicknameStats: JSON.stringify(nicknameStats),
-          profileFetchedAt,
-          profileRefreshError,
-        };
-
-        const member = existingMember
-          ? await memberRepo.update(existingMember.id, {
-              ...memberData,
-              ...(existingMember?.blog ? { blog } : {}),
-            })
-          : await memberRepo.create({
-              ...memberData,
-              blog,
-              workspaceId,
-            });
+          profileFetchedAt: profileFetchedAt ?? null,
+          profileRefreshError: profileRefreshError ?? null,
+          blog: blog ?? null,
+          workspaceId, // create 시 사용됨
+        });
 
         if (s.cohort) {
           await memberRepo.upsertParticipation(member.id, s.cohort, 'crew');
