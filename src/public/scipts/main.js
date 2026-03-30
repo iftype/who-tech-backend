@@ -60,6 +60,17 @@ import {
 } from './regex.js';
 import { resetSync, syncRepo, triggerSync, triggerTsAndLearningTest } from './sync.js';
 import { saveWorkspace, toggleBlogSync } from './workspace.js';
+import {
+  loadPersons,
+  createPerson,
+  editPerson,
+  deletePerson,
+  openLinkMemberModal,
+  closeLinkMemberModal,
+  searchMembersForLink,
+  linkPersonMember,
+  unlinkPersonMember,
+} from './person.js';
 
 Object.assign(window, {
   login,
@@ -123,6 +134,15 @@ Object.assign(window, {
   dismissValidateIssue,
   populateCohortRepoSelect,
   filterCohortRepoSelect,
+  loadPersons,
+  createPerson,
+  editPerson,
+  deletePerson,
+  openLinkMemberModal,
+  closeLinkMemberModal,
+  searchMembersForLink,
+  linkPersonMember,
+  unlinkPersonMember,
 });
 
 document.getElementById('secret-input').addEventListener('keydown', (event) => {
