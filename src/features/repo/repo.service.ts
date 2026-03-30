@@ -215,7 +215,7 @@ export function createRepoService(deps: {
             octokit,
             context.id,
             context.githubOrg,
-            repo,
+            { ...repo, lastSyncAt: null }, // 수동 sync: 전체 PR 재수집
             context.workspaceRegex,
             context.cohortRules,
             (progress) => {
