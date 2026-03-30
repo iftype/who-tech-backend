@@ -14,6 +14,7 @@ import { createSubmissionRepository } from './db/repositories/submission.reposit
 import { createBlogPostRepository } from './db/repositories/blog-post.repository.js';
 import { createCohortRepoRepository } from './db/repositories/cohort-repo.repository.js';
 import { createActivityLogRepository } from './db/repositories/activity-log.repository.js';
+import { createPersonRepository } from './db/repositories/person.repository.js';
 
 // Services
 import { createWorkspaceService } from './features/workspace/workspace.service.js';
@@ -35,6 +36,7 @@ import { createSyncRouter } from './features/sync/sync.route.js';
 import { createBlogRouter } from './features/blog/blog.route.js';
 import { createCohortRepoRouter } from './features/cohort-repo/cohort-repo.route.js';
 import { createActivityLogRouter } from './features/activity-log/activity-log.route.js';
+import { createPersonRouter } from './features/person/person.route.js';
 import { createMemberPublicService } from './features/member/member.public.service.js';
 import { createMemberPublicRouter } from './features/member/member.public.route.js';
 
@@ -54,6 +56,7 @@ const submissionRepo = createSubmissionRepository(db);
 const blogPostRepo = createBlogPostRepository(db);
 const cohortRepoRepo = createCohortRepoRepository(db);
 const activityLogRepo = createActivityLogRepository(db);
+const personRepo = createPersonRepository(db);
 
 const workspaceService = createWorkspaceService({ workspaceRepo });
 const syncService = createSyncService({ memberRepo, missionRepoRepo, submissionRepo, workspaceRepo });
@@ -95,6 +98,7 @@ app.use('/admin', createBlogRouter(blogAdminService));
 app.use('/admin/members', createMemberRouter(memberService));
 app.use('/admin/cohort-repos', createCohortRepoRouter(cohortRepoService));
 app.use('/admin/logs', createActivityLogRouter(activityLogService));
+app.use('/admin', createPersonRouter({ personRepo, memberRepo, workspaceService }));
 app.use(errorHandler);
 
 export default app;

@@ -51,7 +51,8 @@ MissionRepo (DB 등록) → fetchRepoPRs (GitHub API) → parsePRsToSubmissions 
 - `Workspace`: githubOrg, nicknameRegex(기본값), cohortRules(JSON), blogSyncEnabled(bool)
 - `MissionRepo`: name, repoUrl, track(frontend|backend|android|**null=공통**), type(individual|integration), tabCategory, status(active|candidate|excluded), syncMode(continuous|once), lastSyncAt, nicknameRegex, cohortRegexRules(JSON), cohorts(JSON 기수배열), level(Int?)
 - `CohortRepo`: cohort, order, missionRepoId, workspaceId — 기수별 미션 순서
-- `Member`: githubId, githubUserId?, previousGithubIds?, 닉네임 필드, avatarUrl, blog, rss\*, lastPostedAt 등 — **기수/역할은 `MemberCohort`로 정규화**
+- `Person`: displayName?, note?, workspaceId — 같은 실제 인물인 여러 Member를 하나로 묶는 마스터 엔티티
+- `Member`: githubId, githubUserId?, previousGithubIds?, 닉네임 필드, avatarUrl, blog, rss\*, lastPostedAt, **personId?** 등 — **기수/역할은 `MemberCohort`로 정규화**
 - `Cohort` / `Role` / `MemberCohort`: 기수 번호, 역할 이름(crew|coach|reviewer), 멤버↔기수↔역할 연결 (`npm run seed`가 Role + Workspace까지 생성)
 - `Submission`, `BlogPost`, `BlogPostLatest`, `ActivityLog`: 기존과 동일
 
@@ -95,6 +96,12 @@ POST /admin/blog/backfill             — GitHub profile blog 백필 (?limit=30&
 GET  /admin/logs                      — 어드민 활동 로그 조회 (최근 200개)
 POST /admin/logs                      — 로그 기록 (type, message)
 DELETE /admin/logs                    — 전체 로그 삭제
+GET  /admin/persons                   — Person 마스터 목록 (연결된 멤버 포함)
+POST /admin/persons                   — Person 생성 (displayName?, note?, memberIds?)
+PATCH /admin/persons/:id              — displayName, note 수정
+DELETE /admin/persons/:id             — Person 삭제 (멤버 personId 자동 해제)
+POST /admin/persons/:id/members/:memberId   — 멤버 → Person 연결
+DELETE /admin/persons/:id/members/:memberId — 연결 해제
 ```
 
 모든 `/admin` 엔드포인트는 `Authorization: Bearer <ADMIN_SECRET>` 필요.

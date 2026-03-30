@@ -20,6 +20,17 @@ model Workspace {
   cohortRepos     CohortRepo[]
   members         Member[]
   missionRepos    MissionRepo[]
+  persons         Person[]
+}
+
+model Person {
+  id          Int       @id @default(autoincrement())
+  displayName String?
+  note        String?
+  workspaceId Int
+  createdAt   DateTime  @default(now())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  members     Member[]
 }
 
 model Member {
@@ -40,10 +51,12 @@ model Member {
   rssError            String?
   lastPostedAt        DateTime?
   workspaceId         Int
+  personId            Int?
   createdAt           DateTime         @default(now())
   updatedAt           DateTime         @updatedAt
   blogPosts           BlogPost[]
   workspace           Workspace        @relation(fields: [workspaceId], references: [id])
+  person              Person?          @relation(fields: [personId], references: [id])
   memberCohorts       MemberCohort[]
   submissions         Submission[]
 
@@ -118,6 +131,7 @@ model Submission {
   prNumber      Int
   prUrl         String
   title         String
+  status        String      @default("open")
   submittedAt   DateTime
   memberId      Int
   missionRepoId Int
