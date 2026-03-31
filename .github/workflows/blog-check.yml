@@ -21,3 +21,36 @@ jobs:
             echo "Blog sync failed with status $response"
             exit 1
           fi
+
+      - name: Fetch new blog posts
+        id: new_posts
+        run: |
+          curl -sf \
+            "${{ secrets.SYNC_URL }}/admin/blog/new-posts?sinceMinutes=65" \
+            -H "Authorization: Bearer ${{ secrets.ADMIN_SECRET }}" \
+            -o /tmp/blog-new-posts.json || echo '[]' > /tmp/blog-new-posts.json
+
+          count=$(jq 'if type == "array" then length else 0 end' /tmp/blog-new-posts.json)
+          echo "count=$count" >> $GITHUB_OUTPUT
+          echo "New posts found: $count"
+
+      - name: Notify Slack
+        if: steps.new_posts.outputs.count != '0'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          if [ -z "$SLACK_WEBHOOK_URL" ]; then
+            echo "SLACK_WEBHOOK_URL not set, skipping notification"
+            exit 0
+          fi
+
+          count=${{ steps.new_posts.outputs.count }}
+          text=$(jq -r \
+            '"새 블로그 글 \(length)건 🎉\n" + (map("• \(.member.nickname // .member.githubId)(\(.member.cohort // "?")기): <\(.url)|\(.title)>") | join("\n"))' \
+            /tmp/blog-new-posts.json)
+
+          curl -sf -X POST "$SLACK_WEBHOOK_URL" \
+            -H 'Content-Type: application/json' \
+            -d "$(jq -n --arg text "$text" '{"text": $text}')"
+
+          echo "Slack notification sent: $count new posts"
