@@ -34,6 +34,8 @@ export function parsePRsToSubmissions(prs: RawPR[], cohortRules: CohortRule[]): 
 
   for (const pr of prs) {
     if (!pr.user) continue;
+    // GitHub 탈퇴 계정은 login이 "ghost"로 변경되므로 건너뜀
+    if (pr.user.login === 'ghost') continue;
 
     const submittedAt = new Date(pr.created_at);
     const cohort = detectCohort(submittedAt, cohortRules);
@@ -181,10 +183,14 @@ export function createSyncService(deps: {
             blog: null,
             avatarUrl: null,
           };
-          githubId = profile.githubId;
+          // 탈퇴 계정은 login이 "ghost"로 반환됨 — 기존 githubId 유지
+          githubId = profile.githubId === 'ghost' ? s.githubId : profile.githubId;
           githubUserId = profile.githubUserId ?? githubUserId;
-          blog = existingMember?.blog ?? profile.blog;
-          avatarUrl = profile.avatarUrl ?? existingMember?.avatarUrl ?? null;
+          blog = existingMember?.blog ?? (profile.githubId === 'ghost' ? null : profile.blog);
+          avatarUrl =
+            profile.githubId === 'ghost'
+              ? (existingMember?.avatarUrl ?? null)
+              : (profile.avatarUrl ?? existingMember?.avatarUrl ?? null);
           profileFetchedAt = new Date();
           if (profile.avatarUrl || profile.blog || profile.githubId !== s.githubId) {
             profileRefreshError = null;
