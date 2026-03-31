@@ -1,10 +1,38 @@
 import { describe, expect, it } from '@jest/globals';
 import {
+  extractNicknameTokens,
   isValidNickname,
   mergeNicknameStat,
   normalizeNickname,
   resolveDisplayNickname,
 } from '../../shared/nickname.js';
+
+describe('extractNicknameTokens', () => {
+  it('한글 토큰만 추출한다', () => {
+    expect(extractNicknameTokens('[2단계 - 웹 기반 로또 게임] 콘티 미션 제출합니다.')).toEqual([
+      '단계',
+      '웹',
+      '기반',
+      '로또',
+      '게임',
+      '콘티',
+      '미션',
+      '제출합니다',
+    ]);
+  });
+
+  it('영문·숫자만 있으면 빈 배열을 반환한다', () => {
+    expect(extractNicknameTokens('No Korean here 123')).toEqual([]);
+  });
+
+  it('한글만 있으면 단일 토큰을 반환한다', () => {
+    expect(extractNicknameTokens('콘티')).toEqual(['콘티']);
+  });
+
+  it('빈 문자열은 빈 배열을 반환한다', () => {
+    expect(extractNicknameTokens('')).toEqual([]);
+  });
+});
 
 describe('normalizeNickname', () => {
   it('trailing (note) 제거', () => {
@@ -45,12 +73,6 @@ describe('nickname stats', () => {
 });
 
 describe('isValidNickname', () => {
-  it('단계명은 유효하지 않다', () => {
-    expect(isValidNickname('4단계 자동 DI')).toBe(false);
-    expect(isValidNickname('2,3 단계 자동 DI')).toBe(false);
-    expect(isValidNickname('1단계')).toBe(false);
-  });
-
   it('20자 초과는 유효하지 않다', () => {
     expect(isValidNickname('가'.repeat(21))).toBe(false);
     expect(isValidNickname('가'.repeat(20))).toBe(true);
@@ -63,7 +85,7 @@ describe('isValidNickname', () => {
   });
 
   it('유효하지 않은 닉네임은 mergeNicknameStat에서 무시된다', () => {
-    const stats = mergeNicknameStat(null, '4단계 자동 DI', new Date());
+    const stats = mergeNicknameStat(null, '가'.repeat(21), new Date());
     expect(stats).toHaveLength(0);
   });
 });

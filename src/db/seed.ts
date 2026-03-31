@@ -25,7 +25,6 @@ async function seed() {
     data: {
       name: 'woowacourse',
       githubOrg: 'woowacourse',
-      nicknameRegex: '\\[.+\\] (.+) 미션 제출합니다',
       cohortRules: JSON.stringify([
         { year: 2019, cohort: 1 },
         { year: 2020, cohort: 2 },

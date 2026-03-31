@@ -9,7 +9,6 @@ async function runSeed() {
     data: {
       name: 'woowacourse',
       githubOrg: 'woowacourse',
-      nicknameRegex: '\\[.+\\] (.+) 미션 제출합니다',
       cohortRules: JSON.stringify([
         { year: 2025, cohort: 7 },
         { year: 2026, cohort: 8 },
