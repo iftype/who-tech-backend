@@ -4,7 +4,7 @@ import type { BlogPostRepository } from '../../db/repositories/blog-post.reposit
 import type { WorkspaceService } from '../workspace/workspace.service.js';
 import { normalizeBlogUrl } from '../../shared/blog.js';
 import { mergePreviousGithubIds, shouldRefreshProfile } from '../../shared/github-profile.js';
-import { resolveDisplayNickname } from '../../shared/nickname.js';
+import { resolveDisplayNickname, parseNicknameStats } from '../../shared/nickname.js';
 import { fetchUserProfile } from '../sync/github.service.js';
 
 export function createMemberService(deps: {
@@ -34,6 +34,7 @@ export function createMemberService(deps: {
       githubUserId: member.githubUserId,
       nickname: resolveDisplayNickname(member.manualNickname, member.nicknameStats, member.nickname),
       manualNickname: member.manualNickname,
+      nicknameStats: parseNicknameStats(member.nicknameStats),
       avatarUrl: member.avatarUrl,
       blog: member.blog,
       lastPostedAt: member.lastPostedAt,

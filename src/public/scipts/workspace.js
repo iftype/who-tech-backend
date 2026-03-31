@@ -19,7 +19,6 @@ export function loadWorkspace() {
   return fetch('/admin/workspace', { headers: authHeaders() })
     .then((response) => response.json())
     .then((data) => {
-      document.getElementById('nickname-regex').value = data.nicknameRegex;
       document.getElementById('cohort-rules').value = JSON.stringify(data.cohortRules, null, 2);
       updateBlogSyncToggle(data.blogSyncEnabled);
     });
@@ -80,10 +79,7 @@ export function saveWorkspace() {
   fetch('/admin/workspace', {
     method: 'PUT',
     headers: authHeaders('application/json'),
-    body: JSON.stringify({
-      nicknameRegex: document.getElementById('nickname-regex').value,
-      cohortRules,
-    }),
+    body: JSON.stringify({ cohortRules }),
   })
     .then(() => {
       toast('Workspace 저장 완료');

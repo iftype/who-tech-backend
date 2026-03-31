@@ -24,12 +24,3 @@ export function parseJsonOrNull(value) {
   if (!value) return null;
   return JSON.parse(value);
 }
-
-export function formatRepoRegex(repo) {
-  const cohortRules = repo.cohortRegexRules ?? [];
-  if (cohortRules.length > 0) {
-    return cohortRules.map((rule) => `${rule.cohort}기: ${rule.nicknameRegex}`).join('\n');
-  }
-
-  return repo.nicknameRegex ?? 'workspace 기본 정규식';
-}

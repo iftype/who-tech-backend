@@ -15,13 +15,6 @@ export function createRepoRouter(service: RepoService) {
   );
 
   router.post(
-    '/detect-regex-all',
-    asyncHandler(async (_req, res) => {
-      res.json(await service.detectAndApplyAllRegex());
-    }),
-  );
-
-  router.post(
     '/discover',
     asyncHandler(async (_req, res) => {
       res.json(await service.refreshRepoCandidates());
@@ -39,20 +32,6 @@ export function createRepoRouter(service: RepoService) {
     '/:id',
     asyncHandler(async (req, res) => {
       res.json(await service.updateRepoMatchingRules(parseId(req.params['id']), parseRepoUpdateInput(req.body)));
-    }),
-  );
-
-  router.get(
-    '/:id/validate-regex',
-    asyncHandler(async (req, res) => {
-      res.json(await service.validateRepoRegex(parseId(req.params['id'])));
-    }),
-  );
-
-  router.get(
-    '/:id/detect-regex',
-    asyncHandler(async (req, res) => {
-      res.json(await service.detectRepoRegex(parseId(req.params['id'])));
     }),
   );
 
