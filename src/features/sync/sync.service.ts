@@ -3,13 +3,15 @@ import type { MemberRepository } from '../../db/repositories/member.repository.j
 import type { MissionRepoRepository } from '../../db/repositories/mission-repo.repository.js';
 import type { SubmissionRepository } from '../../db/repositories/submission.repository.js';
 import type { WorkspaceRepository } from '../../db/repositories/workspace.repository.js';
-import { findNicknameRegexByCohort, parseCohortRegexRules, parseCohorts } from '../../shared/cohort-regex.js';
+import type { BannedWordRepository } from '../../db/repositories/banned-word.repository.js';
+import type { IgnoredDomainRepository } from '../../db/repositories/ignored-domain.repository.js';
+import { parseCohorts } from '../../shared/cohort-regex.js';
 import { mergePreviousGithubIds, shouldRefreshProfile } from '../../shared/github-profile.js';
 import { HttpError } from '../../shared/http.js';
-import { mergeNicknameStat, resolveDisplayNickname } from '../../shared/nickname.js';
-import { fetchRepoPRs, fetchUserBlogCandidates, parseNickname, detectCohort } from './github.service.js';
+import { extractNicknameTokens, mergeNicknameStat, resolveDisplayNickname } from '../../shared/nickname.js';
+import { fetchRepoPRs, fetchUserBlogCandidates, detectCohort } from './github.service.js';
 import { probeRss } from '../blog/blog.service.js';
-import type { CohortRegexRule, CohortRule, ParsedSubmission, PrStatus } from '../../shared/types/index.js';
+import type { CohortRule, ParsedSubmission, PrStatus } from '../../shared/types/index.js';
 
 type RawPR = {
   number: number;
@@ -27,12 +29,7 @@ function resolvePrStatus(state: string, merged_at: string | null): PrStatus {
   return merged_at ? 'merged' : 'closed';
 }
 
-export function parsePRsToSubmissions(
-  prs: RawPR[],
-  nicknameRegex: RegExp,
-  cohortRules: CohortRule[],
-  cohortRegexRules: CohortRegexRule[] = [],
-): ParsedSubmission[] {
+export function parsePRsToSubmissions(prs: RawPR[], cohortRules: CohortRule[]): ParsedSubmission[] {
   const results: ParsedSubmission[] = [];
 
   for (const pr of prs) {
@@ -40,16 +37,12 @@ export function parsePRsToSubmissions(
 
     const submittedAt = new Date(pr.created_at);
     const cohort = detectCohort(submittedAt, cohortRules);
-    const regexByCohort = findNicknameRegexByCohort(cohortRegexRules, cohort);
-    const appliedRegex = regexByCohort ? new RegExp(regexByCohort) : nicknameRegex;
-    const nickname = parseNickname(pr.title, appliedRegex);
-
-    if (!nickname) continue;
+    const nicknameTokens = extractNicknameTokens(pr.title);
 
     results.push({
       githubUserId: pr.user.id ?? null,
       githubId: pr.user.login,
-      nickname,
+      nicknameTokens,
       prNumber: pr.number,
       prUrl: pr.html_url,
       title: pr.title,
@@ -67,8 +60,10 @@ export function createSyncService(deps: {
   missionRepoRepo: MissionRepoRepository;
   submissionRepo: SubmissionRepository;
   workspaceRepo: WorkspaceRepository;
+  bannedWordRepo: BannedWordRepository;
+  ignoredDomainRepo: IgnoredDomainRepository;
 }) {
-  const { memberRepo, missionRepoRepo, submissionRepo, workspaceRepo } = deps;
+  const { memberRepo, missionRepoRepo, submissionRepo, workspaceRepo, bannedWordRepo, ignoredDomainRepo } = deps;
 
   const syncRepo = async (
     octokit: Octokit,
@@ -78,16 +73,22 @@ export function createSyncService(deps: {
       id: number;
       name: string;
       track?: string | null;
-      nicknameRegex?: string | null;
-      cohortRegexRules?: string | null;
       lastSyncAt?: Date | null;
     },
-    workspaceRegex: RegExp,
     cohortRules: CohortRule[],
     onProgress?: (step: { total: number; processed: number; synced: number; percent: number; phase: string }) => void,
   ): Promise<{ synced: number; failures: { prNumber: number; prUrl: string; error: string }[] }> => {
     const isCommonMission = repo.track === null || repo.track === undefined;
     const since = repo.lastSyncAt ?? undefined;
+
+    // 금지어 및 무시 도메인 로드
+    const [bannedWordRows, ignoredDomainRows] = await Promise.all([
+      bannedWordRepo.findAll(workspaceId),
+      ignoredDomainRepo.findAll(workspaceId),
+    ]);
+    const bannedWords = new Set(bannedWordRows.map((r) => r.word));
+    const ignoredDomains = ignoredDomainRows.map((r) => r.domain);
+
     let prs: Awaited<ReturnType<typeof fetchRepoPRs>>;
     try {
       prs = await fetchRepoPRs(octokit, org, repo.name, ...(since ? [{ since }] : []));
@@ -95,13 +96,8 @@ export function createSyncService(deps: {
       const detail = error instanceof Error ? error.message : String(error);
       throw new HttpError(500, `repo sync fetch failed: ${repo.name} — ${detail}`);
     }
-    const fallbackRegex = repo.nicknameRegex ? new RegExp(repo.nicknameRegex) : workspaceRegex;
-    const submissions = parsePRsToSubmissions(
-      prs,
-      fallbackRegex,
-      cohortRules,
-      parseCohortRegexRules(repo.cohortRegexRules),
-    );
+
+    const submissions = parsePRsToSubmissions(prs, cohortRules);
     const total = submissions.length;
     const profileCache = new Map<
       string,
@@ -122,10 +118,17 @@ export function createSyncService(deps: {
         // 공통 미션: 이미 알려진 멤버에만 submission 연결
         if (isCommonMission && !existingMember) continue;
 
-        const nicknameStats = mergeNicknameStat(existingMember?.nicknameStats, s.nickname, s.submittedAt);
+        // 금지어 필터 후 닉네임 통계 업데이트
+        let statsValue = existingMember?.nicknameStats ?? null;
+        for (const token of s.nicknameTokens) {
+          if (!bannedWords.has(token)) {
+            const updated = mergeNicknameStat(statsValue, token, s.submittedAt);
+            statsValue = JSON.stringify(updated);
+          }
+        }
         const displayNickname = resolveDisplayNickname(
           existingMember?.manualNickname,
-          JSON.stringify(nicknameStats),
+          statsValue,
           existingMember?.nickname ?? null,
         );
 
@@ -144,10 +147,11 @@ export function createSyncService(deps: {
           const cacheKey = githubUserId != null ? `id:${githubUserId}` : `login:${s.githubId}`;
           if (!profileCache.has(cacheKey)) {
             try {
-              const { profile, candidates } = await fetchUserBlogCandidates(octokit, {
-                githubUserId,
-                username: s.githubId,
-              });
+              const { profile, candidates } = await fetchUserBlogCandidates(
+                octokit,
+                { githubUserId, username: s.githubId },
+                ignoredDomains,
+              );
               let validBlog = null;
               for (const url of candidates) {
                 const rssCheck = await probeRss(url);
@@ -194,21 +198,20 @@ export function createSyncService(deps: {
         );
 
         if (!githubUserId) {
-          // githubUserId가 없는 특이 케이스 대응 (보통은 s.githubUserId나 existingMember에 있음)
           throw new Error(`githubUserId is missing for user: ${s.githubId}`);
         }
 
         const member = await memberRepo.upsert(workspaceId, githubUserId, {
           githubId,
           githubUserId,
-          previousGithubIds: previousGithubIds ?? null, // exactOptionalPropertyTypes 대응
+          previousGithubIds: previousGithubIds ?? null,
           nickname: displayNickname,
           avatarUrl: avatarUrl ?? null,
-          nicknameStats: JSON.stringify(nicknameStats),
+          nicknameStats: statsValue,
           profileFetchedAt: profileFetchedAt ?? null,
           profileRefreshError: profileRefreshError ?? null,
           blog: blog ?? null,
-          workspaceId, // create 시 사용됨
+          workspaceId,
         });
 
         if (s.cohort) {
@@ -268,10 +271,8 @@ export function createSyncService(deps: {
   ): Promise<{ totalSynced: number; reposSynced: number }> => {
     const workspace = await workspaceRepo.findByIdOrThrow(workspaceId);
     const cohortRules: CohortRule[] = JSON.parse(workspace.cohortRules);
-    const workspaceRegex = new RegExp(workspace.nicknameRegex);
 
     const repos = await missionRepoRepo.findMany({ workspaceId });
-    // 전체 sync는 한번만 돌릴 레포 중 아직 sync되지 않은 것만 실행
     const activeRepos = repos.filter((r) => {
       if (r.status !== 'active' || r.syncMode !== 'once' || r.lastSyncAt !== null) return false;
       if (cohort != null && !parseCohorts(r.cohorts).includes(cohort)) return false;
@@ -281,7 +282,7 @@ export function createSyncService(deps: {
     let totalSynced = 0;
     for (let i = 0; i < activeRepos.length; i++) {
       const repo = activeRepos[i]!;
-      const { synced } = await syncRepo(octokit, workspaceId, workspace.githubOrg, repo, workspaceRegex, cohortRules);
+      const { synced } = await syncRepo(octokit, workspaceId, workspace.githubOrg, repo, cohortRules);
       totalSynced += synced;
       onProgress?.({ repo: repo.name, done: i + 1, total: activeRepos.length, synced });
     }
