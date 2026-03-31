@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from '@jest/globals';
 import request from 'supertest';
 import app from '../../app.js';
 import prisma from '../../db/prisma.js';
@@ -12,7 +12,6 @@ beforeAll(async () => {
     create: {
       name: 'woowacourse',
       githubOrg: 'woowacourse',
-      nicknameRegex: '\\[.+\\] (.+) 미션 제출합니다',
       cohortRules: JSON.stringify([
         { year: 2026, cohort: 8 },
         { year: 2025, cohort: 7 },
@@ -49,19 +48,20 @@ describe('GET /admin/workspace', () => {
   it('워크스페이스 설정을 반환한다', async () => {
     const res = await request(app).get('/admin/workspace').set('Authorization', `Bearer ${ADMIN_SECRET}`);
     expect(res.status).toBe(200);
-    expect(res.body).toHaveProperty('nicknameRegex');
     expect(res.body).toHaveProperty('cohortRules');
+    expect(res.body).toHaveProperty('blogSyncEnabled');
   });
 });
 
 describe('PUT /admin/workspace', () => {
   it('워크스페이스 설정을 수정한다', async () => {
+    const rules = [{ year: 2026, cohort: 8 }];
     const res = await request(app)
       .put('/admin/workspace')
       .set('Authorization', `Bearer ${ADMIN_SECRET}`)
-      .send({ nicknameRegex: '\\[.+\\] (.+) 미션 제출합니다' });
+      .send({ cohortRules: rules });
     expect(res.status).toBe(200);
-    expect(res.body.nicknameRegex).toBe('\\[.+\\] (.+) 미션 제출합니다');
+    expect(res.body.cohortRules).toEqual(rules);
   });
 });
 
@@ -88,21 +88,15 @@ describe('레포 관리 CRUD', () => {
 
   it('POST /admin/repos: 레포를 추가한다', async () => {
     await prisma.missionRepo.deleteMany({ where: { name: 'javascript-lotto' } });
-    const res = await request(app)
-      .post('/admin/repos')
-      .set('Authorization', `Bearer ${ADMIN_SECRET}`)
-      .send({
-        name: 'javascript-lotto',
-        repoUrl: 'https://github.com/woowacourse/javascript-lotto',
-        track: 'frontend',
-        cohortRegexRules: [{ cohort: 7, nicknameRegex: '\\[.+\\] (.+) 제출합니다' }],
-      });
+    const res = await request(app).post('/admin/repos').set('Authorization', `Bearer ${ADMIN_SECRET}`).send({
+      name: 'javascript-lotto',
+      repoUrl: 'https://github.com/woowacourse/javascript-lotto',
+      track: 'frontend',
+    });
     expect(res.status).toBe(201);
     expect(res.body.name).toBe('javascript-lotto');
     expect(res.body.track).toBe('frontend');
     expect(res.body.type).toBe('individual');
-    expect(res.body.nicknameRegex).toBeNull();
-    expect(res.body.cohortRegexRules).toEqual([{ cohort: 7, nicknameRegex: '\\[.+\\] (.+) 제출합니다' }]);
   });
 
   it('GET /admin/repos: 레포 목록을 반환한다', async () => {
@@ -112,27 +106,14 @@ describe('레포 관리 CRUD', () => {
     expect(res.body.length).toBeGreaterThan(0);
   });
 
-  it('PATCH /admin/repos/:id: 레포 정규식을 수정한다', async () => {
+  it('PATCH /admin/repos/:id: 트랙과 상태를 수정한다', async () => {
     const res = await request(app)
       .patch(`/admin/repos/${repoId}`)
       .set('Authorization', `Bearer ${ADMIN_SECRET}`)
-      .send({
-        nicknameRegex: '\\[.+\\] (.+) 미션 제출합니다 \\(8기\\)',
-        cohortRegexRules: [{ cohort: 7, nicknameRegex: '\\[.+\\] (.+) 제출합니다 \\(7기\\)' }],
-      });
+      .send({ track: 'backend', status: 'active' });
     expect(res.status).toBe(200);
-    expect(res.body.nicknameRegex).toBe('\\[.+\\] (.+) 미션 제출합니다 \\(8기\\)');
-    expect(res.body.cohortRegexRules).toEqual([{ cohort: 7, nicknameRegex: '\\[.+\\] (.+) 제출합니다 \\(7기\\)' }]);
-  });
-
-  it('PATCH /admin/repos/:id: nicknameRegex와 cohortRegexRules를 초기화한다', async () => {
-    const res = await request(app)
-      .patch(`/admin/repos/${repoId}`)
-      .set('Authorization', `Bearer ${ADMIN_SECRET}`)
-      .send({ nicknameRegex: null, cohortRegexRules: null });
-    expect(res.status).toBe(200);
-    expect(res.body.nicknameRegex).toBeNull();
-    expect(res.body.cohortRegexRules).toEqual([]);
+    expect(res.body.track).toBe('backend');
+    expect(res.body.status).toBe('active');
   });
 
   it('DELETE /admin/repos/:id: 레포를 삭제한다', async () => {
