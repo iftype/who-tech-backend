@@ -99,7 +99,7 @@ export function renderMembers() {
       <td>
         <div class="stack">
           <div style="display:flex;align-items:center;gap:6px">
-            <strong>${escapeHtml(member.nickname ?? '-')}</strong>
+            <strong style="cursor:pointer" onclick="openNicknameModal(${member.id})">${escapeHtml(member.nickname ?? '-')}</strong>
             ${isPairSuspect(member) ? `<span title="페어 닉네임 의심 — manualNickname으로 개별 이름을 지정하세요" style="font-size:12px;cursor:help">⚠️</span>` : ''}
           </div>
           <span class="muted">manual: ${escapeHtml(member.manualNickname ?? '-')}</span>
@@ -486,6 +486,67 @@ export function openSubmissionModal(memberId, name) {
 
 export function closeSubmissionModal() {
   document.getElementById('submission-modal').style.display = 'none';
+}
+
+export function openNicknameModal(memberId) {
+  const member = adminState.memberList.find((item) => item.id === memberId);
+  if (!member) return;
+
+  const modal = document.getElementById('nickname-modal');
+  const title = document.getElementById('nickname-modal-title');
+  const body = document.getElementById('nickname-modal-body');
+
+  title.textContent = `닉네임 선택 — ${member.githubId}`;
+
+  const stats = member.nicknameStats ?? [];
+  const current = member.manualNickname;
+
+  body.innerHTML = `
+    <div style="padding:16px">
+      ${
+        current
+          ? `<div style="margin-bottom:12px">현재 고정: <strong>${escapeHtml(current)}</strong> <button class="btn-sm btn-ghost" onclick="setManualNickname(${memberId}, null)">초기화</button></div>`
+          : ''
+      }
+      ${
+        stats.length === 0
+          ? '<div class="muted">닉네임 통계가 없습니다.</div>'
+          : `<div class="stack" style="gap:4px">
+              ${stats
+                .map(
+                  (stat) => `
+                <button class="btn-sm btn-ghost" style="text-align:left;padding:8px 12px;${current === stat.nickname ? 'font-weight:bold;background:var(--bg-hover,#f1f5f9)' : ''}"
+                  onclick="setManualNickname(${memberId}, '${escapeHtml(stat.nickname)}')">
+                  ${escapeHtml(stat.nickname)} <span class="muted">(${stat.count}회)</span>
+                </button>
+              `,
+                )
+                .join('')}
+            </div>`
+      }
+    </div>
+  `;
+
+  modal.style.display = 'flex';
+}
+
+export function closeNicknameModal() {
+  document.getElementById('nickname-modal').style.display = 'none';
+}
+
+export function setManualNickname(memberId, nickname) {
+  fetch(`/admin/members/${memberId}`, {
+    method: 'PATCH',
+    headers: authHeaders('application/json'),
+    body: JSON.stringify({ manualNickname: nickname }),
+  })
+    .then((response) => {
+      if (!response.ok) throw new Error('failed');
+      toast(nickname ? `닉네임 고정: ${nickname}` : '닉네임 초기화 완료');
+      closeNicknameModal();
+      return loadMembers();
+    })
+    .catch(() => alert('닉네임 수정에 실패했습니다.'));
 }
 
 export function deleteAllMembers() {

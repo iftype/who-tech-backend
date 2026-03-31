@@ -13,6 +13,7 @@ import { clearActivityLog, toggleActivityLog } from './logs.js';
 import {
   addMember,
   closeBlogModal,
+  closeNicknameModal,
   closeSubmissionModal,
   debouncedLoadMembers,
   deleteMember,
@@ -20,9 +21,11 @@ import {
   editMember,
   loadMembers,
   openBlogModal,
+  openNicknameModal,
   openSubmissionModal,
   refreshMemberProfile,
   refreshMemberProfiles,
+  setManualNickname,
   toggleMemberRole,
   togglePairFilter,
 } from './members.js';
@@ -32,7 +35,6 @@ import {
   deleteAllRepos,
   deleteRepo,
   discoverRepos,
-  editRepoRegex,
   filterCohortRepoSelect,
   inlineEditCohorts,
   inlineEditDescription,
@@ -50,15 +52,6 @@ import {
   setRepoOncePage,
   setRepoTab,
 } from './repos.js';
-import {
-  applyDetectedRegex,
-  closeRegexModal,
-  closeValidateModal,
-  detectRegexAll,
-  detectRepoRegex,
-  dismissValidateIssue,
-  startValidateAllRegex,
-} from './regex.js';
 import { resetSync, syncRepo, triggerSync, triggerTsAndLearningTest } from './sync.js';
 import { saveWorkspace, toggleBlogSync } from './workspace.js';
 import {
@@ -72,6 +65,8 @@ import {
   linkPersonMember,
   unlinkPersonMember,
 } from './person.js';
+import { loadBannedWords, addBannedWord, deleteBannedWord } from './banned-words.js';
+import { loadIgnoredDomains, addIgnoredDomain, deleteIgnoredDomain } from './ignored-domains.js';
 
 Object.assign(window, {
   login,
@@ -82,8 +77,6 @@ Object.assign(window, {
   triggerSync,
   triggerTsAndLearningTest,
   deleteAllRepos,
-  detectRegexAll,
-  startValidateAllRegex,
   discoverRepos,
   loadRepos,
   loadMembers,
@@ -101,9 +94,6 @@ Object.assign(window, {
   clearActivityLog,
   closeBlogModal,
   closeSubmissionModal,
-  closeRegexModal,
-  applyDetectedRegex,
-  closeValidateModal,
   loadCohortRepos,
   renderCohortRepos,
   moveRepoCategory,
@@ -114,10 +104,8 @@ Object.assign(window, {
   inlineEditLevel,
   inlineEditCohorts,
   inlineEditDescription,
-  editRepoRegex,
   syncRepo,
   resetSync,
-  detectRepoRegex,
   deleteRepo,
   addRepo,
   setRepoContinuousPage,
@@ -133,7 +121,6 @@ Object.assign(window, {
   changeCohortRepoLevel,
   setCohortRepoOrder,
   deleteCohortRepo,
-  dismissValidateIssue,
   populateCohortRepoSelect,
   filterCohortRepoSelect,
   loadPersons,
@@ -145,6 +132,15 @@ Object.assign(window, {
   searchMembersForLink,
   linkPersonMember,
   unlinkPersonMember,
+  loadBannedWords,
+  addBannedWord,
+  deleteBannedWord,
+  loadIgnoredDomains,
+  addIgnoredDomain,
+  deleteIgnoredDomain,
+  openNicknameModal,
+  closeNicknameModal,
+  setManualNickname,
 });
 
 document.getElementById('secret-input').addEventListener('keydown', (event) => {
