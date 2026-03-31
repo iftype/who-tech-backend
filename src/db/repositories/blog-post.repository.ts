@@ -85,6 +85,13 @@ export function createBlogPostRepository(db: PrismaClient) {
      * 스키마에서 BlogPostLatest 모델을 삭제할 것이기 때문입니다.
      * 하지만 다른 코드와의 호환성을 위해 빈 함수로 두거나, 점진적으로 제거하세요.
      */
+    findSince: (workspaceId: number, since: Date) =>
+      db.blogPost.findMany({
+        where: { createdAt: { gte: since }, member: { workspaceId } },
+        orderBy: { publishedAt: 'desc' },
+        include: blogPostWithMemberInclude,
+      }),
+
     refreshLatest: async (_since: Date) => {
       // 이제 단일 테이블 구조이므로 복사 로직이 필요 없습니다.
       return Promise.resolve();

@@ -1,19 +1,22 @@
 import type { Octokit } from '@octokit/rest';
 import type { MemberRepository } from '../../db/repositories/member.repository.js';
+import type { BlogPostRepository } from '../../db/repositories/blog-post.repository.js';
 import type { WorkspaceService } from '../workspace/workspace.service.js';
 import type { BlogService } from './blog.service.js';
 import { probeRss } from './blog.service.js';
 import { fetchUserBlogCandidates } from '../sync/github.service.js';
 import { mergePreviousGithubIds } from '../../shared/github-profile.js';
+import { resolveDisplayNickname } from '../../shared/nickname.js';
 // blog.admin.service.ts
 
 export function createBlogAdminService(deps: {
   memberRepo: MemberRepository;
+  blogPostRepo: BlogPostRepository;
   workspaceService: WorkspaceService;
   blogService: BlogService;
   octokit: Octokit;
 }) {
-  const { memberRepo, workspaceService, blogService, octokit } = deps;
+  const { memberRepo, blogPostRepo, workspaceService, blogService, octokit } = deps;
 
   return {
     syncWorkspaceBlogs: async () => {
@@ -117,6 +120,32 @@ export function createBlogAdminService(deps: {
         failed: failures.length,
         failures: failures.slice(0, 10),
       };
+    },
+
+    getNewPosts: async (sinceMinutes = 65) => {
+      const workspace = await workspaceService.getOrThrow();
+      const since = new Date(Date.now() - sinceMinutes * 60 * 1000);
+      const posts = await blogPostRepo.findSince(workspace.id, since);
+      return posts.map((p) => {
+        const cohortMap = new Map<number, string[]>();
+        for (const mc of p.member.memberCohorts) {
+          if (!cohortMap.has(mc.cohort.number)) cohortMap.set(mc.cohort.number, []);
+          cohortMap.get(mc.cohort.number)!.push(mc.role.name);
+        }
+        const cohorts = [...cohortMap.entries()]
+          .map(([cohort, roles]) => ({ cohort, roles }))
+          .sort((a, b) => b.cohort - a.cohort);
+        return {
+          url: p.url,
+          title: p.title,
+          publishedAt: p.publishedAt,
+          member: {
+            githubId: p.member.githubId,
+            nickname: resolveDisplayNickname(p.member.manualNickname, p.member.nicknameStats, p.member.nickname),
+            cohort: cohorts[0]?.cohort ?? null,
+          },
+        };
+      });
     },
   };
 }
