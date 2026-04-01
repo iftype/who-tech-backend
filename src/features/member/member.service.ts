@@ -83,8 +83,10 @@ export function createMemberService(deps: {
       }
     }
 
+    const resolvedNickname = resolveDisplayNickname(member.manualNickname, statsValue, member.nickname);
+
     if (!fetchGithub) {
-      const updated = await memberRepo.update(id, { nicknameStats: statsValue });
+      const updated = await memberRepo.update(id, { nicknameStats: statsValue, nickname: resolvedNickname });
       return toResponse(updated);
     }
 
@@ -122,6 +124,7 @@ export function createMemberService(deps: {
     const updated = await memberRepo.update(id, {
       ...profileFields,
       nicknameStats: statsValue,
+      nickname: resolvedNickname,
       profileFetchedAt: new Date(),
       profileRefreshError,
     });
