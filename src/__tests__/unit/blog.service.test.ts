@@ -16,11 +16,11 @@ describe('resolveRSSUrlsForBlog', () => {
 
   it('github pages 블로그는 여러 common candidate를 생성한다', () => {
     expect(resolveRSSUrlsForBlog('https://lns13301.github.io/github-blog')).toEqual([
+      'https://lns13301.github.io/github-blog/rss',
+      'https://lns13301.github.io/github-blog/feed',
       'https://lns13301.github.io/github-blog/feed.xml',
       'https://lns13301.github.io/github-blog/rss.xml',
       'https://lns13301.github.io/github-blog/atom.xml',
-      'https://lns13301.github.io/github-blog/feed',
-      'https://lns13301.github.io/github-blog/rss',
       'https://lns13301.github.io/github-blog/index.xml',
     ]);
   });

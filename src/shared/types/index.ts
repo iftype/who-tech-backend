@@ -3,11 +3,6 @@ export interface CohortRule {
   cohort: number;
 }
 
-export interface CohortRegexRule {
-  cohort: number;
-  nicknameRegex: string;
-}
-
 export interface NicknameStat {
   nickname: string;
   count: number;
@@ -19,7 +14,7 @@ export type PrStatus = 'open' | 'closed' | 'merged';
 export interface ParsedSubmission {
   githubUserId: number | null;
   githubId: string;
-  nickname: string;
+  nicknameTokens: string[];
   prNumber: number;
   prUrl: string;
   title: string;

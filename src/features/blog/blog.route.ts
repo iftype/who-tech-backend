@@ -13,7 +13,17 @@ export function createBlogRouter(service: BlogAdminService) {
     }),
   );
 
-  // 2. 블로그 링크 백필 (RSS 후보 검사 및 자동 등록)
+  // 2. 최근 새 블로그 글 조회 (sinceMinutes 이내 createdAt 기준)
+  router.get(
+    '/blog/new-posts',
+    asyncHandler(async (req, res) => {
+      const sinceMinutesValue = req.query['sinceMinutes'];
+      const sinceMinutes = typeof sinceMinutesValue === 'string' ? Number(sinceMinutesValue) : 65;
+      res.json(await service.getNewPosts(Number.isFinite(sinceMinutes) && sinceMinutes > 0 ? sinceMinutes : 65));
+    }),
+  );
+
+  // 3. 블로그 링크 백필 (RSS 후보 검사 및 자동 등록)
   router.post(
     '/blog/backfill',
     asyncHandler(async (req, res) => {

@@ -8,19 +8,20 @@ datasource db {
 }
 
 model Workspace {
-  id              Int           @id @default(autoincrement())
-  name            String        @unique
-  githubOrg       String
-  nicknameRegex   String
-  cohortRules     String
-  blogSyncEnabled Boolean       @default(true)
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  activityLogs    ActivityLog[]
-  cohortRepos     CohortRepo[]
-  members         Member[]
-  missionRepos    MissionRepo[]
-  persons         Person[]
+  id               Int                  @id @default(autoincrement())
+  name             String               @unique
+  githubOrg        String
+  cohortRules      String
+  blogSyncEnabled  Boolean              @default(true)
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  activityLogs     ActivityLog[]
+  cohortRepos      CohortRepo[]
+  members          Member[]
+  missionRepos     MissionRepo[]
+  persons          Person[]
+  bannedWords      NicknameBannedWord[]
+  ignoredDomains   IgnoredDomain[]
 }
 
 model Person {
@@ -50,6 +51,7 @@ model Member {
   rssCheckedAt        DateTime?
   rssError            String?
   lastPostedAt        DateTime?
+  track               String?
   workspaceId         Int
   personId            Int?
   createdAt           DateTime         @default(now())
@@ -90,26 +92,24 @@ model MemberCohort {
 }
 
 model MissionRepo {
-  id               Int          @id @default(autoincrement())
-  githubRepoId     Int?         @unique
-  name             String
-  repoUrl          String
-  description      String?
-  track            String?
-  type             String       @default("individual")
-  tabCategory      String       @default("base")
-  status           String       @default("active")
-  candidateReason  String?
-  nicknameRegex    String?
-  cohortRegexRules String?
-  cohorts          String?
-  level            Int?
-  syncMode         String       @default("continuous")
-  lastSyncAt       DateTime?
-  workspaceId      Int
-  cohortRepos      CohortRepo[]
-  workspace        Workspace    @relation(fields: [workspaceId], references: [id])
-  submissions      Submission[]
+  id              Int          @id @default(autoincrement())
+  githubRepoId    Int?         @unique
+  name            String
+  repoUrl         String
+  description     String?
+  track           String?
+  type            String       @default("individual")
+  tabCategory     String       @default("base")
+  status          String       @default("active")
+  candidateReason String?
+  cohorts         String?
+  level           Int?
+  syncMode        String       @default("continuous")
+  lastSyncAt      DateTime?
+  workspaceId     Int
+  cohortRepos     CohortRepo[]
+  workspace       Workspace    @relation(fields: [workspaceId], references: [id])
+  submissions     Submission[]
 
   @@unique([name, workspaceId])
 }
@@ -160,4 +160,24 @@ model ActivityLog {
   workspaceId Int
   createdAt   DateTime  @default(now())
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+model NicknameBannedWord {
+  id          Int       @id @default(autoincrement())
+  word        String
+  workspaceId Int
+  createdAt   DateTime  @default(now())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([word, workspaceId])
+}
+
+model IgnoredDomain {
+  id          Int       @id @default(autoincrement())
+  domain      String
+  workspaceId Int
+  createdAt   DateTime  @default(now())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([domain, workspaceId])
 }

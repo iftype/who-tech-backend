@@ -1,5 +1,16 @@
 import type { NicknameStat } from './types/index.js';
 
+/**
+ * PR 제목에서 한글 토큰만 추출한다.
+ * 특수문자·숫자·영문·공백으로 분리하여 한글(가-힣)만 남긴다.
+ */
+export function extractNicknameTokens(title: string): string[] {
+  return title
+    .split(/[^가-힣]+/)
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+}
+
 export function normalizeNickname(nickname: string): string {
   let s = nickname
     .trim()
@@ -39,7 +50,6 @@ export function stringifyNicknameStats(stats: NicknameStat[]): string | null {
 }
 
 export function isValidNickname(nickname: string): boolean {
-  if (/\d+\s*단계/.test(nickname)) return false;
   if (nickname.length > 20) return false;
   return true;
 }
@@ -50,22 +60,16 @@ export function mergeNicknameStat(
   submittedAt: Date,
 ): NicknameStat[] {
   if (!isValidNickname(nickname)) return parseNicknameStats(existingValue);
-  const normalizedNickname = normalizeNickname(nickname);
   const stats = parseNicknameStats(existingValue);
-  if (stats.some((item) => item.nickname === normalizedNickname)) {
+  if (stats.some((item) => item.nickname === nickname)) {
     return sortNicknameStats(
       stats.map((item) =>
-        item.nickname === normalizedNickname
-          ? { ...item, count: item.count + 1, lastSeenAt: submittedAt.toISOString() }
-          : item,
+        item.nickname === nickname ? { ...item, count: item.count + 1, lastSeenAt: submittedAt.toISOString() } : item,
       ),
     );
   }
 
-  return sortNicknameStats([
-    ...stats,
-    { nickname: normalizedNickname, count: 1, lastSeenAt: submittedAt.toISOString() },
-  ]);
+  return sortNicknameStats([...stats, { nickname, count: 1, lastSeenAt: submittedAt.toISOString() }]);
 }
 
 export function resolveDisplayNickname(

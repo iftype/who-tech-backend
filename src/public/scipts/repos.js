@@ -276,7 +276,6 @@ export function inlineEditDescription(el, id) {
 
 export function repoRow(repo) {
   const syncedAt = repo.lastSyncAt ? new Date(repo.lastSyncAt).toLocaleString('ko-KR') : '없음';
-  const hasCustomRegex = !!(repo.nicknameRegex || repo.cohortRegexRules?.length);
   const currentCategory = getRepoTabCategory(repo);
   const tabButtons = [
     { key: 'base', label: '기준', disabled: repo.track == null },
@@ -325,15 +324,11 @@ export function repoRow(repo) {
           <span class="muted">${escapeHtml(repo.candidateReason ?? '-')}</span>
         </div>
       </td>
-      <td style="cursor:pointer" onclick="editRepoRegex(${repo.id})" title="클릭해서 정규식 수정">
-        ${hasCustomRegex ? '<span class="pill active" style="font-size:11px">있음</span>' : '<span class="pill" style="font-size:11px;background:#f1f5f9;color:#64748b">기본값</span>'}
-      </td>
       <td class="muted small">${syncedAt}</td>
       <td>
         <div class="actions">
           <button class="btn-sm btn-secondary" onclick="syncRepo(${repo.id}, this)">Sync</button>
           <button class="btn-sm btn-ghost" onclick="resetSync(${repo.id})">초기화</button>
-          <button class="btn-sm btn-ghost" onclick="detectRepoRegex(${repo.id})">감지</button>
           <button class="btn-sm btn-danger" onclick="deleteRepo(${repo.id})">삭제</button>
         </div>
         <div class="tab-choice-group" style="margin-top:6px">
@@ -439,8 +434,6 @@ export function addRepo() {
     tabCategory: document.getElementById('repo-tab-category').value,
     status: document.getElementById('repo-status').value,
     syncMode: document.getElementById('repo-sync-mode').value,
-    nicknameRegex: document.getElementById('repo-regex').value.trim() || null,
-    cohortRegexRules: parseJsonOrNull(document.getElementById('repo-cohort-regex-rules').value.trim()),
   };
 
   if (!payload.name || !payload.repoUrl) {
@@ -460,7 +453,7 @@ export function addRepo() {
       return response.json();
     })
     .then(() => {
-      ['repo-name', 'repo-url', 'repo-description', 'repo-regex', 'repo-cohort-regex-rules'].forEach((id) => {
+      ['repo-name', 'repo-url', 'repo-description'].forEach((id) => {
         document.getElementById(id).value = '';
       });
       document.getElementById('repo-tab-category').value = 'base';
@@ -468,36 +461,6 @@ export function addRepo() {
       return loadRepos();
     })
     .catch(() => alert('레포 추가에 실패했습니다.'));
-}
-
-export function editRepoRegex(id) {
-  const repo = adminState.repoList.find((item) => item.id === id);
-  if (!repo) return;
-
-  adminState.regexModalRepoId = id;
-  adminState.regexModalResult = null;
-  adminState.regexModalMode = 'edit';
-
-  const modal = document.getElementById('regex-modal');
-  const body = document.getElementById('regex-modal-body');
-  const applyBtn = document.getElementById('regex-apply-btn');
-  const title = document.getElementById('regex-modal-title');
-
-  title.textContent = `정규식 수정 — ${repo.name}`;
-  applyBtn.disabled = false;
-
-  const cohortVal = repo.cohortRegexRules?.length ? JSON.stringify(repo.cohortRegexRules, null, 2) : '';
-  body.innerHTML = `
-    <div style="margin-bottom:16px;">
-      <label style="display:block;margin-bottom:4px;font-size:13px;">기본 닉네임 정규식</label>
-      <input type="text" id="edit-regex-nickname" value="${escapeHtml(repo.nicknameRegex ?? '')}" placeholder="없으면 workspace 기본값 사용" style="width:100%" />
-    </div>
-    <div>
-      <label style="display:block;margin-bottom:4px;font-size:13px;">기수별 정규식 JSON</label>
-      <textarea id="edit-regex-cohort" rows="5" placeholder='[{"cohort":7,"nicknameRegex":"..."}]' style="width:100%;font-family:monospace">${escapeHtml(cohortVal)}</textarea>
-    </div>
-  `;
-  modal.style.display = 'flex';
 }
 
 export function deleteAllRepos() {

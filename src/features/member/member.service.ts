@@ -4,7 +4,7 @@ import type { BlogPostRepository } from '../../db/repositories/blog-post.reposit
 import type { WorkspaceService } from '../workspace/workspace.service.js';
 import { normalizeBlogUrl } from '../../shared/blog.js';
 import { mergePreviousGithubIds, shouldRefreshProfile } from '../../shared/github-profile.js';
-import { resolveDisplayNickname } from '../../shared/nickname.js';
+import { resolveDisplayNickname, parseNicknameStats } from '../../shared/nickname.js';
 import { fetchUserProfile } from '../sync/github.service.js';
 
 export function createMemberService(deps: {
@@ -34,6 +34,7 @@ export function createMemberService(deps: {
       githubUserId: member.githubUserId,
       nickname: resolveDisplayNickname(member.manualNickname, member.nicknameStats, member.nickname),
       manualNickname: member.manualNickname,
+      nicknameStats: parseNicknameStats(member.nicknameStats),
       avatarUrl: member.avatarUrl,
       blog: member.blog,
       lastPostedAt: member.lastPostedAt,
@@ -46,7 +47,13 @@ export function createMemberService(deps: {
       cohorts,
       cohort: primaryCohort?.cohort ?? null,
       roles: primaryCohort?.roles ?? ['crew'],
-      tracks: [...new Set(member.submissions.map((s) => s.missionRepo.track).filter((t) => t !== null))],
+      track: member.track ?? null,
+      tracks: [
+        ...new Set([
+          ...(member.track ? [member.track] : []),
+          ...member.submissions.map((s) => s.missionRepo.track).filter((t) => t !== null),
+        ]),
+      ],
       blogPosts: member.blogPosts,
       submissions: member.submissions,
       _count: member._count,
@@ -98,16 +105,38 @@ export function createMemberService(deps: {
 
     createMember: async (input: {
       githubId: string;
+      githubUserId?: number | null;
       nickname?: string | null;
       cohort?: number | null;
       blog?: string | null;
       roles?: string[];
+      track?: string | null;
     }) => {
       const workspace = await workspaceService.getOrThrow();
+
+      // githubUserId로 실제 로그인 조회 (UI에서 #12345 형식으로 입력한 경우)
+      let resolvedGithubId = input.githubId;
+      let resolvedGithubUserId = input.githubUserId ?? null;
+      let resolvedAvatarUrl: string | null = null;
+
+      try {
+        const profileInput: { githubUserId?: number | null; username?: string } = {};
+        if (resolvedGithubUserId != null) profileInput.githubUserId = resolvedGithubUserId;
+        if (resolvedGithubId) profileInput.username = resolvedGithubId;
+        const profile = await fetchUserProfile(octokit, profileInput);
+        resolvedGithubId = profile.githubId;
+        resolvedGithubUserId = profile.githubUserId;
+        resolvedAvatarUrl = profile.avatarUrl;
+      } catch {
+        // 프로필 fetch 실패해도 생성은 진행
+      }
+
       const member = await memberRepo.create({
-        githubId: input.githubId,
-        githubUserId: null,
+        githubId: resolvedGithubId,
+        githubUserId: resolvedGithubUserId,
         previousGithubIds: null,
+        avatarUrl: resolvedAvatarUrl,
+        profileFetchedAt: resolvedAvatarUrl ? new Date() : null,
         ...(input.nickname ? { nickname: input.nickname, manualNickname: input.nickname } : {}),
         ...(input.blog
           ? {
@@ -118,6 +147,7 @@ export function createMemberService(deps: {
               rssError: null,
             }
           : {}),
+        ...(input.track ? { track: input.track } : {}),
         workspaceId: workspace.id,
       });
 
@@ -134,10 +164,17 @@ export function createMemberService(deps: {
 
     updateMember: async (
       id: number,
-      input: { manualNickname?: string | null; blog?: string | null; roles?: string[]; cohort?: number },
+      input: {
+        manualNickname?: string | null;
+        blog?: string | null;
+        roles?: string[];
+        cohort?: number;
+        track?: string | null;
+      },
     ) => {
       await memberRepo.update(id, {
         ...(input.manualNickname !== undefined ? { manualNickname: input.manualNickname } : {}),
+        ...(input.track !== undefined ? { track: input.track } : {}),
         ...(input.blog !== undefined
           ? {
               blog: normalizeBlogUrl(input.blog),

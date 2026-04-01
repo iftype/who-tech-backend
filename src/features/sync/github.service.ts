@@ -4,16 +4,6 @@ import type { CohortRule } from '../../shared/types/index.js';
 
 const ThrottledOctokit = Octokit.plugin(throttling);
 import { normalizeBlogUrl } from '../../shared/blog.js';
-import { normalizeNickname } from '../../shared/nickname.js';
-
-export function parseNickname(title: string, regex: RegExp): string | null {
-  const rawNickname = title.match(regex)?.[1]?.trim();
-  if (!rawNickname) {
-    return null;
-  }
-
-  return normalizeNickname(rawNickname);
-}
 
 export function detectCohort(submittedAt: Date, cohortRules: CohortRule[]): number | null {
   const year = submittedAt.getFullYear();
@@ -77,7 +67,6 @@ export async function fetchRepoPRs(
     if (since) {
       const fresh = data.filter((pr) => new Date(pr.created_at) > since);
       allPRs.push(...fresh);
-      // 페이지 내 마지막 PR이 since보다 오래됐으면 더 이상 없음
       if (fresh.length < data.length) break;
     } else {
       allPRs.push(...data);
@@ -94,6 +83,7 @@ export async function fetchRepoPRs(
 export async function fetchUserProfile(
   octokit: Octokit,
   input: { username?: string; githubUserId?: number | null },
+  ignoredDomains: string[] = [],
 ): Promise<{ githubUserId: number | null; githubId: string; blog: string | null; avatarUrl: string | null }> {
   let data;
 
@@ -110,19 +100,20 @@ export async function fetchUserProfile(
   return {
     githubUserId: data.id ?? input.githubUserId ?? null,
     githubId: data.login,
-    blog: normalizeBlogUrl(data.blog),
+    blog: normalizeBlogUrl(data.blog, ignoredDomains),
     avatarUrl: data.avatar_url ?? null,
   };
 }
 
-function extractUrlsFromText(text: string): string[] {
+function extractUrlsFromText(text: string, ignoredDomains: string[]): string[] {
   const matches = text.match(/https?:\/\/[^\s)>\]"',]+/g) ?? [];
-  return matches.map((u) => normalizeBlogUrl(u)).filter((u): u is string => u !== null);
+  return matches.map((u) => normalizeBlogUrl(u, ignoredDomains)).filter((u): u is string => u !== null);
 }
 
 export async function fetchUserBlogCandidates(
   octokit: Octokit,
   input: { username?: string; githubUserId?: number | null },
+  ignoredDomains: string[] = [],
 ): Promise<{
   profile: { githubUserId: number | null; githubId: string; avatarUrl: string | null };
   candidates: string[];
@@ -143,7 +134,7 @@ export async function fetchUserBlogCandidates(
   const candidates: string[] = [];
 
   const push = (url: string | null | undefined) => {
-    const normalized = normalizeBlogUrl(url ?? null);
+    const normalized = normalizeBlogUrl(url ?? null, ignoredDomains);
     if (normalized && !seen.has(normalized)) {
       seen.add(normalized);
       candidates.push(normalized);
@@ -155,7 +146,7 @@ export async function fetchUserBlogCandidates(
 
   // 2. bio에서 URL 추출
   if (data.bio) {
-    for (const url of extractUrlsFromText(data.bio)) push(url);
+    for (const url of extractUrlsFromText(data.bio, ignoredDomains)) push(url);
   }
 
   // 3. social_accounts API

@@ -1,4 +1,4 @@
-export function normalizeBlogUrl(blogUrl: string | null | undefined): string | null {
+export function normalizeBlogUrl(blogUrl: string | null | undefined, ignoredDomains: string[] = []): string | null {
   if (!blogUrl) {
     return null;
   }
@@ -18,7 +18,7 @@ export function normalizeBlogUrl(blogUrl: string | null | undefined): string | n
   try {
     const url = new URL(candidate);
 
-    const ignoredDomains = [
+    const allIgnored = [
       'notion.site',
       'notion.so',
       'oopy.io',
@@ -32,8 +32,10 @@ export function normalizeBlogUrl(blogUrl: string | null | undefined): string | n
       'facebook.com',
       'gmail.com',
       'snu.ac.kr',
+      ...ignoredDomains,
     ];
-    if (ignoredDomains.some((d) => url.hostname.endsWith(d))) {
+
+    if (allIgnored.some((d) => url.hostname.endsWith(d))) {
       return null;
     }
 

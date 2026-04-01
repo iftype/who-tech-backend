@@ -119,8 +119,8 @@ export function createMemberRepository(db: PrismaClient) {
       }),
 
     // 3. 닉네임으로 찾기 (보통 다른 서비스에서 많이 씁니다)
-    findByNickname: (nickname: string, workspaceId: number): Promise<MemberWithRelations | null> =>
-      db.member.findFirst({
+    findManyByNickname: (nickname: string, workspaceId: number): Promise<MemberWithRelations[]> =>
+      db.member.findMany({
         where: {
           workspaceId,
           OR: [{ nickname }, { manualNickname: nickname }],
