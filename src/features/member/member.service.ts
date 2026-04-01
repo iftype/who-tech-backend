@@ -263,6 +263,7 @@ export function createMemberService(deps: {
       });
 
       if (input.cohort != null && input.roles !== undefined) {
+        await memberRepo.deleteParticipationsByCohort(id, input.cohort);
         for (const role of input.roles) {
           await memberRepo.upsertParticipation(id, input.cohort, role);
         }
