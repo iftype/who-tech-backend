@@ -1,19 +1,26 @@
 import type { Octokit } from '@octokit/rest';
 import type { MemberRepository, MemberWithRelations } from '../../db/repositories/member.repository.js';
 import type { BlogPostRepository } from '../../db/repositories/blog-post.repository.js';
+import type { BannedWordRepository } from '../../db/repositories/banned-word.repository.js';
 import type { WorkspaceService } from '../workspace/workspace.service.js';
 import { normalizeBlogUrl } from '../../shared/blog.js';
 import { mergePreviousGithubIds, shouldRefreshProfile } from '../../shared/github-profile.js';
-import { resolveDisplayNickname, parseNicknameStats } from '../../shared/nickname.js';
+import {
+  resolveDisplayNickname,
+  parseNicknameStats,
+  extractNicknameTokens,
+  mergeNicknameStat,
+} from '../../shared/nickname.js';
 import { fetchUserProfile } from '../sync/github.service.js';
 
 export function createMemberService(deps: {
   memberRepo: MemberRepository;
   blogPostRepo: BlogPostRepository;
+  bannedWordRepo: BannedWordRepository;
   workspaceService: WorkspaceService;
   octokit: Octokit;
 }) {
-  const { memberRepo, blogPostRepo, workspaceService, octokit } = deps;
+  const { memberRepo, blogPostRepo, bannedWordRepo, workspaceService, octokit } = deps;
 
   const toResponse = (member: MemberWithRelations) => {
     const cohortMap = new Map<number, string[]>();
@@ -60,7 +67,7 @@ export function createMemberService(deps: {
     };
   };
 
-  async function refreshMemberProfileById(id: number) {
+  async function refreshMemberProfileById(id: number, bannedWords: Set<string>) {
     const member = await memberRepo.findByIdWithRelations(id);
     if (!member) {
       throw new Error('member not found');
@@ -71,12 +78,23 @@ export function createMemberService(deps: {
       username: member.githubId,
     });
 
+    // 현재 금지어 기준으로 nicknameStats 재계산
+    let statsValue: string | null = null;
+    for (const submission of member.submissions) {
+      for (const token of extractNicknameTokens(submission.title)) {
+        if (!bannedWords.has(token)) {
+          statsValue = JSON.stringify(mergeNicknameStat(statsValue, token, submission.submittedAt));
+        }
+      }
+    }
+
     const updated = await memberRepo.update(id, {
       githubId: profile.githubId,
       githubUserId: profile.githubUserId,
       previousGithubIds: mergePreviousGithubIds(member.previousGithubIds, member.githubId, profile.githubId),
       avatarUrl: profile.avatarUrl ?? member.avatarUrl ?? null,
       ...(member.blog ? {} : { blog: profile.blog }),
+      nicknameStats: statsValue,
       profileFetchedAt: new Date(),
       profileRefreshError: null,
     });
@@ -131,34 +149,61 @@ export function createMemberService(deps: {
         // 프로필 fetch 실패해도 생성은 진행
       }
 
-      const member = await memberRepo.create({
-        githubId: resolvedGithubId,
-        githubUserId: resolvedGithubUserId,
-        previousGithubIds: null,
-        avatarUrl: resolvedAvatarUrl,
-        profileFetchedAt: resolvedAvatarUrl ? new Date() : null,
-        ...(input.nickname ? { nickname: input.nickname, manualNickname: input.nickname } : {}),
-        ...(input.blog
-          ? {
-              blog: normalizeBlogUrl(input.blog),
-              rssStatus: 'unknown',
-              rssUrl: null,
-              rssCheckedAt: null,
-              rssError: null,
-            }
-          : {}),
-        ...(input.track ? { track: input.track } : {}),
-        workspaceId: workspace.id,
-      });
+      // 이미 존재하는 멤버인지 확인 (githubUserId 또는 githubId 기준)
+      const existing =
+        (resolvedGithubUserId != null
+          ? await memberRepo.findByGithubUserId(resolvedGithubUserId, workspace.id)
+          : null) ?? (resolvedGithubId ? await memberRepo.findByGithubId(resolvedGithubId, workspace.id) : null);
+
+      let memberId: number;
+      if (existing) {
+        // 이미 있으면 입력값으로 덮어쓸 필드만 업데이트
+        await memberRepo.update(existing.id, {
+          ...(resolvedAvatarUrl ? { avatarUrl: resolvedAvatarUrl, profileFetchedAt: new Date() } : {}),
+          ...(input.nickname ? { manualNickname: input.nickname } : {}),
+          ...(!existing.blog && input.blog
+            ? {
+                blog: normalizeBlogUrl(input.blog),
+                rssStatus: 'unknown',
+                rssUrl: null,
+                rssCheckedAt: null,
+                rssError: null,
+              }
+            : {}),
+          ...(input.track ? { track: input.track } : {}),
+        });
+        memberId = existing.id;
+      } else {
+        const created = await memberRepo.create({
+          githubId: resolvedGithubId,
+          githubUserId: resolvedGithubUserId,
+          previousGithubIds: null,
+          avatarUrl: resolvedAvatarUrl,
+          profileFetchedAt: resolvedAvatarUrl ? new Date() : null,
+          ...(input.nickname ? { nickname: input.nickname, manualNickname: input.nickname } : {}),
+          ...(input.blog
+            ? {
+                blog: normalizeBlogUrl(input.blog),
+                rssStatus: 'unknown',
+                rssUrl: null,
+                rssCheckedAt: null,
+                rssError: null,
+              }
+            : {}),
+          ...(input.track ? { track: input.track } : {}),
+          workspaceId: workspace.id,
+        });
+        memberId = created.id;
+      }
 
       if (input.cohort != null) {
         const roles = input.roles?.length ? input.roles : ['crew'];
         for (const role of roles) {
-          await memberRepo.upsertParticipation(member.id, input.cohort, role);
+          await memberRepo.upsertParticipation(memberId, input.cohort, role);
         }
       }
 
-      const updated = await memberRepo.findByIdWithRelations(member.id);
+      const updated = await memberRepo.findByIdWithRelations(memberId);
       return updated ? toResponse(updated) : null;
     },
 
@@ -204,8 +249,11 @@ export function createMemberService(deps: {
     getMemberBlogPosts: (id: number) => blogPostRepo.findByMember(id),
 
     refreshMemberProfile: async (id: number) => {
+      const workspace = await workspaceService.getOrThrow();
+      const bannedWordRows = await bannedWordRepo.findAll(workspace.id);
+      const bannedWords = new Set(bannedWordRows.map((r) => r.word));
       try {
-        return await refreshMemberProfileById(id);
+        return await refreshMemberProfileById(id, bannedWords);
       } catch (error) {
         if (error instanceof Error && error.message === 'member not found') {
           throw error;
@@ -220,6 +268,8 @@ export function createMemberService(deps: {
 
     refreshWorkspaceProfiles: async (input?: { limit?: number; cohort?: number; staleHours?: number }) => {
       const workspace = await workspaceService.getOrThrow();
+      const bannedWordRows = await bannedWordRepo.findAll(workspace.id);
+      const bannedWords = new Set(bannedWordRows.map((r) => r.word));
       const staleBefore = new Date(Date.now() - (input?.staleHours ?? 24) * 60 * 60 * 1000);
       const members = await memberRepo.listStaleProfiles(workspace.id, {
         ...(input?.limit !== undefined ? { limit: input.limit } : { limit: 30 }),
@@ -237,7 +287,7 @@ export function createMemberService(deps: {
           if (!shouldRefreshProfile(member.profileFetchedAt, input?.staleHours ?? 24) && member.avatarUrl) {
             continue;
           }
-          await refreshMemberProfileById(member.id);
+          await refreshMemberProfileById(member.id, bannedWords);
           refreshed += 1;
         } catch (error) {
           const reason = error instanceof Error ? error.message : String(error);

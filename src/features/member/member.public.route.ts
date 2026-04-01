@@ -32,16 +32,14 @@ export function createMemberPublicRouter(service: MemberPublicService) {
     asyncHandler(async (req, res) => {
       const cohort = typeof req.query['cohort'] === 'string' ? Number(req.query['cohort']) : undefined;
       const track = typeof req.query['track'] === 'string' ? req.query['track'] : undefined;
-
-      // 🚨 수정: 'range' 대신 프론트가 보내는 'days' 파라미터를 직접 읽습니다.
+      const role = typeof req.query['role'] === 'string' ? req.query['role'] : undefined;
       const daysParam = typeof req.query['days'] === 'string' ? req.query['days'] : undefined;
 
-      // 기본값은 7일, 파라미터가 있으면 해당 숫자를 사용
       let days = 7;
       if (daysParam) {
         const parsedDays = parseInt(daysParam, 10);
         if (!isNaN(parsedDays)) {
-          days = parsedDays; // 30일 제한을 풀고 싶으면 Math.min 제거
+          days = parsedDays;
         }
       }
 
@@ -51,6 +49,7 @@ export function createMemberPublicRouter(service: MemberPublicService) {
         await service.getFeed({
           ...(cohort && !Number.isNaN(cohort) ? { cohort } : {}),
           ...(track ? { track } : {}),
+          ...(role ? { role } : {}),
           days,
           limit,
         }),

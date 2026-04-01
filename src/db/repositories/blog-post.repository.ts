@@ -60,17 +60,21 @@ export function createBlogPostRepository(db: PrismaClient) {
      * [조회] 메인 피드 목록 (필터링 포함)
      * 이제 BlogPostLatest를 쓰지 않고 BlogPost 원본에서 직접 7일(또는 days)치를 가져옵니다.
      */
-    findFeed: (workspaceId: number, filters?: { limit?: number; cohort?: number; track?: string; days?: number }) => {
+    findFeed: (
+      workspaceId: number,
+      filters?: { limit?: number; cohort?: number; track?: string; days?: number; role?: string },
+    ) => {
       const days = filters?.days ?? 30;
       const since = new Date();
       since.setDate(since.getDate() - days);
 
       return db.blogPost.findMany({
         where: {
-          publishedAt: { gte: since }, // 7일 필터링 핵심!
+          publishedAt: { gte: since },
           member: {
             workspaceId,
             ...(filters?.cohort ? { memberCohorts: { some: { cohort: { number: filters.cohort } } } } : {}),
+            ...(filters?.role ? { memberCohorts: { some: { role: { name: filters.role } } } } : {}),
             ...(filters?.track ? { submissions: { some: { missionRepo: { track: filters.track } } } } : {}),
           },
         },
