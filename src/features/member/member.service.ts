@@ -4,7 +4,7 @@ import type { BlogPostRepository } from '../../db/repositories/blog-post.reposit
 import type { BannedWordRepository } from '../../db/repositories/banned-word.repository.js';
 import type { WorkspaceService } from '../workspace/workspace.service.js';
 import { normalizeBlogUrl } from '../../shared/blog.js';
-import { mergePreviousGithubIds } from '../../shared/github-profile.js';
+import { mergePreviousGithubIds, shouldRefreshProfile } from '../../shared/github-profile.js';
 import {
   resolveDisplayNickname,
   parseNicknameStats,
@@ -67,13 +67,13 @@ export function createMemberService(deps: {
     };
   };
 
-  async function refreshMemberProfileById(id: number, bannedWords: Set<string>) {
+  async function refreshMemberProfileById(id: number, bannedWords: Set<string>, fetchGithub: boolean) {
     const member = await memberRepo.findByIdWithRelations(id);
     if (!member) {
       throw new Error('member not found');
     }
 
-    // nicknameStats는 GitHub API 성공 여부와 무관하게 항상 재계산
+    // nicknameStats는 항상 재계산
     let statsValue: string | null = null;
     for (const submission of member.submissions) {
       for (const token of extractNicknameTokens(submission.title)) {
@@ -83,6 +83,12 @@ export function createMemberService(deps: {
       }
     }
 
+    if (!fetchGithub) {
+      const updated = await memberRepo.update(id, { nicknameStats: statsValue });
+      return toResponse(updated);
+    }
+
+    let profileRefreshError: string | null = null;
     let profileFields: {
       githubId: string;
       githubUserId: number | null;
@@ -90,7 +96,6 @@ export function createMemberService(deps: {
       avatarUrl: string | null;
       blog?: string | null;
     };
-    let profileRefreshError: string | null = null;
 
     try {
       const profile = await fetchUserProfile(octokit, {
@@ -105,7 +110,6 @@ export function createMemberService(deps: {
         ...(member.blog ? {} : { blog: profile.blog }),
       };
     } catch (error) {
-      // GitHub API 실패해도 nicknameStats는 저장
       profileFields = {
         githubId: member.githubId,
         githubUserId: member.githubUserId ?? null,
@@ -275,28 +279,30 @@ export function createMemberService(deps: {
       const workspace = await workspaceService.getOrThrow();
       const bannedWordRows = await bannedWordRepo.findAll(workspace.id);
       const bannedWords = new Set(bannedWordRows.map((r) => r.word));
-      return refreshMemberProfileById(id, bannedWords);
+      return refreshMemberProfileById(id, bannedWords, true);
     },
 
     refreshWorkspaceProfiles: async (input?: { limit?: number; cohort?: number; staleHours?: number }) => {
       const workspace = await workspaceService.getOrThrow();
       const bannedWordRows = await bannedWordRepo.findAll(workspace.id);
       const bannedWords = new Set(bannedWordRows.map((r) => r.word));
-      const staleBefore = new Date(Date.now() - (input?.staleHours ?? 24) * 60 * 60 * 1000);
-      const members = await memberRepo.listStaleProfiles(workspace.id, {
-        ...(input?.limit !== undefined ? { limit: input.limit } : { limit: 30 }),
+      const staleHours = input?.staleHours ?? 24;
+
+      // 전체 멤버 대상 (nicknameStats 재계산은 모두, GitHub API는 stale한 경우만)
+      const members = await memberRepo.findWithFilters(workspace.id, {
         ...(input?.cohort !== undefined ? { cohort: input.cohort } : {}),
-        staleBefore,
       });
+      const limited = input?.limit ? members.slice(0, input.limit) : members;
 
       let checked = 0;
       let refreshed = 0;
       const failures: { githubId: string; reason: string }[] = [];
 
-      for (const member of members) {
+      for (const member of limited) {
         checked += 1;
+        const fetchGithub = shouldRefreshProfile(member.profileFetchedAt, staleHours);
         try {
-          await refreshMemberProfileById(member.id, bannedWords);
+          await refreshMemberProfileById(member.id, bannedWords, fetchGithub);
           refreshed += 1;
         } catch (error) {
           const reason = error instanceof Error ? error.message : String(error);
