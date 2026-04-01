@@ -84,6 +84,11 @@ export function resolveRSSUrlsForBlog(blogUrl: string): string[] {
 
   if (url.hostname.endsWith('.tistory.com')) return [`${normalizedBlogUrl}/rss`];
 
+  if (url.hostname === 'brunch.co.kr') {
+    const match = url.pathname.match(/^\/@[^/]+/);
+    if (match) return [`https://brunch.co.kr/rss${match[0]}`];
+  }
+
   if (url.hostname === 'medium.com' || url.hostname.endsWith('.medium.com')) {
     return [`https://medium.com/feed${url.pathname}`];
   }
