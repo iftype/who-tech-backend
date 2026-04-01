@@ -223,7 +223,7 @@
       </div>
 
       <div class="form-inline" style="margin-bottom:12px">
-        <input type="text" id="new-member-github" placeholder="GitHub ID" />
+        <input type="text" id="new-member-github" placeholder="GitHub ID 또는 #12345678 (숫자ID)" />
         <input type="text" id="new-member-nickname" placeholder="닉네임 (선택)" />
         <input type="number" id="new-member-cohort" placeholder="기수 (선택)" min="1" />
         <div class="role-checkboxes">
@@ -231,6 +231,12 @@
           <label><input type="checkbox" id="new-member-role-coach" value="coach"> 코치</label>
           <label><input type="checkbox" id="new-member-role-reviewer" value="reviewer"> 리뷰어</label>
         </div>
+        <select id="new-member-track">
+          <option value="">트랙 (선택)</option>
+          <option value="backend">백엔드</option>
+          <option value="frontend">프론트엔드</option>
+          <option value="android">안드로이드</option>
+        </select>
         <input type="text" id="new-member-blog" placeholder="블로그 URL (선택)" />
         <button class="btn-primary" onclick="addMember()">멤버 추가</button>
       </div>
