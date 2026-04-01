@@ -51,6 +51,7 @@
           <button class="btn-secondary" id="blog-backfill-btn" onclick="triggerBlogBackfill()">블로그 링크 백필</button>
           <button class="btn-secondary" id="blog-sync-btn" onclick="triggerBlogSync()">블로그 Sync</button>
           <button class="btn-toggle" id="blog-sync-toggle" onclick="toggleBlogSync()">블로그 자동수집 ON</button>
+          <button class="btn-secondary" id="continuous-sync-btn" onclick="triggerContinuousSync()">자동수집</button>
           <button class="btn-primary" id="sync-btn" onclick="triggerSync()">전체 Sync</button>
           <button class="btn-primary" id="ts-learning-sync-btn" onclick="triggerTsAndLearningTest()">ts-and-learning
             테스트</button>
@@ -63,6 +64,23 @@
           <div id="sync-progress-bar"
             style="height:100%;background:linear-gradient(90deg,#0f766e,#0369a1);border-radius:999px;transition:width 0.3s ease;width:0%">
           </div>
+        </div>
+      </div>
+      <div style="margin-top:16px">
+        <div class="sub" style="margin-bottom:8px">자동수집 레포 현황 <span class="muted">(status=active, syncMode=continuous)</span></div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>레포</th>
+                <th>트랙</th>
+                <th>마지막 sync</th>
+              </tr>
+            </thead>
+            <tbody id="continuous-repo-status-body">
+              <tr><td colspan="3" class="muted">불러오는 중...</td></tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

@@ -6,6 +6,25 @@ import { loadMembers } from './members.js';
 import { loadRepos } from './repos.js';
 import { loadStatus } from './workspace.js';
 
+export function renderContinuousRepoStatus() {
+  const tbody = document.getElementById('continuous-repo-status-body');
+  if (!tbody) return;
+  const continuousRepos = (adminState.repoList ?? []).filter(
+    (r) => r.status === 'active' && r.syncMode === 'continuous',
+  );
+  if (continuousRepos.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="3" class="muted">자동수집 레포 없음</td></tr>';
+    return;
+  }
+  tbody.innerHTML = continuousRepos
+    .map((r) => {
+      const syncedAt = r.lastSyncAt ? new Date(r.lastSyncAt).toLocaleString('ko-KR') : '없음';
+      const track = r.track ?? '공통';
+      return `<tr><td>${r.name}</td><td>${track}</td><td>${syncedAt}</td></tr>`;
+    })
+    .join('');
+}
+
 export function pollRepoSyncJob(jobId, { name, button, defaultButtonText, doneLabel, doneToast, failLabel }) {
   const poll = () => {
     fetch(`/admin/repos/sync-jobs/${jobId}`, { headers: authHeaders() })
@@ -170,6 +189,64 @@ export function triggerSync() {
     es.close();
     button.disabled = false;
     button.textContent = '전체 Sync';
+  };
+}
+
+export function triggerContinuousSync() {
+  const button = document.getElementById('continuous-sync-btn');
+  const progressWrap = document.getElementById('sync-progress-wrap');
+  const progressBar = document.getElementById('sync-progress-bar');
+  const progressLabel = document.getElementById('sync-progress-label');
+
+  button.disabled = true;
+  button.textContent = '수집 중...';
+  progressWrap.style.display = 'block';
+  progressBar.style.width = '0%';
+  progressLabel.textContent = '준비 중...';
+  addLog('자동수집 Sync 시작', 'run');
+
+  const url = `/admin/sync/continuous/stream?token=${encodeURIComponent(adminState.token)}`;
+  const es = new EventSource(url);
+
+  es.addEventListener('progress', (e) => {
+    const { repo, done, total, synced } = JSON.parse(e.data);
+    const pct = total > 0 ? Math.round((done / total) * 100) : 100;
+    progressBar.style.width = `${pct}%`;
+    progressLabel.textContent = `(${done}/${total}) ${repo} — ${synced}건`;
+    document.getElementById('sync-result').textContent = `자동수집 진행 중: ${done}/${total} 레포`;
+  });
+
+  es.addEventListener('done', (e) => {
+    const { reposSynced, totalSynced } = JSON.parse(e.data);
+    progressBar.style.width = '100%';
+    progressLabel.textContent = `완료: ${reposSynced}개 레포, ${totalSynced}건 수집됨`;
+    document.getElementById('sync-result').textContent = `자동수집 완료: ${reposSynced}개 레포, ${totalSynced}건`;
+    toast(`자동수집 완료 (${totalSynced}건)`);
+    addLog(`자동수집 완료 — ${reposSynced}개 레포, ${totalSynced}건 수집`, 'ok');
+    es.close();
+    button.disabled = false;
+    button.textContent = '자동수집';
+    Promise.all([loadStatus(), loadMembers(), loadRepos()]);
+  });
+
+  es.addEventListener('error', (e) => {
+    const msg = e.data ? JSON.parse(e.data).message : 'sync 실패';
+    progressLabel.textContent = `오류: ${msg}`;
+    document.getElementById('sync-result').textContent = '자동수집 실패';
+    toast('자동수집 실패');
+    addLog(`자동수집 실패: ${msg}`, 'err');
+    es.close();
+    button.disabled = false;
+    button.textContent = '자동수집';
+  });
+
+  es.onerror = () => {
+    if (es.readyState === EventSource.CLOSED) return;
+    progressLabel.textContent = '연결 오류';
+    document.getElementById('sync-result').textContent = '자동수집 실패';
+    es.close();
+    button.disabled = false;
+    button.textContent = '자동수집';
   };
 }
 
