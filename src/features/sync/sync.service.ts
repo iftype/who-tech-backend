@@ -36,6 +36,8 @@ export function parsePRsToSubmissions(prs: RawPR[], cohortRules: CohortRule[]): 
     if (!pr.user) continue;
     // GitHub 탈퇴 계정은 login이 "ghost"로 변경되므로 건너뜀
     if (pr.user.login === 'ghost') continue;
+    // 닫힌 PR(병합되지 않은)은 건너뜀
+    if (pr.state === 'closed' && !pr.merged_at) continue;
 
     const submittedAt = new Date(pr.created_at);
     const cohort = detectCohort(submittedAt, cohortRules);
