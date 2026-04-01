@@ -83,7 +83,8 @@ export function createMemberService(deps: {
       }
     }
 
-    const resolvedNickname = resolveDisplayNickname(member.manualNickname, statsValue, member.nickname);
+    // refresh 시 fallback으로 기존 nickname을 쓰면 ban된 값이 그대로 남음 → null로 교체
+    const resolvedNickname = resolveDisplayNickname(member.manualNickname, statsValue, null);
 
     if (!fetchGithub) {
       const updated = await memberRepo.update(id, { nicknameStats: statsValue, nickname: resolvedNickname });
