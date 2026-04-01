@@ -292,21 +292,28 @@ export function createMemberService(deps: {
       const bannedWords = new Set(bannedWordRows.map((r) => r.word));
       const staleHours = input?.staleHours ?? 24;
 
-      // 전체 멤버 대상 (nicknameStats 재계산은 모두, GitHub API는 stale한 경우만)
-      const members = await memberRepo.findWithFilters(workspace.id, {
+      const allMembers = await memberRepo.findWithFilters(workspace.id, {
         ...(input?.cohort !== undefined ? { cohort: input.cohort } : {}),
       });
-      const limited = input?.limit ? members.slice(0, input.limit) : members;
+
+      // GitHub API 호출 대상: stale 멤버만, limit 적용
+      const staleLimit = input?.limit ?? 30;
+      const githubTargetIds = new Set(
+        allMembers
+          .filter((m) => shouldRefreshProfile(m.profileFetchedAt, staleHours))
+          .slice(0, staleLimit)
+          .map((m) => m.id),
+      );
 
       let checked = 0;
       let refreshed = 0;
       const failures: { githubId: string; reason: string }[] = [];
 
-      for (const member of limited) {
+      // 닉네임 재계산은 전체 멤버 대상 (limit 없음)
+      for (const member of allMembers) {
         checked += 1;
-        const fetchGithub = shouldRefreshProfile(member.profileFetchedAt, staleHours);
         try {
-          await refreshMemberProfileById(member.id, bannedWords, fetchGithub);
+          await refreshMemberProfileById(member.id, bannedWords, githubTargetIds.has(member.id));
           refreshed += 1;
         } catch (error) {
           const reason = error instanceof Error ? error.message : String(error);
