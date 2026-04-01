@@ -11,6 +11,7 @@ export function loadRepos() {
       adminState.repoList = repos;
       renderRepos();
       populateCohortRepoSelect();
+      import('./sync.js').then(({ renderContinuousRepoStatus }) => renderContinuousRepoStatus());
     });
 }
 

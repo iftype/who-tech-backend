@@ -1,0 +1,23 @@
+name: Continuous Sync
+
+on:
+  schedule:
+    - cron: '*/10 * * * *' # 10분마다
+  workflow_dispatch: # 수동 트리거
+
+jobs:
+  continuous-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger continuous repo sync
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X POST "${{ secrets.SYNC_URL }}/admin/sync/continuous" \
+            -H "Authorization: Bearer ${{ secrets.ADMIN_SECRET }}")
+
+          echo "Response: $response"
+
+          if [ "$response" != "200" ]; then
+            echo "Continuous sync failed with status $response"
+            exit 1
+          fi

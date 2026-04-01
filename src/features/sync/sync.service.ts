@@ -297,7 +297,29 @@ export function createSyncService(deps: {
     return { totalSynced, reposSynced: activeRepos.length };
   };
 
-  return { syncRepo, syncWorkspace };
+  const syncContinuousRepos = async (
+    octokit: Octokit,
+    workspaceId: number,
+    onProgress?: (step: { repo: string; done: number; total: number; synced: number }) => void,
+  ): Promise<{ totalSynced: number; reposSynced: number }> => {
+    const workspace = await workspaceRepo.findByIdOrThrow(workspaceId);
+    const cohortRules: CohortRule[] = JSON.parse(workspace.cohortRules);
+
+    const repos = await missionRepoRepo.findMany({ workspaceId });
+    const continuousRepos = repos.filter((r) => r.status === 'active' && r.syncMode === 'continuous');
+
+    let totalSynced = 0;
+    for (let i = 0; i < continuousRepos.length; i++) {
+      const repo = continuousRepos[i]!;
+      const { synced } = await syncRepo(octokit, workspaceId, workspace.githubOrg, repo, cohortRules);
+      totalSynced += synced;
+      onProgress?.({ repo: repo.name, done: i + 1, total: continuousRepos.length, synced });
+    }
+
+    return { totalSynced, reposSynced: continuousRepos.length };
+  };
+
+  return { syncRepo, syncWorkspace, syncContinuousRepos };
 }
 
 export type SyncService = ReturnType<typeof createSyncService>;

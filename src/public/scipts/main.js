@@ -52,7 +52,7 @@ import {
   setRepoOncePage,
   setRepoTab,
 } from './repos.js';
-import { resetSync, syncRepo, triggerSync, triggerTsAndLearningTest } from './sync.js';
+import { resetSync, syncRepo, triggerContinuousSync, triggerSync, triggerTsAndLearningTest } from './sync.js';
 import { saveWorkspace, toggleBlogSync } from './workspace.js';
 import {
   loadPersons,
@@ -75,6 +75,7 @@ Object.assign(window, {
   triggerBlogSync,
   toggleBlogSync,
   triggerSync,
+  triggerContinuousSync,
   triggerTsAndLearningTest,
   deleteAllRepos,
   discoverRepos,
