@@ -42,14 +42,17 @@ MissionRepo (DB 등록) → fetchRepoPRs (GitHub API) → parsePRsToSubmissions 
 ```
 
 - `syncWorkspace`: DB에 등록된 레포만 수집 (동적 org 탐색 없음)
-- `syncRepo`: 레포 PR 전체 페이지네이션 → 닉네임 파싱 → DB upsert
-- 닉네임 정규식: 레포별 `nicknameRegex` 우선, 없으면 `Workspace.nicknameRegex` fallback
+- `syncRepo`: 레포 PR 전체 페이지네이션 → 토큰 추출 → DB upsert
+- 닉네임 추출: PR 제목을 `[^가-힣]+`로 분리, 한글 토큰만 추출 (`extractNicknameTokens`)
+- 닉네임 통계: 각 토큰을 `mergeNicknameStat`으로 누적 → `nicknameStats`에 빈도순 저장. 금지어(`NicknameBannedWord`) 필터 적용
 - 기수 판별: PR `created_at` 연도 → `cohortRules` JSON 매핑
 
 ### DB 스키마 핵심
 
-- `Workspace`: githubOrg, nicknameRegex(기본값), cohortRules(JSON), blogSyncEnabled(bool)
-- `MissionRepo`: name, repoUrl, track(frontend|backend|android|**null=공통**), type(individual|integration), tabCategory, status(active|candidate|excluded), syncMode(continuous|once), lastSyncAt, nicknameRegex, cohortRegexRules(JSON), cohorts(JSON 기수배열), level(Int?)
+- `Workspace`: githubOrg, cohortRules(JSON), blogSyncEnabled(bool)
+- `MissionRepo`: name, repoUrl, track(frontend|backend|android|**null=공통**), type(individual|integration), tabCategory, status(active|candidate|excluded), syncMode(continuous|once), lastSyncAt, cohorts(JSON 기수배열), level(Int?)
+- `NicknameBannedWord`: word, workspaceId — 닉네임 토큰 필터 목록 (제출합니다, 미션 등)
+- `IgnoredDomain`: domain, workspaceId — 블로그로 인정하지 않을 도메인 목록
 - `CohortRepo`: cohort, order, missionRepoId, workspaceId — 기수별 미션 순서
 - `Person`: displayName?, note?, workspaceId — 같은 실제 인물인 여러 Member를 하나로 묶는 마스터 엔티티
 - `Member`: githubId, githubUserId?, previousGithubIds?, 닉네임 필드, avatarUrl, blog, rss\*, lastPostedAt, **personId?** 등 — **기수/역할은 `MemberCohort`로 정규화**
@@ -66,17 +69,14 @@ MissionRepo (DB 등록) → fetchRepoPRs (GitHub API) → parsePRsToSubmissions 
 ```
 GET  /admin/status                    — 수집 현황 (memberCount, lastSyncAt)
 GET  /admin/workspace                 — workspace 설정 조회
-PUT  /admin/workspace                 — nicknameRegex, cohortRules, blogSyncEnabled 수정
+PUT  /admin/workspace                 — cohortRules, blogSyncEnabled 수정
 GET  /admin/repos                     — 미션 레포 목록 (?status=)
-POST /admin/repos                     — 레포 추가 (name, repoUrl, track, type?, syncMode?, cohorts?, level?, nicknameRegex?, cohortRegexRules?)
-POST /admin/repos/detect-regex-all    — active 레포 전체 정규식 자동감지 + 적용
+POST /admin/repos                     — 레포 추가 (name, repoUrl, track, type?, syncMode?, cohorts?, level?)
 POST /admin/repos/discover            — 조직 공개 레포 탐색 → once candidate 갱신 (precourse 제외)
-PATCH /admin/repos/:id                — track, status, syncMode, cohorts, level, nicknameRegex, cohortRegexRules 등 수정
+PATCH /admin/repos/:id                — track, status, syncMode, cohorts, level 등 수정
 DELETE /admin/repos                   — 전체 레포 + 관련 submission 삭제
 DELETE /admin/repos/:id               — 레포 + 관련 submission 트랜잭션 삭제
 POST /admin/repos/:id/sync            — 단건 레포 sync
-GET  /admin/repos/:id/validate-regex  — 현재 정규식을 최근 PR(1페이지)에 적용 → matched/unmatched 통계
-GET  /admin/repos/:id/detect-regex    — PR 샘플 기반 닉네임 정규식 자동 감지
 POST /admin/sync                      — once+미수집 레포만 대상으로 전체 sync (SSE 없이, ?cohort= 기수 필터)
 GET  /admin/sync/stream               — sync 진행 SSE (?token= 인증, ?cohort= 기수 필터, progress/done/error 이벤트)
 GET  /admin/cohort-repos              — 기수별 레포 목록 (?cohort= 필수)
@@ -102,6 +102,14 @@ PATCH /admin/persons/:id              — displayName, note 수정
 DELETE /admin/persons/:id             — Person 삭제 (멤버 personId 자동 해제)
 POST /admin/persons/:id/members/:memberId   — 멤버 → Person 연결
 DELETE /admin/persons/:id/members/:memberId — 연결 해제
+GET  /admin/banned-words              — 금지어 목록
+POST /admin/banned-words              — 금지어 추가 (body: {word})
+DELETE /admin/banned-words/:id        — 금지어 삭제
+GET  /admin/ignored-domains           — 무시 도메인 목록
+POST /admin/ignored-domains           — 도메인 추가 (body: {domain})
+DELETE /admin/ignored-domains/:id     — 도메인 삭제
+GET  /admin/archive                   — 기수별 아카이브 마크다운 (?cohort= 필수, ?track= 선택, ?format=md 텍스트 응답)
+GET  /admin/blog/new-posts            — 최근 수집된 새 블로그 글 (?sinceMinutes=65)
 ```
 
 모든 `/admin` 엔드포인트는 `Authorization: Bearer <ADMIN_SECRET>` 필요.
@@ -153,6 +161,4 @@ ADMIN_SECRET=...
 
 ## 예정 작업
 
-- 멤버 아카이브 API: 기수 + 레벨별 레포 PR 목록을 마크다운 표로 생성
-  - `CohortRepo.order`, `MissionRepo.level` 기반으로 그룹핑/정렬
-- 블로그 새 글 알림 (GitHub Actions → 슬랙 등)
+없음

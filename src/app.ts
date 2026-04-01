@@ -15,6 +15,8 @@ import { createBlogPostRepository } from './db/repositories/blog-post.repository
 import { createCohortRepoRepository } from './db/repositories/cohort-repo.repository.js';
 import { createActivityLogRepository } from './db/repositories/activity-log.repository.js';
 import { createPersonRepository } from './db/repositories/person.repository.js';
+import { createBannedWordRepository } from './db/repositories/banned-word.repository.js';
+import { createIgnoredDomainRepository } from './db/repositories/ignored-domain.repository.js';
 
 // Services
 import { createWorkspaceService } from './features/workspace/workspace.service.js';
@@ -37,8 +39,12 @@ import { createBlogRouter } from './features/blog/blog.route.js';
 import { createCohortRepoRouter } from './features/cohort-repo/cohort-repo.route.js';
 import { createActivityLogRouter } from './features/activity-log/activity-log.route.js';
 import { createPersonRouter } from './features/person/person.route.js';
+import { createBannedWordRouter } from './features/banned-word/banned-word.route.js';
+import { createIgnoredDomainRouter } from './features/ignored-domain/ignored-domain.route.js';
 import { createMemberPublicService } from './features/member/member.public.service.js';
 import { createMemberPublicRouter } from './features/member/member.public.route.js';
+import { createArchiveService } from './features/archive/archive.service.js';
+import { createArchiveRouter } from './features/archive/archive.route.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const publicDir = existsSync(join(__dirname, 'public'))
@@ -57,16 +63,26 @@ const blogPostRepo = createBlogPostRepository(db);
 const cohortRepoRepo = createCohortRepoRepository(db);
 const activityLogRepo = createActivityLogRepository(db);
 const personRepo = createPersonRepository(db);
+const bannedWordRepo = createBannedWordRepository(db);
+const ignoredDomainRepo = createIgnoredDomainRepository(db);
 
 const workspaceService = createWorkspaceService({ workspaceRepo });
-const syncService = createSyncService({ memberRepo, missionRepoRepo, submissionRepo, workspaceRepo });
+const syncService = createSyncService({
+  memberRepo,
+  missionRepoRepo,
+  submissionRepo,
+  workspaceRepo,
+  bannedWordRepo,
+  ignoredDomainRepo,
+});
 const memberService = createMemberService({ memberRepo, blogPostRepo, workspaceService, octokit });
 const repoService = createRepoService({ missionRepoRepo, workspaceService, syncService, octokit });
 const blogService = createBlogService({ memberRepo, blogPostRepo });
 const cohortRepoService = createCohortRepoService({ cohortRepoRepo, missionRepoRepo, workspaceService });
 const activityLogService = createActivityLogService({ activityLogRepo, workspaceService });
-const blogAdminService = createBlogAdminService({ memberRepo, workspaceService, blogService, octokit });
+const blogAdminService = createBlogAdminService({ memberRepo, blogPostRepo, workspaceService, blogService, octokit });
 const memberPublicService = createMemberPublicService({ memberRepo, blogPostRepo, cohortRepoRepo, workspaceService });
+const archiveService = createArchiveService({ memberRepo, cohortRepoRepo, workspaceService });
 const syncAdminService = createSyncAdminService({
   memberRepo,
   missionRepoRepo,
@@ -99,6 +115,9 @@ app.use('/admin/members', createMemberRouter(memberService));
 app.use('/admin/cohort-repos', createCohortRepoRouter(cohortRepoService));
 app.use('/admin/logs', createActivityLogRouter(activityLogService));
 app.use('/admin', createPersonRouter({ personRepo, memberRepo, workspaceService }));
+app.use('/admin/banned-words', createBannedWordRouter({ bannedWordRepo, workspaceService }));
+app.use('/admin/ignored-domains', createIgnoredDomainRouter({ ignoredDomainRepo, workspaceService }));
+app.use('/admin/archive', createArchiveRouter(archiveService));
 app.use(errorHandler);
 
 export default app;
