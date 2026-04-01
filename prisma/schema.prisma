@@ -51,6 +51,7 @@ model Member {
   rssCheckedAt        DateTime?
   rssError            String?
   lastPostedAt        DateTime?
+  track               String?
   workspaceId         Int
   personId            Int?
   createdAt           DateTime         @default(now())

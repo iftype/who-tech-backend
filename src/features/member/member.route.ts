@@ -30,17 +30,20 @@ export function createMemberRouter(service: MemberService) {
     '/',
     asyncHandler(async (req, res) => {
       const body = req.body as {
-        githubId: string;
+        githubId?: string;
+        githubUserId?: number | null;
         nickname?: string | null;
         cohort?: number | null;
         blog?: string | null;
         roles?: string[];
+        track?: string | null;
       };
-      if (!body.githubId || typeof body.githubId !== 'string') {
-        res.status(400).json({ error: 'githubId required' });
+      // githubId 또는 githubUserId 중 하나는 필수
+      if (!body.githubId && body.githubUserId == null) {
+        res.status(400).json({ error: 'githubId or githubUserId required' });
         return;
       }
-      res.status(201).json(await service.createMember(body));
+      res.status(201).json(await service.createMember({ ...body, githubId: body.githubId ?? '' }));
     }),
   );
 
@@ -86,6 +89,7 @@ export function createMemberRouter(service: MemberService) {
         blog?: string | null;
         roles?: string[];
         cohort?: number;
+        track?: string | null;
       };
       res.json(await service.updateMember(id, body));
     }),

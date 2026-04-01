@@ -239,29 +239,40 @@ function renderRssStatus(member) {
 }
 
 export function addMember() {
-  const githubId = document.getElementById('new-member-github').value.trim();
-  if (!githubId) {
+  const raw = document.getElementById('new-member-github').value.trim();
+  if (!raw) {
     alert('GitHub ID를 입력하세요.');
     return;
   }
+
+  // #12345678 형식이면 githubUserId로 전송, 아니면 githubId
+  const numericMatch = raw.match(/^#?(\d+)$/);
+  const githubId = numericMatch ? null : raw;
+  const githubUserId = numericMatch ? Number(numericMatch[1]) : null;
 
   const nickname = document.getElementById('new-member-nickname').value.trim() || null;
   const cohortVal = document.getElementById('new-member-cohort').value.trim();
   const cohort = cohortVal ? Number(cohortVal) : null;
   const roles = ['crew', 'coach', 'reviewer'].filter((r) => document.getElementById(`new-member-role-${r}`).checked);
   if (roles.length === 0) roles.push('crew');
+  const track = document.getElementById('new-member-track').value || null;
   const blog = document.getElementById('new-member-blog').value.trim() || null;
+
+  const payload = { nickname, cohort, roles, track, blog };
+  if (githubId) payload.githubId = githubId;
+  if (githubUserId) payload.githubUserId = githubUserId;
 
   fetch('/admin/members', {
     method: 'POST',
     headers: authHeaders('application/json'),
-    body: JSON.stringify({ githubId, nickname, cohort, roles, blog }),
+    body: JSON.stringify(payload),
   })
     .then((res) => {
       if (!res.ok) throw new Error('failed');
       ['new-member-github', 'new-member-nickname', 'new-member-cohort', 'new-member-blog'].forEach((id) => {
         document.getElementById(id).value = '';
       });
+      document.getElementById('new-member-track').value = '';
       toast('멤버 추가 완료');
       return Promise.all([loadMembers(), loadStatus()]);
     })
@@ -327,12 +338,21 @@ export function editMember(id) {
   const blog = prompt('블로그 링크', member.blog ?? '');
   if (blog === null) return;
 
+  const TRACKS = ['', 'backend', 'frontend', 'android'];
+  const trackPrompt = prompt(
+    '트랙 (backend / frontend / android, 비우면 초기화)',
+    member.track ?? '',
+  );
+  if (trackPrompt === null) return;
+  const track = TRACKS.includes(trackPrompt.trim()) ? trackPrompt.trim() || null : null;
+
   fetch(`/admin/members/${id}`, {
     method: 'PATCH',
     headers: authHeaders('application/json'),
     body: JSON.stringify({
       manualNickname: manualNickname.trim() || null,
       blog: blog.trim() || null,
+      track,
     }),
   })
     .then((response) => {
