@@ -4,7 +4,7 @@ import type { BlogPostRepository } from '../../db/repositories/blog-post.reposit
 import type { BannedWordRepository } from '../../db/repositories/banned-word.repository.js';
 import type { WorkspaceService } from '../workspace/workspace.service.js';
 import { normalizeBlogUrl } from '../../shared/blog.js';
-import { mergePreviousGithubIds, shouldRefreshProfile } from '../../shared/github-profile.js';
+import { mergePreviousGithubIds } from '../../shared/github-profile.js';
 import {
   resolveDisplayNickname,
   parseNicknameStats,
@@ -73,12 +73,7 @@ export function createMemberService(deps: {
       throw new Error('member not found');
     }
 
-    const profile = await fetchUserProfile(octokit, {
-      githubUserId: member.githubUserId,
-      username: member.githubId,
-    });
-
-    // 현재 금지어 기준으로 nicknameStats 재계산
+    // nicknameStats는 GitHub API 성공 여부와 무관하게 항상 재계산
     let statsValue: string | null = null;
     for (const submission of member.submissions) {
       for (const token of extractNicknameTokens(submission.title)) {
@@ -88,15 +83,43 @@ export function createMemberService(deps: {
       }
     }
 
+    let profileFields: {
+      githubId: string;
+      githubUserId: number | null;
+      previousGithubIds: string | null;
+      avatarUrl: string | null;
+      blog?: string | null;
+    };
+    let profileRefreshError: string | null = null;
+
+    try {
+      const profile = await fetchUserProfile(octokit, {
+        githubUserId: member.githubUserId,
+        username: member.githubId,
+      });
+      profileFields = {
+        githubId: profile.githubId,
+        githubUserId: profile.githubUserId,
+        previousGithubIds: mergePreviousGithubIds(member.previousGithubIds, member.githubId, profile.githubId),
+        avatarUrl: profile.avatarUrl ?? member.avatarUrl ?? null,
+        ...(member.blog ? {} : { blog: profile.blog }),
+      };
+    } catch (error) {
+      // GitHub API 실패해도 nicknameStats는 저장
+      profileFields = {
+        githubId: member.githubId,
+        githubUserId: member.githubUserId ?? null,
+        previousGithubIds: member.previousGithubIds ?? null,
+        avatarUrl: member.avatarUrl ?? null,
+      };
+      profileRefreshError = error instanceof Error ? error.message : String(error);
+    }
+
     const updated = await memberRepo.update(id, {
-      githubId: profile.githubId,
-      githubUserId: profile.githubUserId,
-      previousGithubIds: mergePreviousGithubIds(member.previousGithubIds, member.githubId, profile.githubId),
-      avatarUrl: profile.avatarUrl ?? member.avatarUrl ?? null,
-      ...(member.blog ? {} : { blog: profile.blog }),
+      ...profileFields,
       nicknameStats: statsValue,
       profileFetchedAt: new Date(),
-      profileRefreshError: null,
+      profileRefreshError,
     });
 
     return toResponse(updated);
@@ -252,18 +275,7 @@ export function createMemberService(deps: {
       const workspace = await workspaceService.getOrThrow();
       const bannedWordRows = await bannedWordRepo.findAll(workspace.id);
       const bannedWords = new Set(bannedWordRows.map((r) => r.word));
-      try {
-        return await refreshMemberProfileById(id, bannedWords);
-      } catch (error) {
-        if (error instanceof Error && error.message === 'member not found') {
-          throw error;
-        }
-        await memberRepo.patch(id, {
-          profileFetchedAt: new Date(),
-          profileRefreshError: error instanceof Error ? error.message : String(error),
-        });
-        throw error;
-      }
+      return refreshMemberProfileById(id, bannedWords);
     },
 
     refreshWorkspaceProfiles: async (input?: { limit?: number; cohort?: number; staleHours?: number }) => {
@@ -284,17 +296,10 @@ export function createMemberService(deps: {
       for (const member of members) {
         checked += 1;
         try {
-          if (!shouldRefreshProfile(member.profileFetchedAt, input?.staleHours ?? 24) && member.avatarUrl) {
-            continue;
-          }
           await refreshMemberProfileById(member.id, bannedWords);
           refreshed += 1;
         } catch (error) {
           const reason = error instanceof Error ? error.message : String(error);
-          await memberRepo.patch(member.id, {
-            profileFetchedAt: new Date(),
-            profileRefreshError: reason,
-          });
           failures.push({ githubId: member.githubId, reason });
         }
       }
