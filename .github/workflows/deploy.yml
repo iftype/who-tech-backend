@@ -22,13 +22,14 @@ jobs:
           echo "Host $SERVER_HOST" >> ~/.ssh/config
           echo "  StrictHostKeyChecking no" >> ~/.ssh/config
           echo "  UserKnownHostsFile /dev/null" >> ~/.ssh/config
+          echo "  ConnectTimeout 10" >> ~/.ssh/config
 
       - name: Deploy
         env:
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
           SERVER_USER: ${{ secrets.SERVER_USER }}
         run: |
-          ssh "$SERVER_USER"@"$SERVER_HOST" '
+          ssh -v "$SERVER_USER"@"$SERVER_HOST" '
             cd ~/app/who-tech-backend &&
             git checkout -- . &&
             git pull origin develop &&
