@@ -19,7 +19,9 @@ jobs:
           mkdir -p ~/.ssh
           echo "$SSH_PRIVATE_KEY_B64" | base64 -d > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -H "$SERVER_HOST" >> ~/.ssh/known_hosts
+          echo "Host $SERVER_HOST" >> ~/.ssh/config
+          echo "  StrictHostKeyChecking no" >> ~/.ssh/config
+          echo "  UserKnownHostsFile /dev/null" >> ~/.ssh/config
 
       - name: Deploy
         env:
@@ -27,7 +29,7 @@ jobs:
           SERVER_USER: ${{ secrets.SERVER_USER }}
         run: |
           ssh "$SERVER_USER"@"$SERVER_HOST" '
-            cd ~/app/backend &&
+            cd ~/app/who-tech-backend &&
             git checkout -- . &&
             git pull origin develop &&
             npm install --ignore-scripts &&
