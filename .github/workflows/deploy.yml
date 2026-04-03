@@ -9,33 +9,9 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup SSH key
+      - name: Trigger deploy webhook
         env:
-          SSH_PRIVATE_KEY_B64: ${{ secrets.SSH_PRIVATE_KEY_B64 }}
-          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          ADMIN_SECRET: ${{ secrets.ADMIN_SECRET }}
         run: |
-          mkdir -p ~/.ssh
-          echo "$SSH_PRIVATE_KEY_B64" | base64 -d > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          echo "Host $SERVER_HOST" >> ~/.ssh/config
-          echo "  StrictHostKeyChecking no" >> ~/.ssh/config
-          echo "  UserKnownHostsFile /dev/null" >> ~/.ssh/config
-          echo "  ConnectTimeout 10" >> ~/.ssh/config
-
-      - name: Deploy
-        env:
-          SERVER_HOST: ${{ secrets.SERVER_HOST }}
-          SERVER_USER: ${{ secrets.SERVER_USER }}
-        run: |
-          ssh -v "$SERVER_USER"@"$SERVER_HOST" '
-            cd ~/app/who-tech-backend &&
-            git checkout -- . &&
-            git pull origin develop &&
-            npm install --ignore-scripts &&
-            npx prisma generate &&
-            npx prisma migrate deploy &&
-            npm run build &&
-            pm2 restart backend --update-env
-          '
+          curl -sf -X POST https://iftype.store/admin/deploy \
+            -H "Authorization: Bearer $ADMIN_SECRET"

@@ -2,6 +2,7 @@ import express from 'express';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { existsSync } from 'fs';
+import { spawn } from 'child_process';
 import { PrismaClient } from '@prisma/client';
 import { adminAuth } from './shared/middleware/auth.js';
 import { errorHandler } from './shared/middleware/error.js';
@@ -118,6 +119,20 @@ app.use('/admin', createPersonRouter({ personRepo, memberRepo, workspaceService 
 app.use('/admin/banned-words', createBannedWordRouter({ bannedWordRepo, workspaceService }));
 app.use('/admin/ignored-domains', createIgnoredDomainRouter({ ignoredDomainRepo, workspaceService }));
 app.use('/admin/archive', createArchiveRouter(archiveService));
+
+app.post('/admin/deploy', (_req, res) => {
+  res.json({ ok: true, message: 'deploy started' });
+  const child = spawn(
+    'bash',
+    [
+      '-c',
+      'cd ~/app/who-tech-backend && git pull origin develop && npm install --ignore-scripts && npx prisma generate && npx prisma migrate deploy && npm run build && pm2 restart backend --update-env',
+    ],
+    { detached: true, stdio: 'ignore', shell: false },
+  );
+  child.unref();
+});
+
 app.use(errorHandler);
 
 export default app;
