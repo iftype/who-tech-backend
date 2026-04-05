@@ -1,5 +1,7 @@
 import type { CohortRepoRepository } from '../../db/repositories/cohort-repo.repository.js';
 import type { MissionRepoRepository } from '../../db/repositories/mission-repo.repository.js';
+import { HttpError } from '../../shared/http.js';
+import { isUniqueConstraintError } from '../../shared/prisma-error.js';
 import type { WorkspaceService } from '../workspace/workspace.service.js';
 import { parseCohorts } from '../../shared/cohort-regex.js';
 
@@ -24,7 +26,14 @@ export function createCohortRepoService(deps: {
 
     create: async (input: { cohort: number; missionRepoId: number; order: number }) => {
       const workspace = await workspaceService.getOrThrow();
-      return cohortRepoRepo.create({ ...input, workspaceId: workspace.id });
+      try {
+        return await cohortRepoRepo.create({ ...input, workspaceId: workspace.id });
+      } catch (error) {
+        if (isUniqueConstraintError(error)) {
+          throw new HttpError(409, 'cohort repo already exists');
+        }
+        throw error;
+      }
     },
 
     update: (id: number, input: { order: number }) => cohortRepoRepo.update(id, input),

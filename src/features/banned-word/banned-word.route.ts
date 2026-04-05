@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { asyncHandler } from '../../shared/http.js';
 import { parseId } from '../../shared/validation.js';
+import { isUniqueConstraintError } from '../../shared/prisma-error.js';
 import type { BannedWordRepository } from '../../db/repositories/banned-word.repository.js';
 import type { WorkspaceService } from '../workspace/workspace.service.js';
 
@@ -28,8 +29,16 @@ export function createBannedWordRouter(deps: {
         return;
       }
       const workspace = await workspaceService.getOrThrow();
-      const created = await bannedWordRepo.create(workspace.id, word.trim());
-      res.status(201).json(created);
+      try {
+        const created = await bannedWordRepo.create(workspace.id, word.trim());
+        res.status(201).json(created);
+      } catch (error) {
+        if (isUniqueConstraintError(error)) {
+          res.status(409).json({ error: 'word already exists' });
+          return;
+        }
+        throw error;
+      }
     }),
   );
 
