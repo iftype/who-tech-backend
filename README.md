@@ -226,6 +226,12 @@ ssh oracle "pm2 restart backend" # 재시작
 | 멤버 관리            | 역할 토글, manual nickname, 블로그, RSS 상태, 프로필 이미지 표시    |
 | 프로필 갱신          | GitHub 프로필(avatar/blog/login) stale 갱신 + 멤버 단건 새로고침    |
 
+## PR 수집 정책
+
+- `open`, `merged`, `closed` PR을 모두 `Submission.status`로 저장합니다.
+- 예전 기수처럼 제출 후 닫는 흐름도 아카이브에서 활용할 수 있도록, 비병합 closed PR도 sync 대상에 포함합니다.
+- 이미 sync를 마친 과거 레포에 대해 closed PR을 반영하려면 해당 레포의 전체 재sync가 필요합니다.
+
 ## 공개 API
 
 인증 없이 사용 가능한 엔드포인트입니다.

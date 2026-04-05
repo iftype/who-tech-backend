@@ -43,6 +43,7 @@ MissionRepo (DB 등록) → fetchRepoPRs (GitHub API) → parsePRsToSubmissions 
 
 - `syncWorkspace`: DB에 등록된 레포만 수집 (동적 org 탐색 없음)
 - `syncRepo`: 레포 PR 전체 페이지네이션 → 토큰 추출 → DB upsert
+- PR 상태 수집: `open`, `merged`, `closed` 모두 저장하며, 비병합 closed PR도 보존
 - 닉네임 추출: PR 제목을 `[^가-힣]+`로 분리, 한글 토큰만 추출 (`extractNicknameTokens`)
 - 닉네임 통계: 각 토큰을 `mergeNicknameStat`으로 누적 → `nicknameStats`에 빈도순 저장. 금지어(`NicknameBannedWord`) 필터 적용
 - 기수 판별: PR `created_at` 연도 → `cohortRules` JSON 매핑
