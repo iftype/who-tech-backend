@@ -278,6 +278,14 @@ export function inlineEditDescription(el, id) {
 export function repoRow(repo) {
   const syncedAt = repo.lastSyncAt ? new Date(repo.lastSyncAt).toLocaleString('ko-KR') : '없음';
   const currentCategory = getRepoTabCategory(repo);
+  const syncModeLabel = repo.syncMode === 'once' ? '1회수집' : '자동수집';
+  const syncModeClass = repo.syncMode === 'once' ? 'sync-once' : 'sync-continuous';
+  const syncModeHint =
+    repo.status === 'active' && repo.syncMode === 'continuous'
+      ? '현재 자동수집 대상'
+      : repo.syncMode === 'once'
+        ? '기본 전체 Sync는 최초 1회만 수집'
+        : '자동수집에 포함되려면 active 상태가 필요';
   const tabButtons = [
     { key: 'base', label: '기준', disabled: repo.track == null },
     { key: 'common', label: '공통', disabled: false },
@@ -303,9 +311,10 @@ export function repoRow(repo) {
         </div>
       </td>
       <td>
-        <div class="stack repo-status-stack">
-          <span class="pill ${repo.status} editable" onclick="inlineEditStatus(this, ${repo.id})">${repo.status}</span>
-          <span class="editable muted small" onclick="inlineEditSyncMode(this, ${repo.id})">${repo.syncMode === 'once' ? '1회' : '계속'}</span>
+        <div class="status-stack">
+          <span class="pill ${repo.status} editable editable-pill" onclick="inlineEditStatus(this, ${repo.id})">${repo.status}</span>
+          <span class="pill ${syncModeClass} editable editable-pill" onclick="inlineEditSyncMode(this, ${repo.id})">${syncModeLabel}</span>
+          <span class="status-help">${syncModeHint}</span>
         </div>
       </td>
       <td>

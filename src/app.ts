@@ -92,6 +92,7 @@ const blogAdminService = createBlogAdminService({
 const memberPublicService = createMemberPublicService({ memberRepo, blogPostRepo, cohortRepoRepo, workspaceService });
 const archiveService = createArchiveService({ memberRepo, cohortRepoRepo, workspaceService });
 const syncAdminService = createSyncAdminService({
+  cohortRepoRepo,
   memberRepo,
   missionRepoRepo,
   workspaceService,

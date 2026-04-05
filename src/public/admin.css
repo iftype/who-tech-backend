@@ -87,6 +87,8 @@ button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 .pill.candidate { background: #fef3c7; color: #92400e; }
 .pill.excluded { background: #e5e7eb; color: #4b5563; }
 .pill.cohort { background: #dbeafe; color: #1d4ed8; }
+.pill.sync-continuous { background: #dbeafe; color: #1d4ed8; }
+.pill.sync-once { background: #fef3c7; color: #92400e; }
 .pill.rss.available { background: #dcfce7; color: #166534; }
 .pill.rss.unavailable { background: #fee2e2; color: #991b1b; }
 .pill.rss.error { background: #fef3c7; color: #92400e; }
@@ -111,6 +113,54 @@ button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 .order-input { width: 48px; padding: 4px 6px; font-size: 12px; border: 1px solid #e2e8f0; border-radius: 6px; text-align: center; }
 .editable { cursor: pointer; }
 .editable:hover { text-decoration: underline; text-decoration-style: dotted; color: #0f766e; }
+.editable-pill {
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
+}
+.editable-pill:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+  text-decoration: none;
+}
+.status-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+.status-help {
+  font-size: 11px;
+  color: #64748b;
+  line-height: 1.4;
+}
+.admin-note {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid #dbeafe;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #f8fbff 0%, #eef6ff 100%);
+  color: #334155;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.admin-note strong {
+  color: #0f172a;
+}
+.admin-note span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.admin-note span::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: #0f766e;
+  flex-shrink: 0;
+}
 .inline-sel { width: auto; min-width: 80px; padding: 3px 6px; font-size: 12px; border-radius: 6px; border: 1px solid #0f766e; outline: none; }
 .inline-inp { width: 100%; min-width: 80px; padding: 3px 6px; font-size: 12px; border-radius: 6px; border: 1px solid #0f766e; outline: none; }
 .table-wrap { width: 100%; overflow: auto; border: 1px solid #e2e8f0; border-radius: 14px; background: #fff; }
