@@ -3,6 +3,7 @@ import type { MemberRepository } from '../../db/repositories/member.repository.j
 import type { BlogPostRepository } from '../../db/repositories/blog-post.repository.js';
 import type { WorkspaceService } from '../workspace/workspace.service.js';
 import type { BlogService } from './blog.service.js';
+import type { ActivityLogService } from '../activity-log/activity-log.service.js';
 import { probeRss } from './blog.service.js';
 import { fetchUserBlogCandidates } from '../sync/github.service.js';
 import { mergePreviousGithubIds } from '../../shared/github-profile.js';
@@ -14,17 +15,47 @@ export function createBlogAdminService(deps: {
   blogPostRepo: BlogPostRepository;
   workspaceService: WorkspaceService;
   blogService: BlogService;
+  activityLogService: ActivityLogService;
   octokit: Octokit;
 }) {
-  const { memberRepo, blogPostRepo, workspaceService, blogService, octokit } = deps;
+  const { memberRepo, blogPostRepo, workspaceService, blogService, activityLogService, octokit } = deps;
 
   return {
-    syncWorkspaceBlogs: async () => {
+    syncWorkspaceBlogs: async (source?: 'manual' | 'github-actions') => {
       const workspace = await workspaceService.getOrThrow();
       if (!workspace.blogSyncEnabled) {
+        if (source === 'github-actions') {
+          await activityLogService.addLog('info', '자동 블로그 Sync 스킵 — blogSyncEnabled=false');
+        }
         return { synced: 0, deleted: 0, failures: [], skipped: true };
       }
-      return blogService.syncBlogs(workspace.id);
+
+      try {
+        const result = await blogService.syncBlogs(workspace.id);
+
+        if (source === 'github-actions') {
+          await activityLogService.addLog(
+            result.failures.length > 0 ? 'err' : 'ok',
+            `자동 블로그 Sync 완료 — 수집 ${result.synced}건, 삭제 ${result.deleted}건, 실패 ${result.failures.length}건`,
+          );
+
+          for (const failure of result.failures.slice(0, 10)) {
+            const target = failure.rssUrl ?? failure.blog;
+            await activityLogService.addLog(
+              'err',
+              `  └ ${failure.githubId} ${failure.step}: ${target} — ${failure.error}`,
+            );
+          }
+        }
+
+        return result;
+      } catch (error) {
+        if (source === 'github-actions') {
+          const message = error instanceof Error ? error.message : String(error);
+          await activityLogService.addLog('err', `자동 블로그 Sync 실패: ${message}`);
+        }
+        throw error;
+      }
     },
 
     // 1. limit을 인자로 받긴 하되, 리포지토리에는 넘기지 않습니다.

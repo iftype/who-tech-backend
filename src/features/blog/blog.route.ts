@@ -9,7 +9,8 @@ export function createBlogRouter(service: BlogAdminService) {
   router.post(
     '/blog/sync',
     asyncHandler(async (_req, res) => {
-      res.json(await service.syncWorkspaceBlogs());
+      const source = _req.get('X-Sync-Source') === 'github-actions' ? 'github-actions' : 'manual';
+      res.json(await service.syncWorkspaceBlogs(source));
     }),
   );
 

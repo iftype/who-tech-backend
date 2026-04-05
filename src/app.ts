@@ -81,7 +81,14 @@ const repoService = createRepoService({ missionRepoRepo, workspaceService, syncS
 const blogService = createBlogService({ memberRepo, blogPostRepo });
 const cohortRepoService = createCohortRepoService({ cohortRepoRepo, missionRepoRepo, workspaceService });
 const activityLogService = createActivityLogService({ activityLogRepo, workspaceService });
-const blogAdminService = createBlogAdminService({ memberRepo, blogPostRepo, workspaceService, blogService, octokit });
+const blogAdminService = createBlogAdminService({
+  memberRepo,
+  blogPostRepo,
+  workspaceService,
+  blogService,
+  activityLogService,
+  octokit,
+});
 const memberPublicService = createMemberPublicService({ memberRepo, blogPostRepo, cohortRepoRepo, workspaceService });
 const archiveService = createArchiveService({ memberRepo, cohortRepoRepo, workspaceService });
 const syncAdminService = createSyncAdminService({

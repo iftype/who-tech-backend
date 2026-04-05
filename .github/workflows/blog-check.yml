@@ -13,7 +13,8 @@ jobs:
         run: |
           response=$(curl -s -o /dev/null -w "%{http_code}" \
             -X POST "${{ secrets.SYNC_URL }}/admin/blog/sync" \
-            -H "Authorization: Bearer ${{ secrets.ADMIN_SECRET }}")
+            -H "Authorization: Bearer ${{ secrets.ADMIN_SECRET }}" \
+            -H "X-Sync-Source: github-actions")
 
           echo "Response: $response"
 
