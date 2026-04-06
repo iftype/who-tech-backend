@@ -42,7 +42,12 @@ export function createMemberPublicService(deps: {
           avatarUrl: m.avatarUrl,
           cohort: targetCohort?.cohort ?? null,
           roles: targetCohort?.roles ?? ['crew'],
-          tracks: [...new Set(m.submissions.map((s) => s.missionRepo.track).filter((t) => t !== null))],
+          tracks: [
+            ...new Set([
+              ...(m.track ? [m.track] : []),
+              ...m.submissions.map((s) => s.missionRepo.track).filter((t) => t !== null),
+            ]),
+          ],
           blog: m.blog,
           lastPostedAt: m.lastPostedAt,
         };
@@ -135,7 +140,12 @@ export function createMemberPublicService(deps: {
         nickname,
         avatarUrl: member.avatarUrl,
         cohorts,
-        tracks: [...new Set(member.submissions.map((s) => s.missionRepo.track).filter((t) => t !== null))],
+        tracks: [
+          ...new Set([
+            ...(member.track ? [member.track] : []),
+            ...member.submissions.map((s) => s.missionRepo.track).filter((t) => t !== null),
+          ]),
+        ],
         blog: member.blog,
         lastPostedAt: member.lastPostedAt,
         archive,
@@ -181,7 +191,12 @@ export function createMemberPublicService(deps: {
             avatarUrl: p.member.avatarUrl,
             cohort: targetCohort?.cohort ?? null,
             roles: targetCohort?.roles ?? ['crew'],
-            tracks: [...new Set(p.member.submissions.map((s) => s.missionRepo.track).filter((t) => t !== null))],
+            tracks: [
+              ...new Set([
+                ...(p.member.track ? [p.member.track] : []),
+                ...p.member.submissions.map((s) => s.missionRepo.track).filter((t) => t !== null),
+              ]),
+            ],
           },
         };
       });

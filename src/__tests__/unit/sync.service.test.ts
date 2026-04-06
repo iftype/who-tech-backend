@@ -87,4 +87,18 @@ describe('parsePRsToSubmissions', () => {
     const result = parsePRsToSubmissions(ghostPRs, COHORT_RULES);
     expect(result).toHaveLength(0);
   });
+
+  it('병합되지 않고 닫힌 PR도 closed 상태로 포함한다', () => {
+    const closedPRs = [{ ...mockPRs[0]!, state: 'closed' as const, merged_at: null }];
+    const result = parsePRsToSubmissions(closedPRs, COHORT_RULES);
+    expect(result).toHaveLength(1);
+    expect(result[0]?.status).toBe('closed');
+  });
+
+  it('병합된 PR은 merged 상태로 포함한다', () => {
+    const mergedPRs = [{ ...mockPRs[0]!, state: 'closed' as const, merged_at: '2026-03-17T00:00:00Z' }];
+    const result = parsePRsToSubmissions(mergedPRs, COHORT_RULES);
+    expect(result).toHaveLength(1);
+    expect(result[0]?.status).toBe('merged');
+  });
 });

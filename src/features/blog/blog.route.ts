@@ -9,7 +9,19 @@ export function createBlogRouter(service: BlogAdminService) {
   router.post(
     '/blog/sync',
     asyncHandler(async (_req, res) => {
-      res.json(await service.syncWorkspaceBlogs());
+      const source = _req.get('X-Sync-Source') === 'github-actions' ? 'github-actions' : 'manual';
+      res.status(202).json(await service.enqueueWorkspaceBlogSync(source));
+    }),
+  );
+
+  router.get(
+    '/blog/sync-jobs/:jobId',
+    asyncHandler(async (req, res) => {
+      const jobId = req.params['jobId'];
+      if (!jobId || Array.isArray(jobId)) {
+        return badRequest('invalid job id');
+      }
+      res.json(await service.getBlogSyncJob(jobId));
     }),
   );
 

@@ -2,34 +2,92 @@ import { addLog } from './logs.js';
 import { authHeaders, parseErrorResponse } from './http.js';
 import { toast } from './utils.js';
 import { loadMembers } from './members.js';
+import { loadStatus } from './workspace.js';
+
+function pollBlogSyncJob(jobId, button) {
+  const poll = () => {
+    fetch(`/admin/blog/sync-jobs/${jobId}`, { headers: authHeaders() })
+      .then((response) => {
+        if (!response.ok) return parseErrorResponse(response);
+        return response.json();
+      })
+      .then((job) => {
+        const progressText =
+          job.progress && job.status !== 'queued'
+            ? ` ${job.progress.percent}% (${job.progress.processed}/${job.progress.total || 0})`
+            : '';
+        document.getElementById('sync-result').textContent = `${job.message}${progressText}`;
+
+        if (job.status === 'queued' || job.status === 'running') {
+          button.textContent = job.status === 'queued' ? '대기 중...' : `${Math.max(job.progress?.percent ?? 0, 1)}%`;
+          setTimeout(poll, 2000);
+          return;
+        }
+
+        if (job.status === 'completed') {
+          const result = job.result ?? { synced: 0, deleted: 0, failures: [], skipped: false };
+          if (result.skipped) {
+            toast('블로그 자동수집이 꺼져 있어 스킵됐습니다.');
+            addLog('블로그 Sync 스킵 — blogSyncEnabled=false', 'info');
+          } else {
+            toast(`블로그 ${result.synced}건 수집, ${result.deleted}건 삭제`);
+            addLog(`블로그 Sync 완료 — 수집 ${result.synced}건, 삭제 ${result.deleted}건`, 'ok');
+            if (result.failures?.length) {
+              result.failures.forEach((failure) => {
+                const target = failure.rssUrl ?? failure.blog;
+                addLog(`  └ ${failure.githubId} ${failure.step}: ${target} — ${failure.error}`, 'err');
+              });
+            }
+          }
+          Promise.all([loadMembers(), loadStatus()]);
+          return;
+        }
+
+        const detail = job.error ?? job.message ?? '블로그 sync 실패';
+        toast('블로그 sync 실패');
+        addLog(`블로그 Sync 실패: ${detail}`, 'err');
+      })
+      .catch((err) => {
+        const detail = err?.message ?? String(err);
+        toast('블로그 sync 실패');
+        addLog(`블로그 Sync 실패: ${detail}`, 'err');
+      })
+      .finally(() => {
+        fetch(`/admin/blog/sync-jobs/${jobId}`, { headers: authHeaders() })
+          .then((response) => (response.ok ? response.json() : null))
+          .then((job) => {
+            if (job?.status === 'queued' || job?.status === 'running') return;
+            button.disabled = false;
+            button.textContent = '블로그 Sync';
+          })
+          .catch(() => {
+            button.disabled = false;
+            button.textContent = '블로그 Sync';
+          });
+      });
+  };
+
+  poll();
+}
 
 export function triggerBlogSync() {
   const button = document.getElementById('blog-sync-btn');
   button.disabled = true;
-  button.textContent = '동기화 중...';
+  button.textContent = '대기 중...';
   addLog('블로그 Sync 중...', 'run');
   fetch('/admin/blog/sync', { method: 'POST', headers: authHeaders() })
     .then((response) => {
       if (!response.ok) return parseErrorResponse(response);
       return response.json();
     })
-    .then((data) => {
-      toast(`블로그 ${data.synced}건 수집, ${data.deleted}건 삭제`);
-      addLog(`블로그 Sync 완료 — 수집 ${data.synced}건, 삭제 ${data.deleted}건`, 'ok');
-      if (data.failures?.length) {
-        data.failures.forEach((failure) => {
-          const target = failure.rssUrl ?? failure.blog;
-          addLog(`  └ ${failure.githubId} ${failure.step}: ${target} — ${failure.error}`, 'err');
-        });
-      }
-      return loadMembers();
+    .then((job) => {
+      addLog(`블로그 Sync 작업 등록 — ${job.id}`, 'info');
+      pollBlogSyncJob(job.id, button);
     })
     .catch((err) => {
       const detail = err?.message ?? String(err);
       toast('블로그 sync 실패');
       addLog(`블로그 Sync 실패: ${detail}`, 'err');
-    })
-    .finally(() => {
       button.disabled = false;
       button.textContent = '블로그 Sync';
     });

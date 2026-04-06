@@ -73,5 +73,46 @@ export function createSyncRouter(service: SyncAdminService) {
       });
   });
 
+  router.post(
+    '/sync/cohort-repos',
+    asyncHandler(async (req, res) => {
+      const cohort = typeof req.body?.cohort === 'number' ? req.body.cohort : NaN;
+      if (Number.isNaN(cohort)) {
+        res.status(400).json({ error: 'cohort required' });
+        return;
+      }
+      res.json(await service.syncCohortRepoList(cohort));
+    }),
+  );
+
+  router.get('/sync/cohort-repos/stream', (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders();
+
+    const cohort = typeof req.query['cohort'] === 'string' ? Number(req.query['cohort']) : NaN;
+    if (Number.isNaN(cohort)) {
+      res.write(`event: error\ndata: ${JSON.stringify({ message: 'cohort required' })}\n\n`);
+      res.end();
+      return;
+    }
+
+    const send = (event: string, data: unknown) => {
+      res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+    };
+
+    service
+      .syncCohortRepoList(cohort, (step) => send('progress', step))
+      .then((result) => {
+        send('done', result);
+        res.end();
+      })
+      .catch((err: unknown) => {
+        send('error', { message: err instanceof Error ? err.message : 'sync failed' });
+        res.end();
+      });
+  });
+
   return router;
 }

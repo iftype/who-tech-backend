@@ -15,12 +15,20 @@ const parser = new Parser({
   },
 });
 
-type BlogSyncFailure = {
+export type BlogSyncFailure = {
   githubId: string;
   blog: string;
   rssUrl?: string;
   step: 'rss_fetch' | 'blog_post_upsert' | 'cleanup';
   error: string;
+};
+
+export type BlogSyncProgress = {
+  total: number;
+  processed: number;
+  synced: number;
+  percent: number;
+  phase: string;
 };
 
 type RssCheckResult = {
@@ -83,6 +91,11 @@ export function resolveRSSUrlsForBlog(blogUrl: string): string[] {
   }
 
   if (url.hostname.endsWith('.tistory.com')) return [`${normalizedBlogUrl}/rss`];
+
+  if (url.hostname === 'brunch.co.kr') {
+    const match = url.pathname.match(/^\/@[^/]+/);
+    if (match) return [`https://brunch.co.kr/rss${match[0]}`];
+  }
 
   if (url.hostname === 'medium.com' || url.hostname.endsWith('.medium.com')) {
     return [`https://medium.com/feed${url.pathname}`];
@@ -175,6 +188,7 @@ export function createBlogService(deps: { memberRepo: MemberRepository; blogPost
   return {
     syncBlogs: async (
       workspaceId: number,
+      onProgress?: (progress: BlogSyncProgress) => void,
     ): Promise<{ synced: number; deleted: number; failures: BlogSyncFailure[] }> => {
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
@@ -182,7 +196,22 @@ export function createBlogService(deps: { memberRepo: MemberRepository; blogPost
       const members = await memberRepo.findWithFilters(workspaceId, { hasBlog: true });
 
       let synced = 0;
+      let processed = 0;
       const failures: BlogSyncFailure[] = [];
+      const total = members.length;
+
+      const emitProgress = (phase: string, forcePercent?: number) => {
+        const percent = forcePercent ?? (total === 0 ? 100 : Math.min(100, Math.round((processed / total) * 100)));
+        onProgress?.({
+          total,
+          processed,
+          synced,
+          percent,
+          phase,
+        });
+      };
+
+      emitProgress(total === 0 ? '수집 대상 없음' : 'RSS 수집 준비 중', total === 0 ? 100 : 0);
 
       for (const member of members) {
         // 2. 각 멤버의 고유 정보를 바탕으로 RSS 수집
@@ -205,6 +234,8 @@ export function createBlogService(deps: { memberRepo: MemberRepository; blogPost
         if (result.failure) {
           // 에러 발생 시 로그에 명확히 githubId를 남깁니다.
           failures.push({ githubId: member.githubId, ...result.failure });
+          processed += 1;
+          emitProgress(`${member.githubId} RSS 확인 완료`);
           continue;
         }
 
@@ -242,15 +273,21 @@ export function createBlogService(deps: { memberRepo: MemberRepository; blogPost
             });
           }
         }
+
+        processed += 1;
+        emitProgress(`${member.githubId} RSS 확인 완료`);
       }
 
       let deleted = 0;
+      emitProgress('오래된 글 정리 중', total === 0 ? 100 : Math.max(Math.round((processed / total) * 100), 95));
       try {
         const cleanupResult = await blogPostRepo.deleteBefore(thirtyDaysAgo);
         deleted = cleanupResult.count;
       } catch (error) {
         throw new HttpError(500, `blog sync cleanup failed: ${errorMessage(error)}`);
       }
+
+      emitProgress('완료', 100);
 
       return { synced, deleted, failures };
     },

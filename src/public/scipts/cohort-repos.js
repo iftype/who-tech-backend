@@ -154,13 +154,13 @@ export function triggerCohortSync() {
   const progressBar = document.getElementById('sync-progress-bar');
   const progressLabel = document.getElementById('sync-progress-label');
   btn.disabled = true;
-  btn.textContent = '동기화 중...';
+  btn.textContent = '재 Sync 중...';
   progressWrap.style.display = 'block';
   progressBar.style.width = '0%';
   progressLabel.textContent = '준비 중...';
-  addLog(`${cohort}기 Sync 시작`, 'run');
+  addLog(`${cohort}기 목록 전체 재 Sync 시작`, 'run');
 
-  const url = `/admin/sync/stream?token=${encodeURIComponent(adminState.token)}&cohort=${cohort}`;
+  const url = `/admin/sync/cohort-repos/stream?token=${encodeURIComponent(adminState.token)}&cohort=${cohort}`;
   const es = new EventSource(url);
 
   es.addEventListener('progress', (e) => {
@@ -174,22 +174,22 @@ export function triggerCohortSync() {
     const { reposSynced, totalSynced } = JSON.parse(e.data);
     progressBar.style.width = '100%';
     progressLabel.textContent = `완료: ${reposSynced}개 레포, ${totalSynced}건 수집됨`;
-    toast(`${cohort}기 sync 완료 (${totalSynced}건)`);
-    addLog(`${cohort}기 Sync 완료 — ${reposSynced}개 레포, ${totalSynced}건 수집`, 'ok');
+    toast(`${cohort}기 목록 전체 재 Sync 완료 (${totalSynced}건)`);
+    addLog(`${cohort}기 목록 전체 재 Sync 완료 — ${reposSynced}개 레포, ${totalSynced}건 수집`, 'ok');
     es.close();
     btn.disabled = false;
-    btn.textContent = '이 기수 Sync';
+    btn.textContent = '목록 전체 재 Sync';
     Promise.all([loadStatus(), loadMembers()]);
   });
 
   es.addEventListener('error', (e) => {
     const msg = e.data ? JSON.parse(e.data).message : 'sync 실패';
     progressLabel.textContent = `오류: ${msg}`;
-    toast(`${cohort}기 sync 실패`);
-    addLog(`${cohort}기 Sync 실패: ${msg}`, 'err');
+    toast(`${cohort}기 목록 전체 재 Sync 실패`);
+    addLog(`${cohort}기 목록 전체 재 Sync 실패: ${msg}`, 'err');
     es.close();
     btn.disabled = false;
-    btn.textContent = '이 기수 Sync';
+    btn.textContent = '목록 전체 재 Sync';
   });
 
   es.onerror = () => {
@@ -197,7 +197,7 @@ export function triggerCohortSync() {
     progressLabel.textContent = '연결 오류';
     es.close();
     btn.disabled = false;
-    btn.textContent = '이 기수 Sync';
+    btn.textContent = '목록 전체 재 Sync';
   };
 }
 

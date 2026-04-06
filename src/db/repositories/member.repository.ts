@@ -183,6 +183,13 @@ export function createMemberRepository(db: PrismaClient) {
       });
     },
 
+    // 특정 기수에 대한 참여 정보 전체 삭제 (역할 교체 시 사용)
+    deleteParticipationsByCohort: async (memberId: number, cohortNumber: number) => {
+      const cohort = await db.cohort.findUnique({ where: { number: cohortNumber } });
+      if (!cohort) return;
+      return db.memberCohort.deleteMany({ where: { memberId, cohortId: cohort.id } });
+    },
+
     // 삭제 로직 (트랜잭션으로 연관 데이터까지 깔끔하게)
     deleteWithRelations: (id: number) =>
       db.$transaction([

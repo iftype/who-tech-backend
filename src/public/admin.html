@@ -67,7 +67,7 @@
         </div>
       </div>
       <div style="margin-top:16px">
-        <div class="sub" style="margin-bottom:8px">자동수집 레포 현황 <span class="muted">(status=active, syncMode=continuous)</span></div>
+        <div class="sub" style="margin-bottom:8px">자동수집 레포 현황 <span class="muted">(active 이고 수집모드가 자동수집인 레포만 표시)</span></div>
         <div class="table-wrap">
           <table>
             <thead>
@@ -89,7 +89,7 @@
       <div class="section-head">
         <div>
           <h2>Repo Candidates</h2>
-          <div class="sub">woowacourse 조직에서 미션 레포 후보를 불러오고 활성/제외를 관리합니다.</div>
+          <div class="sub">woowacourse 조직에서 미션 레포 후보를 불러오고 상태, 수집모드, 탭 분류를 관리합니다.</div>
         </div>
         <div class="actions">
           <button class="btn-danger" onclick="deleteAllRepos()">전체 삭제</button>
@@ -120,13 +120,20 @@
         </select>
       </div>
 
-      <div class="repo-section-label">계속 돌릴 레포 <span class="sub">(매 sync 실행 / 후보 포함)</span></div>
+      <div class="admin-note" style="margin-bottom:14px">
+        <strong>빠른 편집 안내</strong>
+        <span>상태 배지를 클릭하면 active/candidate/excluded를 바꿉니다.</span>
+        <span>수집모드 칩을 클릭하면 자동수집과 1회수집을 바꿉니다.</span>
+        <span>자동수집 현황 표에는 active + 자동수집 레포만 잡힙니다.</span>
+      </div>
+
+      <div class="repo-section-label">자동수집 레포 <span class="sub">(수집모드가 자동수집인 레포 묶음)</span></div>
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
               <th>이름</th>
-              <th>상태</th>
+              <th>상태 / 수집</th>
               <th>트랙/타입</th>
               <th>기수</th>
               <th>설명 / 후보 사유</th>
@@ -139,13 +146,13 @@
       </div>
       <div id="repo-pagination-continuous"></div>
 
-      <div class="repo-section-label" style="margin-top:20px">한 번만 돌릴 레포 <span class="sub">(최초 1회 후 skip)</span></div>
+      <div class="repo-section-label" style="margin-top:20px">1회수집 레포 <span class="sub">(최초 1회 수집 후 기본 전체 Sync에서는 skip)</span></div>
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
               <th>이름</th>
-              <th>상태</th>
+              <th>상태 / 수집</th>
               <th>트랙/타입</th>
               <th>기수</th>
               <th>설명 / 후보 사유</th>
@@ -307,7 +314,7 @@
           <option value="android">android</option>
         </select>
         <button class="btn-secondary" onclick="autoFillCohortRepos()">자동 채우기</button>
-        <button class="btn-primary" id="cohort-sync-btn" onclick="triggerCohortSync()">이 기수 Sync</button>
+        <button class="btn-primary" id="cohort-sync-btn" onclick="triggerCohortSync()">목록 전체 재 Sync</button>
       </div>
       <div class="table-wrap" style="margin-bottom:12px">
         <table>
