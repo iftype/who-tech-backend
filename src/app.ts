@@ -100,10 +100,6 @@ const syncAdminService = createSyncAdminService({
   octokit,
 });
 
-export const runtime = {
-  blogAdminService,
-};
-
 // --- Express App ---
 const app = express();
 app.use(express.json());
