@@ -179,15 +179,28 @@ chore/설명
 - **서버**: Oracle Cloud AMD (iftype.store)
 - **프로세스 관리**: PM2
 - **웹서버**: Nginx (HTTPS, Rate limiting, 보안 헤더)
+- **블로그 자동수집**: GitHub Actions (`blog-check.yml`) + 백엔드 background job polling
 
 ### 수동 배포
 
 ```bash
 git push origin develop
-ssh oracle "cd ~/app/backend && git pull --ff-only origin develop && npm install --ignore-scripts && npx prisma generate && npx prisma migrate deploy && npm run build && pm2 restart backend --update-env"
+ssh oracle "cd ~/app/who-tech-backend && git pull --ff-only origin develop && npm install --ignore-scripts && npx prisma generate && npx prisma migrate deploy && npm run build && pm2 restart backend --update-env"
 ```
 
 GitHub Actions(`deploy.yml`)도 위와 같이 **`migrate deploy` → `build` → PM2 재시작** 순서입니다.
+
+### 블로그 자동수집
+
+- 스케줄 주체는 서버 `node-cron`이 아니라 **GitHub Actions** 입니다.
+- 워크플로우: `.github/workflows/blog-check.yml`
+- 실행 방식:
+  1. `POST /admin/blog/sync` 호출
+  2. 즉시 반환된 `jobId` 저장
+  3. `/admin/blog/sync-jobs/:jobId` polling
+  4. 완료 후 `/admin/blog/new-posts` 조회 및 Slack 알림
+- `SYNC_URL` secret이 비어 있어도 기본값으로 `https://iftype.store`를 사용합니다.
+- 블로그 sync 자체는 background job으로 돌아가므로, 긴 RSS 수집 때문에 GitHub Actions나 Nginx 요청이 바로 타임아웃되지 않도록 구성했습니다.
 
 ### 운영 DB를 비우고 맞추기 (스키마 drift / P3005 / 어드민 멤버 오류 등)
 
@@ -215,17 +228,17 @@ ssh oracle "pm2 restart backend" # 재시작
 
 ## 어드민 주요 기능
 
-| 기능                  | 설명                                                                    |
-| --------------------- | ----------------------------------------------------------------------- |
-| 레포 후보 수집        | 조직 공개 레포 전체를 읽어 `candidate / excluded`로 저장                |
-| 레포 탭 관리          | `기준 / 공통 / 제외 / 프리코스` 탭으로 분류하고 행 단위로 이동 가능     |
-| 레포 설정             | 기수(cohorts), 레벨(level), 트랙, syncMode, 정규식, 탭 분류 관리        |
-| 정규식 자동감지/검증  | PR 제목 샘플 기반 정규식 제안, active 레포 검증                         |
-| 전체 / 단건 Sync      | SSE 진행률 표시, 레포별 수동 sync 지원                                  |
-| 블로그 동기화         | ON/OFF 토글, RSS 상태 저장, 최근 글 30일 보관 + 최신 7일 스냅샷         |
-| 멤버 관리             | 역할 토글, manual nickname, 블로그, RSS 상태, 프로필 이미지 표시        |
-| 프로필 갱신           | GitHub 프로필(avatar/blog/login) stale 갱신 + 멤버 단건 새로고침        |
-| 기수 목록 전체 재Sync | CohortRepo에 등록된 레포만 순서대로 전체 재수집하여 과거 PR 상태 재반영 |
+| 기능                  | 설명                                                                            |
+| --------------------- | ------------------------------------------------------------------------------- |
+| 레포 후보 수집        | 조직 공개 레포 전체를 읽어 `candidate / excluded`로 저장                        |
+| 레포 탭 관리          | `기준 / 공통 / 제외 / 프리코스` 탭으로 분류하고 행 단위로 이동 가능             |
+| 레포 설정             | 기수(cohorts), 레벨(level), 트랙, syncMode, 정규식, 탭 분류 관리                |
+| 정규식 자동감지/검증  | PR 제목 샘플 기반 정규식 제안, active 레포 검증                                 |
+| 전체 / 단건 Sync      | SSE 진행률 표시, 레포별 수동 sync 지원                                          |
+| 블로그 동기화         | ON/OFF 토글, background job, RSS 상태 저장, 최근 글 30일 보관 + 최신 7일 스냅샷 |
+| 멤버 관리             | 역할 토글, manual nickname, 블로그, RSS 상태, 프로필 이미지 표시                |
+| 프로필 갱신           | GitHub 프로필(avatar/blog/login) stale 갱신 + 멤버 단건 새로고침                |
+| 기수 목록 전체 재Sync | CohortRepo에 등록된 레포만 순서대로 전체 재수집하여 과거 PR 상태 재반영         |
 
 ## 어드민 중복 요청 처리
 
