@@ -11,9 +11,15 @@ jobs:
     steps:
       - name: Trigger blog sync
         run: |
+          BASE_URL="${{ secrets.SYNC_URL }}"
+          if [ -z "$BASE_URL" ]; then
+            BASE_URL="https://iftype.store"
+          fi
+
           response=$(curl -s -o /dev/null -w "%{http_code}" \
-            -X POST "${{ secrets.SYNC_URL }}/admin/blog/sync" \
-            -H "Authorization: Bearer ${{ secrets.ADMIN_SECRET }}")
+            -X POST "$BASE_URL/admin/blog/sync" \
+            -H "Authorization: Bearer ${{ secrets.ADMIN_SECRET }}" \
+            -H "X-Sync-Source: github-actions")
 
           echo "Response: $response"
 
@@ -25,8 +31,13 @@ jobs:
       - name: Fetch new blog posts
         id: new_posts
         run: |
+          BASE_URL="${{ secrets.SYNC_URL }}"
+          if [ -z "$BASE_URL" ]; then
+            BASE_URL="https://iftype.store"
+          fi
+
           curl -sf \
-            "${{ secrets.SYNC_URL }}/admin/blog/new-posts?sinceMinutes=65" \
+            "$BASE_URL/admin/blog/new-posts?sinceMinutes=65" \
             -H "Authorization: Bearer ${{ secrets.ADMIN_SECRET }}" \
             -o /tmp/blog-new-posts.json || echo '[]' > /tmp/blog-new-posts.json
 
