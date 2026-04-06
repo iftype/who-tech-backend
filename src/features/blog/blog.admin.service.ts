@@ -21,11 +21,13 @@ export function createBlogAdminService(deps: {
   const { memberRepo, blogPostRepo, workspaceService, blogService, activityLogService, octokit } = deps;
 
   return {
-    syncWorkspaceBlogs: async (source?: 'manual' | 'github-actions') => {
+    syncWorkspaceBlogs: async (source?: 'manual' | 'github-actions' | 'scheduler') => {
       const workspace = await workspaceService.getOrThrow();
+      const isAutomated = source === 'github-actions' || source === 'scheduler';
+      const sourceLabel = source === 'scheduler' ? '스케줄러' : '자동';
       if (!workspace.blogSyncEnabled) {
-        if (source === 'github-actions') {
-          await activityLogService.addLog('info', '자동 블로그 Sync 스킵 — blogSyncEnabled=false');
+        if (isAutomated) {
+          await activityLogService.addLog('info', `${sourceLabel} 블로그 Sync 스킵 — blogSyncEnabled=false`);
         }
         return { synced: 0, deleted: 0, failures: [], skipped: true };
       }
@@ -33,10 +35,10 @@ export function createBlogAdminService(deps: {
       try {
         const result = await blogService.syncBlogs(workspace.id);
 
-        if (source === 'github-actions') {
+        if (isAutomated) {
           await activityLogService.addLog(
             result.failures.length > 0 ? 'err' : 'ok',
-            `자동 블로그 Sync 완료 — 수집 ${result.synced}건, 삭제 ${result.deleted}건, 실패 ${result.failures.length}건`,
+            `${sourceLabel} 블로그 Sync 완료 — 수집 ${result.synced}건, 삭제 ${result.deleted}건, 실패 ${result.failures.length}건`,
           );
 
           for (const failure of result.failures.slice(0, 10)) {
@@ -50,9 +52,9 @@ export function createBlogAdminService(deps: {
 
         return result;
       } catch (error) {
-        if (source === 'github-actions') {
+        if (isAutomated) {
           const message = error instanceof Error ? error.message : String(error);
-          await activityLogService.addLog('err', `자동 블로그 Sync 실패: ${message}`);
+          await activityLogService.addLog('err', `${sourceLabel} 블로그 Sync 실패: ${message}`);
         }
         throw error;
       }
