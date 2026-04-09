@@ -12,6 +12,7 @@ import { extractNicknameTokens, mergeNicknameStat, resolveDisplayNickname } from
 import { fetchRepoPRs, fetchUserBlogCandidates, detectCohort } from './github.service.js';
 import { probeRss } from '../blog/blog.service.js';
 import type { CohortRule, ParsedSubmission, PrStatus } from '../../shared/types/index.js';
+import type { ActivityLogService } from '../activity-log/activity-log.service.js';
 
 type RawPR = {
   number: number;
@@ -64,8 +65,17 @@ export function createSyncService(deps: {
   workspaceRepo: WorkspaceRepository;
   bannedWordRepo: BannedWordRepository;
   ignoredDomainRepo: IgnoredDomainRepository;
+  activityLogService: ActivityLogService;
 }) {
-  const { memberRepo, missionRepoRepo, submissionRepo, workspaceRepo, bannedWordRepo, ignoredDomainRepo } = deps;
+  const {
+    memberRepo,
+    missionRepoRepo,
+    submissionRepo,
+    workspaceRepo,
+    bannedWordRepo,
+    ignoredDomainRepo,
+    activityLogService,
+  } = deps;
 
   const syncRepo = async (
     octokit: Octokit,
@@ -81,7 +91,11 @@ export function createSyncService(deps: {
     onProgress?: (step: { total: number; processed: number; synced: number; percent: number; phase: string }) => void,
   ): Promise<{ synced: number; failures: { prNumber: number; prUrl: string; error: string }[] }> => {
     const isCommonMission = repo.track === null || repo.track === undefined;
-    const since = repo.lastSyncAt ?? undefined;
+
+    // 수집 기준 시점 결정: 5분 버퍼를 두어 경합 조건 및 API 지연 방지
+    const since = repo.lastSyncAt ? new Date(repo.lastSyncAt.getTime() - 5 * 60 * 1000) : undefined;
+    // 첫 수집(since 없음)인 경우 과거 데이터 확보를 위해 더 많은 페이지 수집 허용
+    const maxPages = since ? 1 : 10;
 
     // 금지어 및 무시 도메인 로드
     const [bannedWordRows, ignoredDomainRows] = await Promise.all([
@@ -95,7 +109,7 @@ export function createSyncService(deps: {
     try {
       prs = await fetchRepoPRs(octokit, org, repo.name, {
         ...(since ? { since } : {}),
-        maxPages: 1,
+        maxPages,
       });
     } catch (error) {
       const detail = error instanceof Error ? error.message : String(error);
@@ -289,15 +303,28 @@ export function createSyncService(deps: {
     });
 
     let totalSynced = 0;
+    let reposSynced = 0;
+
     for (let i = 0; i < activeRepos.length; i++) {
       const repo = activeRepos[i]!;
-      const { synced } = await syncRepo(octokit, workspaceId, workspace.githubOrg, repo, cohortRules);
-      totalSynced += synced;
-      onProgress?.({ repo: repo.name, done: i + 1, total: activeRepos.length, synced });
+      try {
+        const { synced } = await syncRepo(octokit, workspaceId, workspace.githubOrg, repo, cohortRules);
+        totalSynced += synced;
+        reposSynced++;
+        onProgress?.({ repo: repo.name, done: i + 1, total: activeRepos.length, synced });
+
+        if (synced > 0) {
+          await activityLogService.addLog('sync', `Workspace Sync: [${repo.name}] synced ${synced} items`);
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        await activityLogService.addLog('sync_error', `Workspace Sync Failed: [${repo.name}] - ${message}`);
+        onProgress?.({ repo: `${repo.name} (failed)`, done: i + 1, total: activeRepos.length, synced: 0 });
+      }
     }
 
     await workspaceRepo.touch(workspaceId);
-    return { totalSynced, reposSynced: activeRepos.length };
+    return { totalSynced, reposSynced };
   };
 
   const syncContinuousRepos = async (
@@ -312,14 +339,27 @@ export function createSyncService(deps: {
     const continuousRepos = repos.filter((r) => r.status === 'active' && r.syncMode === 'continuous');
 
     let totalSynced = 0;
+    let reposSynced = 0;
+
     for (let i = 0; i < continuousRepos.length; i++) {
       const repo = continuousRepos[i]!;
-      const { synced } = await syncRepo(octokit, workspaceId, workspace.githubOrg, repo, cohortRules);
-      totalSynced += synced;
-      onProgress?.({ repo: repo.name, done: i + 1, total: continuousRepos.length, synced });
+      try {
+        const { synced } = await syncRepo(octokit, workspaceId, workspace.githubOrg, repo, cohortRules);
+        totalSynced += synced;
+        reposSynced++;
+        onProgress?.({ repo: repo.name, done: i + 1, total: continuousRepos.length, synced });
+
+        if (synced > 0) {
+          await activityLogService.addLog('sync', `Continuous Sync: [${repo.name}] synced ${synced} items`);
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        await activityLogService.addLog('sync_error', `Continuous Sync Failed: [${repo.name}] - ${message}`);
+        onProgress?.({ repo: `${repo.name} (failed)`, done: i + 1, total: continuousRepos.length, synced: 0 });
+      }
     }
 
-    return { totalSynced, reposSynced: continuousRepos.length };
+    return { totalSynced, reposSynced };
   };
 
   return { syncRepo, syncWorkspace, syncContinuousRepos };
