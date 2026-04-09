@@ -2,6 +2,16 @@
 
 ---
 
+## 2026-04-09
+
+**Vercel Analytics 추가**
+
+- **왜**: 페이지뷰 및 방문자 수 추적
+- **핵심 파일**: `src/app/layout.tsx`, `package.json`
+- **결정**: `@vercel/analytics` 패키지 설치 후 `<Analytics />` 컴포넌트를 RootLayout에 삽입. Vercel 대시보드 → Analytics 탭에서 확인 가능.
+
+---
+
 ## 2026-04-07
 
 **설정 페이지 신규 (가이드 → 설정)**
