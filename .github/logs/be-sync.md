@@ -2,6 +2,18 @@
 
 ---
 
+## 2026-04-09
+
+**PR 수집 로직 개선 (수정일 기준 + 100개 제한)**
+
+- **왜**: 생성일 기준 수집 시 기존 PR의 상태 변경(open → merged)이 반영되지 않음. 대량 수집 시 효율성 저하.
+- **핵심 파일**: `src/features/sync/github.service.ts`, `src/features/sync/sync.service.ts`
+- **결정**:
+  - `fetchRepoPRs`: `sort: 'updated'`로 변경, `updated_at` 기준으로 `since` 필터링.
+  - `maxPages: 1` 강제: 매 수집 시 최근 100개만 확인하여 Rate Limit 방지 및 성능 최적화.
+
+---
+
 ## 2026-04-02
 
 **Brunch RSS 지원**

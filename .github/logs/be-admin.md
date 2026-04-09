@@ -2,6 +2,16 @@
 
 ---
 
+## 2026-04-09
+
+**수동 동기화 필터 완화**
+
+- **왜**: `active` 상태인 레포지토리가 수동 동기화 대상에서 제외되어 즉시 갱신이 불가능함.
+- **핵심 파일**: `src/features/sync/sync.service.ts`
+- **결정**: `syncWorkspace` 필터에서 `syncMode === 'once'` 및 `lastSyncAt === null` 제약 제거 → 모든 `active` 레포 수집 가능.
+
+---
+
 ## 2026-04-01
 
 **아카이브 API**
