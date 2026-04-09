@@ -51,7 +51,7 @@ export async function fetchRepoPRs(
         owner: org,
         repo,
         state: 'all',
-        sort: 'created',
+        sort: 'updated',
         direction: 'desc',
         per_page: perPage,
         page,
@@ -65,7 +65,7 @@ export async function fetchRepoPRs(
     if (data.length === 0) break;
 
     if (since) {
-      const fresh = data.filter((pr) => new Date(pr.created_at) > since);
+      const fresh = data.filter((pr) => new Date(pr.updated_at) > since);
       allPRs.push(...fresh);
       if (fresh.length < data.length) break;
     } else {

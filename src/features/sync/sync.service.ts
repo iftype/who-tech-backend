@@ -93,7 +93,10 @@ export function createSyncService(deps: {
 
     let prs: Awaited<ReturnType<typeof fetchRepoPRs>>;
     try {
-      prs = await fetchRepoPRs(octokit, org, repo.name, ...(since ? [{ since }] : []));
+      prs = await fetchRepoPRs(octokit, org, repo.name, {
+        ...(since ? { since } : {}),
+        maxPages: 1,
+      });
     } catch (error) {
       const detail = error instanceof Error ? error.message : String(error);
       throw new HttpError(500, `repo sync fetch failed: ${repo.name} — ${detail}`);
@@ -280,7 +283,7 @@ export function createSyncService(deps: {
 
     const repos = await missionRepoRepo.findMany({ workspaceId });
     const activeRepos = repos.filter((r) => {
-      if (r.status !== 'active' || r.syncMode !== 'once' || r.lastSyncAt !== null) return false;
+      if (r.status !== 'active') return false;
       if (cohort != null && !parseCohorts(r.cohorts).includes(cohort)) return false;
       return true;
     });
