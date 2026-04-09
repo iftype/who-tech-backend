@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+ 
 export const REPO_PAGE_SIZE = 20;
 
 export const adminState = {

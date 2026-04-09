@@ -34,18 +34,18 @@ export function createSyncRouter(service: SyncAdminService) {
     res.flushHeaders();
 
     const send = (event: string, data: unknown) => {
-      res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+      if (!res.writableEnded) res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
     };
 
     service
       .syncContinuous((step) => send('progress', step))
       .then((result) => {
         send('done', result);
-        res.end();
+        if (!res.writableEnded) res.end();
       })
       .catch((err: unknown) => {
         send('error', { message: err instanceof Error ? err.message : 'sync failed' });
-        res.end();
+        if (!res.writableEnded) res.end();
       });
   });
 
@@ -58,18 +58,18 @@ export function createSyncRouter(service: SyncAdminService) {
     const cohort = typeof req.query['cohort'] === 'string' ? Number(req.query['cohort']) : undefined;
 
     const send = (event: string, data: unknown) => {
-      res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+      if (!res.writableEnded) res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
     };
 
     service
       .syncWorkspace((step) => send('progress', step), cohort && !Number.isNaN(cohort) ? cohort : undefined)
       .then((result) => {
         send('done', result);
-        res.end();
+        if (!res.writableEnded) res.end();
       })
       .catch((err: unknown) => {
         send('error', { message: err instanceof Error ? err.message : 'sync failed' });
-        res.end();
+        if (!res.writableEnded) res.end();
       });
   });
 
@@ -99,18 +99,18 @@ export function createSyncRouter(service: SyncAdminService) {
     }
 
     const send = (event: string, data: unknown) => {
-      res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+      if (!res.writableEnded) res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
     };
 
     service
       .syncCohortRepoList(cohort, (step) => send('progress', step))
       .then((result) => {
         send('done', result);
-        res.end();
+        if (!res.writableEnded) res.end();
       })
       .catch((err: unknown) => {
         send('error', { message: err instanceof Error ? err.message : 'sync failed' });
-        res.end();
+        if (!res.writableEnded) res.end();
       });
   });
 

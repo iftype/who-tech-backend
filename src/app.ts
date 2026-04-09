@@ -68,6 +68,7 @@ const bannedWordRepo = createBannedWordRepository(db);
 const ignoredDomainRepo = createIgnoredDomainRepository(db);
 
 const workspaceService = createWorkspaceService({ workspaceRepo });
+const activityLogService = createActivityLogService({ activityLogRepo, workspaceService });
 const syncService = createSyncService({
   memberRepo,
   missionRepoRepo,
@@ -75,12 +76,12 @@ const syncService = createSyncService({
   workspaceRepo,
   bannedWordRepo,
   ignoredDomainRepo,
+  activityLogService,
 });
 const memberService = createMemberService({ memberRepo, blogPostRepo, bannedWordRepo, workspaceService, octokit });
 const repoService = createRepoService({ missionRepoRepo, workspaceService, syncService, octokit });
 const blogService = createBlogService({ memberRepo, blogPostRepo });
 const cohortRepoService = createCohortRepoService({ cohortRepoRepo, missionRepoRepo, workspaceService });
-const activityLogService = createActivityLogService({ activityLogRepo, workspaceService });
 const blogAdminService = createBlogAdminService({
   memberRepo,
   blogPostRepo,
@@ -134,7 +135,7 @@ app.post('/admin/deploy', (_req, res) => {
     'bash',
     [
       '-c',
-      'cd ~/app/who-tech-backend && git pull origin develop && npm install --ignore-scripts && npx prisma generate && npx prisma migrate deploy && npm run build && pm2 restart backend --update-env',
+      'cd ~/app/who-tech-backend && git pull origin main && npm install --ignore-scripts && npx prisma generate && npx prisma migrate deploy && npm run build && pm2 restart backend --update-env',
     ],
     { detached: true, stdio: 'ignore', shell: false },
   );

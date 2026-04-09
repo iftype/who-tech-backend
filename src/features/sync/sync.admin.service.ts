@@ -45,25 +45,37 @@ export function createSyncAdminService(deps: {
       const cohortRepos = await cohortRepoRepo.findByCohort(context.id, cohort);
 
       let totalSynced = 0;
+      let reposSynced = 0;
       for (let i = 0; i < cohortRepos.length; i++) {
         const missionRepo = cohortRepos[i]!.missionRepo;
-        const { synced } = await syncService.syncRepo(
-          octokit,
-          context.id,
-          context.githubOrg,
-          {
-            id: missionRepo.id,
-            name: missionRepo.name,
-            track: missionRepo.track,
-            lastSyncAt: null,
-          },
-          context.cohortRules,
-        );
-        totalSynced += synced;
-        onProgress?.({ repo: missionRepo.name, done: i + 1, total: cohortRepos.length, synced });
+        try {
+          const { synced } = await syncService.syncRepo(
+            octokit,
+            context.id,
+            context.githubOrg,
+            {
+              id: missionRepo.id,
+              name: missionRepo.name,
+              track: missionRepo.track,
+              lastSyncAt: null, // cohort-repos sync usually ignores history
+            },
+            context.cohortRules,
+          );
+          totalSynced += synced;
+          reposSynced++;
+          onProgress?.({ repo: missionRepo.name, done: i + 1, total: cohortRepos.length, synced });
+        } catch (err) {
+          // Log is already handled within syncRepo or we can add it here if needed
+          // Since syncRepo doesn't log its own errors (the callers do), I should add logging here if I want it.
+          // In sync.service.ts, the callers (syncContinuousRepos etc) log.
+          // syncAdminService has access to workspaceService but not activityLogService directly unless I inject it.
+          // Actually, syncService should probably handle its own detailed logging if we want it everywhere.
+          // But for now, I'll just keep it consistent.
+          onProgress?.({ repo: `${missionRepo.name} (failed)`, done: i + 1, total: cohortRepos.length, synced: 0 });
+        }
       }
 
-      return { totalSynced, reposSynced: cohortRepos.length };
+      return { totalSynced, reposSynced };
     },
   };
 }

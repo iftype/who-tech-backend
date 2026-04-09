@@ -47,7 +47,7 @@ function isFeedPath(pathname: string): boolean {
 }
 
 // XML 파싱 실패를 유발하는 제어 문자 제거 추가
-function sanitizeXml(xml: string): string {
+export function sanitizeXml(xml: string): string {
   return xml
     .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
     .replace(/&(?!(?:amp|lt|gt|quot|apos|#\d+|#x[0-9a-f]+);)/gi, '&amp;');

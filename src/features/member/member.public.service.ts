@@ -93,6 +93,8 @@ export function createMemberPublicService(deps: {
         }[];
       }[] = [];
 
+      const processedRepoIds = new Set<number>();
+
       // Build archive only for cohorts with defined repos in CohortRepo
       for (const { cohort } of cohorts) {
         const cohortRepos = await cohortRepoRepo.findByCohort(workspace.id, cohort);
@@ -100,6 +102,7 @@ export function createMemberPublicService(deps: {
 
         const levelMap = new Map<number | null, ArchiveRepo[]>();
         for (const cr of cohortRepos) {
+          processedRepoIds.add(cr.missionRepoId);
           const level = cr.missionRepo.level;
           if (!levelMap.has(level)) levelMap.set(level, []);
           // Precourse check first (highest priority)
@@ -133,6 +136,41 @@ export function createMemberPublicService(deps: {
           })),
         };
         archive.push(cohortArchive);
+      }
+
+      // Collect any submissions that belong to repos not explicitly assigned to the member's cohorts
+      const unregisteredReposMap = new Map<number, ArchiveRepo>();
+      for (const s of member.submissions) {
+        if (!processedRepoIds.has(s.missionRepoId)) {
+          if (!unregisteredReposMap.has(s.missionRepoId)) {
+            let tabCategory: string;
+            if (s.missionRepo.name.toLowerCase().includes('precourse')) {
+              tabCategory = 'precourse';
+            } else if (s.missionRepo.tabCategory === 'precourse') {
+              tabCategory = 'precourse';
+            } else {
+              tabCategory = s.missionRepo.tabCategory;
+            }
+            unregisteredReposMap.set(s.missionRepoId, {
+              name: s.missionRepo.name,
+              track: s.missionRepo.track,
+              tabCategory,
+              submissions: submissionsByRepo.get(s.missionRepoId) ?? null,
+            });
+          }
+        }
+      }
+
+      if (unregisteredReposMap.size > 0) {
+        archive.push({
+          cohort: 0,
+          levels: [
+            {
+              level: null,
+              repos: Array.from(unregisteredReposMap.values()),
+            },
+          ],
+        });
       }
 
       return {

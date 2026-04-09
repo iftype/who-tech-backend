@@ -118,7 +118,7 @@ npm run seed
 4. **서버(운영)**: 데이터를 버려도 된다면 SQLite 파일 삭제 후 배포 파이프라인과 동일하게 맞춘다.
 
    ```bash
-   ssh oracle "cd ~/app/backend && git pull --ff-only origin develop && rm -f prisma/dev.db && npm install --ignore-scripts && npx prisma generate && npx prisma migrate deploy && npm run seed && npm run build && pm2 restart backend --update-env"
+   ssh oracle "cd ~/app/backend && git pull --ff-only origin main && rm -f prisma/dev.db && npm install --ignore-scripts && npx prisma generate && npx prisma migrate deploy && npm run seed && npm run build && pm2 restart backend --update-env"
    ```
 
 5. **멤버·레포**는 다시 어드민에서 discover / sync 로 채운다.
@@ -167,8 +167,8 @@ docs: readme 업데이트
 ## 브랜치 전략
 
 ```
-main     ← 배포 브랜치 (PR + 리뷰 1명 필수)
-develop  ← 통합 브랜치
+main     ← 통합 및 배포 브랜치 (PR + 리뷰 1명 필수)
+develop  ← (선택) 기능 통합 브랜치
 feat/#이슈번호-설명
 fix/#이슈번호-설명
 chore/설명
@@ -184,8 +184,8 @@ chore/설명
 ### 수동 배포
 
 ```bash
-git push origin develop
-ssh oracle "cd ~/app/who-tech-backend && git pull --ff-only origin develop && npm install --ignore-scripts && npx prisma generate && npx prisma migrate deploy && npm run build && pm2 restart backend --update-env"
+git push origin main
+ssh oracle "cd ~/app/who-tech-backend && git pull --ff-only origin main && npm install --ignore-scripts && npx prisma generate && npx prisma migrate deploy && npm run build && pm2 restart backend --update-env"
 ```
 
 GitHub Actions(`deploy.yml`)도 위와 같이 **`migrate deploy` → `build` → PM2 재시작** 순서입니다.
@@ -207,7 +207,7 @@ GitHub Actions(`deploy.yml`)도 위와 같이 **`migrate deploy` → `build` →
 baseline SQL이 `schema.prisma`와 어긋난 적이 있어, **SQLite 파일을 지우고 다시 적용**하는 것이 가장 확실합니다. (`DATABASE_URL` 기본값: `file:./prisma/dev.db`)
 
 ```bash
-ssh oracle "cd ~/app/backend && git pull --ff-only origin develop && rm -f prisma/dev.db && npm install --ignore-scripts && npx prisma generate && npx prisma migrate deploy && npm run seed && npm run build && pm2 restart backend --update-env"
+ssh oracle "cd ~/app/backend && git pull --ff-only origin main && rm -f prisma/dev.db && npm install --ignore-scripts && npx prisma generate && npx prisma migrate deploy && npm run seed && npm run build && pm2 restart backend --update-env"
 ```
 
 - **`npm run seed`**: `Role`(crew/coach/reviewer) + `Workspace`까지 채웁니다. 멤버·레포는 어드민에서 sync/discover로 다시 채웁니다.
