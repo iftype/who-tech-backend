@@ -11,8 +11,13 @@ jobs:
     steps:
       - name: Trigger continuous repo sync
         run: |
+          BASE_URL="${{ secrets.SYNC_URL }}"
+          if [ -z "$BASE_URL" ]; then
+            BASE_URL="https://iftype.store"
+          fi
+
           response=$(curl -s -o /dev/null -w "%{http_code}" \
-            -X POST "${{ secrets.SYNC_URL }}/admin/sync/continuous" \
+            -X POST "$BASE_URL/admin/sync/continuous" \
             -H "Authorization: Bearer ${{ secrets.ADMIN_SECRET }}")
 
           echo "Response: $response"

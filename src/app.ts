@@ -135,7 +135,7 @@ app.post('/admin/deploy', (_req, res) => {
     'bash',
     [
       '-c',
-      'cd ~/app/who-tech-backend && git pull origin main && npm install --ignore-scripts && npx prisma generate && npx prisma migrate deploy && npm run build && pm2 restart backend --update-env',
+      'cd ~/app/who-tech-backend && git pull origin main && npm install --ignore-scripts && npx prisma generate && npx prisma migrate deploy && npm run build && pm2 reload backend --update-env',
     ],
     { detached: true, stdio: 'ignore', shell: false },
   );
