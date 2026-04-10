@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { asyncHandler } from '../../shared/http.js';
+import { parseOptionalNumberQuery } from '../../shared/validation.js';
 import type { MemberPublicService } from './member.public.service.js';
 
 export function createMemberPublicRouter(service: MemberPublicService) {
@@ -10,13 +11,13 @@ export function createMemberPublicRouter(service: MemberPublicService) {
     '/',
     asyncHandler(async (req, res) => {
       const q = typeof req.query['q'] === 'string' ? req.query['q'] : undefined;
-      const cohort = typeof req.query['cohort'] === 'string' ? Number(req.query['cohort']) : undefined;
+      const cohort = parseOptionalNumberQuery(req.query['cohort']);
       const track = typeof req.query['track'] === 'string' ? req.query['track'] : undefined;
       const role = typeof req.query['role'] === 'string' ? req.query['role'] : undefined;
       res.json(
         await service.searchMembers({
           ...(q ? { q } : {}),
-          ...(cohort && !Number.isNaN(cohort) ? { cohort } : {}),
+          ...(cohort !== undefined ? { cohort } : {}),
           ...(track ? { track } : {}),
           ...(role ? { role } : {}),
         }),
@@ -30,24 +31,16 @@ export function createMemberPublicRouter(service: MemberPublicService) {
   router.get(
     '/feed',
     asyncHandler(async (req, res) => {
-      const cohort = typeof req.query['cohort'] === 'string' ? Number(req.query['cohort']) : undefined;
+      const cohort = parseOptionalNumberQuery(req.query['cohort']);
       const track = typeof req.query['track'] === 'string' ? req.query['track'] : undefined;
       const role = typeof req.query['role'] === 'string' ? req.query['role'] : undefined;
-      const daysParam = typeof req.query['days'] === 'string' ? req.query['days'] : undefined;
-
-      let days = 7;
-      if (daysParam) {
-        const parsedDays = parseInt(daysParam, 10);
-        if (!isNaN(parsedDays)) {
-          days = parsedDays;
-        }
-      }
+      const days = parseOptionalNumberQuery(req.query['days']) ?? 7;
 
       const limit = days <= 7 ? 50 : 200;
 
       res.json(
         await service.getFeed({
-          ...(cohort && !Number.isNaN(cohort) ? { cohort } : {}),
+          ...(cohort !== undefined ? { cohort } : {}),
           ...(track ? { track } : {}),
           ...(role ? { role } : {}),
           days,
