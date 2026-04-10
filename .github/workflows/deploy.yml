@@ -20,6 +20,8 @@ jobs:
         run: npm ci --ignore-scripts
 
       - name: Generate Prisma client
+        env:
+          DATABASE_URL: file:./prisma/dev.db
         run: npx prisma generate
 
       - name: Build
