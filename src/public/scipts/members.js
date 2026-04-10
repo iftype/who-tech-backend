@@ -108,7 +108,14 @@ export function renderMembers() {
       <td>${renderMemberRoleButtons(member)}</td>
       <td>
         <div class="stack">
-          ${(member.cohorts || []).map((c) => `<span class="pill cohort">${c.cohort}기</span>`).join('') || '-'}
+          ${
+            (member.cohorts || [])
+              .map(
+                (c) =>
+                  `<span class="pill cohort" style="display:inline-flex;align-items:center;gap:4px">${c.cohort}기<button onclick="deleteMemberCohort(${member.id},${c.cohort})" style="background:none;border:none;cursor:pointer;padding:0;line-height:1;color:inherit;opacity:0.6" title="기수 삭제">×</button></span>`,
+              )
+              .join('') || '-'
+          }
         </div>
       </td>
       <td>
@@ -567,6 +574,17 @@ export function setManualNickname(memberId, nickname) {
       return loadMembers();
     })
     .catch(() => alert('닉네임 수정에 실패했습니다.'));
+}
+
+export function deleteMemberCohort(memberId, cohort) {
+  if (!confirm(`${cohort}기 참여 정보를 삭제할까요?`)) return;
+  fetch(`/admin/members/${memberId}/cohorts/${cohort}`, { method: 'DELETE', headers: authHeaders() })
+    .then((res) => {
+      if (!res.ok) throw new Error('failed');
+      toast(`${cohort}기 삭제 완료`);
+      return loadMembers();
+    })
+    .catch(() => alert('기수 삭제에 실패했습니다.'));
 }
 
 export function deleteAllMembers() {

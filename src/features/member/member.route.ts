@@ -93,6 +93,15 @@ export function createMemberRouter(service: MemberService) {
   );
 
   router.delete(
+    '/:id/cohorts/:cohort',
+    asyncHandler(async (req, res) => {
+      const id = parseId(req.params['id']);
+      const cohort = parseId(req.params['cohort']);
+      res.json(await service.deleteMemberCohort(id, cohort));
+    }),
+  );
+
+  router.delete(
     '/',
     asyncHandler(async (_req, res) => {
       await service.deleteAllMembers();

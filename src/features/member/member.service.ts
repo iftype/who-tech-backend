@@ -266,6 +266,12 @@ export function createMemberService(deps: {
       return updated ? toResponse(updated) : null;
     },
 
+    deleteMemberCohort: async (id: number, cohort: number) => {
+      await memberRepo.deleteParticipationsByCohort(id, cohort);
+      const updated = await memberRepo.findByIdWithRelations(id);
+      return updated ? toResponse(updated) : null;
+    },
+
     get: async (id: number) => {
       const member = await memberRepo.findByIdWithRelations(id);
       return member ? toResponse(member) : null;

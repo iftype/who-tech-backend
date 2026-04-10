@@ -239,6 +239,10 @@ export function createBlogService(deps: { memberRepo: MemberRepository; blogPost
           continue;
         }
 
+        // RSS 수집 성공 시 피드에서 사라진 글 삭제
+        const feedUrls = result.items.map((item) => item.link).filter((url): url is string => !!url);
+        await blogPostRepo.deleteByMemberNotInUrls(member.id, feedUrls, thirtyDaysAgo);
+
         for (const item of result.items) {
           if (!item.link || !item.title || !item.pubDate) continue;
           const publishedAt = new Date(item.pubDate);
