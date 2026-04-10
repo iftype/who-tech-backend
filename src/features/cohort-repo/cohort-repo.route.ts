@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { asyncHandler } from '../../shared/http.js';
-import { parseId } from '../../shared/validation.js';
+import { parseId, parseNumberQuery } from '../../shared/validation.js';
 import type { CohortRepoService } from './cohort-repo.service.js';
 
 export function createCohortRepoRouter(service: CohortRepoService) {
@@ -16,7 +16,7 @@ export function createCohortRepoRouter(service: CohortRepoService) {
   router.get(
     '/',
     asyncHandler(async (req, res) => {
-      const cohort = typeof req.query['cohort'] === 'string' ? Number(req.query['cohort']) : NaN;
+      const cohort = parseNumberQuery(req.query['cohort']);
       if (Number.isNaN(cohort)) {
         res.status(400).json({ error: 'cohort required' });
         return;

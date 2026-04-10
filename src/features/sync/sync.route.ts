@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import { asyncHandler } from '../../shared/http.js';
+import { startSse, runSseJob } from '../../shared/sse-handler.js';
+import { parseNumberQuery, parseOptionalNumberQuery } from '../../shared/validation.js';
 import type { SyncAdminService } from './sync.admin.service.js';
 
 export function createSyncRouter(service: SyncAdminService) {
@@ -27,50 +29,23 @@ export function createSyncRouter(service: SyncAdminService) {
     }),
   );
 
-  router.get('/sync/continuous/stream', (req, res) => {
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    res.flushHeaders();
-
-    const send = (event: string, data: unknown) => {
-      if (!res.writableEnded) res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
-    };
-
-    service
-      .syncContinuous((step) => send('progress', step))
-      .then((result) => {
-        send('done', result);
-        if (!res.writableEnded) res.end();
-      })
-      .catch((err: unknown) => {
-        send('error', { message: err instanceof Error ? err.message : 'sync failed' });
-        if (!res.writableEnded) res.end();
-      });
+  router.get('/sync/continuous/stream', (_req, res) => {
+    const send = startSse(res);
+    runSseJob(
+      res,
+      send,
+      service.syncContinuous((step) => send('progress', step)),
+    );
   });
 
   router.get('/sync/stream', (req, res) => {
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    res.flushHeaders();
-
-    const cohort = typeof req.query['cohort'] === 'string' ? Number(req.query['cohort']) : undefined;
-
-    const send = (event: string, data: unknown) => {
-      if (!res.writableEnded) res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
-    };
-
-    service
-      .syncWorkspace((step) => send('progress', step), cohort && !Number.isNaN(cohort) ? cohort : undefined)
-      .then((result) => {
-        send('done', result);
-        if (!res.writableEnded) res.end();
-      })
-      .catch((err: unknown) => {
-        send('error', { message: err instanceof Error ? err.message : 'sync failed' });
-        if (!res.writableEnded) res.end();
-      });
+    const send = startSse(res);
+    const cohort = parseOptionalNumberQuery(req.query['cohort']);
+    runSseJob(
+      res,
+      send,
+      service.syncWorkspace((step) => send('progress', step), cohort),
+    );
   });
 
   router.post(
@@ -86,32 +61,18 @@ export function createSyncRouter(service: SyncAdminService) {
   );
 
   router.get('/sync/cohort-repos/stream', (req, res) => {
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    res.flushHeaders();
-
-    const cohort = typeof req.query['cohort'] === 'string' ? Number(req.query['cohort']) : NaN;
+    const send = startSse(res);
+    const cohort = parseNumberQuery(req.query['cohort']);
     if (Number.isNaN(cohort)) {
-      res.write(`event: error\ndata: ${JSON.stringify({ message: 'cohort required' })}\n\n`);
+      send('error', { message: 'cohort required' });
       res.end();
       return;
     }
-
-    const send = (event: string, data: unknown) => {
-      if (!res.writableEnded) res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
-    };
-
-    service
-      .syncCohortRepoList(cohort, (step) => send('progress', step))
-      .then((result) => {
-        send('done', result);
-        if (!res.writableEnded) res.end();
-      })
-      .catch((err: unknown) => {
-        send('error', { message: err instanceof Error ? err.message : 'sync failed' });
-        if (!res.writableEnded) res.end();
-      });
+    runSseJob(
+      res,
+      send,
+      service.syncCohortRepoList(cohort, (step) => send('progress', step)),
+    );
   });
 
   return router;

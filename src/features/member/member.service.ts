@@ -4,6 +4,7 @@ import type { BlogPostRepository } from '../../db/repositories/blog-post.reposit
 import type { BannedWordRepository } from '../../db/repositories/banned-word.repository.js';
 import type { WorkspaceService } from '../workspace/workspace.service.js';
 import { normalizeBlogUrl } from '../../shared/blog.js';
+import { buildCohortList } from '../../shared/member-cohort.js';
 import { mergePreviousGithubIds, shouldRefreshProfile } from '../../shared/github-profile.js';
 import {
   resolveDisplayNickname,
@@ -23,15 +24,7 @@ export function createMemberService(deps: {
   const { memberRepo, blogPostRepo, bannedWordRepo, workspaceService, octokit } = deps;
 
   const toResponse = (member: MemberWithRelations) => {
-    const cohortMap = new Map<number, string[]>();
-    for (const mc of member.memberCohorts) {
-      if (!cohortMap.has(mc.cohort.number)) cohortMap.set(mc.cohort.number, []);
-      cohortMap.get(mc.cohort.number)!.push(mc.role.name);
-    }
-
-    const cohorts = [...cohortMap.entries()]
-      .map(([cohort, roles]) => ({ cohort, roles }))
-      .sort((a, b) => b.cohort - a.cohort);
+    const cohorts = buildCohortList(member.memberCohorts);
 
     const primaryCohort = cohorts[0];
 

@@ -77,27 +77,49 @@ export function createSyncService(deps: {
     activityLogService,
   } = deps;
 
-  const syncRepo = async (
+  type ProfileCacheEntry = {
+    githubUserId: number | null;
+    githubId: string;
+    blog: string | null;
+    avatarUrl: string | null;
+  };
+
+  type ResolvedProfile = {
+    githubId: string;
+    githubUserId: number | null;
+    blog: string | null;
+    avatarUrl: string | null;
+    profileFetchedAt: Date | null;
+    profileRefreshError: string | null;
+  };
+
+  type ExistingMember = {
+    blog?: string | null;
+    avatarUrl?: string | null;
+    profileFetchedAt?: Date | null;
+    profileRefreshError?: string | null;
+    githubUserId?: number | null;
+    githubId?: string;
+    previousGithubIds?: string | null;
+    manualNickname?: string | null;
+    nickname?: string | null;
+    nicknameStats?: string | null;
+  } | null;
+
+  const fetchAndParse = async (
     octokit: Octokit,
     workspaceId: number,
     org: string,
-    repo: {
-      id: number;
-      name: string;
-      track?: string | null;
-      lastSyncAt?: Date | null;
-    },
+    repo: { name: string; lastSyncAt?: Date | null },
     cohortRules: CohortRule[],
-    onProgress?: (step: { total: number; processed: number; synced: number; percent: number; phase: string }) => void,
-  ): Promise<{ synced: number; failures: { prNumber: number; prUrl: string; error: string }[] }> => {
-    const isCommonMission = repo.track === null || repo.track === undefined;
-
-    // 수집 기준 시점 결정: 5분 버퍼를 두어 경합 조건 및 API 지연 방지
+  ): Promise<{
+    submissions: ReturnType<typeof parsePRsToSubmissions>;
+    bannedWords: Set<string>;
+    ignoredDomains: string[];
+  }> => {
     const since = repo.lastSyncAt ? new Date(repo.lastSyncAt.getTime() - 5 * 60 * 1000) : undefined;
-    // 첫 수집(since 없음)인 경우 과거 데이터 확보를 위해 더 많은 페이지 수집 허용
     const maxPages = since ? 1 : 10;
 
-    // 금지어 및 무시 도메인 로드
     const [bannedWordRows, ignoredDomainRows] = await Promise.all([
       bannedWordRepo.findAll(workspaceId),
       ignoredDomainRepo.findAll(workspaceId),
@@ -117,11 +139,163 @@ export function createSyncService(deps: {
     }
 
     const submissions = parsePRsToSubmissions(prs, cohortRules);
+    return { submissions, bannedWords, ignoredDomains };
+  };
+
+  const resolveProfile = async (
+    octokit: Octokit,
+    s: ReturnType<typeof parsePRsToSubmissions>[number],
+    existingMember: ExistingMember,
+    profileCache: Map<string, ProfileCacheEntry>,
+    ignoredDomains: string[],
+  ): Promise<ResolvedProfile> => {
+    let blog = existingMember?.blog ?? null;
+    let avatarUrl = existingMember?.avatarUrl ?? null;
+    let githubId = s.githubId;
+    let githubUserId = s.githubUserId ?? existingMember?.githubUserId ?? null;
+    let profileFetchedAt = existingMember?.profileFetchedAt ?? null;
+    let profileRefreshError: string | null = existingMember?.profileRefreshError ?? null;
+
+    if (!existingMember?.blog || !existingMember?.avatarUrl || shouldRefreshProfile(existingMember?.profileFetchedAt)) {
+      const cacheKey = githubUserId != null ? `id:${githubUserId}` : `login:${s.githubId}`;
+      if (!profileCache.has(cacheKey)) {
+        try {
+          const { profile, candidates } = await fetchUserBlogCandidates(
+            octokit,
+            { githubUserId, username: s.githubId },
+            ignoredDomains,
+          );
+          let validBlog = null;
+          for (const url of candidates) {
+            const rssCheck = await probeRss(url);
+            if (rssCheck.status === 'available') {
+              validBlog = url;
+              break;
+            }
+          }
+          profileCache.set(cacheKey, {
+            ...profile,
+            blog: validBlog || (candidates[0] ?? null),
+          });
+          profileRefreshError = null;
+        } catch (error) {
+          profileRefreshError = error instanceof Error ? error.message : String(error);
+          profileCache.set(cacheKey, {
+            githubUserId,
+            githubId: s.githubId,
+            blog: null,
+            avatarUrl: null,
+          });
+        }
+      }
+      const profile = profileCache.get(cacheKey) ?? {
+        githubUserId,
+        githubId: s.githubId,
+        blog: null,
+        avatarUrl: null,
+      };
+      // 탈퇴 계정은 login이 "ghost"로 반환됨 — 기존 githubId 유지
+      githubId = profile.githubId === 'ghost' ? s.githubId : profile.githubId;
+      githubUserId = profile.githubUserId ?? githubUserId;
+      blog = existingMember?.blog ?? (profile.githubId === 'ghost' ? null : profile.blog);
+      avatarUrl =
+        profile.githubId === 'ghost'
+          ? (existingMember?.avatarUrl ?? null)
+          : (profile.avatarUrl ?? existingMember?.avatarUrl ?? null);
+      profileFetchedAt = new Date();
+      if (profile.avatarUrl || profile.blog || profile.githubId !== s.githubId) {
+        profileRefreshError = null;
+      }
+    }
+
+    return { githubId, githubUserId, blog, avatarUrl, profileFetchedAt, profileRefreshError };
+  };
+
+  const upsertMemberAndSubmission = async (
+    workspaceId: number,
+    s: ReturnType<typeof parsePRsToSubmissions>[number],
+    profile: ResolvedProfile,
+    repo: { id: number },
+    statsValue: string | null,
+    displayNickname: string | null,
+    existingMember: ExistingMember,
+  ): Promise<void> => {
+    const { githubId, githubUserId, blog, avatarUrl, profileFetchedAt, profileRefreshError } = profile;
+
+    const previousGithubIds = mergePreviousGithubIds(
+      existingMember?.previousGithubIds,
+      existingMember?.githubId,
+      githubId,
+    );
+
+    if (!githubUserId) {
+      throw new Error(`githubUserId is missing for user: ${s.githubId}`);
+    }
+
+    const member = await memberRepo.upsert(workspaceId, githubUserId, {
+      githubId,
+      githubUserId,
+      previousGithubIds: previousGithubIds ?? null,
+      nickname: displayNickname,
+      avatarUrl: avatarUrl ?? null,
+      nicknameStats: statsValue,
+      profileFetchedAt: profileFetchedAt ?? null,
+      profileRefreshError: profileRefreshError ?? null,
+      blog: blog ?? null,
+      workspaceId,
+    });
+
+    if (s.cohort) {
+      await memberRepo.upsertParticipation(member.id, s.cohort, 'crew');
+    }
+
+    await submissionRepo.upsert({
+      where: {
+        prNumber_missionRepoId: { prNumber: s.prNumber, missionRepoId: repo.id },
+      },
+      create: {
+        prNumber: s.prNumber,
+        prUrl: s.prUrl,
+        title: s.title,
+        status: s.status,
+        submittedAt: s.submittedAt,
+        memberId: member.id,
+        missionRepoId: repo.id,
+      },
+      update: {
+        memberId: member.id,
+        title: s.title,
+        prUrl: s.prUrl,
+        status: s.status,
+      },
+    });
+  };
+
+  const syncRepo = async (
+    octokit: Octokit,
+    workspaceId: number,
+    org: string,
+    repo: {
+      id: number;
+      name: string;
+      track?: string | null;
+      lastSyncAt?: Date | null;
+    },
+    cohortRules: CohortRule[],
+    onProgress?: (step: { total: number; processed: number; synced: number; percent: number; phase: string }) => void,
+  ): Promise<{ synced: number; failures: { prNumber: number; prUrl: string; error: string }[] }> => {
+    const isCommonMission = repo.track === null || repo.track === undefined;
+
+    const { submissions, bannedWords, ignoredDomains } = await fetchAndParse(
+      octokit,
+      workspaceId,
+      org,
+      repo,
+      cohortRules,
+    );
+
     const total = submissions.length;
-    const profileCache = new Map<
-      string,
-      { githubUserId: number | null; githubId: string; blog: string | null; avatarUrl: string | null }
-    >();
+    const profileCache = new Map<string, ProfileCacheEntry>();
     let synced = 0;
     let processed = 0;
     const failures: { prNumber: number; prUrl: string; error: string }[] = [];
@@ -151,116 +325,9 @@ export function createSyncService(deps: {
           existingMember?.nickname ?? null,
         );
 
-        let blog = existingMember?.blog ?? null;
-        let avatarUrl = existingMember?.avatarUrl ?? null;
-        let githubId = s.githubId;
-        let githubUserId = s.githubUserId ?? existingMember?.githubUserId ?? null;
-        let profileFetchedAt = existingMember?.profileFetchedAt ?? null;
-        let profileRefreshError: string | null = existingMember?.profileRefreshError ?? null;
+        const profile = await resolveProfile(octokit, s, existingMember, profileCache, ignoredDomains);
 
-        if (
-          !existingMember?.blog ||
-          !existingMember?.avatarUrl ||
-          shouldRefreshProfile(existingMember?.profileFetchedAt)
-        ) {
-          const cacheKey = githubUserId != null ? `id:${githubUserId}` : `login:${s.githubId}`;
-          if (!profileCache.has(cacheKey)) {
-            try {
-              const { profile, candidates } = await fetchUserBlogCandidates(
-                octokit,
-                { githubUserId, username: s.githubId },
-                ignoredDomains,
-              );
-              let validBlog = null;
-              for (const url of candidates) {
-                const rssCheck = await probeRss(url);
-                if (rssCheck.status === 'available') {
-                  validBlog = url;
-                  break;
-                }
-              }
-              profileCache.set(cacheKey, {
-                ...profile,
-                blog: validBlog || (candidates[0] ?? null),
-              });
-              profileRefreshError = null;
-            } catch (error) {
-              profileRefreshError = error instanceof Error ? error.message : String(error);
-              profileCache.set(cacheKey, {
-                githubUserId,
-                githubId: s.githubId,
-                blog: null,
-                avatarUrl: null,
-              });
-            }
-          }
-          const profile = profileCache.get(cacheKey) ?? {
-            githubUserId,
-            githubId: s.githubId,
-            blog: null,
-            avatarUrl: null,
-          };
-          // 탈퇴 계정은 login이 "ghost"로 반환됨 — 기존 githubId 유지
-          githubId = profile.githubId === 'ghost' ? s.githubId : profile.githubId;
-          githubUserId = profile.githubUserId ?? githubUserId;
-          blog = existingMember?.blog ?? (profile.githubId === 'ghost' ? null : profile.blog);
-          avatarUrl =
-            profile.githubId === 'ghost'
-              ? (existingMember?.avatarUrl ?? null)
-              : (profile.avatarUrl ?? existingMember?.avatarUrl ?? null);
-          profileFetchedAt = new Date();
-          if (profile.avatarUrl || profile.blog || profile.githubId !== s.githubId) {
-            profileRefreshError = null;
-          }
-        }
-
-        const previousGithubIds = mergePreviousGithubIds(
-          existingMember?.previousGithubIds,
-          existingMember?.githubId,
-          githubId,
-        );
-
-        if (!githubUserId) {
-          throw new Error(`githubUserId is missing for user: ${s.githubId}`);
-        }
-
-        const member = await memberRepo.upsert(workspaceId, githubUserId, {
-          githubId,
-          githubUserId,
-          previousGithubIds: previousGithubIds ?? null,
-          nickname: displayNickname,
-          avatarUrl: avatarUrl ?? null,
-          nicknameStats: statsValue,
-          profileFetchedAt: profileFetchedAt ?? null,
-          profileRefreshError: profileRefreshError ?? null,
-          blog: blog ?? null,
-          workspaceId,
-        });
-
-        if (s.cohort) {
-          await memberRepo.upsertParticipation(member.id, s.cohort, 'crew');
-        }
-
-        await submissionRepo.upsert({
-          where: {
-            prNumber_missionRepoId: { prNumber: s.prNumber, missionRepoId: repo.id },
-          },
-          create: {
-            prNumber: s.prNumber,
-            prUrl: s.prUrl,
-            title: s.title,
-            status: s.status,
-            submittedAt: s.submittedAt,
-            memberId: member.id,
-            missionRepoId: repo.id,
-          },
-          update: {
-            memberId: member.id,
-            title: s.title,
-            prUrl: s.prUrl,
-            status: s.status,
-          },
-        });
+        await upsertMemberAndSubmission(workspaceId, s, profile, repo, statsValue, displayNickname, existingMember);
 
         synced++;
       } catch (err) {

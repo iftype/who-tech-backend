@@ -118,6 +118,10 @@ function makeDeps(overrides: Record<string, Record<string, jest.Mock>> = {}) {
       findAll: jest.fn().mockResolvedValue([] as never),
       ...overrides['ignoredDomainRepo'],
     },
+    activityLogService: {
+      addLog: jest.fn().mockResolvedValue(undefined as never),
+      ...overrides['activityLogService'],
+    },
   };
 }
 
@@ -373,7 +377,7 @@ describe('syncWorkspace', () => {
     mockProbeRss.mockResolvedValue({ status: 'available' } as never);
   });
 
-  it('active + once + lastSyncAt=null 레포만 sync 대상으로 선택한다', async () => {
+  it('active 레포를 syncMode·lastSyncAt에 관계없이 모두 sync한다 (candidate는 제외)', async () => {
     const deps = makeDeps({
       missionRepoRepo: {
         touch: jest.fn().mockResolvedValue(undefined as never),
@@ -422,7 +426,7 @@ describe('syncWorkspace', () => {
 
     await syncWorkspace({} as never, 1, (s) => steps.push(s));
 
-    expect(steps.map((s) => s.repo)).toEqual(['repo-target']);
+    expect(steps.map((s) => s.repo)).toEqual(['repo-target', 'repo-already-synced', 'repo-continuous']);
     expect(deps.workspaceRepo.touch).toHaveBeenCalledWith(1);
   });
 
@@ -473,19 +477,17 @@ describe('syncWorkspace', () => {
       },
       missionRepoRepo: {
         touch: jest.fn().mockResolvedValue(undefined as never),
-        findMany: jest
-          .fn()
-          .mockResolvedValue([
-            {
-              id: 1,
-              name: 'repo-a',
-              track: 'backend',
-              status: 'active',
-              syncMode: 'once',
-              lastSyncAt: null,
-              cohorts: '[]',
-            },
-          ] as never),
+        findMany: jest.fn().mockResolvedValue([
+          {
+            id: 1,
+            name: 'repo-a',
+            track: 'backend',
+            status: 'active',
+            syncMode: 'once',
+            lastSyncAt: null,
+            cohorts: '[]',
+          },
+        ] as never),
       },
     });
     const { syncWorkspace } = createSyncService(deps as never);

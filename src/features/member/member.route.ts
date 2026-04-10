@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { asyncHandler } from '../../shared/http.js';
-import { parseId } from '../../shared/validation.js';
+import { parseId, parseOptionalNumberQuery } from '../../shared/validation.js';
 import type { MemberService } from './member.service.js';
 
 export function createMemberRouter(service: MemberService) {
@@ -10,14 +10,14 @@ export function createMemberRouter(service: MemberService) {
     '/',
     asyncHandler(async (req, res) => {
       const q = typeof req.query['q'] === 'string' ? req.query['q'] : undefined;
-      const cohort = typeof req.query['cohort'] === 'string' ? Number(req.query['cohort']) : undefined;
+      const cohort = parseOptionalNumberQuery(req.query['cohort']);
       const hasBlog = req.query['hasBlog'] === 'true' ? true : req.query['hasBlog'] === 'false' ? false : undefined;
       const track = typeof req.query['track'] === 'string' ? req.query['track'] : undefined;
       const role = typeof req.query['role'] === 'string' ? req.query['role'] : undefined;
       res.json(
         await service.listMembers({
           ...(q ? { q } : {}),
-          ...(cohort && !Number.isNaN(cohort) ? { cohort } : {}),
+          ...(cohort !== undefined ? { cohort } : {}),
           ...(hasBlog !== undefined ? { hasBlog } : {}),
           ...(track ? { track } : {}),
           ...(role ? { role } : {}),
@@ -57,17 +57,14 @@ export function createMemberRouter(service: MemberService) {
   router.post(
     '/refresh-profiles',
     asyncHandler(async (req, res) => {
-      const limitValue = req.query['limit'];
-      const limit = typeof limitValue === 'string' ? Number(limitValue) : 30;
-      const cohortValue = req.query['cohort'];
-      const cohort = typeof cohortValue === 'string' ? Number(cohortValue) : undefined;
-      const staleHoursValue = req.query['staleHours'];
-      const staleHours = typeof staleHoursValue === 'string' ? Number(staleHoursValue) : undefined;
+      const limit = parseOptionalNumberQuery(req.query['limit']) ?? 30;
+      const cohort = parseOptionalNumberQuery(req.query['cohort']);
+      const staleHours = parseOptionalNumberQuery(req.query['staleHours']);
       res.json(
         await service.refreshWorkspaceProfiles({
           ...(Number.isFinite(limit) ? { limit } : {}),
-          ...(cohort && !Number.isNaN(cohort) ? { cohort } : {}),
-          ...(staleHours && !Number.isNaN(staleHours) ? { staleHours } : {}),
+          ...(cohort !== undefined ? { cohort } : {}),
+          ...(staleHours !== undefined ? { staleHours } : {}),
         }),
       );
     }),

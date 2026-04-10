@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { asyncHandler, badRequest } from '../../shared/http.js';
+import { parseNumberQuery } from '../../shared/validation.js';
 import type { ArchiveService } from './archive.service.js';
 
 export function createArchiveRouter(service: ArchiveService) {
@@ -9,8 +10,7 @@ export function createArchiveRouter(service: ArchiveService) {
   router.get(
     '/',
     asyncHandler(async (req, res) => {
-      const cohortValue = req.query['cohort'];
-      const cohort = typeof cohortValue === 'string' ? Number(cohortValue) : NaN;
+      const cohort = parseNumberQuery(req.query['cohort']);
       if (Number.isNaN(cohort) || cohort < 1) {
         return badRequest('cohort is required (e.g. ?cohort=8)');
       }

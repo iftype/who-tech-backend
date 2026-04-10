@@ -3,6 +3,7 @@ import type { BlogPostRepository } from '../../db/repositories/blog-post.reposit
 import type { CohortRepoRepository } from '../../db/repositories/cohort-repo.repository.js';
 import type { WorkspaceService } from '../workspace/workspace.service.js';
 import { resolveDisplayNickname } from '../../shared/nickname.js';
+import { buildCohortList } from '../../shared/member-cohort.js';
 
 export function createMemberPublicService(deps: {
   memberRepo: MemberRepository;
@@ -24,15 +25,7 @@ export function createMemberPublicService(deps: {
       const workspace = await workspaceService.getOrThrow();
       const members = await memberRepo.findWithFilters(workspace.id, filters);
       return members.map((m) => {
-        const cohortMap = new Map<number, string[]>();
-        for (const mc of m.memberCohorts) {
-          if (!cohortMap.has(mc.cohort.number)) cohortMap.set(mc.cohort.number, []);
-          cohortMap.get(mc.cohort.number)!.push(mc.role.name);
-        }
-
-        const cohorts = [...cohortMap.entries()]
-          .map(([cohort, roles]) => ({ cohort, roles }))
-          .sort((a, b) => b.cohort - a.cohort);
+        const cohorts = buildCohortList(m.memberCohorts);
 
         const targetCohort = filters?.cohort ? cohorts.find((c) => c.cohort === filters.cohort) : cohorts[0];
 
@@ -60,15 +53,7 @@ export function createMemberPublicService(deps: {
       if (!member) return null;
 
       const nickname = resolveDisplayNickname(member.manualNickname, member.nicknameStats, member.nickname);
-      const cohortMap = new Map<number, string[]>();
-      for (const mc of member.memberCohorts) {
-        if (!cohortMap.has(mc.cohort.number)) cohortMap.set(mc.cohort.number, []);
-        cohortMap.get(mc.cohort.number)!.push(mc.role.name);
-      }
-
-      const cohorts = [...cohortMap.entries()]
-        .map(([cohort, roles]) => ({ cohort, roles }))
-        .sort((a, b) => b.cohort - a.cohort);
+      const cohorts = buildCohortList(member.memberCohorts);
 
       const submissionsByRepo = new Map<
         number,
@@ -207,15 +192,7 @@ export function createMemberPublicService(deps: {
       });
 
       return posts.map((p) => {
-        const cohortMap = new Map<number, string[]>();
-        for (const mc of p.member.memberCohorts) {
-          if (!cohortMap.has(mc.cohort.number)) cohortMap.set(mc.cohort.number, []);
-          cohortMap.get(mc.cohort.number)!.push(mc.role.name);
-        }
-
-        const cohorts = [...cohortMap.entries()]
-          .map(([cohort, roles]) => ({ cohort, roles }))
-          .sort((a, b) => b.cohort - a.cohort);
+        const cohorts = buildCohortList(p.member.memberCohorts);
 
         const targetCohort = filters?.cohort ? cohorts.find((c) => c.cohort === filters.cohort) : cohorts[0];
 

@@ -8,6 +8,7 @@ import { probeRss } from './blog.service.js';
 import { fetchUserBlogCandidates } from '../sync/github.service.js';
 import { mergePreviousGithubIds } from '../../shared/github-profile.js';
 import { resolveDisplayNickname } from '../../shared/nickname.js';
+import { buildCohortList } from '../../shared/member-cohort.js';
 import { HttpError } from '../../shared/http.js';
 import { randomUUID } from 'crypto';
 // blog.admin.service.ts
@@ -260,14 +261,7 @@ export function createBlogAdminService(deps: {
       const since = new Date(Date.now() - sinceMinutes * 60 * 1000);
       const posts = await blogPostRepo.findSince(workspace.id, since);
       return posts.map((p) => {
-        const cohortMap = new Map<number, string[]>();
-        for (const mc of p.member.memberCohorts) {
-          if (!cohortMap.has(mc.cohort.number)) cohortMap.set(mc.cohort.number, []);
-          cohortMap.get(mc.cohort.number)!.push(mc.role.name);
-        }
-        const cohorts = [...cohortMap.entries()]
-          .map(([cohort, roles]) => ({ cohort, roles }))
-          .sort((a, b) => b.cohort - a.cohort);
+        const cohorts = buildCohortList(p.member.memberCohorts);
         return {
           url: p.url,
           title: p.title,
