@@ -135,7 +135,7 @@ app.post('/admin/deploy', (_req, res) => {
     'bash',
     [
       '-c',
-      'cd ~/app/who-tech-backend && git pull origin main && npm install --ignore-scripts && npx prisma generate && npx prisma migrate deploy && NODE_OPTIONS="--max-old-space-size=384" npm run build && pm2 reload ecosystem.config.cjs --update-env',
+      'cd ~/app/who-tech-backend && git pull origin main && npm install --ignore-scripts && npx prisma generate && npx prisma migrate deploy && pm2 reload ecosystem.config.cjs --update-env',
     ],
     { detached: true, stdio: 'ignore', shell: false },
   );
