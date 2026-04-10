@@ -1,302 +1,40 @@
 # backend
 
-우아한테크코스 크루 검색 서비스의 백엔드 서버.
+우아한테크코스 크루 검색 서비스 백엔드. Node.js 20 / Express / Prisma / SQLite.
 
-## Tech Stack
-
-- **Runtime**: Node.js 20 + TypeScript
-- **Framework**: Express
-- **ORM**: Prisma
-- **DB**: SQLite
-- **Infra**: Oracle Cloud AMD, Nginx, PM2
-
-## 프로젝트 구조
-
-```
-src/
-├── index.ts                      # 진입점
-├── app.ts                        # Composition root — DB/서비스/라우터 조립
-├── db/
-│   ├── prisma.ts                 # PrismaClient 싱글톤
-│   ├── seed.ts                   # 초기 데이터
-│   └── repositories/             # DB 접근 계층 (factory 함수)
-│       ├── workspace.repository.ts
-│       ├── member.repository.ts
-│       ├── mission-repo.repository.ts
-│       ├── submission.repository.ts
-│       └── blog-post.repository.ts
-├── features/                     # 기능 단위 모듈
-│   ├── workspace/                # workspace.service.ts, workspace.route.ts
-│   ├── member/                   # member.service.ts, member.route.ts
-│   │                             # member.public.service.ts, member.public.route.ts (공개 API)
-│   ├── repo/                     # repo.service.ts, repo.route.ts, repo-discovery.service.ts
-│   ├── sync/                     # sync.service.ts, sync.admin.service.ts, sync.route.ts, github.service.ts
-│   ├── blog/                     # blog.service.ts, blog.admin.service.ts, blog.route.ts
-│   ├── cohort-repo/              # cohort-repo.service.ts, cohort-repo.route.ts
-│   └── activity-log/             # activity-log.service.ts, activity-log.route.ts
-├── shared/                       # 공통 유틸
-│   ├── http.ts                   # asyncHandler, HttpError, badRequest
-│   ├── validation.ts             # 요청 파싱/검증
-│   ├── middleware/               # auth.ts, error.ts
-│   ├── blog.ts                   # URL 정규화
-│   ├── nickname.ts               # 닉네임 통계/정규화
-│   ├── cohort-regex.ts           # 기수별 정규식 파싱
-│   ├── constants.ts
-│   └── types/
-└── public/
-    ├── admin.html                # 어드민 UI 마크업
-    ├── admin.css                 # 어드민 스타일
-    └── admin/                    # 어드민 동작 로직 (ES modules, entry: main.js)
-        ├── main.js               # window 노출 + 초기화
-        ├── state.js              # 공유 상태
-        ├── http.js               # 인증 헤더, 오류 파싱
-        ├── utils.js              # escapeHtml, toast 등
-        ├── auth.js, bootstrap.js, logs.js, workspace.js
-        ├── repos.js, members.js, sync.js, blog.js
-        ├── regex.js, cohort-repos.js
-```
-
-`admin.html`은 `/admin/ui/admin/main.js`를 `type="module"`로 로드합니다.
-
-### 의존성 주입 구조
-
-```
-app.ts (composition root)
-  ├── new PrismaClient()
-  ├── createOctokit()
-  ├── create*Repository(db)     ← Prisma 직접 접근은 repository만
-  ├── create*Service(repos)     ← repository 주입
-  └── create*Router(service)    ← service 주입
-```
-
-각 service/router는 factory 함수로 구성되어 테스트 시 mock repository 주입이 가능합니다.
-
-## 로컬 개발 환경 설정
-
-### 사전 요구사항
-
-- Node.js 20.18.0 (`.node-version` 참고)
-- asdf 또는 nvm 사용 시 자동 버전 전환
+## 빠른 시작
 
 ```bash
 npm install
 npx prisma generate
-node --import tsx src/db/seed.ts
-npm run dev       # tsx watch로 핫리로드
+npm run seed        # Role + Workspace 초기화
+npm run dev         # http://localhost:3001
 ```
 
-### DB / Migration
-
-- 원칙: **`schema.prisma`가 진실**이고, `prisma/migrations/`는 그에 맞춘 **재생 가능한 히스토리**입니다.
-- 지금은 baseline 1개로 두고 있으며, 폴더명은 `prisma/migrations/<타임스탬프>_<이름>/migration.sql` 형식입니다.
-
-로컬에서 DB만 갈아끼우고 기존 마이그레이션을 그대로 쓸 때:
+## 주요 명령어
 
 ```bash
-rm -f prisma/dev.db prisma/prisma/dev.db
-npx prisma migrate deploy
-npm run seed
+npm run dev          # tsx watch 핫리로드
+npm run build        # TypeScript 빌드
+npm run test:unit    # 단위 테스트
+npm run lint:fix     # ESLint 자동 수정
+npx prisma migrate dev   # 마이그레이션 생성+적용
 ```
 
-### 스키마를 재조정한 뒤 마이그레이션을 “처음부터” 다시 만들고 싶을 때
-
-배포·공유 저장소 기준으로 가장 단순한 흐름입니다. **이미 적용된 마이그레이션 SQL을 뒤집어쓰면** Prisma checksum이 어긋나므로, 팀/서버는 **SQLite 파일 삭제 후 새 마이그레이션만 적용**한다고 가정합니다.
-
-1. **`schema.prisma` 수정을 끝낸다.**
-2. **기존 마이그레이션 폴더를 제거한다.**  
-   `prisma/migrations/migration_lock.toml` 은 그대로 두고, 그 안의 `20*` 같은 **이전 migration 디렉터리만 삭제**한다.
-3. **로컬에서 첫 마이그레이션을 다시 만든다.**
-
-   ```bash
-   rm -f prisma/dev.db prisma/prisma/dev.db
-   npx prisma migrate dev --name init
-   ```
-
-   생성된 `prisma/migrations/*_init/`(이름은 자유)의 `migration.sql`을 검수한 뒤 커밋한다.
-   - 대안: `npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script` 로 SQL을 뽑은 뒤, **동일 규칙의 폴더 이름**으로 `migration.sql`만 두는 방법도 있으나, 로컬에서 `migrate dev`로 생성·적용까지 한 번 검증하는 편이 안전하다.
-
-4. **서버(운영)**: 데이터를 버려도 된다면 SQLite 파일 삭제 후 배포 파이프라인과 동일하게 맞춘다.
-
-   ```bash
-   ssh oracle "cd ~/app/backend && git pull --ff-only origin main && rm -f prisma/dev.db && npm install --ignore-scripts && npx prisma generate && npx prisma migrate deploy && npm run seed && npm run build && pm2 restart backend --update-env"
-   ```
-
-5. **멤버·레포**는 다시 어드민에서 discover / sync 로 채운다.
-
-`npm run seed`는 **Role(crew/coach/reviewer) upsert + Workspace(woowacourse)** 까지 수행합니다.
-
-## 스크립트
-
-| 명령어               | 설명                            |
-| -------------------- | ------------------------------- |
-| `npm run dev`        | 개발 서버 (tsx watch)           |
-| `npm run build`      | TypeScript 빌드                 |
-| `npm run start`      | 빌드 결과 실행                  |
-| `npm run lint`       | ESLint 검사                     |
-| `npm run lint:fix`   | ESLint 자동 수정                |
-| `npm run format`     | Prettier 포맷                   |
-| `npm run test:unit`  | 단위 테스트                     |
-| `npm run seed`       | Role + Workspace 시드           |
-| `npm run seed:roles` | Role만 upsert (`seed`에 포함됨) |
-
-## 코드 컨벤션
-
-- ESLint flat config (`eslint.config.ts`)
-- Prettier: semi true, singleQuote true, printWidth 120
-- pre-commit: lint-staged (변경 파일만 검사)
-- commit-msg: commitlint (Conventional Commits)
-
-## 커밋 단위 가이드
-
-작업 단위를 잘게 나눠서 커밋한다.
+## 환경변수 (.env)
 
 ```
-chore: 프로젝트 초기 설정 (tsconfig, package.json)
-chore: eslint + prettier 설정
-chore: husky + commitlint 설정
-chore: vscode 설정 추가
-feat: 로그인 api 추가
-fix: 토큰 만료 오류 수정
-docs: readme 업데이트
+DATABASE_URL=file:./prisma/dev.db
+GITHUB_TOKEN=...
+ADMIN_SECRET=...
 ```
 
-- 커밋 메시지는 소문자로 시작
-- 한 커밋에 여러 관심사를 섞지 않는다
-- subject는 72자 이내
+## 상세 문서
 
-## 브랜치 전략
+프로젝트 루트 `.claude/backend/` 참조:
 
-```
-main     ← 통합 및 배포 브랜치 (PR + 리뷰 1명 필수)
-develop  ← (선택) 기능 통합 브랜치
-feat/#이슈번호-설명
-fix/#이슈번호-설명
-chore/설명
-```
-
-## 서버 배포
-
-- **서버**: Oracle Cloud AMD (iftype.store)
-- **프로세스 관리**: PM2
-- **웹서버**: Nginx (HTTPS, Rate limiting, 보안 헤더)
-- **블로그 자동수집**: GitHub Actions (`blog-check.yml`) + 백엔드 background job polling
-
-### 수동 배포
-
-```bash
-git push origin main
-ssh oracle "cd ~/app/who-tech-backend && git pull --ff-only origin main && npm install --ignore-scripts && npx prisma generate && npx prisma migrate deploy && npm run build && pm2 restart backend --update-env"
-```
-
-GitHub Actions(`deploy.yml`)도 위와 같이 **`migrate deploy` → `build` → PM2 재시작** 순서입니다.
-
-### 블로그 자동수집
-
-- 스케줄 주체는 서버 `node-cron`이 아니라 **GitHub Actions** 입니다.
-- 워크플로우: `.github/workflows/blog-check.yml`
-- 실행 방식:
-  1. `POST /admin/blog/sync` 호출
-  2. 즉시 반환된 `jobId` 저장
-  3. `/admin/blog/sync-jobs/:jobId` polling
-  4. 완료 후 `/admin/blog/new-posts` 조회 및 Slack 알림
-- `SYNC_URL` secret이 비어 있어도 기본값으로 `https://iftype.store`를 사용합니다.
-- 블로그 sync 자체는 background job으로 돌아가므로, 긴 RSS 수집 때문에 GitHub Actions나 Nginx 요청이 바로 타임아웃되지 않도록 구성했습니다.
-
-### 운영 DB를 비우고 맞추기 (스키마 drift / P3005 / 어드민 멤버 오류 등)
-
-baseline SQL이 `schema.prisma`와 어긋난 적이 있어, **SQLite 파일을 지우고 다시 적용**하는 것이 가장 확실합니다. (`DATABASE_URL` 기본값: `file:./prisma/dev.db`)
-
-```bash
-ssh oracle "cd ~/app/backend && git pull --ff-only origin main && rm -f prisma/dev.db && npm install --ignore-scripts && npx prisma generate && npx prisma migrate deploy && npm run seed && npm run build && pm2 restart backend --update-env"
-```
-
-- **`npm run seed`**: `Role`(crew/coach/reviewer) + `Workspace`까지 채웁니다. 멤버·레포는 어드민에서 sync/discover로 다시 채웁니다.
-
-### 아키텍처 메모 (기능 중심 + 엔티티 클래스)
-
-- **지금 구조**: `features/*` 단위로 `*.route.ts`(HTTP) → `*.service.ts`(유스케이스) → `db/repositories/*.ts`(Prisma) 가 이미 **경계**를 나눕니다. Prisma 모델이 DB·생성 클라이언트의 **사실상 스키마**이고, API 응답은 service에서 객체 리터럴/`shared/types`로 맞춥니다.
-- **도메인 엔티티 클래스**를 굳이 두지 않아도 됩니다. 복잡한 불변 규칙·행동이 생기면 해당 feature service 안의 **순수 함수/소형 타입**부터 두고, 여러 feature에서 공유되면 `shared/`로 올리는 편이 이 코드베이스와 잘 맞습니다.
-- **언제 클래스를 고려할까**: 동일 식별자로 여러 집계를 캡슐화해야 하거나, 저장소와 무관한 규칙 검증이 매우 많아질 때 등. 현재 규모에서는 **추가 레이어는 부담만 늘리는 경우가 많습니다.**
-
-### PM2 명령어
-
-```bash
-ssh oracle "pm2 status"       # 앱 상태 확인
-ssh oracle "pm2 logs backend" # 로그 확인
-ssh oracle "pm2 restart backend" # 재시작
-```
-
-## 어드민 주요 기능
-
-| 기능                  | 설명                                                                            |
-| --------------------- | ------------------------------------------------------------------------------- |
-| 레포 후보 수집        | 조직 공개 레포 전체를 읽어 `candidate / excluded`로 저장                        |
-| 레포 탭 관리          | `기준 / 공통 / 제외 / 프리코스` 탭으로 분류하고 행 단위로 이동 가능             |
-| 레포 설정             | 기수(cohorts), 레벨(level), 트랙, syncMode, 정규식, 탭 분류 관리                |
-| 정규식 자동감지/검증  | PR 제목 샘플 기반 정규식 제안, active 레포 검증                                 |
-| 전체 / 단건 Sync      | SSE 진행률 표시, 레포별 수동 sync 지원                                          |
-| 블로그 동기화         | ON/OFF 토글, background job, RSS 상태 저장, 최근 글 30일 보관 + 최신 7일 스냅샷 |
-| 멤버 관리             | 역할 토글, manual nickname, 블로그, RSS 상태, 프로필 이미지 표시                |
-| 프로필 갱신           | GitHub 프로필(avatar/blog/login) stale 갱신 + 멤버 단건 새로고침                |
-| 기수 목록 전체 재Sync | CohortRepo에 등록된 레포만 순서대로 전체 재수집하여 과거 PR 상태 재반영         |
-
-## 어드민 중복 요청 처리
-
-- 금지어 추가 시 이미 같은 `word`가 있으면 `409 word already exists`를 반환합니다.
-- 기수 레포 추가 시 이미 같은 `(cohort, missionRepoId)`가 있으면 `409 cohort repo already exists`를 반환합니다.
-- 운영 로그에는 Prisma `P2002` 원문 대신 중복 요청으로 처리되도록 정리했습니다.
-
-## PR 수집 정책
-
-- `open`, `merged`, `closed` PR을 모두 `Submission.status`로 저장합니다.
-- 예전 기수처럼 제출 후 닫는 흐름도 아카이브에서 활용할 수 있도록, 비병합 closed PR도 sync 대상에 포함합니다.
-- 이미 sync를 마친 과거 레포에 대해 closed PR을 반영하려면 해당 레포의 전체 재sync가 필요합니다.
-
-## 기수 목록 재sync
-
-- 어드민 `기수별 레포 순서`의 `목록 전체 재 Sync` 버튼은 `CohortRepo`에 등록된 레포만 순서대로 다시 수집합니다.
-- 기존 `/admin/sync` 계열의 `cohort` 필터는 여전히 `once + lastSyncAt=null` 초기 수집 성격입니다.
-- 과거 기수의 닫힌 PR, 공통 레포 제출 상태를 다시 반영하려면 `목록 전체 재 Sync`를 사용합니다.
-
-## 공개 API
-
-인증 없이 사용 가능한 엔드포인트입니다.
-
-| 엔드포인트               | 설명                                   |
-| ------------------------ | -------------------------------------- |
-| `GET /members`           | 멤버 검색 (`?q=&cohort=&track=&role=`) |
-| `GET /members/feed`      | 최근 블로그 피드 (`?cohort=&track=`)   |
-| `GET /members/:githubId` | 멤버 상세 (archive, blogPosts 포함)    |
-
-`GET /members/:githubId` 응답의 `archive` 필드는 해당 멤버 기수의 `CohortRepo` 순서 기반으로 레벨별 그룹핑된 미션 PR 목록입니다.
-
-## 현재 데이터 모델 포인트
-
-- `MissionRepo.tabCategory` — `base | common | excluded | precourse`
-- `MissionRepo.status` — `active | candidate | excluded`
-- `Cohort` / `Role` / `MemberCohort` — 멤버의 기수·역할(crew/coach/reviewer)은 정규화 테이블로 저장 (`npm run seed`가 역할 행 생성)
-- `Member.githubUserId` — GitHub login 변경에도 유지되는 내부 식별자
-- `Member.previousGithubIds` — 과거 GitHub login 이력 JSON
-- `Member.avatarUrl` — GitHub profile의 `avatar_url` 저장 (파일 저장 아님)
-- `Member.profileFetchedAt` / `Member.profileRefreshError` — 프로필 갱신 시각 / 실패 원인
-- `Member.rssStatus` — `unknown | available | unavailable | error`
-- `Member.lastPostedAt` — RSS 수집 시 가장 최근 글의 publishedAt 저장 (30일 초과 시에도 유지)
-
-## 프로필 갱신 원칙
-
-- PR sync 시 `githubUserId`가 있으면 해당 값을 기준으로 멤버를 식별합니다.
-- GitHub login(`githubId`)이 바뀌어도 같은 `githubUserId`면 기존 멤버를 갱신합니다.
-- 예전 login은 `previousGithubIds`에 남겨 검색/상세 조회 fallback에 사용합니다.
-- 공개 API에는 `githubUserId`를 노출하지 않습니다.
-- 어드민에서는:
-  - `Members > 프로필 새로고침` — stale 프로필 일괄 갱신
-  - 각 멤버 행의 `프로필` 버튼 — 단건 강제 새로고침
-
-## 버전 로드맵
-
-| 버전 | 주요 기능                                                | 상태    |
-| ---- | -------------------------------------------------------- | ------- |
-| v1   | 크루 검색, 미션 레포/PR 조회, 어드민 페이지, 블로그 수집 | 완료    |
-| v2   | 공개 API (멤버 검색/상세/피드), 프론트엔드 구현          | 진행 중 |
-| v3   | GitHub 로그인, 팔로우                                    | 미정    |
-| v4   | 오픈미션 워크스페이스 분리                               | 미정    |
+- `overview.md` — 아키텍처, 배포, DB 모델
+- `api.md` — 공개 API, 데이터 모델
+- `admin.md` — 어드민 API, UI
+- `sync.md` — PR 수집, 블로그 RSS
+- `infra.md` — 서버, CI/CD, 배포
