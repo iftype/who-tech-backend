@@ -9,38 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci --ignore-scripts
-
-      - name: Generate Prisma client
-        env:
-          DATABASE_URL: file:./prisma/dev.db
-        run: npx prisma generate
-
-      - name: Build
-        run: npm run build
-
-      - name: Upload dist to server
-        env:
-          SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          SERVER_HOST: ${{ secrets.SERVER_HOST }}
-          SERVER_USER: ${{ secrets.SERVER_USER }}
-        run: |
-          echo "$SSH_KEY" | base64 -d > /tmp/deploy_key
-          chmod 600 /tmp/deploy_key
-          rsync -az --delete dist/ \
-            -e "ssh -i /tmp/deploy_key -o StrictHostKeyChecking=no" \
-            $SERVER_USER@$SERVER_HOST:~/app/who-tech-backend/dist/
-          rm -f /tmp/deploy_key
-
-      - name: Trigger server reload
+      - name: Trigger server deploy
         env:
           ADMIN_SECRET: ${{ secrets.ADMIN_SECRET }}
         run: |
