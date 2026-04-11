@@ -1,0 +1,38 @@
+name: Member Profile Refresh
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # 매일 자정
+  workflow_dispatch: # 수동 트리거
+
+jobs:
+  member-refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger member profile refresh
+        run: |
+          BASE_URL="${{ secrets.SYNC_URL }}"
+          if [ -z "$BASE_URL" ]; then
+            BASE_URL="https://iftype.store"
+          fi
+
+          response=$(curl -s -w "\n%{http_code}" \
+            -X POST "$BASE_URL/admin/members/refresh-profiles?staleHours=24&limit=30" \
+            -H "Authorization: Bearer ${{ secrets.ADMIN_SECRET }}")
+
+          http_code=$(echo "$response" | tail -n 1)
+          body=$(echo "$response" | head -n -1)
+
+          echo "Response code: $http_code"
+          echo "$body" | jq '.' 2>/dev/null || echo "$body"
+
+          if [ "$http_code" != "200" ]; then
+            echo "Member profile refresh failed with status $http_code"
+            exit 1
+          fi
+
+          checked=$(echo "$body" | jq -r '.checked // 0')
+          refreshed=$(echo "$body" | jq -r '.refreshed // 0')
+          failed=$(echo "$body" | jq -r '.failed // 0')
+
+          echo "Member refresh completed: $refreshed/$checked refreshed, $failed failed"
