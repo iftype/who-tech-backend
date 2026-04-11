@@ -103,7 +103,7 @@ export function createMemberService(deps: {
         githubUserId: profile.githubUserId,
         previousGithubIds: mergePreviousGithubIds(member.previousGithubIds, member.githubId, profile.githubId),
         avatarUrl: profile.avatarUrl ?? member.avatarUrl ?? null,
-        ...(member.blog ? {} : { blog: profile.blog }),
+        blog: profile.blog ?? member.blog ?? null,
       };
     } catch (error) {
       profileFields = {
