@@ -116,6 +116,26 @@ app.get('/guide', (_req, res) => {
 
 app.use('/members', createMemberPublicRouter(memberPublicService));
 
+app.post('/admin/deploy', (req, res): void => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader?.replace('Bearer ', '');
+  if (token !== process.env['ADMIN_SECRET']) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+
+  res.json({ ok: true, message: 'deploy started' });
+  const child = spawn(
+    'bash',
+    [
+      '-c',
+      'cd ~/app/who-tech-backend && git pull origin main && npm install --ignore-scripts && npx prisma generate && npm run build && npx prisma migrate deploy && pm2 restart backend',
+    ],
+    { detached: true, stdio: 'ignore', shell: false },
+  );
+  child.unref();
+});
+
 app.use('/admin', adminAuth);
 app.use('/admin/workspace', createWorkspaceRouter(workspaceService));
 app.use('/admin/repos', createRepoRouter(repoService));
@@ -128,19 +148,6 @@ app.use('/admin', createPersonRouter({ personRepo, memberRepo, workspaceService 
 app.use('/admin/banned-words', createBannedWordRouter({ bannedWordRepo, workspaceService }));
 app.use('/admin/ignored-domains', createIgnoredDomainRouter({ ignoredDomainRepo, workspaceService }));
 app.use('/admin/archive', createArchiveRouter(archiveService));
-
-app.post('/admin/deploy', (_req, res) => {
-  res.json({ ok: true, message: 'deploy started' });
-  const child = spawn(
-    'bash',
-    [
-      '-c',
-      'cd ~/app/who-tech-backend && git pull origin main && npm install --ignore-scripts && npx prisma generate && npm run build && npx prisma migrate deploy && pm2 reload ecosystem.config.cjs --update-env',
-    ],
-    { detached: true, stdio: 'ignore', shell: false },
-  );
-  child.unref();
-});
 
 app.use(errorHandler);
 
