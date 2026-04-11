@@ -109,6 +109,7 @@ export function createMemberService(deps: {
         blog: profile.blog ?? member.blog ?? null,
       };
     } catch (error) {
+      console.error(`[refreshMemberProfile ERROR] ${member.githubId}:`, error);
       profileFields = {
         githubId: member.githubId,
         githubUserId: member.githubUserId ?? null,
@@ -289,7 +290,12 @@ export function createMemberService(deps: {
       return refreshMemberProfileById(id, bannedWords, true);
     },
 
-    refreshWorkspaceProfiles: async (input?: { limit?: number; cohort?: number; staleHours?: number }) => {
+    refreshWorkspaceProfiles: async (input?: {
+      limit?: number;
+      cohort?: number;
+      staleHours?: number;
+      force?: boolean;
+    }) => {
       const workspace = await workspaceService.getOrThrow();
       const bannedWordRows = await bannedWordRepo.findAll(workspace.id);
       const bannedWords = new Set(bannedWordRows.map((r) => r.word));
@@ -299,11 +305,11 @@ export function createMemberService(deps: {
         ...(input?.cohort !== undefined ? { cohort: input.cohort } : {}),
       });
 
-      // GitHub API 호출 대상: stale 멤버만, limit 적용
+      // GitHub API 호출 대상: stale 멤버만, limit 적용 (force=true면 전체)
       const staleLimit = input?.limit ?? 30;
       const githubTargetIds = new Set(
         allMembers
-          .filter((m) => shouldRefreshProfile(m.profileFetchedAt, staleHours))
+          .filter((m) => input?.force ?? shouldRefreshProfile(m.profileFetchedAt, staleHours))
           .slice(0, staleLimit)
           .map((m) => m.id),
       );
