@@ -240,6 +240,13 @@ export function createBlogService(deps: { memberRepo: MemberRepository; blogPost
           continue;
         }
 
+        // RSS URL이 변경되었으면 이전 글 전부 삭제 (블로그 호스트 변경 시)
+        const previousRssUrl = member.rssUrl;
+        const currentRssUrl = result.rssCheck.rssUrl;
+        if (previousRssUrl && currentRssUrl && previousRssUrl !== currentRssUrl) {
+          await blogPostRepo.deleteByMember(member.id);
+        }
+
         // RSS 수집 성공 시 피드에서 사라진 글 삭제
         const feedUrls = result.items.map((item) => item.link).filter((url): url is string => !!url);
         const feedDeleteResult = await blogPostRepo.deleteByMemberNotInUrls(member.id, feedUrls, thirtyDaysAgo);

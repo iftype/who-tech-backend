@@ -34,6 +34,9 @@ export function createBlogPostRepository(db: PrismaClient) {
     // [기본] 오래된 데이터 삭제 (30일 기준 청소용)
     deleteBefore: (date: Date) => db.blogPost.deleteMany({ where: { publishedAt: { lt: date } } }),
 
+    // 특정 멤버의 모든 블로그 포스트 삭제 (블로그 URL 변경 시 사용)
+    deleteByMember: (memberId: number) => db.blogPost.deleteMany({ where: { memberId } }),
+
     // RSS에서 사라진 글 삭제 (30일 이내 + 현재 피드에 없는 URL)
     deleteByMemberNotInUrls: (memberId: number, urls: string[], since: Date) =>
       db.blogPost.deleteMany({

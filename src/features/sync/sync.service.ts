@@ -197,7 +197,8 @@ export function createSyncService(deps: {
       // 탈퇴 계정은 login이 "ghost"로 반환됨 — 기존 githubId 유지
       githubId = profile.githubId === 'ghost' ? s.githubId : profile.githubId;
       githubUserId = profile.githubUserId ?? githubUserId;
-      blog = existingMember?.blog ?? (profile.githubId === 'ghost' ? null : profile.blog);
+      blog =
+        profile.githubId === 'ghost' ? (existingMember?.blog ?? null) : (profile.blog ?? existingMember?.blog ?? null);
       avatarUrl =
         profile.githubId === 'ghost'
           ? (existingMember?.avatarUrl ?? null)
