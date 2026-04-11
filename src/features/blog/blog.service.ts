@@ -196,6 +196,7 @@ export function createBlogService(deps: { memberRepo: MemberRepository; blogPost
       const members = await memberRepo.findWithFilters(workspaceId, { hasBlog: true });
 
       let synced = 0;
+      let deleted = 0;
       let processed = 0;
       const failures: BlogSyncFailure[] = [];
       const total = members.length;
@@ -241,7 +242,8 @@ export function createBlogService(deps: { memberRepo: MemberRepository; blogPost
 
         // RSS 수집 성공 시 피드에서 사라진 글 삭제
         const feedUrls = result.items.map((item) => item.link).filter((url): url is string => !!url);
-        await blogPostRepo.deleteByMemberNotInUrls(member.id, feedUrls, thirtyDaysAgo);
+        const feedDeleteResult = await blogPostRepo.deleteByMemberNotInUrls(member.id, feedUrls, thirtyDaysAgo);
+        deleted += feedDeleteResult.count;
 
         for (const item of result.items) {
           if (!item.link || !item.title || !item.pubDate) continue;
@@ -282,11 +284,10 @@ export function createBlogService(deps: { memberRepo: MemberRepository; blogPost
         emitProgress(`${member.githubId} RSS 확인 완료`);
       }
 
-      let deleted = 0;
       emitProgress('오래된 글 정리 중', total === 0 ? 100 : Math.max(Math.round((processed / total) * 100), 95));
       try {
         const cleanupResult = await blogPostRepo.deleteBefore(thirtyDaysAgo);
-        deleted = cleanupResult.count;
+        deleted += cleanupResult.count;
       } catch (error) {
         throw new HttpError(500, `blog sync cleanup failed: ${errorMessage(error)}`);
       }

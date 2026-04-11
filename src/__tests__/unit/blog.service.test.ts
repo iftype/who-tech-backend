@@ -1,5 +1,7 @@
-import { describe, expect, it } from '@jest/globals';
-import { resolveRSSUrlsForBlog, sanitizeXml } from '../../features/blog/blog.service.js';
+import { describe, expect, it, jest, beforeEach } from '@jest/globals';
+import type { Mock } from '@jest/globals';
+import { resolveRSSUrlsForBlog, sanitizeXml, createBlogService } from '../../features/blog/blog.service.js';
+import type { MemberWithRelations } from '../../db/repositories/member.repository.js';
 
 describe('resolveRSSUrlsForBlog', () => {
   it('velog posts 경로는 사용자 RSS로 변환한다', () => {
@@ -68,5 +70,118 @@ describe('sanitizeXml', () => {
   it('정상 XML은 변경 없이 반환한다', () => {
     const xml = '<item><title>테스트 글</title><link>https://example.com</link></item>';
     expect(sanitizeXml(xml)).toBe(xml);
+  });
+});
+
+describe('createBlogService - syncBlogs', () => {
+  const mockMember = {
+    id: 1,
+    githubId: 'testuser',
+    blog: 'https://testblog.com',
+  } as unknown as MemberWithRelations;
+
+  function makeMockDeps(
+    overrides: {
+      findWithFilters?: Mock<() => Promise<MemberWithRelations[]>>;
+      patch?: Mock<() => Promise<void>>;
+      deleteByMemberNotInUrls?: Mock<() => Promise<{ count: number }>>;
+      deleteBefore?: Mock<() => Promise<{ count: number }>>;
+      upsert?: Mock<() => Promise<void>>;
+    } = {},
+  ) {
+    return {
+      memberRepo: {
+        findWithFilters:
+          overrides.findWithFilters ?? (jest.fn() as Mock<() => Promise<MemberWithRelations[]>>).mockResolvedValue([]),
+        patch: overrides.patch ?? (jest.fn() as Mock<() => Promise<void>>).mockResolvedValue(undefined),
+      },
+      blogPostRepo: {
+        deleteByMemberNotInUrls:
+          overrides.deleteByMemberNotInUrls ??
+          (jest.fn() as Mock<() => Promise<{ count: number }>>).mockResolvedValue({ count: 0 }),
+        deleteBefore:
+          overrides.deleteBefore ??
+          (jest.fn() as Mock<() => Promise<{ count: number }>>).mockResolvedValue({ count: 0 }),
+        upsert: overrides.upsert ?? (jest.fn() as Mock<() => Promise<void>>).mockResolvedValue(undefined),
+      },
+    } as Parameters<typeof createBlogService>[0];
+  }
+
+  const validRssXml = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Test Blog</title>
+    <item>
+      <title>글 제목</title>
+      <link>https://testblog.com/post/1</link>
+      <pubDate>${new Date(Date.now() - 1000 * 60 * 60 * 24).toUTCString()}</pubDate>
+    </item>
+  </channel>
+</rss>`;
+
+  beforeEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('피드에서 사라진 글의 삭제 건수가 deleted에 포함된다', async () => {
+    const fetchSpy = jest.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: async () => validRssXml,
+    } as Response);
+
+    const deleteByMemberNotInUrls = (jest.fn() as Mock<() => Promise<{ count: number }>>).mockResolvedValue({
+      count: 2,
+    });
+    const deleteBefore = (jest.fn() as Mock<() => Promise<{ count: number }>>).mockResolvedValue({ count: 1 });
+
+    const deps = makeMockDeps({ deleteByMemberNotInUrls, deleteBefore });
+    (deps.memberRepo.findWithFilters as Mock<() => Promise<MemberWithRelations[]>>).mockResolvedValue([mockMember]);
+
+    const service = createBlogService(deps);
+    const result = await service.syncBlogs(1);
+
+    expect(result.deleted).toBe(3);
+    fetchSpy.mockRestore();
+  });
+
+  it('피드에서 사라진 글이 없으면 deleteByMemberNotInUrls count 0이 누적되지 않는다', async () => {
+    const fetchSpy = jest.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: async () => validRssXml,
+    } as Response);
+
+    const deleteByMemberNotInUrls = (jest.fn() as Mock<() => Promise<{ count: number }>>).mockResolvedValue({
+      count: 0,
+    });
+    const deleteBefore = (jest.fn() as Mock<() => Promise<{ count: number }>>).mockResolvedValue({ count: 5 });
+
+    const deps = makeMockDeps({ deleteByMemberNotInUrls, deleteBefore });
+    (deps.memberRepo.findWithFilters as Mock<() => Promise<MemberWithRelations[]>>).mockResolvedValue([mockMember]);
+
+    const service = createBlogService(deps);
+    const result = await service.syncBlogs(1);
+
+    expect(result.deleted).toBe(5);
+    fetchSpy.mockRestore();
+  });
+
+  it('RSS 수집 실패 시 deleteByMemberNotInUrls가 호출되지 않는다', async () => {
+    const fetchSpy = jest.spyOn(global, 'fetch').mockResolvedValue({
+      ok: false,
+      status: 404,
+      text: async () => '',
+    } as Response);
+
+    const deleteByMemberNotInUrls = jest.fn() as Mock<() => Promise<{ count: number }>>;
+    const deps = makeMockDeps({ deleteByMemberNotInUrls });
+    (deps.memberRepo.findWithFilters as Mock<() => Promise<MemberWithRelations[]>>).mockResolvedValue([mockMember]);
+
+    const service = createBlogService(deps);
+    await service.syncBlogs(1);
+
+    expect(deleteByMemberNotInUrls).not.toHaveBeenCalled();
+    fetchSpy.mockRestore();
   });
 });
