@@ -98,6 +98,9 @@ export function createMemberService(deps: {
         githubUserId: member.githubUserId,
         username: member.githubId,
       });
+      console.log(
+        `[refreshMemberProfile] ${member.githubId}: profile.blog=${profile.blog}, member.blog=${member.blog}`,
+      );
       profileFields = {
         githubId: profile.githubId,
         githubUserId: profile.githubUserId,
