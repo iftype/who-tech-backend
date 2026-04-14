@@ -112,7 +112,7 @@ export function renderMembers() {
             (member.cohorts || [])
               .map(
                 (c) =>
-                  `<span class="pill cohort" style="display:inline-flex;align-items:center;gap:4px">${c.cohort}기<button onclick="deleteMemberCohort(${member.id},${c.cohort})" style="background:none;border:none;cursor:pointer;padding:0;line-height:1;color:inherit;opacity:0.6" title="기수 삭제">×</button></span>`,
+                  `<span class="pill cohort" style="display:inline-flex;align-items:center;gap:4px">${c.cohort}기<button onclick="changeMemberCohort(${member.id},${c.cohort})" style="background:none;border:none;cursor:pointer;padding:0;line-height:1;color:inherit;opacity:0.6;font-size:10px" title="기수 변경">✎</button><button onclick="deleteMemberCohort(${member.id},${c.cohort})" style="background:none;border:none;cursor:pointer;padding:0;line-height:1;color:inherit;opacity:0.6" title="기수 삭제">×</button></span>`,
               )
               .join('') || '-'
           }
@@ -500,7 +500,7 @@ export function openSubmissionModal(memberId, name) {
           <div class="post-item" style="padding:10px 0;border-bottom:1px solid #f1f5f9">
             <a href="${submission.prUrl}" target="_blank">${escapeHtml(submission.title)}</a>
             <div class="muted">${escapeHtml(submission.missionRepo.name)} · ${escapeHtml(submission.missionRepo.track == null ? '공통' : submission.missionRepo.track)}</div>
-            <div class="muted">#${submission.prNumber} · ${new Date(submission.submittedAt).toLocaleDateString('ko-KR')}</div>
+            <div class="muted">#${submission.prNumber} · ${new Date(submission.submittedAt).toLocaleDateString('ko-KR')} · <span class="pill rss ${submission.status}">${submission.status}</span></div>
           </div>
         `,
           )
@@ -574,6 +574,27 @@ export function setManualNickname(memberId, nickname) {
       return loadMembers();
     })
     .catch(() => alert('닉네임 수정에 실패했습니다.'));
+}
+
+export function changeMemberCohort(memberId, oldCohort) {
+  const input = prompt(`${oldCohort}기 → 변경할 기수 번호를 입력하세요`);
+  if (input === null) return;
+  const newCohort = Number(input.trim());
+  if (!Number.isInteger(newCohort) || newCohort < 1) {
+    alert('올바른 기수 번호를 입력하세요.');
+    return;
+  }
+  fetch(`/admin/members/${memberId}/cohorts/${oldCohort}`, {
+    method: 'PATCH',
+    headers: authHeaders('application/json'),
+    body: JSON.stringify({ newCohort }),
+  })
+    .then((res) => {
+      if (!res.ok) throw new Error('failed');
+      toast(`${oldCohort}기 → ${newCohort}기 변경 완료`);
+      return loadMembers();
+    })
+    .catch(() => alert('기수 변경에 실패했습니다.'));
 }
 
 export function deleteMemberCohort(memberId, cohort) {

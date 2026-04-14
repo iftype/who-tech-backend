@@ -92,6 +92,20 @@ export function createMemberRouter(service: MemberService) {
     }),
   );
 
+  router.patch(
+    '/:id/cohorts/:cohort',
+    asyncHandler(async (req, res) => {
+      const id = parseId(req.params['id']);
+      const cohort = parseId(req.params['cohort']);
+      const body = req.body as { newCohort: number };
+      if (!body.newCohort) {
+        res.status(400).json({ error: 'newCohort required' });
+        return;
+      }
+      res.json(await service.changeMemberCohort(id, cohort, body.newCohort));
+    }),
+  );
+
   router.delete(
     '/:id/cohorts/:cohort',
     asyncHandler(async (req, res) => {

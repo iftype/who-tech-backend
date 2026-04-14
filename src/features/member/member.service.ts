@@ -270,6 +270,19 @@ export function createMemberService(deps: {
       return updated ? toResponse(updated) : null;
     },
 
+    changeMemberCohort: async (id: number, oldCohort: number, newCohort: number) => {
+      const member = await memberRepo.findByIdWithRelations(id);
+      if (!member) throw new Error('member not found');
+      const existing = buildCohortList(member.memberCohorts).find((c) => c.cohort === oldCohort);
+      const roles = existing?.roles ?? ['crew'];
+      await memberRepo.deleteParticipationsByCohort(id, oldCohort);
+      for (const role of roles) {
+        await memberRepo.upsertParticipation(id, newCohort, role);
+      }
+      const updated = await memberRepo.findByIdWithRelations(id);
+      return updated ? toResponse(updated) : null;
+    },
+
     deleteMemberCohort: async (id: number, cohort: number) => {
       await memberRepo.deleteParticipationsByCohort(id, cohort);
       const updated = await memberRepo.findByIdWithRelations(id);

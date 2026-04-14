@@ -1,85 +1,118 @@
-# be-api — 공개 API·데이터 모델·스키마
+# API.md — Backend API 엔드포인트
 
----
+모든 `/admin` 엔드포인트는 `Authorization: Bearer <ADMIN_SECRET>` 필요.
 
-## 2026-04-03
+어드민 UI: `GET /admin/ui/admin.html` — 정적 JS는 `admin/` 디렉터리 ES 모듈(`main.js` 엔트리, `window`에 핸들러 노출으로 기존 `onclick` 유지)
 
-**운영진 트랙 집계 수정**
+## 어드민 API
 
-- **왜**: `submissions`에서만 트랙 추출 → 제출 이력 없는 코치/리뷰어는 `tracks: []`
-- **핵심 파일**: `src/features/member/member.public.service.ts`
-- **결정**: `[Member.track, ...submissions tracks]`로 합산 (목록·상세·피드 3곳 모두)
+### 수집 현황 / 워크스페이스
 
----
+```
+GET  /admin/status                    — 수집 현황 (memberCount, lastSyncAt)
+GET  /admin/workspace                 — workspace 설정 조회
+PUT  /admin/workspace                 — cohortRules, blogSyncEnabled 수정
+```
 
-## 2026-03-30
+### 미션 레포
 
-**Person 마스터 테이블**
+```
+GET  /admin/repos                     — 미션 레포 목록 (?status=)
+POST /admin/repos                     — 레포 추가 (name, repoUrl, track, type?, syncMode?, cohorts?, level?)
+POST /admin/repos/discover            — 조직 공개 레포 탐색 → once candidate 갱신 (precourse 제외)
+PATCH /admin/repos/:id                — track, status, syncMode, cohorts, level 등 수정
+DELETE /admin/repos                   — 전체 레포 + 관련 submission 삭제
+DELETE /admin/repos/:id               — 레포 + 관련 submission 트랜잭션 삭제
+POST /admin/repos/:id/sync            — 단건 레포 sync
+```
 
-- **왜**: 같은 인물이 여러 GitHub ID로 등록된 경우 통합 관리
-- **핵심 파일**: `schema.prisma`, `src/db/repositories/person.repository.ts`, `src/features/person/person.route.ts`
-- **결정**: Person(id, displayName?, note?, workspaceId) + Member.personId FK, 어드민 CRUD API 제공
-- **마이그레이션**: `20260330002531_add_person_master_table`
+### Sync
 
-**blogPostsLatest 잔재 제거**
+```
+POST /admin/sync                      — once+미수집 레포만 대상으로 전체 sync (?cohort= 기수 필터)
+GET  /admin/sync/stream               — sync 진행 SSE (?token= 인증, ?cohort= 기수 필터, progress/done/error 이벤트)
+POST /admin/sync/cohort-repos         — CohortRepo에 등록된 레포만 전체 재sync (body: {cohort})
+GET  /admin/sync/cohort-repos/stream  — 기수 목록 전체 재sync SSE (?token= 인증, ?cohort= 필수)
+```
 
-- **왜**: `BlogPostLatest` 모델 삭제 후 `member.repository.ts` 미갱신으로 멤버 삭제 트랜잭션 전체 실패
-- **핵심 파일**: `src/db/repositories/member.repository.ts`, `src/features/member/member.public.service.ts`, `src/features/member/member.service.ts`
-- **결정**: `blogPostsLatest` → `blogPosts: { orderBy: { publishedAt: 'desc' }, take: 10 }`
+### 기수별 레포
 
----
+```
+GET  /admin/cohort-repos              — 기수별 레포 목록 (?cohort= 필수)
+GET  /admin/cohort-repos/cohorts      — CohortRepo에 등록된 기수 목록
+POST /admin/cohort-repos              — 기수 레포 추가 (cohort, missionRepoId, order?)
+POST /admin/cohort-repos/auto-fill    — active 레포 cohorts 필드 기반 자동 채우기 (?cohort= 필수)
+PATCH /admin/cohort-repos/:id         — order 수정
+DELETE /admin/cohort-repos/:id        — 기수 레포 삭제
+```
 
-## 2026-03-28
+### 멤버
 
-**공개 API 신규 구현**
+```
+GET  /admin/members                   — 멤버 목록 (?q=&cohort=&hasBlog=&track=&role=)
+POST /admin/members                   — 멤버 수동 생성 (githubId, nickname?, cohort?, roles?, blog?)
+GET  /admin/members/:id/blog-posts    — 블로그 글 목록 (archive 30일 + latest 7일)
+PATCH /admin/members/:id              — manualNickname, blog, roles 수정
+DELETE /admin/members                 — 전체 멤버 + submissions + blogPosts 삭제
+DELETE /admin/members/:id             — 멤버 + submissions + blogPosts 삭제
+```
 
-- **왜**: 프론트엔드용 인증 불필요 API
-- **핵심 파일**: `src/features/member/member.public.service.ts`, `src/features/member/member.public.route.ts`
-- **결정**: `GET /members`, `GET /members/feed`, `GET /members/:githubId` (archive + blogPosts 포함)
+### 블로그
 
-**Member.lastPostedAt 추가**
+```
+POST /admin/blog/sync                 — 블로그 RSS 전체 sync (blogSyncEnabled 체크)
+POST /admin/blog/backfill             — GitHub profile blog 백필 (?limit=30&cohort= 기수 필터)
+GET  /admin/blog/new-posts            — 최근 수집된 새 블로그 글 (?sinceMinutes=65)
+```
 
-- RSS 수집 시 최근 글 `publishedAt` 저장
-- **마이그레이션**: `20260328210000_add_member_last_posted_at`
+### 로그
 
-**Member.avatarUrl 추가**
+```
+GET  /admin/logs                      — 어드민 활동 로그 조회 (최근 200개)
+POST /admin/logs                      — 로그 기록 (type, message)
+DELETE /admin/logs                    — 전체 로그 삭제
+```
 
-- GitHub profile `avatar_url` sync/backfill 시 저장
+### Person (멤버 마스터)
 
-**MissionRepo.tabCategory 추가**
+```
+GET  /admin/persons                   — Person 마스터 목록 (연결된 멤버 포함)
+POST /admin/persons                   — Person 생성 (displayName?, note?, memberIds?)
+PATCH /admin/persons/:id              — displayName, note 수정
+DELETE /admin/persons/:id             — Person 삭제 (멤버 personId 자동 해제)
+POST /admin/persons/:id/members/:memberId   — 멤버 → Person 연결
+DELETE /admin/persons/:id/members/:memberId — 연결 해제
+```
 
-- 값: `base | common | excluded | precourse`
+### 금지어 / 무시 도메인
 
-**Prisma 마이그레이션 재정리**
+```
+GET  /admin/banned-words              — 금지어 목록
+POST /admin/banned-words              — 금지어 추가 (body: {word})
+DELETE /admin/banned-words/:id        — 금지어 삭제
+GET  /admin/ignored-domains           — 무시 도메인 목록
+POST /admin/ignored-domains           — 도메인 추가 (body: {domain})
+DELETE /admin/ignored-domains/:id     — 도메인 삭제
+```
 
-- **왜**: 누적 마이그레이션이 현재 스키마와 불일치 → Prisma Client 쿼리 실패
-- **결정**: baseline migration 1개(`20260328190000_baseline`)로 재정리, 이후 2026-03-29에 전면 교체
+### 기타
 
----
+```
+GET  /admin/archive                   — 기수별 아카이브 마크다운 (?cohort= 필수, ?track= 선택, ?format=md 텍스트 응답)
+```
 
-## 2026-03-27
+### 중복 생성 정책
 
-**기수별 닉네임 정규식 지원 (이후 제거됨)**
+- 동일 금지어 추가 → `409 word already exists`
+- 동일 기수 레포 추가 → `409 cohort repo already exists`
 
-- `MissionRepo.cohortRegexRules` JSON 필드 (2026-03-31에 스키마에서 삭제)
+## 공개 API (인증 불필요)
 
-**MissionRepo.track nullable로 변경**
+```
+GET  /members                     — 멤버 검색 (?q=&cohort=&track=&role=)
+GET  /members/feed                — 최근 블로그 피드 (?cohort=&track=)
+GET  /members/:githubId           — 멤버 상세
+```
 
-- 공통/협업 미션 track → `null`
-
-**서비스 계층 도입 (PR #17)**
-
-- **결정**: `feature.route` → `feature.service` → `db/repository` 레이어링
-- `app.ts`를 composition root로: PrismaClient + octokit 단일 생성 후 repo → service → router 조립
-- factory 함수 패턴: `createXxxService(deps)`, `createXxxRouter(service)`
-
----
-
-## 2026-03-26
-
-**백엔드 v1 초기 구현**
-
-- `Workspace`, `Member`, `MissionRepo`, `Submission` 스키마
-- 기수 판별: `created_at` 연도 → `cohortRules` JSON 매핑
-- `Cohort / Role / MemberCohort` 정규화 (기수/역할 분리)
-- `npm run seed`: Role + Workspace 생성
+- `submissions` 응답: `[{ prUrl, prNumber, title, submittedAt, missionRepo: { name, track, level, tabCategory } }]`
+- `blogPosts` 응답: `BlogPostLatest` 최근 10개 (7일 스냅샷 기준)
