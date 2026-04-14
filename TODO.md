@@ -1,37 +1,59 @@
-=== 마지막 세션: 2026-04-11 23:40 ===
+=== 마지막 세션: 2026-04-11 23:50 ===
 
 ### 완료 작업
-✅ 서버 배포 문제 해결
-  - npm install → node_modules 최신화
-  - dist 재생성
-  - pm2 kill → 좀비 프로세스 제거
-  - API 정상 응답 확인 (`/members?q=test`)
 
-### 원인
-- 배포 방식 변경 (CI rsync → git pull) 이후
-- PM2가 이전 프로세스를 물고 있음
-- `pm2 restart`로는 해결 안 되고 `pm2 kill` 필요
+✅ 서버 배포 문제 해결 (원인: npm install 미실행 + PM2 좀비 프로세스)
+✅ /admin/deploy 엔드포인트 보안 강화 (ADMIN_SECRET 인증 추가)
+✅ 배포 스크립트 개선 (npm install, pm2 restart 명시)
+✅ 에러 슈팅 기록: `.claude/deployment-troubleshooting-2026-04-11.md`
 
-=== 다음 작업 ===
+=== 다음 세션 작업 ===
 
-## 1. GitHub Secrets 등록 (배포 전 필수)
+## 1️⃣ GitHub Secrets 설정 확인
 
-CI 배포용 Actions `production` environment Secrets:
-- `SSH_PRIVATE_KEY`: `base64 -i ~/.ssh/ssh-key-oracle.key`
-- `SERVER_HOST`: `168.107.51.150`
-- `SERVER_USER`: 서버 SSH 유저명
+- ✅ ADMIN_SECRET만 필요 (SSH 관련 불필요)
+- 참고: frontend/TODO.md와 동기화
 
-## 2. deploy.yml 검토 및 업데이트
-
-현재: `/admin/deploy` 엔드포인트 호출 방식
-필요: 배포 시 자동으로 `npm install` 실행되도록 확인
-
-## 3. 배포 후 모니터링
+## 2️⃣ 배포 흐름 검증
 
 ```bash
-# 서버 상태 확인
-ssh oracle 'pm2 status && pm2 logs backend --lines 20'
+# 테스트 배포
+curl -X POST https://iftype.store/admin/deploy \
+  -H "Authorization: Bearer $ADMIN_SECRET"
 
-# API 테스트
-curl https://iftype.store/members?q=test
+# 로그 확인
+ssh oracle 'pm2 logs backend --lines 50'
 ```
+
+## 3️⃣ Dependabot 취약점 패치
+
+- 현재 2개 high severity 존재
+- 참고: GitHub Security tab
+
+---
+
+## 📋 대규모 리팩토링 예정 (다음주)
+
+### 범위
+
+- 서비스 레이어 정규화 (sync.service, blog.service)
+- 레포지토리 패턴 통일
+- 타입 안정성 강화
+
+### 필요 에이전트
+
+- `/oh-my-claudecode:architect` - 아키텍처 설계
+- `/oh-my-claudecode:code-reviewer` - 리팩토링 검토
+- `/oh-my-claudecode:executor` - 대규모 작업 실행
+
+### 예상 영향
+
+- 주요 파일: src/features/{sync,blog,cohort-repo}/\*\*
+- 테스트: 기존 100+ 테스트 유지 필수
+- 배포: 리팩토링 완료 후 한 번에 배포
+
+### 준비 사항
+
+- 현재 src/ 구조 스냅샷 저장
+- 테스트 커버리지 확인
+- develop 브랜치에서 진행
