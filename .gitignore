@@ -9,3 +9,6 @@ dist/
 
 *.db
 *.db-journal
+
+# OMC
+.omc/

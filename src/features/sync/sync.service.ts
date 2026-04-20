@@ -118,7 +118,7 @@ export function createSyncService(deps: {
     ignoredDomains: string[];
   }> => {
     const since = repo.lastSyncAt ? new Date(repo.lastSyncAt.getTime() - 5 * 60 * 1000) : undefined;
-    const maxPages = since ? 1 : 10;
+    const maxPages = since ? 1 : 30;
 
     const [bannedWordRows, ignoredDomainRows] = await Promise.all([
       bannedWordRepo.findAll(workspaceId),
