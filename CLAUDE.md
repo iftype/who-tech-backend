@@ -18,32 +18,28 @@ npx prisma migrate dev   # 마이그레이션 생성 + 적용
 npm run seed             # Role + Workspace 시드
 ```
 
-## 컨벤션
-
-- ESM (import/export), CommonJS 사용 금지
-- TypeScript strict mode — `any` 타입 사용 금지
-- 에러는 반드시 타입 명시
-- Prisma 쿼리는 service 레이어에서만
-- commitlint 적용 (feat / fix / refactor / test / chore)
-
-## 금지
-
-- `any` 타입
-- `console.log` 커밋
-- CommonJS (`require` / `module.exports`)
-
 ## PR/브랜치 규칙
 
 ```
 feat/#이슈번호-설명 → main PR → 머지
 ```
 
-- PR은 기능 완성 시에만 (중간 커밋 PR 금지)
-- 커밋 메시지: Conventional Commits, subject 소문자
+## Agent 하네스
 
-## 참고 문서
+자동 로드되는 rules (`.claude/rules/`):
 
-- [아키텍처 및 DB 스키마](.claude/ARCHITECTURE.md)
-- [API 엔드포인트](.claude/API.md)
-- [환경 설정 및 테스트](.claude/SETUP.md)
-- [GitHub Actions CI/CD](.claude/GITHUB_ACTIONS.md)
+- **항상**: `protocol.md` (완료 기준·커맨드), `conventions.md` (코드 규칙)
+- **조건부**: `testing.md` (테스트 작업 시), `sync.md` (sync 모듈), `schema.md` (prisma 변경), `deploy.md` (CI/CD)
+
+커맨드 도구 (`.claude/commands/`): `typecheck` / `test` / `lint` / `migrate`
+
+## 참고 문서 (상세)
+
+- [아키텍처 및 DB 스키마](.claude/docs/ARCHITECTURE.md)
+- [API 엔드포인트](.claude/docs/api.md)
+- [환경 설정](.claude/docs/SETUP.md)
+- [GitHub Actions](.claude/docs/GITHUB_ACTIONS.md)
+- [sync 모듈](.claude/docs/sync.md)
+- [어드민](.claude/docs/admin.md)
+- [배포](.claude/docs/deploy.md)
+- [인프라](.claude/docs/infra.md)
