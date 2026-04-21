@@ -3,7 +3,6 @@ import { AuthProvider, useAuth } from './context/AuthContext.js';
 import Layout from './components/Layout.js';
 import LoginPage from './components/LoginPage.js';
 import MemberTab from './pages/MemberTab.js';
-import PRTab from './pages/PRTab.js';
 import SyncTab from './pages/SyncTab.js';
 import RepoTab from './pages/RepoTab.js';
 import BlogTab from './pages/BlogTab.js';
@@ -27,7 +26,6 @@ function Router() {
 
   const page = (() => {
     if (location.startsWith('/members')) return <MemberTab />;
-    if (location.startsWith('/prs')) return <PRTab />;
     if (location.startsWith('/sync')) return <SyncTab />;
     if (location.startsWith('/repos')) return <RepoTab />;
     if (location.startsWith('/blog')) return <BlogTab />;

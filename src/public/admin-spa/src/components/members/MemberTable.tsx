@@ -4,7 +4,7 @@ import { apiFetch } from '../../lib/api.js';
 import { showToast } from '../ui/Toast.js';
 import Modal from '../ui/Modal.js';
 import CohortRoleBadges from './CohortRoleBadges.js';
-import type { Member, BlogPost, MemberCohort } from '../../lib/types.js';
+import type { Member, BlogPost, MemberCohort, Submission } from '../../lib/types.js';
 
 type SortKey = 'nickname' | 'cohort' | 'githubId' | '_count.submissions' | '_count.blogPosts';
 
@@ -22,6 +22,7 @@ export default function MemberTable({ members, onRefresh }: Props) {
   const [sortKey, setSortKey] = useState<SortKey>('cohort');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [blogModal, setBlogModal] = useState<{ member: Member; posts: BlogPost[] } | null>(null);
+  const [prModal, setPrModal] = useState<{ member: Member; submissions: Submission[] } | null>(null);
   const [cohortModal, setCohortModal] = useState<CohortEditModal | null>(null);
   const [newCohortInput, setNewCohortInput] = useState('');
   const [refreshing, setRefreshing] = useState<number | null>(null);
@@ -80,6 +81,19 @@ export default function MemberTable({ members, onRefresh }: Props) {
       setBlogModal({ member, posts });
     } catch {
       showToast('블로그 포스트 로딩 실패', 'error');
+    }
+  };
+
+  const openPRModal = async (member: Member) => {
+    if (member._count.submissions === 0) {
+      showToast('제출 내역이 없습니다', 'error');
+      return;
+    }
+    try {
+      const detail = await apiFetch<Member>(`/admin/members/${member.id}`);
+      setPrModal({ member: detail, submissions: detail.submissions ?? [] });
+    } catch {
+      showToast('PR 로딩 실패', 'error');
     }
   };
 
@@ -188,7 +202,15 @@ export default function MemberTable({ members, onRefresh }: Props) {
                     <span className="text-gray-300 text-xs">—</span>
                   )}
                 </td>
-                <td className="px-3 py-2 text-gray-600 text-xs">{m._count.submissions}</td>
+                <td className="px-3 py-2">
+                  <button
+                    onClick={() => void openPRModal(m)}
+                    className="text-xs text-gray-600 hover:text-blue-600 font-medium"
+                    title="PR 확인"
+                  >
+                    {m._count.submissions}
+                  </button>
+                </td>
                 <td className="px-3 py-2 text-gray-600 text-xs">{m._count.blogPosts}</td>
                 <td className="px-3 py-2">
                   <div className="flex gap-1">
@@ -218,6 +240,49 @@ export default function MemberTable({ members, onRefresh }: Props) {
           <div className="py-12 text-center text-gray-400 text-sm">멤버 없음</div>
         )}
       </div>
+
+      <Modal
+        open={!!prModal}
+        onClose={() => setPrModal(null)}
+        title={`${prModal?.member.nickname ?? prModal?.member.githubId} 제출 내역`}
+      >
+        {prModal && (
+          <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+            {prModal.submissions.length === 0 ? (
+              <p className="text-gray-400 text-sm">제출 내역 없음</p>
+            ) : (
+              prModal.submissions.map((s) => (
+                <div key={s.id} className="border border-gray-100 rounded p-2">
+                  <div className="flex items-center gap-2">
+                    <a
+                      href={s.prUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-blue-600 hover:underline"
+                    >
+                      #{s.prNumber} {s.title}
+                    </a>
+                    <span
+                      className={`text-xs px-1.5 py-0.5 rounded font-medium border ${
+                        s.status === 'merged'
+                          ? 'bg-purple-100 text-purple-700 border-purple-200'
+                          : s.status === 'open'
+                            ? 'bg-green-100 text-green-700 border-green-200'
+                            : 'bg-gray-100 text-gray-500 border-gray-200'
+                      }`}
+                    >
+                      {s.status}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {s.missionRepo.name} · {new Date(s.submittedAt).toLocaleDateString('ko-KR')}
+                  </p>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+      </Modal>
 
       {/* 블로그 모달 */}
       <Modal

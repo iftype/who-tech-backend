@@ -2,7 +2,6 @@ import { useHashLocation } from '../hooks/useHashLocation.js';
 
 const TABS = [
   { path: '/members', label: '멤버' },
-  { path: '/prs', label: 'PR' },
   { path: '/sync', label: '싱크' },
   { path: '/repos', label: '레포' },
   { path: '/blog', label: '블로그' },

@@ -37,7 +37,7 @@ export default function SettingsTab() {
   });
 
   const saveWorkspaceMutation = useMutation({
-    mutationFn: (payload: { cohortRules: Record<string, number>; blogSyncEnabled: boolean }) =>
+    mutationFn: (payload: { cohortRules?: Record<string, number>; blogSyncEnabled?: boolean }) =>
       apiFetch<Workspace>('/admin/workspace', {
         method: 'PUT',
         body: JSON.stringify(payload),
@@ -48,6 +48,11 @@ export default function SettingsTab() {
     },
     onError: (e) => showToast(e instanceof Error ? e.message : '저장 실패', 'error'),
   });
+
+  const toggleBlogSync = (enabled: boolean) => {
+    setBlogSyncEnabled(enabled);
+    saveWorkspaceMutation.mutate({ blogSyncEnabled: enabled });
+  };
 
   const addBannedWordMutation = useMutation({
     mutationFn: (word: string) =>
@@ -128,10 +133,12 @@ export default function SettingsTab() {
             <input
               type="checkbox"
               checked={blogSyncEnabled}
-              onChange={(e) => setBlogSyncEnabled(e.target.checked)}
+              onChange={(e) => toggleBlogSync(e.target.checked)}
+              disabled={saveWorkspaceMutation.isPending}
               className="rounded"
             />
-            <span className="text-sm text-gray-700">블로그 RSS 싱크 활성화</span>
+            <span className="text-sm text-gray-700">블로그 RSS 자동 싱크</span>
+            {saveWorkspaceMutation.isPending && <span className="text-xs text-gray-400">저장 중...</span>}
           </label>
           <div>
             <label className="text-xs text-gray-500 block mb-1">기수 규칙 (JSON)</label>
