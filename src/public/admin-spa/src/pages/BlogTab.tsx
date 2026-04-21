@@ -1,70 +1,53 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '../lib/api.js';
 import { showToast } from '../components/ui/Toast.js';
 import type { NewBlogPost } from '../lib/types.js';
 
 export default function BlogTab() {
-  const [posts, setPosts] = useState<NewBlogPost[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [syncing, setSyncing] = useState(false);
-  const [backfilling, setBackfilling] = useState(false);
   const [sinceMinutes, setSinceMinutes] = useState(65);
+  const queryClient = useQueryClient();
 
-  const fetchNewPosts = async (minutes: number) => {
-    setLoading(true);
-    try {
-      const data = await apiFetch<NewBlogPost[]>(`/admin/blog/new-posts?sinceMinutes=${minutes}`);
-      setPosts(data);
-    } catch (e) {
-      showToast(e instanceof Error ? e.message : '로딩 실패', 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: posts = [], isLoading } = useQuery({
+    queryKey: ['blog-new-posts', sinceMinutes],
+    queryFn: () => apiFetch<NewBlogPost[]>(`/admin/blog/new-posts?sinceMinutes=${sinceMinutes}`),
+  });
 
-  useEffect(() => { void fetchNewPosts(sinceMinutes); }, [sinceMinutes]);
-
-  const syncBlogs = async () => {
-    setSyncing(true);
-    try {
-      const result = await apiFetch<{ synced: number; newPosts: number }>('/admin/blog/sync', { method: 'POST' });
+  const syncMutation = useMutation({
+    mutationFn: () =>
+      apiFetch<{ synced: number; newPosts: number }>('/admin/blog/sync', { method: 'POST' }),
+    onSuccess: (result) => {
       showToast(`RSS 싱크 완료 — ${result.synced}개 피드, 새 글 ${result.newPosts}개`);
-      void fetchNewPosts(sinceMinutes);
-    } catch (e) {
-      showToast(e instanceof Error ? e.message : '싱크 실패', 'error');
-    } finally {
-      setSyncing(false);
-    }
-  };
+      void queryClient.invalidateQueries({ queryKey: ['blog-new-posts'] });
+    },
+    onError: (e) => showToast(e instanceof Error ? e.message : '싱크 실패', 'error'),
+  });
 
-  const backfill = async () => {
-    setBackfilling(true);
-    try {
-      const result = await apiFetch<{ updated: number }>('/admin/blog/backfill', { method: 'POST' });
+  const backfillMutation = useMutation({
+    mutationFn: () =>
+      apiFetch<{ updated: number }>('/admin/blog/backfill', { method: 'POST' }),
+    onSuccess: (result) => {
       showToast(`백필 완료 — ${result.updated}명 업데이트`);
-    } catch (e) {
-      showToast(e instanceof Error ? e.message : '백필 실패', 'error');
-    } finally {
-      setBackfilling(false);
-    }
-  };
+    },
+    onError: (e) => showToast(e instanceof Error ? e.message : '백필 실패', 'error'),
+  });
 
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3 flex-wrap">
         <button
-          onClick={() => void syncBlogs()}
-          disabled={syncing}
+          onClick={() => syncMutation.mutate()}
+          disabled={syncMutation.isPending}
           className="bg-blue-600 text-white text-sm rounded px-4 py-1.5 hover:bg-blue-700 disabled:opacity-40"
         >
-          {syncing ? 'RSS 싱크 중...' : 'RSS 전체 싱크'}
+          {syncMutation.isPending ? 'RSS 싱크 중...' : 'RSS 전체 싱크'}
         </button>
         <button
-          onClick={() => void backfill()}
-          disabled={backfilling}
+          onClick={() => backfillMutation.mutate()}
+          disabled={backfillMutation.isPending}
           className="bg-gray-700 text-white text-sm rounded px-4 py-1.5 hover:bg-gray-800 disabled:opacity-40"
         >
-          {backfilling ? '백필 중...' : 'GitHub 블로그 백필'}
+          {backfillMutation.isPending ? '백필 중...' : 'GitHub 블로그 백필'}
         </button>
         <div className="ml-auto flex items-center gap-2">
           <label className="text-xs text-gray-500">최근</label>
@@ -82,7 +65,7 @@ export default function BlogTab() {
         </div>
       </div>
 
-      {loading ? (
+      {isLoading ? (
         <div className="py-12 text-center text-gray-400 text-sm">로딩 중...</div>
       ) : (
         <>

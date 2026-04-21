@@ -1,9 +1,10 @@
 import { useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '../../lib/api.js';
 import { showToast } from '../ui/Toast.js';
 import Modal from '../ui/Modal.js';
 import CohortRoleBadges from './CohortRoleBadges.js';
-import type { Member, BlogPost } from '../../lib/types.js';
+import type { Member, BlogPost, MemberCohort } from '../../lib/types.js';
 
 type SortKey = 'nickname' | 'cohort' | 'githubId' | '_count.submissions' | '_count.blogPosts';
 
@@ -12,10 +13,17 @@ interface Props {
   onRefresh: () => void;
 }
 
+interface CohortEditModal {
+  member: Member;
+}
+
 export default function MemberTable({ members, onRefresh }: Props) {
+  const queryClient = useQueryClient();
   const [sortKey, setSortKey] = useState<SortKey>('cohort');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [blogModal, setBlogModal] = useState<{ member: Member; posts: BlogPost[] } | null>(null);
+  const [cohortModal, setCohortModal] = useState<CohortEditModal | null>(null);
+  const [newCohortInput, setNewCohortInput] = useState('');
   const [refreshing, setRefreshing] = useState<number | null>(null);
   const [deleting, setDeleting] = useState<number | null>(null);
 
@@ -75,6 +83,42 @@ export default function MemberTable({ members, onRefresh }: Props) {
     }
   };
 
+  const deleteCohortMutation = useMutation({
+    mutationFn: ({ memberId, cohort }: { memberId: number; cohort: number }) =>
+      apiFetch(`/admin/members/${memberId}/cohorts/${cohort}`, { method: 'DELETE' }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['members'] });
+      onRefresh();
+      showToast('기수 삭제 완료');
+    },
+    onError: (e) => showToast(e instanceof Error ? e.message : '기수 삭제 실패', 'error'),
+  });
+
+  const addCohortMutation = useMutation({
+    mutationFn: ({ memberId, cohort }: { memberId: number; cohort: number }) =>
+      apiFetch(`/admin/members/${memberId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ cohort }),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['members'] });
+      onRefresh();
+      setNewCohortInput('');
+      showToast('기수 추가 완료');
+    },
+    onError: (e) => showToast(e instanceof Error ? e.message : '기수 추가 실패', 'error'),
+  });
+
+  const handleAddCohort = () => {
+    if (!cohortModal) return;
+    const cohort = Number(newCohortInput);
+    if (!cohort || isNaN(cohort)) {
+      showToast('유효한 기수를 입력하세요', 'error');
+      return;
+    }
+    addCohortMutation.mutate({ memberId: cohortModal.member.id, cohort });
+  };
+
   const SortHeader = ({ label, k }: { label: string; k: SortKey }) => (
     <th
       className="text-left text-xs font-medium text-gray-500 px-3 py-2 cursor-pointer hover:text-gray-700 whitespace-nowrap"
@@ -123,7 +167,13 @@ export default function MemberTable({ members, onRefresh }: Props) {
                   </a>
                 </td>
                 <td className="px-3 py-2">
-                  <CohortRoleBadges cohorts={m.cohorts} />
+                  <button
+                    onClick={() => { setNewCohortInput(''); setCohortModal({ member: m }); }}
+                    className="hover:opacity-70 transition-opacity"
+                    title="기수/역할 편집"
+                  >
+                    <CohortRoleBadges cohorts={m.cohorts} />
+                  </button>
                 </td>
                 <td className="px-3 py-2">
                   {m.blog ? (
@@ -169,6 +219,7 @@ export default function MemberTable({ members, onRefresh }: Props) {
         )}
       </div>
 
+      {/* 블로그 모달 */}
       <Modal
         open={!!blogModal}
         onClose={() => setBlogModal(null)}
@@ -195,6 +246,71 @@ export default function MemberTable({ members, onRefresh }: Props) {
                 </div>
               ))
             )}
+          </div>
+        )}
+      </Modal>
+
+      {/* 기수 편집 모달 */}
+      <Modal
+        open={!!cohortModal}
+        onClose={() => setCohortModal(null)}
+        title={`${cohortModal?.member.githubId} 기수 편집`}
+      >
+        {cohortModal && (
+          <div className="space-y-4">
+            <div>
+              <p className="text-xs text-gray-500 mb-2">현재 기수</p>
+              {cohortModal.member.cohorts.length === 0 ? (
+                <p className="text-xs text-gray-400">기수 없음</p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {cohortModal.member.cohorts.map((c: MemberCohort) => (
+                    <span
+                      key={c.cohort}
+                      className="inline-flex items-center gap-1 bg-blue-50 border border-blue-200 text-blue-700 text-xs rounded px-2 py-1"
+                    >
+                      {c.cohort}기
+                      {c.roles.length > 0 && (
+                        <span className="text-blue-400">({c.roles.join(', ')})</span>
+                      )}
+                      <button
+                        onClick={() =>
+                          deleteCohortMutation.mutate({
+                            memberId: cohortModal.member.id,
+                            cohort: c.cohort,
+                          })
+                        }
+                        disabled={deleteCohortMutation.isPending}
+                        className="hover:text-red-500 ml-0.5 disabled:opacity-40"
+                        title="기수 삭제"
+                      >
+                        ✕
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 mb-2">기수 추가</p>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  value={newCohortInput}
+                  onChange={(e) => setNewCohortInput(e.target.value)}
+                  placeholder="예: 9"
+                  className="border border-gray-300 rounded px-3 py-1.5 text-sm w-24"
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleAddCohort(); }}
+                />
+                <button
+                  onClick={handleAddCohort}
+                  disabled={addCohortMutation.isPending || !newCohortInput}
+                  className="bg-blue-600 text-white text-sm rounded px-3 py-1.5 hover:bg-blue-700 disabled:opacity-40"
+                >
+                  추가
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </Modal>

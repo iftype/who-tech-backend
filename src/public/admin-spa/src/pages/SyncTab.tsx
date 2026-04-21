@@ -1,6 +1,8 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback } from 'react';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { createEventSource } from '../lib/sse.js';
 import { apiFetch } from '../lib/api.js';
+import { showToast } from '../components/ui/Toast.js';
 import type { AdminStatus } from '../lib/types.js';
 
 type JobType = 'sync' | 'continuous' | 'cohort-repos';
@@ -30,20 +32,27 @@ export default function SyncTab() {
   const [cohortInput, setCohortInput] = useState('');
   const [running, setRunning] = useState<JobType | null>(null);
   const [logs, setLogs] = useState<LogEntry[]>([]);
-  const [status, setStatus] = useState<AdminStatus | null>(null);
   const esRef = useRef<EventSource | null>(null);
   const logEndRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    apiFetch<AdminStatus>('/admin/status').then(setStatus).catch(() => null);
-  }, []);
+  const { data: status, refetch: refetchStatus } = useQuery({
+    queryKey: ['admin-status'],
+    queryFn: () => apiFetch<AdminStatus>('/admin/status'),
+    staleTime: 60_000,
+  });
 
-  useEffect(() => {
-    logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [logs]);
+  const blogSyncMutation = useMutation({
+    mutationFn: () =>
+      apiFetch<{ synced: number; newPosts: number }>('/admin/blog/sync', { method: 'POST' }),
+    onSuccess: (result) => {
+      showToast(`블로그 싱크 완료 — ${result.synced}개 피드, 새 글 ${result.newPosts}개`);
+    },
+    onError: (e) => showToast(e instanceof Error ? e.message : '블로그 싱크 실패', 'error'),
+  });
 
   const addLog = useCallback((type: LogEntry['type'], message: string) => {
     setLogs((prev) => [...prev, { ts: Date.now(), type, message }]);
+    setTimeout(() => logEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
   }, []);
 
   const stop = useCallback(() => {
@@ -79,7 +88,7 @@ export default function SyncTab() {
           addLog('done', '완료');
         }
         stop();
-        apiFetch<AdminStatus>('/admin/status').then(setStatus).catch(() => null);
+        void refetchStatus();
       });
 
       es.addEventListener('error', (e: MessageEvent) => {
@@ -98,7 +107,7 @@ export default function SyncTab() {
         }
       };
     },
-    [running, addLog, stop],
+    [running, addLog, stop, refetchStatus],
   );
 
   const runSync = () => {
@@ -144,8 +153,21 @@ export default function SyncTab() {
         </div>
       )}
 
+      {/* 블로그 싱크 */}
+      <div className="bg-white border border-gray-200 rounded p-4">
+        <h3 className="text-xs font-semibold text-gray-600 mb-2">블로그</h3>
+        <button
+          onClick={() => blogSyncMutation.mutate()}
+          disabled={blogSyncMutation.isPending}
+          className="bg-blue-600 text-white text-sm rounded px-4 py-1.5 hover:bg-blue-700 disabled:opacity-40"
+        >
+          {blogSyncMutation.isPending ? 'RSS 싱크 중...' : 'RSS 전체 싱크'}
+        </button>
+      </div>
+
       {/* 컨트롤 */}
       <div className="bg-white border border-gray-200 rounded p-4 space-y-3">
+        <h3 className="text-xs font-semibold text-gray-600">미션 싱크</h3>
         <div className="flex items-center gap-3 flex-wrap">
           <div>
             <label className="text-xs text-gray-500 block mb-1">기수 (선택)</label>

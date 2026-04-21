@@ -1,107 +1,121 @@
-import { useState, useEffect, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '../lib/api.js';
 import { showToast } from '../components/ui/Toast.js';
 import type { Workspace, BannedWord, IgnoredDomain } from '../lib/types.js';
 
 export default function SettingsTab() {
-  const [workspace, setWorkspace] = useState<Workspace | null>(null);
-  const [blogSyncEnabled, setBlogSyncEnabled] = useState(false);
+  const queryClient = useQueryClient();
+
   const [cohortRulesText, setCohortRulesText] = useState('');
-  const [savingWorkspace, setSavingWorkspace] = useState(false);
-
-  const [bannedWords, setBannedWords] = useState<BannedWord[]>([]);
+  const [blogSyncEnabled, setBlogSyncEnabled] = useState(false);
   const [newWord, setNewWord] = useState('');
-  const [addingWord, setAddingWord] = useState(false);
-
-  const [ignoredDomains, setIgnoredDomains] = useState<IgnoredDomain[]>([]);
   const [newDomain, setNewDomain] = useState('');
-  const [addingDomain, setAddingDomain] = useState(false);
 
-  useEffect(() => {
-    void Promise.all([
-      apiFetch<Workspace>('/admin/workspace').then((w) => {
-        setWorkspace(w);
-        setBlogSyncEnabled(w.blogSyncEnabled);
-        setCohortRulesText(JSON.stringify(w.cohortRules, null, 2));
+  const { data: workspace, isLoading: workspaceLoading } = useQuery({
+    queryKey: ['workspace'],
+    queryFn: () => apiFetch<Workspace>('/admin/workspace'),
+    staleTime: 300_000,
+  });
+
+  // Sync local state when workspace loads
+  const [workspaceInitialized, setWorkspaceInitialized] = useState(false);
+  if (workspace && !workspaceInitialized) {
+    setCohortRulesText(JSON.stringify(workspace.cohortRules, null, 2));
+    setBlogSyncEnabled(workspace.blogSyncEnabled);
+    setWorkspaceInitialized(true);
+  }
+
+  const { data: bannedWords = [] } = useQuery({
+    queryKey: ['banned-words'],
+    queryFn: () => apiFetch<BannedWord[]>('/admin/banned-words'),
+  });
+
+  const { data: ignoredDomains = [] } = useQuery({
+    queryKey: ['ignored-domains'],
+    queryFn: () => apiFetch<IgnoredDomain[]>('/admin/ignored-domains'),
+  });
+
+  const saveWorkspaceMutation = useMutation({
+    mutationFn: (payload: { cohortRules: Record<string, number>; blogSyncEnabled: boolean }) =>
+      apiFetch<Workspace>('/admin/workspace', {
+        method: 'PUT',
+        body: JSON.stringify(payload),
       }),
-      apiFetch<BannedWord[]>('/admin/banned-words').then(setBannedWords),
-      apiFetch<IgnoredDomain[]>('/admin/ignored-domains').then(setIgnoredDomains),
-    ]).catch(() => showToast('설정 로딩 실패', 'error'));
-  }, []);
+    onSuccess: () => {
+      showToast('저장 완료');
+      void queryClient.invalidateQueries({ queryKey: ['workspace'] });
+    },
+    onError: (e) => showToast(e instanceof Error ? e.message : '저장 실패', 'error'),
+  });
 
-  const saveWorkspace = async (e: FormEvent) => {
+  const addBannedWordMutation = useMutation({
+    mutationFn: (word: string) =>
+      apiFetch<BannedWord>('/admin/banned-words', {
+        method: 'POST',
+        body: JSON.stringify({ word }),
+      }),
+    onSuccess: () => {
+      setNewWord('');
+      void queryClient.invalidateQueries({ queryKey: ['banned-words'] });
+    },
+    onError: (e) => showToast(e instanceof Error ? e.message : '추가 실패', 'error'),
+  });
+
+  const deleteBannedWordMutation = useMutation({
+    mutationFn: (id: number) =>
+      apiFetch(`/admin/banned-words/${id}`, { method: 'DELETE' }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['banned-words'] });
+    },
+    onError: (e) => showToast(e instanceof Error ? e.message : '삭제 실패', 'error'),
+  });
+
+  const addIgnoredDomainMutation = useMutation({
+    mutationFn: (domain: string) =>
+      apiFetch<IgnoredDomain>('/admin/ignored-domains', {
+        method: 'POST',
+        body: JSON.stringify({ domain }),
+      }),
+    onSuccess: () => {
+      setNewDomain('');
+      void queryClient.invalidateQueries({ queryKey: ['ignored-domains'] });
+    },
+    onError: (e) => showToast(e instanceof Error ? e.message : '추가 실패', 'error'),
+  });
+
+  const deleteIgnoredDomainMutation = useMutation({
+    mutationFn: (id: number) =>
+      apiFetch(`/admin/ignored-domains/${id}`, { method: 'DELETE' }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['ignored-domains'] });
+    },
+    onError: (e) => showToast(e instanceof Error ? e.message : '삭제 실패', 'error'),
+  });
+
+  const saveWorkspace = (e: FormEvent) => {
     e.preventDefault();
-    setSavingWorkspace(true);
     try {
       const cohortRules = JSON.parse(cohortRulesText) as Record<string, number>;
-      const updated = await apiFetch<Workspace>('/admin/workspace', {
-        method: 'PUT',
-        body: JSON.stringify({ cohortRules, blogSyncEnabled }),
-      });
-      setWorkspace(updated);
-      showToast('저장 완료');
-    } catch (e) {
-      showToast(e instanceof Error ? e.message : '저장 실패', 'error');
-    } finally {
-      setSavingWorkspace(false);
+      saveWorkspaceMutation.mutate({ cohortRules, blogSyncEnabled });
+    } catch {
+      showToast('JSON 형식 오류', 'error');
     }
   };
 
-  const addBannedWord = async (e: FormEvent) => {
+  const addBannedWord = (e: FormEvent) => {
     e.preventDefault();
     if (!newWord.trim()) return;
-    setAddingWord(true);
-    try {
-      const w = await apiFetch<BannedWord>('/admin/banned-words', {
-        method: 'POST',
-        body: JSON.stringify({ word: newWord.trim() }),
-      });
-      setBannedWords((prev) => [...prev, w]);
-      setNewWord('');
-    } catch (e) {
-      showToast(e instanceof Error ? e.message : '추가 실패', 'error');
-    } finally {
-      setAddingWord(false);
-    }
+    addBannedWordMutation.mutate(newWord.trim());
   };
 
-  const deleteBannedWord = async (id: number) => {
-    try {
-      await apiFetch(`/admin/banned-words/${id}`, { method: 'DELETE' });
-      setBannedWords((prev) => prev.filter((w) => w.id !== id));
-    } catch (e) {
-      showToast(e instanceof Error ? e.message : '삭제 실패', 'error');
-    }
-  };
-
-  const addIgnoredDomain = async (e: FormEvent) => {
+  const addIgnoredDomain = (e: FormEvent) => {
     e.preventDefault();
     if (!newDomain.trim()) return;
-    setAddingDomain(true);
-    try {
-      const d = await apiFetch<IgnoredDomain>('/admin/ignored-domains', {
-        method: 'POST',
-        body: JSON.stringify({ domain: newDomain.trim() }),
-      });
-      setIgnoredDomains((prev) => [...prev, d]);
-      setNewDomain('');
-    } catch (e) {
-      showToast(e instanceof Error ? e.message : '추가 실패', 'error');
-    } finally {
-      setAddingDomain(false);
-    }
+    addIgnoredDomainMutation.mutate(newDomain.trim());
   };
 
-  const deleteIgnoredDomain = async (id: number) => {
-    try {
-      await apiFetch(`/admin/ignored-domains/${id}`, { method: 'DELETE' });
-      setIgnoredDomains((prev) => prev.filter((d) => d.id !== id));
-    } catch (e) {
-      showToast(e instanceof Error ? e.message : '삭제 실패', 'error');
-    }
-  };
-
-  if (!workspace) {
+  if (workspaceLoading) {
     return <div className="py-12 text-center text-gray-400 text-sm">로딩 중...</div>;
   }
 
@@ -130,10 +144,10 @@ export default function SettingsTab() {
           </div>
           <button
             type="submit"
-            disabled={savingWorkspace}
+            disabled={saveWorkspaceMutation.isPending}
             className="bg-blue-600 text-white text-sm rounded px-4 py-1.5 hover:bg-blue-700 disabled:opacity-40"
           >
-            {savingWorkspace ? '저장 중...' : '저장'}
+            {saveWorkspaceMutation.isPending ? '저장 중...' : '저장'}
           </button>
         </form>
       </section>
@@ -149,7 +163,7 @@ export default function SettingsTab() {
           />
           <button
             type="submit"
-            disabled={addingWord || !newWord.trim()}
+            disabled={addBannedWordMutation.isPending || !newWord.trim()}
             className="bg-gray-700 text-white text-sm rounded px-3 py-1.5 hover:bg-gray-800 disabled:opacity-40"
           >
             추가
@@ -159,7 +173,12 @@ export default function SettingsTab() {
           {bannedWords.map((w) => (
             <span key={w.id} className="inline-flex items-center gap-1 bg-red-50 border border-red-200 text-red-700 text-xs rounded px-2 py-1">
               {w.word}
-              <button onClick={() => void deleteBannedWord(w.id)} className="hover:text-red-900 ml-0.5">✕</button>
+              <button
+                onClick={() => deleteBannedWordMutation.mutate(w.id)}
+                className="hover:text-red-900 ml-0.5"
+              >
+                ✕
+              </button>
             </span>
           ))}
         </div>
@@ -176,7 +195,7 @@ export default function SettingsTab() {
           />
           <button
             type="submit"
-            disabled={addingDomain || !newDomain.trim()}
+            disabled={addIgnoredDomainMutation.isPending || !newDomain.trim()}
             className="bg-gray-700 text-white text-sm rounded px-3 py-1.5 hover:bg-gray-800 disabled:opacity-40"
           >
             추가
@@ -186,7 +205,12 @@ export default function SettingsTab() {
           {ignoredDomains.map((d) => (
             <span key={d.id} className="inline-flex items-center gap-1 bg-gray-100 border border-gray-300 text-gray-700 text-xs rounded px-2 py-1">
               {d.domain}
-              <button onClick={() => void deleteIgnoredDomain(d.id)} className="hover:text-gray-900 ml-0.5">✕</button>
+              <button
+                onClick={() => deleteIgnoredDomainMutation.mutate(d.id)}
+                className="hover:text-gray-900 ml-0.5"
+              >
+                ✕
+              </button>
             </span>
           ))}
         </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '../lib/api.js';
 import type { Member } from '../lib/types.js';
 
@@ -11,32 +11,23 @@ export interface MemberFilters {
 }
 
 export function useMembers(filters: MemberFilters = {}) {
-  const [members, setMembers] = useState<Member[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const params = new URLSearchParams();
+  if (filters.q) params.set('q', filters.q);
+  if (filters.cohort !== undefined) params.set('cohort', String(filters.cohort));
+  if (filters.hasBlog !== undefined) params.set('hasBlog', String(filters.hasBlog));
+  if (filters.track) params.set('track', filters.track);
+  if (filters.role) params.set('role', filters.role);
 
-  const fetch = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const params = new URLSearchParams();
-      if (filters.q) params.set('q', filters.q);
-      if (filters.cohort !== undefined) params.set('cohort', String(filters.cohort));
-      if (filters.hasBlog !== undefined) params.set('hasBlog', String(filters.hasBlog));
-      if (filters.track) params.set('track', filters.track);
-      if (filters.role) params.set('role', filters.role);
-      const data = await apiFetch<Member[]>(`/admin/members?${params}`);
-      setMembers(data);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setLoading(false);
-    }
-  }, [filters.q, filters.cohort, filters.hasBlog, filters.track, filters.role]);
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ['members', filters],
+    queryFn: () => apiFetch<Member[]>(`/admin/members?${params}`),
+    staleTime: 30_000,
+  });
 
-  useEffect(() => {
-    void fetch();
-  }, [fetch]);
-
-  return { members, loading, error, refetch: fetch };
+  return {
+    members: data ?? [],
+    loading: isLoading,
+    error: error ? (error instanceof Error ? error.message : String(error)) : null,
+    refetch,
+  };
 }

@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '../lib/api.js';
 import { showToast } from '../components/ui/Toast.js';
 import type { MissionRepo } from '../lib/types.js';
@@ -6,40 +7,27 @@ import type { MissionRepo } from '../lib/types.js';
 type StatusFilter = '' | 'active' | 'inactive' | 'once';
 
 export default function RepoTab() {
-  const [repos, setRepos] = useState<MissionRepo[]>([]);
-  const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<StatusFilter>('');
-  const [discovering, setDiscovering] = useState(false);
   const [syncing, setSyncing] = useState<number | null>(null);
   const [deleting, setDeleting] = useState<number | null>(null);
+  const queryClient = useQueryClient();
 
-  const fetchRepos = useCallback(async () => {
-    setLoading(true);
-    try {
+  const { data: repos = [], isLoading } = useQuery({
+    queryKey: ['repos', status],
+    queryFn: () => {
       const params = status ? `?status=${status}` : '';
-      const data = await apiFetch<MissionRepo[]>(`/admin/repos${params}`);
-      setRepos(data);
-    } catch (e) {
-      showToast(e instanceof Error ? e.message : '로딩 실패', 'error');
-    } finally {
-      setLoading(false);
-    }
-  }, [status]);
+      return apiFetch<MissionRepo[]>(`/admin/repos${params}`);
+    },
+  });
 
-  useEffect(() => { void fetchRepos(); }, [fetchRepos]);
-
-  const discover = async () => {
-    setDiscovering(true);
-    try {
-      const result = await apiFetch<{ added: number }>('/admin/repos/discover', { method: 'POST' });
+  const discoverMutation = useMutation({
+    mutationFn: () => apiFetch<{ added: number }>('/admin/repos/discover', { method: 'POST' }),
+    onSuccess: (result) => {
       showToast(`탐색 완료 — ${result.added}개 추가`);
-      void fetchRepos();
-    } catch (e) {
-      showToast(e instanceof Error ? e.message : '탐색 실패', 'error');
-    } finally {
-      setDiscovering(false);
-    }
-  };
+      void queryClient.invalidateQueries({ queryKey: ['repos'] });
+    },
+    onError: (e) => showToast(e instanceof Error ? e.message : '탐색 실패', 'error'),
+  });
 
   const syncRepo = async (repo: MissionRepo) => {
     setSyncing(repo.id);
@@ -60,7 +48,7 @@ export default function RepoTab() {
         method: 'PATCH',
         body: JSON.stringify({ status: newStatus }),
       });
-      setRepos((prev) => prev.map((r) => (r.id === repo.id ? { ...r, status: newStatus } : r)));
+      void queryClient.invalidateQueries({ queryKey: ['repos'] });
     } catch (e) {
       showToast(e instanceof Error ? e.message : '수정 실패', 'error');
     }
@@ -72,7 +60,7 @@ export default function RepoTab() {
     try {
       await apiFetch(`/admin/repos/${repo.id}`, { method: 'DELETE' });
       showToast('삭제 완료');
-      setRepos((prev) => prev.filter((r) => r.id !== repo.id));
+      void queryClient.invalidateQueries({ queryKey: ['repos'] });
     } catch (e) {
       showToast(e instanceof Error ? e.message : '삭제 실패', 'error');
     } finally {
@@ -113,15 +101,15 @@ export default function RepoTab() {
         </div>
         <span className="text-xs text-gray-400">{repos.length}개</span>
         <button
-          onClick={() => void discover()}
-          disabled={discovering}
+          onClick={() => discoverMutation.mutate()}
+          disabled={discoverMutation.isPending}
           className="ml-auto bg-purple-600 text-white text-sm rounded px-3 py-1.5 hover:bg-purple-700 disabled:opacity-40"
         >
-          {discovering ? '탐색 중...' : '레포 탐색'}
+          {discoverMutation.isPending ? '탐색 중...' : '레포 탐색'}
         </button>
       </div>
 
-      {loading ? (
+      {isLoading ? (
         <div className="py-12 text-center text-gray-400 text-sm">로딩 중...</div>
       ) : (
         <div className="overflow-x-auto rounded border border-gray-200">

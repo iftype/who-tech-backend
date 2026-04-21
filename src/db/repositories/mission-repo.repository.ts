@@ -3,7 +3,11 @@ import type { PrismaClient, Prisma } from '@prisma/client';
 export function createMissionRepoRepository(db: PrismaClient) {
   return {
     findMany: (where: Prisma.MissionRepoWhereInput, orderBy?: Prisma.MissionRepoOrderByWithRelationInput[]) =>
-      db.missionRepo.findMany({ where, ...(orderBy !== undefined ? { orderBy } : {}) }),
+      db.missionRepo.findMany({
+        where,
+        ...(orderBy !== undefined ? { orderBy } : {}),
+        include: { _count: { select: { submissions: true } } },
+      }),
 
     findByIdOrThrow: (id: number) => db.missionRepo.findUniqueOrThrow({ where: { id } }),
 

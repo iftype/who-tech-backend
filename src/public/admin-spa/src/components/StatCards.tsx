@@ -1,13 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '../lib/api.js';
 import type { AdminStatus } from '../lib/types.js';
 
 export default function StatCards() {
-  const [status, setStatus] = useState<AdminStatus | null>(null);
-
-  useEffect(() => {
-    apiFetch<AdminStatus>('/admin/status').then(setStatus).catch(() => null);
-  }, []);
+  const { data: status } = useQuery({
+    queryKey: ['admin-status'],
+    queryFn: () => apiFetch<AdminStatus>('/admin/status'),
+    staleTime: 60_000,
+  });
 
   const cards = [
     { label: '멤버', value: status?.memberCount ?? '—' },
