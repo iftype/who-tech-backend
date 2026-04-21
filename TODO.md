@@ -26,9 +26,12 @@
 
 ## 2️⃣ 전체 서버 코드 리팩토링
 
-- 하네스 문서(.claude/rules/, .claude/docs/) 업데이트 포함
-- 테스트 훅으로 기능 보호 후 리팩토링 진행 (기능 변경 없음)
-- 주요 대상: src/features/{sync,blog,member}/
+- [x] blog.service.ts (309→107): blog.rss.ts 분리
+- [x] member.service.ts (365→218): member.response.ts, member.profile-refresh.ts 분리
+- [x] sync.service.ts (436→394): sync.pr-parser.ts 분리
+- [ ] sync.service.ts (394줄) 추가 분리 여지 있음 (resolveProfile, upsertMemberAndSubmission)
+- [ ] blog.admin.service.ts (279줄), repo.service.ts (256줄) 분리 검토
+- [ ] 하네스 문서(.claude/rules/, .claude/docs/) 업데이트
 
 ## 3️⃣ Dependabot 취약점 패치
 

@@ -6,15 +6,10 @@ import type { WorkspaceRepository } from '../../db/repositories/workspace.reposi
 import type { BannedWordRepository } from '../../db/repositories/banned-word.repository.js';
 import type { IgnoredDomainRepository } from '../../db/repositories/ignored-domain.repository.js';
 import { parseCohorts } from '../../shared/cohort-regex.js';
-import { mergePreviousGithubIds, shouldRefreshProfile } from '../../shared/github-profile.js';
-import { HttpError } from '../../shared/http.js';
-import { mergeNicknameStat, resolveDisplayNickname } from '../../shared/nickname.js';
-import { fetchRepoPRs, fetchUserBlogCandidates } from './github.service.js';
-import { probeRss } from '../blog/blog.rss.js';
+import { createRepoSyncer } from './sync.repo-sync.js';
 import type { CohortRule } from '../../shared/types/index.js';
 import type { ActivityLogService } from '../activity-log/activity-log.service.js';
-import { parsePRsToSubmissions } from './sync.pr-parser.js';
-export { parsePRsToSubmissions };
+export { parsePRsToSubmissions } from './sync.pr-parser.js';
 
 export function createSyncService(deps: {
   memberRepo: MemberRepository;
@@ -35,281 +30,44 @@ export function createSyncService(deps: {
     activityLogService,
   } = deps;
 
-  type ProfileCacheEntry = {
-    githubUserId: number | null;
-    githubId: string;
-    blog: string | null;
-    avatarUrl: string | null;
-  };
+  const { syncRepo } = createRepoSyncer({
+    memberRepo,
+    missionRepoRepo,
+    submissionRepo,
+    bannedWordRepo,
+    ignoredDomainRepo,
+  });
 
-  type ResolvedProfile = {
-    githubId: string;
-    githubUserId: number | null;
-    blog: string | null;
-    avatarUrl: string | null;
-    profileFetchedAt: Date | null;
-    profileRefreshError: string | null;
-  };
-
-  type ExistingMember = {
-    blog?: string | null;
-    avatarUrl?: string | null;
-    profileFetchedAt?: Date | null;
-    profileRefreshError?: string | null;
-    githubUserId?: number | null;
-    githubId?: string;
-    previousGithubIds?: string | null;
-    manualNickname?: string | null;
-    nickname?: string | null;
-    nicknameStats?: string | null;
-  } | null;
-
-  const fetchAndParse = async (
+  const runRepos = async (
     octokit: Octokit,
     workspaceId: number,
-    org: string,
-    repo: { name: string; lastSyncAt?: Date | null },
+    repos: { id: number; name: string; track?: string | null; lastSyncAt?: Date | null }[],
     cohortRules: CohortRule[],
-  ): Promise<{
-    submissions: ReturnType<typeof parsePRsToSubmissions>;
-    bannedWords: Set<string>;
-    ignoredDomains: string[];
-  }> => {
-    const since = repo.lastSyncAt ? new Date(repo.lastSyncAt.getTime() - 5 * 60 * 1000) : undefined;
-    const maxPages = since ? 1 : 30;
-
-    const [bannedWordRows, ignoredDomainRows] = await Promise.all([
-      bannedWordRepo.findAll(workspaceId),
-      ignoredDomainRepo.findAll(workspaceId),
-    ]);
-    const bannedWords = new Set(bannedWordRows.map((r) => r.word));
-    const ignoredDomains = ignoredDomainRows.map((r) => r.domain);
-
-    let prs: Awaited<ReturnType<typeof fetchRepoPRs>>;
-    try {
-      prs = await fetchRepoPRs(octokit, org, repo.name, {
-        ...(since ? { since } : {}),
-        maxPages,
-      });
-    } catch (error) {
-      const detail = error instanceof Error ? error.message : String(error);
-      throw new HttpError(500, `repo sync fetch failed: ${repo.name} — ${detail}`);
-    }
-
-    const submissions = parsePRsToSubmissions(prs, cohortRules);
-    return { submissions, bannedWords, ignoredDomains };
-  };
-
-  const resolveProfile = async (
-    octokit: Octokit,
-    s: ReturnType<typeof parsePRsToSubmissions>[number],
-    existingMember: ExistingMember,
-    profileCache: Map<string, ProfileCacheEntry>,
-    ignoredDomains: string[],
-  ): Promise<ResolvedProfile> => {
-    let blog = existingMember?.blog ?? null;
-    let avatarUrl = existingMember?.avatarUrl ?? null;
-    let githubId = s.githubId;
-    let githubUserId = s.githubUserId ?? existingMember?.githubUserId ?? null;
-    let profileFetchedAt = existingMember?.profileFetchedAt ?? null;
-    let profileRefreshError: string | null = existingMember?.profileRefreshError ?? null;
-
-    if (!existingMember?.blog || !existingMember?.avatarUrl || shouldRefreshProfile(existingMember?.profileFetchedAt)) {
-      const cacheKey = githubUserId != null ? `id:${githubUserId}` : `login:${s.githubId}`;
-      if (!profileCache.has(cacheKey)) {
-        try {
-          const { profile, candidates } = await fetchUserBlogCandidates(
-            octokit,
-            { githubUserId, username: s.githubId },
-            ignoredDomains,
-          );
-          let validBlog = null;
-          for (const url of candidates) {
-            const rssCheck = await probeRss(url);
-            if (rssCheck.status === 'available') {
-              validBlog = url;
-              break;
-            }
-          }
-          profileCache.set(cacheKey, {
-            ...profile,
-            blog: validBlog || (candidates[0] ?? null),
-          });
-          profileRefreshError = null;
-        } catch (error) {
-          profileRefreshError = error instanceof Error ? error.message : String(error);
-          profileCache.set(cacheKey, {
-            githubUserId,
-            githubId: s.githubId,
-            blog: null,
-            avatarUrl: null,
-          });
-        }
-      }
-      const profile = profileCache.get(cacheKey) ?? {
-        githubUserId,
-        githubId: s.githubId,
-        blog: null,
-        avatarUrl: null,
-      };
-      // 탈퇴 계정은 login이 "ghost"로 반환됨 — 기존 githubId 유지
-      githubId = profile.githubId === 'ghost' ? s.githubId : profile.githubId;
-      githubUserId = profile.githubUserId ?? githubUserId;
-      blog =
-        profile.githubId === 'ghost' ? (existingMember?.blog ?? null) : (profile.blog ?? existingMember?.blog ?? null);
-      avatarUrl =
-        profile.githubId === 'ghost'
-          ? (existingMember?.avatarUrl ?? null)
-          : (profile.avatarUrl ?? existingMember?.avatarUrl ?? null);
-      profileFetchedAt = new Date();
-      if (profile.avatarUrl || profile.blog || profile.githubId !== s.githubId) {
-        profileRefreshError = null;
-      }
-    }
-
-    return { githubId, githubUserId, blog, avatarUrl, profileFetchedAt, profileRefreshError };
-  };
-
-  const upsertMemberAndSubmission = async (
-    workspaceId: number,
-    s: ReturnType<typeof parsePRsToSubmissions>[number],
-    profile: ResolvedProfile,
-    repo: { id: number },
-    statsValue: string | null,
-    displayNickname: string | null,
-    existingMember: ExistingMember,
-  ): Promise<void> => {
-    const { githubId, githubUserId, blog, avatarUrl, profileFetchedAt, profileRefreshError } = profile;
-
-    const previousGithubIds = mergePreviousGithubIds(
-      existingMember?.previousGithubIds,
-      existingMember?.githubId,
-      githubId,
-    );
-
-    if (!githubUserId) {
-      throw new Error(`githubUserId is missing for user: ${s.githubId}`);
-    }
-
-    const member = await memberRepo.upsert(workspaceId, githubUserId, {
-      githubId,
-      githubUserId,
-      previousGithubIds: previousGithubIds ?? null,
-      nickname: displayNickname,
-      avatarUrl: avatarUrl ?? null,
-      nicknameStats: statsValue,
-      profileFetchedAt: profileFetchedAt ?? null,
-      profileRefreshError: profileRefreshError ?? null,
-      blog: blog ?? null,
-      workspaceId,
-    });
-
-    if (s.cohort) {
-      await memberRepo.upsertParticipation(member.id, s.cohort, 'crew');
-    }
-
-    await submissionRepo.upsert({
-      where: {
-        prNumber_missionRepoId: { prNumber: s.prNumber, missionRepoId: repo.id },
-      },
-      create: {
-        prNumber: s.prNumber,
-        prUrl: s.prUrl,
-        title: s.title,
-        status: s.status,
-        submittedAt: s.submittedAt,
-        memberId: member.id,
-        missionRepoId: repo.id,
-      },
-      update: {
-        memberId: member.id,
-        title: s.title,
-        prUrl: s.prUrl,
-        status: s.status,
-      },
-    });
-  };
-
-  const syncRepo = async (
-    octokit: Octokit,
-    workspaceId: number,
     org: string,
-    repo: {
-      id: number;
-      name: string;
-      track?: string | null;
-      lastSyncAt?: Date | null;
-    },
-    cohortRules: CohortRule[],
-    onProgress?: (step: { total: number; processed: number; synced: number; percent: number; phase: string }) => void,
-  ): Promise<{ synced: number; failures: { prNumber: number; prUrl: string; error: string }[] }> => {
-    const isCommonMission = repo.track === null || repo.track === undefined;
+    logPrefix: string,
+    onProgress?: (step: { repo: string; done: number; total: number; synced: number }) => void,
+  ) => {
+    let totalSynced = 0;
+    let reposSynced = 0;
 
-    const { submissions, bannedWords, ignoredDomains } = await fetchAndParse(
-      octokit,
-      workspaceId,
-      org,
-      repo,
-      cohortRules,
-    );
-
-    const total = submissions.length;
-    const profileCache = new Map<string, ProfileCacheEntry>();
-    let synced = 0;
-    let processed = 0;
-    const failures: { prNumber: number; prUrl: string; error: string }[] = [];
-
-    onProgress?.({ total, processed, synced, percent: total === 0 ? 100 : 0, phase: 'PR 파싱 완료' });
-
-    for (const s of submissions) {
+    for (let i = 0; i < repos.length; i++) {
+      const repo = repos[i]!;
       try {
-        const existingMember =
-          (s.githubUserId != null ? await memberRepo.findByGithubUserId(s.githubUserId, workspaceId) : null) ??
-          (await memberRepo.findByGithubId(s.githubId, workspaceId));
-
-        // 공통 미션: 이미 알려진 멤버에만 submission 연결
-        if (isCommonMission && !existingMember) continue;
-
-        // 금지어 필터 후 닉네임 통계 업데이트
-        let statsValue = existingMember?.nicknameStats ?? null;
-        for (const token of s.nicknameTokens) {
-          if (!bannedWords.has(token)) {
-            const updated = mergeNicknameStat(statsValue, token, s.submittedAt);
-            statsValue = JSON.stringify(updated);
-          }
+        const { synced } = await syncRepo(octokit, workspaceId, org, repo, cohortRules);
+        totalSynced += synced;
+        reposSynced++;
+        onProgress?.({ repo: repo.name, done: i + 1, total: repos.length, synced });
+        if (synced > 0) {
+          await activityLogService.addLog('sync', `${logPrefix}: [${repo.name}] synced ${synced} items`);
         }
-        const displayNickname = resolveDisplayNickname(
-          existingMember?.manualNickname,
-          statsValue,
-          existingMember?.nickname ?? null,
-        );
-
-        const profile = await resolveProfile(octokit, s, existingMember, profileCache, ignoredDomains);
-
-        await upsertMemberAndSubmission(workspaceId, s, profile, repo, statsValue, displayNickname, existingMember);
-
-        synced++;
       } catch (err) {
-        failures.push({
-          prNumber: s.prNumber,
-          prUrl: s.prUrl,
-          error: err instanceof Error ? err.message : String(err),
-        });
-      } finally {
-        processed++;
-        onProgress?.({
-          total,
-          processed,
-          synced,
-          percent: total === 0 ? 100 : Math.round((processed / total) * 100),
-          phase: 'PR 처리 중',
-        });
+        const message = err instanceof Error ? err.message : String(err);
+        await activityLogService.addLog('sync_error', `${logPrefix} Failed: [${repo.name}] - ${message}`);
+        onProgress?.({ repo: `${repo.name} (failed)`, done: i + 1, total: repos.length, synced: 0 });
       }
     }
 
-    await missionRepoRepo.touch(repo.id);
-    onProgress?.({ total, processed, synced, percent: 100, phase: '완료' });
-    return { synced, failures };
+    return { totalSynced, reposSynced };
   };
 
   const syncWorkspace = async (
@@ -317,75 +75,46 @@ export function createSyncService(deps: {
     workspaceId: number,
     onProgress?: (step: { repo: string; done: number; total: number; synced: number }) => void,
     cohort?: number,
-  ): Promise<{ totalSynced: number; reposSynced: number }> => {
+  ) => {
     const workspace = await workspaceRepo.findByIdOrThrow(workspaceId);
     const cohortRules: CohortRule[] = JSON.parse(workspace.cohortRules);
-
     const repos = await missionRepoRepo.findMany({ workspaceId });
     const activeRepos = repos.filter((r) => {
       if (r.status !== 'active') return false;
       if (cohort != null && !parseCohorts(r.cohorts).includes(cohort)) return false;
       return true;
     });
-
-    let totalSynced = 0;
-    let reposSynced = 0;
-
-    for (let i = 0; i < activeRepos.length; i++) {
-      const repo = activeRepos[i]!;
-      try {
-        const { synced } = await syncRepo(octokit, workspaceId, workspace.githubOrg, repo, cohortRules);
-        totalSynced += synced;
-        reposSynced++;
-        onProgress?.({ repo: repo.name, done: i + 1, total: activeRepos.length, synced });
-
-        if (synced > 0) {
-          await activityLogService.addLog('sync', `Workspace Sync: [${repo.name}] synced ${synced} items`);
-        }
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        await activityLogService.addLog('sync_error', `Workspace Sync Failed: [${repo.name}] - ${message}`);
-        onProgress?.({ repo: `${repo.name} (failed)`, done: i + 1, total: activeRepos.length, synced: 0 });
-      }
-    }
-
+    const result = await runRepos(
+      octokit,
+      workspaceId,
+      activeRepos,
+      cohortRules,
+      workspace.githubOrg,
+      'Workspace Sync',
+      onProgress,
+    );
     await workspaceRepo.touch(workspaceId);
-    return { totalSynced, reposSynced };
+    return result;
   };
 
   const syncContinuousRepos = async (
     octokit: Octokit,
     workspaceId: number,
     onProgress?: (step: { repo: string; done: number; total: number; synced: number }) => void,
-  ): Promise<{ totalSynced: number; reposSynced: number }> => {
+  ) => {
     const workspace = await workspaceRepo.findByIdOrThrow(workspaceId);
     const cohortRules: CohortRule[] = JSON.parse(workspace.cohortRules);
-
     const repos = await missionRepoRepo.findMany({ workspaceId });
     const continuousRepos = repos.filter((r) => r.status === 'active' && r.syncMode === 'continuous');
-
-    let totalSynced = 0;
-    let reposSynced = 0;
-
-    for (let i = 0; i < continuousRepos.length; i++) {
-      const repo = continuousRepos[i]!;
-      try {
-        const { synced } = await syncRepo(octokit, workspaceId, workspace.githubOrg, repo, cohortRules);
-        totalSynced += synced;
-        reposSynced++;
-        onProgress?.({ repo: repo.name, done: i + 1, total: continuousRepos.length, synced });
-
-        if (synced > 0) {
-          await activityLogService.addLog('sync', `Continuous Sync: [${repo.name}] synced ${synced} items`);
-        }
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        await activityLogService.addLog('sync_error', `Continuous Sync Failed: [${repo.name}] - ${message}`);
-        onProgress?.({ repo: `${repo.name} (failed)`, done: i + 1, total: continuousRepos.length, synced: 0 });
-      }
-    }
-
-    return { totalSynced, reposSynced };
+    return runRepos(
+      octokit,
+      workspaceId,
+      continuousRepos,
+      cohortRules,
+      workspace.githubOrg,
+      'Continuous Sync',
+      onProgress,
+    );
   };
 
   return { syncRepo, syncWorkspace, syncContinuousRepos };
