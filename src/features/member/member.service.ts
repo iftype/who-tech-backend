@@ -1,19 +1,14 @@
 import type { Octokit } from '@octokit/rest';
-import type { MemberRepository, MemberWithRelations } from '../../db/repositories/member.repository.js';
+import type { MemberRepository } from '../../db/repositories/member.repository.js';
 import type { BlogPostRepository } from '../../db/repositories/blog-post.repository.js';
 import type { BannedWordRepository } from '../../db/repositories/banned-word.repository.js';
 import type { WorkspaceService } from '../workspace/workspace.service.js';
 import { normalizeBlogUrl } from '../../shared/blog.js';
 import { buildCohortList } from '../../shared/member-cohort.js';
-import { mergePreviousGithubIds, shouldRefreshProfile } from '../../shared/github-profile.js';
-import {
-  resolveDisplayNickname,
-  parseNicknameStats,
-  extractNicknameTokens,
-  mergeNicknameStat,
-} from '../../shared/nickname.js';
-import { fetchUserProfile, fetchUserBlogCandidates } from '../sync/github.service.js';
-import { probeRss } from '../blog/blog.service.js';
+import { shouldRefreshProfile } from '../../shared/github-profile.js';
+import { fetchUserProfile } from '../sync/github.service.js';
+import { toMemberResponse } from './member.response.js';
+import { refreshMemberProfileById } from './member.profile-refresh.js';
 
 export function createMemberService(deps: {
   memberRepo: MemberRepository;
@@ -23,119 +18,6 @@ export function createMemberService(deps: {
   octokit: Octokit;
 }) {
   const { memberRepo, blogPostRepo, bannedWordRepo, workspaceService, octokit } = deps;
-
-  const toResponse = (member: MemberWithRelations) => {
-    const cohorts = buildCohortList(member.memberCohorts);
-
-    const primaryCohort = cohorts[0];
-
-    return {
-      id: member.id,
-      githubId: member.githubId,
-      githubUserId: member.githubUserId,
-      nickname: resolveDisplayNickname(member.manualNickname, member.nicknameStats, member.nickname),
-      manualNickname: member.manualNickname,
-      nicknameStats: parseNicknameStats(member.nicknameStats),
-      avatarUrl: member.avatarUrl,
-      blog: member.blog,
-      lastPostedAt: member.lastPostedAt,
-      profileFetchedAt: member.profileFetchedAt,
-      profileRefreshError: member.profileRefreshError,
-      rssStatus: member.rssStatus,
-      rssUrl: member.rssUrl,
-      rssCheckedAt: member.rssCheckedAt,
-      rssError: member.rssError,
-      cohorts,
-      cohort: primaryCohort?.cohort ?? null,
-      roles: primaryCohort?.roles ?? ['crew'],
-      track: member.track ?? null,
-      tracks: [
-        ...new Set([
-          ...(member.track ? [member.track] : []),
-          ...member.submissions.map((s) => s.missionRepo.track).filter((t) => t !== null),
-        ]),
-      ],
-      blogPosts: member.blogPosts,
-      submissions: member.submissions,
-      _count: member._count,
-    };
-  };
-
-  async function refreshMemberProfileById(id: number, bannedWords: Set<string>, fetchGithub: boolean) {
-    const member = await memberRepo.findByIdWithRelations(id);
-    if (!member) {
-      throw new Error('member not found');
-    }
-
-    // nicknameStats는 항상 재계산
-    let statsValue: string | null = null;
-    for (const submission of member.submissions) {
-      for (const token of extractNicknameTokens(submission.title)) {
-        if (!bannedWords.has(token)) {
-          statsValue = JSON.stringify(mergeNicknameStat(statsValue, token, submission.submittedAt));
-        }
-      }
-    }
-
-    // refresh 시 fallback으로 기존 nickname을 쓰면 ban된 값이 그대로 남음 → null로 교체
-    const resolvedNickname = resolveDisplayNickname(member.manualNickname, statsValue, null);
-
-    if (!fetchGithub) {
-      const updated = await memberRepo.update(id, { nicknameStats: statsValue, nickname: resolvedNickname });
-      return toResponse(updated);
-    }
-
-    let profileRefreshError: string | null = null;
-    let profileFields: {
-      githubId: string;
-      githubUserId: number | null;
-      previousGithubIds: string | null;
-      avatarUrl: string | null;
-      blog?: string | null;
-    };
-
-    try {
-      const { profile, candidates } = await fetchUserBlogCandidates(octokit, {
-        githubUserId: member.githubUserId,
-        username: member.githubId,
-      });
-      let validBlog: string | null = null;
-      for (const url of candidates) {
-        const rssCheck = await probeRss(url);
-        if (rssCheck.status === 'available') {
-          validBlog = url;
-          break;
-        }
-      }
-      const resolvedBlog = validBlog ?? candidates[0] ?? null;
-      profileFields = {
-        githubId: profile.githubId,
-        githubUserId: profile.githubUserId,
-        previousGithubIds: mergePreviousGithubIds(member.previousGithubIds, member.githubId, profile.githubId),
-        avatarUrl: profile.avatarUrl ?? member.avatarUrl ?? null,
-        blog: resolvedBlog ?? member.blog ?? null,
-      };
-    } catch (error) {
-      console.error(`[refreshMemberProfile ERROR] ${member.githubId}:`, error);
-      profileFields = {
-        githubId: member.githubId,
-        githubUserId: member.githubUserId ?? null,
-        previousGithubIds: member.previousGithubIds ?? null,
-        avatarUrl: member.avatarUrl ?? null,
-      };
-      profileRefreshError = error instanceof Error ? error.message : String(error);
-    }
-
-    const updated = await memberRepo.update(id, {
-      ...profileFields,
-      nicknameStats: statsValue,
-      nickname: resolvedNickname,
-      profileFetchedAt: new Date(),
-      profileRefreshError,
-    });
-
-    return toResponse(updated);
-  }
 
   return {
     listMembers: async (filters?: {
@@ -147,13 +29,13 @@ export function createMemberService(deps: {
     }) => {
       const workspace = await workspaceService.getOrThrow();
       const members = await memberRepo.findWithFilters(workspace.id, filters);
-      return members.map(toResponse);
+      return members.map(toMemberResponse);
     },
 
     getByGithubId: async (githubId: string) => {
       const workspace = await workspaceService.getOrThrow();
       const member = await memberRepo.findByGithubId(githubId, workspace.id);
-      return member ? toResponse(member) : null;
+      return member ? toMemberResponse(member) : null;
     },
 
     createMember: async (input: {
@@ -167,7 +49,6 @@ export function createMemberService(deps: {
     }) => {
       const workspace = await workspaceService.getOrThrow();
 
-      // githubUserId로 실제 로그인 조회 (UI에서 #12345 형식으로 입력한 경우)
       let resolvedGithubId = input.githubId;
       let resolvedGithubUserId = input.githubUserId ?? null;
       let resolvedAvatarUrl: string | null = null;
@@ -184,7 +65,6 @@ export function createMemberService(deps: {
         // 프로필 fetch 실패해도 생성은 진행
       }
 
-      // 이미 존재하는 멤버인지 확인 (githubUserId 또는 githubId 기준)
       const existing =
         (resolvedGithubUserId != null
           ? await memberRepo.findByGithubUserId(resolvedGithubUserId, workspace.id)
@@ -192,7 +72,6 @@ export function createMemberService(deps: {
 
       let memberId: number;
       if (existing) {
-        // 이미 있으면 입력값으로 덮어쓸 필드만 업데이트
         await memberRepo.update(existing.id, {
           ...(resolvedAvatarUrl ? { avatarUrl: resolvedAvatarUrl, profileFetchedAt: new Date() } : {}),
           ...(input.nickname ? { manualNickname: input.nickname } : {}),
@@ -239,7 +118,7 @@ export function createMemberService(deps: {
       }
 
       const updated = await memberRepo.findByIdWithRelations(memberId);
-      return updated ? toResponse(updated) : null;
+      return updated ? toMemberResponse(updated) : null;
     },
 
     updateMember: async (
@@ -274,7 +153,7 @@ export function createMemberService(deps: {
       }
 
       const updated = await memberRepo.findByIdWithRelations(id);
-      return updated ? toResponse(updated) : null;
+      return updated ? toMemberResponse(updated) : null;
     },
 
     changeMemberCohort: async (id: number, oldCohort: number, newCohort: number) => {
@@ -287,18 +166,18 @@ export function createMemberService(deps: {
         await memberRepo.upsertParticipation(id, newCohort, role);
       }
       const updated = await memberRepo.findByIdWithRelations(id);
-      return updated ? toResponse(updated) : null;
+      return updated ? toMemberResponse(updated) : null;
     },
 
     deleteMemberCohort: async (id: number, cohort: number) => {
       await memberRepo.deleteParticipationsByCohort(id, cohort);
       const updated = await memberRepo.findByIdWithRelations(id);
-      return updated ? toResponse(updated) : null;
+      return updated ? toMemberResponse(updated) : null;
     },
 
     get: async (id: number) => {
       const member = await memberRepo.findByIdWithRelations(id);
-      return member ? toResponse(member) : null;
+      return member ? toMemberResponse(member) : null;
     },
 
     getMemberBlogPosts: (id: number) => blogPostRepo.findByMember(id),
@@ -307,7 +186,7 @@ export function createMemberService(deps: {
       const workspace = await workspaceService.getOrThrow();
       const bannedWordRows = await bannedWordRepo.findAll(workspace.id);
       const bannedWords = new Set(bannedWordRows.map((r) => r.word));
-      return refreshMemberProfileById(id, bannedWords, true);
+      return refreshMemberProfileById(id, bannedWords, true, memberRepo, octokit);
     },
 
     refreshWorkspaceProfiles: async (input?: {
@@ -325,7 +204,6 @@ export function createMemberService(deps: {
         ...(input?.cohort !== undefined ? { cohort: input.cohort } : {}),
       });
 
-      // GitHub API 호출 대상: stale 멤버만, limit 적용 (force=true면 전체)
       const staleLimit = input?.limit ?? 30;
       const githubTargetIds = new Set(
         allMembers
@@ -338,11 +216,10 @@ export function createMemberService(deps: {
       let refreshed = 0;
       const failures: { githubId: string; reason: string }[] = [];
 
-      // 닉네임 재계산은 전체 멤버 대상 (limit 없음)
       for (const member of allMembers) {
         checked += 1;
         try {
-          await refreshMemberProfileById(member.id, bannedWords, githubTargetIds.has(member.id));
+          await refreshMemberProfileById(member.id, bannedWords, githubTargetIds.has(member.id), memberRepo, octokit);
           refreshed += 1;
         } catch (error) {
           const reason = error instanceof Error ? error.message : String(error);
