@@ -2,6 +2,37 @@
 
 ---
 
+## 2026-04-21
+
+**어드민 React SPA 전면 교체 (Phase 0-6)**
+
+- **왜**: 기존 vanilla JS 어드민(`src/public/admin.html`, `scipts/`)을 Vite + React + Tailwind 기반 SPA로 교체
+- **진입점**: `GET /admin` → `/admin/ui/admin-dist/` 리다이렉트
+- **SPA 위치**: `src/public/admin-spa/` (빌드 출력: `dist/public/admin-dist/`)
+- **로컬 개발**: `cd src/public/admin-spa && npm run dev` (포트 5173, `/admin` → 3000 프록시)
+- **빌드**: `npm run build:admin` or `npm run build` (전체 빌드에 포함)
+- **인증**: localStorage Bearer token, `AuthContext` 관리
+- **라우팅**: HashRouter (`/#/members`, `/#/sync`, `/#/repos`, `/#/blog`, `/#/settings`)
+
+**구현된 탭**
+
+| 탭     | 파일                    | 주요 기능                                              |
+| ------ | ----------------------- | ------------------------------------------------------ |
+| 멤버   | `pages/MemberTab.tsx`   | 필터/정렬/검색, 추가/삭제/새로고침, 블로그 포스트 모달 |
+| 싱크   | `pages/SyncTab.tsx`     | SSE 스트리밍 로그, 전체/기수/연속 싱크, 레포 업데이트  |
+| 레포   | `pages/RepoTab.tsx`     | 상태 필터, 상태 토글/단건 싱크/삭제, 레포 탐색         |
+| 블로그 | `pages/BlogTab.tsx`     | RSS 싱크, GitHub 블로그 백필, 최근 글 조회             |
+| 설정   | `pages/SettingsTab.tsx` | 워크스페이스, 금지어, 무시 도메인 관리                 |
+
+**핵심 파일**
+
+- `src/public/admin-spa/src/lib/api.ts` — Bearer 토큰 자동 주입 fetch 래퍼
+- `src/public/admin-spa/src/lib/sse.ts` — `?token=` 쿼리 기반 EventSource
+- `src/public/admin-spa/src/context/AuthContext.tsx` — 로그인/로그아웃 상태
+- `src/app.ts` — `/admin/ui` 정적 서빙, `/admin` 리다이렉트, deploy 웹훅
+
+---
+
 ## 2026-04-09
 
 **수동 동기화 필터 완화**
@@ -26,12 +57,6 @@
 - `blog-check.yml` — sync 후 새 글 조회 → Slack 웹훅 발송(옵션)
 - **핵심 파일**: `src/db/repositories/blog-post.repository.ts`, `src/features/blog/blog.route.ts`
 
-**닉네임 선택 모달**
-
-- 멤버 행 닉네임 클릭 → `nicknameStats` 후보 목록, 클릭 시 `PATCH /admin/members/:id`
-- 초기화 버튼(`manualNickname: null`)
-- **핵심 파일**: `src/public/admin/members.js`
-
 ---
 
 ## 2026-03-31
@@ -42,13 +67,6 @@
 - `GET/POST/DELETE /admin/ignored-domains`
 - **핵심 파일**: `src/features/banned-word/`, `src/features/ignored-domain/`
 
-**어드민 UI 모듈 분리**
-
-- `src/public/admin.js` 제거 → `src/public/admin/` ES 모듈
-- 엔트리: `main.js` (`type="module"`), 기존 `onclick`은 `Object.assign(window, …)`으로 호환 유지
-- 모듈: state, http, utils, auth, bootstrap, logs, workspace, repos, members, sync, blog, regex, cohort-repos
-- repos ↔ cohort-repos 순환 참조: `changeCohortRepoLevel`에서만 `import('./cohort-repos.js')` 동적 로드
-
 ---
 
 ## 2026-03-28
@@ -58,12 +76,6 @@
 - **왜**: 새로고침 후 로그 유실
 - **결정**: `ActivityLog` 테이블 신규, repo sync/blog sync 상세 실패 원인 기록
 
-**멤버 역할 인라인 수정**
-
-- Members 테이블에서 크루/코치/리뷰어 역할을 인라인 버튼으로 즉시 수정
-
-**어드민 어드민 밀도 축소·모바일 대응**
-
 ---
 
 ## 2026-03-27
@@ -72,12 +84,6 @@
 
 - `MissionRepo.status`: `active | candidate | excluded`
 - `POST /admin/repos/discover` — woowacourse 조직 공개 레포 → 후보 분류
-- 어드민 레포 테이블: 후보/활성/제외 상태 표시, 이름/상태/트랙 필터
-
-**멤버 manualNickname·nicknameStats**
-
-- `Member.manualNickname` — 수동 고정 닉네임
-- `Member.nicknameStats` JSON — 파싱 닉네임 이력·빈도
 
 **블로그 백필**
 
@@ -92,4 +98,3 @@
 
 - `GET/PUT /admin/workspace`, `GET /admin/status`, `POST /admin/sync`
 - `GET/POST/PATCH/DELETE /admin/repos`
-- `admin.html` — 비밀키 로그인, 수집 현황, 수동 sync, 레포 관리

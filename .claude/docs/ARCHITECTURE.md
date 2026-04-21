@@ -48,9 +48,26 @@ app.ts (composition root)
 
 ```
 src/
-  features/   # 도메인별 route + service
-  db/         # Prisma repository
-  shared/     # 공통 유틸
-  public/     # 정적 파일 (어드민 UI)
-  scripts/    # 시드 등 유틸 스크립트
+  features/         # 도메인별 route + service
+    sync/
+      sync.service.ts        # syncWorkspace, syncContinuousRepos
+      sync.repo-sync.ts      # syncRepo (resolveProfile, upsertMemberAndSubmission)
+      sync.pr-parser.ts      # parsePRsToSubmissions
+      sync.admin.service.ts  # SSE 어댑터 (syncWorkspace/continuous 래핑)
+      github.service.ts      # fetchRepoPRs, fetchUserBlogCandidates
+    blog/
+      blog.service.ts        # createBlogService (syncBlogs)
+      blog.rss.ts            # RSS 유틸 (probeRss, resolveRSSUrlsForBlog 등)
+      blog.admin.service.ts  # 싱크 잡 큐, 로그 기록
+      blog.backfill.ts       # backfillMemberBlogLinks
+    member/
+      member.service.ts      # createMemberService
+      member.response.ts     # toMemberResponse 매퍼
+      member.profile-refresh.ts  # refreshMemberProfileById
+  db/               # Prisma repository
+  shared/           # 공통 유틸
+  public/
+    admin-spa/      # Vite + React + Tailwind SPA (빌드 → dist/public/admin-dist/)
+    guide.html      # 공개 가이드 페이지
+  scripts/          # 시드 등 유틸 스크립트
 ```
