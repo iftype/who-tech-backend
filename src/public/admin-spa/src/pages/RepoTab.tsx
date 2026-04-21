@@ -54,6 +54,19 @@ export default function RepoTab() {
     }
   };
 
+  const toggleSyncMode = async (repo: MissionRepo) => {
+    const newMode = repo.syncMode === 'continuous' ? 'once' : 'continuous';
+    try {
+      await apiFetch(`/admin/repos/${repo.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ syncMode: newMode }),
+      });
+      void queryClient.invalidateQueries({ queryKey: ['repos'] });
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : '수정 실패', 'error');
+    }
+  };
+
   const deleteRepo = async (repo: MissionRepo) => {
     if (!confirm(`${repo.name} 삭제하시겠습니까? 관련 submission도 삭제됩니다.`)) return;
     setDeleting(repo.id);
@@ -140,7 +153,19 @@ export default function RepoTab() {
                   </td>
                   <td className="px-3 py-2 text-xs text-gray-600">{r.track ?? '—'}</td>
                   <td className="px-3 py-2">{statusBadge(r.status)}</td>
-                  <td className="px-3 py-2 text-xs text-gray-500">{r.syncMode}</td>
+                  <td className="px-3 py-2">
+                    <button
+                      onClick={() => void toggleSyncMode(r)}
+                      title="클릭하여 전환"
+                      className={`text-xs px-1.5 py-0.5 rounded font-medium border ${
+                        r.syncMode === 'continuous'
+                          ? 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100'
+                          : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'
+                      }`}
+                    >
+                      {r.syncMode === 'continuous' ? '연속' : '1회'}
+                    </button>
+                  </td>
                   <td className="px-3 py-2 text-xs text-gray-500">{r.cohorts.join(', ') || '—'}</td>
                   <td className="px-3 py-2 text-xs text-gray-600">{r._count.submissions}</td>
                   <td className="px-3 py-2">
