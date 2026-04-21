@@ -12,3 +12,7 @@ dist/
 
 # OMC
 .omc/
+
+# Admin SPA
+src/public/admin-spa/node_modules/
+src/public/admin-spa/dist/

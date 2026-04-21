@@ -73,7 +73,12 @@ export function createMemberRouter(service: MemberService) {
   router.post(
     '/:id/refresh-profile',
     asyncHandler(async (req, res) => {
-      res.json(await service.refreshMemberProfile(parseId(req.params['id'])));
+      const result = await service.refreshMemberProfile(parseId(req.params['id']));
+      if (result.profileRefreshError) {
+        res.status(500).json({ error: result.profileRefreshError, member: result });
+      } else {
+        res.json(result);
+      }
     }),
   );
 
