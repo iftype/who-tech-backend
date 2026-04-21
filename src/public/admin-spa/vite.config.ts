@@ -2,9 +2,9 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   plugins: [react(), tailwindcss()],
-  base: '/admin/ui/admin-dist/',
+  base: command === 'serve' ? '/' : '/admin/ui/admin-dist/',
   build: {
     outDir: '../../dist/public/admin-dist',
     emptyOutDir: true,
@@ -14,4 +14,4 @@ export default defineConfig({
       '/admin': 'http://localhost:3000',
     },
   },
-});
+}));

@@ -106,6 +106,10 @@ const app = express();
 app.use(express.json());
 app.use('/admin/ui', express.static(publicDir));
 
+app.get('/admin', (_req, res) => {
+  res.redirect('/admin/ui/admin-dist/');
+});
+
 app.get('/', (_req, res) => {
   res.json({ message: 'who.tech API' });
 });
@@ -129,7 +133,7 @@ app.post('/admin/deploy', (req, res): void => {
     'bash',
     [
       '-c',
-      'cd ~/app/who-tech-backend && git pull origin main && npm install --ignore-scripts && npx prisma generate && npm run build && npx prisma migrate deploy && pm2 restart backend',
+      'cd ~/app/who-tech-backend && git pull origin main && npm install --ignore-scripts && npm --prefix src/public/admin-spa install --ignore-scripts && npx prisma generate && npm run build && npx prisma migrate deploy && pm2 restart backend',
     ],
     { detached: true, stdio: 'ignore', shell: false },
   );

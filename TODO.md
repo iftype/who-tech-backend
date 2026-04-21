@@ -15,17 +15,12 @@
 **플랜**: `.omc/plans/admin-react-spa.md`
 
 - [x] Phase 0: Vite + React + Tailwind 스캐폴드
-  - 빌드 출력: `dist/public/admin-dist/`
-  - `npm run build:admin` / `npm run dev:admin` 스크립트 추가
-- [ ] Phase 1: App Shell (Auth, Layout, 5탭 네비게이션)
-  - HashRouter (`/#/members`, `/#/sync`, `/#/repos`, `/#/blog`, `/#/settings`)
-  - AuthContext (localStorage Bearer token)
-  - StatCards
-- [ ] Phase 2: 멤버 탭
-- [ ] Phase 3: 싱크 탭 (SSE 스트리밍)
-- [ ] Phase 4: 레포 탭
-- [ ] Phase 5: 블로그 + 설정 탭
-- [ ] Phase 6: 마이그레이션 (old vanilla JS 삭제)
+- [x] Phase 1: App Shell (Auth, Layout, 5탭 네비게이션)
+- [x] Phase 2: 멤버 탭 (MemberTable, MemberFilters, MemberAddForm, Toast, Modal)
+- [x] Phase 3: 싱크 탭 (SSE 스트리밍, 전체/기수/연속/레포 싱크)
+- [x] Phase 4: 레포 탭 (목록/상태토글/싱크/삭제/탐색)
+- [x] Phase 5: 블로그 탭 (RSS싱크/백필/최근글) + 설정 탭 (워크스페이스/금지어/무시도메인)
+- [x] Phase 6: 마이그레이션 (admin.html/admin.css/scipts/ 삭제, /admin → /admin/ui/admin-dist/ 리다이렉트, deploy 명령 admin-spa npm install 추가)
 
 **주의**: CI에 `cd src/public/admin-spa && npm install` 단계 추가 필요 (`.github/workflows/deploy.yml`)
 
