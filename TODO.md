@@ -1,59 +1,49 @@
-=== 마지막 세션: 2026-04-11 23:50 ===
+=== 마지막 세션: 2026-04-21 ===
 
 ### 완료 작업
 
-✅ 서버 배포 문제 해결 (원인: npm install 미실행 + PM2 좀비 프로세스)
-✅ /admin/deploy 엔드포인트 보안 강화 (ADMIN_SECRET 인증 추가)
-✅ 배포 스크립트 개선 (npm install, pm2 restart 명시)
-✅ 에러 슈팅 기록: `.claude/deployment-troubleshooting-2026-04-11.md`
+✅ 개인 프로필 새로고침 fetchUserBlogCandidates + RSS 프로빙으로 변경 (blog 필드만 → bio/README/소셜 스캔)
+✅ 개인 새로고침 GitHub API 실패 시 500 반환 (기존: 200 + profileRefreshError)
+✅ .omc 디렉토리 git 추적 제거
+✅ 어드민 SPA Phase 0 스캐폴드 (src/public/admin-spa/)
+✅ GitHub 토큰 Classic PAT으로 교체 + pm2 env 반영
 
 === 다음 세션 작업 ===
 
-## 1️⃣ GitHub Secrets 설정 확인
+## 1️⃣ 어드민 React SPA (최우선)
 
-- ✅ ADMIN_SECRET만 필요 (SSH 관련 불필요)
-- 참고: frontend/TODO.md와 동기화
+**플랜**: `.omc/plans/admin-react-spa.md`
 
-## 2️⃣ 배포 흐름 검증
+- [x] Phase 0: Vite + React + Tailwind 스캐폴드
+  - 빌드 출력: `dist/public/admin-dist/`
+  - `npm run build:admin` / `npm run dev:admin` 스크립트 추가
+- [ ] Phase 1: App Shell (Auth, Layout, 5탭 네비게이션)
+  - HashRouter (`/#/members`, `/#/sync`, `/#/repos`, `/#/blog`, `/#/settings`)
+  - AuthContext (localStorage Bearer token)
+  - StatCards
+- [ ] Phase 2: 멤버 탭
+- [ ] Phase 3: 싱크 탭 (SSE 스트리밍)
+- [ ] Phase 4: 레포 탭
+- [ ] Phase 5: 블로그 + 설정 탭
+- [ ] Phase 6: 마이그레이션 (old vanilla JS 삭제)
 
-```bash
-# 테스트 배포
-curl -X POST https://iftype.store/admin/deploy \
-  -H "Authorization: Bearer $ADMIN_SECRET"
+**주의**: CI에 `cd src/public/admin-spa && npm install` 단계 추가 필요 (`.github/workflows/deploy.yml`)
 
-# 로그 확인
-ssh oracle 'pm2 logs backend --lines 50'
-```
+## 2️⃣ 전체 서버 코드 리팩토링
+
+- 하네스 문서(.claude/rules/, .claude/docs/) 업데이트 포함
+- 테스트 훅으로 기능 보호 후 리팩토링 진행 (기능 변경 없음)
+- 주요 대상: src/features/{sync,blog,member}/
 
 ## 3️⃣ Dependabot 취약점 패치
 
-- 현재 2개 high severity 존재
-- 참고: GitHub Security tab
+- 현재 2개 high severity (GitHub Security tab 참고)
 
 ---
 
-## 📋 대규모 리팩토링 예정 (다음주)
+## 서버 운영 메모
 
-### 범위
-
-- 서비스 레이어 정규화 (sync.service, blog.service)
-- 레포지토리 패턴 통일
-- 타입 안정성 강화
-
-### 필요 에이전트
-
-- `/oh-my-claudecode:architect` - 아키텍처 설계
-- `/oh-my-claudecode:code-reviewer` - 리팩토링 검토
-- `/oh-my-claudecode:executor` - 대규모 작업 실행
-
-### 예상 영향
-
-- 주요 파일: src/features/{sync,blog,cohort-repo}/\*\*
-- 테스트: 기존 100+ 테스트 유지 필수
-- 배포: 리팩토링 완료 후 한 번에 배포
-
-### 준비 사항
-
-- 현재 src/ 구조 스냅샷 저장
-- 테스트 커버리지 확인
-- develop 브랜치에서 진행
+- GitHub Token: Classic PAT (`public_repo` + `read:user`), `.env`에 저장
+- pm2 env 업데이트: `set -a && . .env && set +a && pm2 restart backend --update-env`
+- blog 수집 24h 게이트: sync에서 profileFetchedAt 기준, 즉시 반영은 개인 새로고침 사용
+- admin-spa 로컬 개발: `cd src/public/admin-spa && npm install && npm run dev` (포트 5173, /admin 프록시→3000)
