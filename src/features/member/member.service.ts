@@ -12,7 +12,8 @@ import {
   extractNicknameTokens,
   mergeNicknameStat,
 } from '../../shared/nickname.js';
-import { fetchUserProfile } from '../sync/github.service.js';
+import { fetchUserProfile, fetchUserBlogCandidates } from '../sync/github.service.js';
+import { probeRss } from '../blog/blog.service.js';
 
 export function createMemberService(deps: {
   memberRepo: MemberRepository;
@@ -94,19 +95,25 @@ export function createMemberService(deps: {
     };
 
     try {
-      const profile = await fetchUserProfile(octokit, {
+      const { profile, candidates } = await fetchUserBlogCandidates(octokit, {
         githubUserId: member.githubUserId,
         username: member.githubId,
       });
-      console.log(
-        `[refreshMemberProfile] ${member.githubId}: profile.blog=${profile.blog}, member.blog=${member.blog}`,
-      );
+      let validBlog: string | null = null;
+      for (const url of candidates) {
+        const rssCheck = await probeRss(url);
+        if (rssCheck.status === 'available') {
+          validBlog = url;
+          break;
+        }
+      }
+      const resolvedBlog = validBlog ?? candidates[0] ?? null;
       profileFields = {
         githubId: profile.githubId,
         githubUserId: profile.githubUserId,
         previousGithubIds: mergePreviousGithubIds(member.previousGithubIds, member.githubId, profile.githubId),
         avatarUrl: profile.avatarUrl ?? member.avatarUrl ?? null,
-        blog: profile.blog ?? member.blog ?? null,
+        blog: resolvedBlog ?? member.blog ?? null,
       };
     } catch (error) {
       console.error(`[refreshMemberProfile ERROR] ${member.githubId}:`, error);
