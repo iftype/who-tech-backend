@@ -6,7 +6,7 @@ export default defineConfig(({ command }) => ({
   plugins: [react(), tailwindcss()],
   base: command === 'serve' ? '/' : '/admin/ui/admin-dist/',
   build: {
-    outDir: '../../dist/public/admin-dist',
+    outDir: '../../../dist/public/admin-dist',
     emptyOutDir: true,
   },
   server: {
