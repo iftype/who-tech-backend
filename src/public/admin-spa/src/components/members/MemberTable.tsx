@@ -151,7 +151,7 @@ export default function MemberTable({ members, onRefresh }: Props) {
                 <td className="px-3 py-2">
                   <div className="flex items-center gap-2">
                     {m.avatarUrl && (
-                      <img src={m.avatarUrl} className="w-6 h-6 rounded-full" alt="" />
+                      <img src={m.avatarUrl} className="w-6 h-6 rounded-full" alt="" loading="lazy" />
                     )}
                     <span className="font-medium text-gray-900">{m.nickname ?? m.githubId}</span>
                   </div>

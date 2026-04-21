@@ -3,9 +3,11 @@ export interface MissionRepo {
   name: string;
   repoUrl: string;
   track: string | null;
+  type: string;
+  tabCategory: string;
   status: string;
   syncMode: string;
-  level: string | null;
+  level: number | null;
   cohorts: number[];
   _count: { submissions: number };
 }
@@ -46,11 +48,53 @@ export interface MemberCohort {
   roles: string[];
 }
 
+export interface PersonMember {
+  id: number;
+  githubId: string;
+  nickname: string | null;
+  manualNickname: string | null;
+  avatarUrl: string | null;
+  memberCohorts: Array<{
+    cohort: { id: number; number: number };
+    role: { id: number; name: string };
+  }>;
+}
+
+export interface Person {
+  id: number;
+  displayName: string | null;
+  note: string | null;
+  createdAt: string;
+  members: PersonMember[];
+}
+
+export interface ActivityLog {
+  id: number;
+  type: string;
+  message: string;
+  createdAt: string;
+}
+
 export interface BlogPost {
   id: number;
   url: string;
   title: string;
   publishedAt: string;
+}
+
+export interface Submission {
+  id: number;
+  prNumber: number;
+  prUrl: string;
+  title: string;
+  status: string;
+  submittedAt: string;
+  missionRepo: {
+    id: number;
+    name: string;
+    track: string | null;
+    tabCategory: string;
+  };
 }
 
 export interface Member {
@@ -73,5 +117,6 @@ export interface Member {
   track: string | null;
   tracks: string[];
   blogPosts: BlogPost[];
+  submissions: Submission[];
   _count: { submissions: number; blogPosts: number };
 }

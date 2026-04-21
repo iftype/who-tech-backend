@@ -3,7 +3,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { createEventSource } from '../lib/sse.js';
 import { apiFetch } from '../lib/api.js';
 import { showToast } from '../components/ui/Toast.js';
-import type { AdminStatus } from '../lib/types.js';
+import type { AdminStatus, MissionRepo, Workspace } from '../lib/types.js';
 
 type JobType = 'sync' | 'continuous' | 'cohort-repos';
 
@@ -40,6 +40,47 @@ export default function SyncTab() {
     queryFn: () => apiFetch<AdminStatus>('/admin/status'),
     staleTime: 60_000,
   });
+
+  const { data: workspace } = useQuery({
+    queryKey: ['workspace'],
+    queryFn: () => apiFetch<Workspace>('/admin/workspace'),
+    staleTime: 300_000,
+  });
+
+  const { data: repos = [] } = useQuery({
+    queryKey: ['repos', 'sync-schedule'],
+    queryFn: () => apiFetch<MissionRepo[]>('/admin/repos'),
+  });
+
+  const continuousRepos = repos.filter((r) => r.status === 'active' && r.syncMode === 'continuous');
+
+  interface SyncJob {
+    id: string;
+    status: string;
+    message: string;
+    startedAt: string;
+    finishedAt: string | null;
+    repoName?: string;
+    source?: string;
+  }
+
+  const { data: repoJobs = [] } = useQuery({
+    queryKey: ['repo-sync-jobs'],
+    queryFn: () => apiFetch<SyncJob[]>('/admin/repos/sync-jobs'),
+    staleTime: 10_000,
+    refetchInterval: running ? 2000 : 10_000,
+  });
+
+  const { data: blogJobs = [] } = useQuery({
+    queryKey: ['blog-sync-jobs'],
+    queryFn: () => apiFetch<SyncJob[]>('/admin/blog/sync-jobs'),
+    staleTime: 10_000,
+    refetchInterval: running ? 2000 : 10_000,
+  });
+
+  const allJobs = [...repoJobs, ...blogJobs].sort(
+    (a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime(),
+  );
 
   const blogSyncMutation = useMutation({
     mutationFn: () =>
@@ -153,6 +194,54 @@ export default function SyncTab() {
         </div>
       )}
 
+      <div className="bg-white border border-gray-200 rounded p-4 space-y-3">
+        <h3 className="text-xs font-semibold text-gray-600">싱크 스케줄 상태</h3>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-gray-50 border border-gray-200 rounded p-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-gray-500">블로그 RSS 자동 싱크</span>
+              <span
+                className={`text-xs px-2 py-0.5 rounded font-medium ${
+                  workspace?.blogSyncEnabled
+                    ? 'bg-green-100 text-green-700'
+                    : 'bg-gray-100 text-gray-500'
+                }`}
+              >
+                {workspace?.blogSyncEnabled ? '활성' : '비활성'}
+              </span>
+            </div>
+          </div>
+          <div className="bg-gray-50 border border-gray-200 rounded p-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-gray-500">연속 싱크 대상 레포</span>
+              <span className="text-xs font-semibold text-gray-900">{continuousRepos.length}개</span>
+            </div>
+          </div>
+        </div>
+        {continuousRepos.length > 0 && (
+          <div className="max-h-40 overflow-y-auto rounded border border-gray-200">
+            <table className="w-full text-xs">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="text-left font-medium text-gray-500 px-2 py-1">레포</th>
+                  <th className="text-left font-medium text-gray-500 px-2 py-1">트랙</th>
+                  <th className="text-left font-medium text-gray-500 px-2 py-1">Lv</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {continuousRepos.map((r) => (
+                  <tr key={r.id} className="hover:bg-gray-50">
+                    <td className="px-2 py-1 font-medium text-gray-700 truncate max-w-[200px]">{r.name}</td>
+                    <td className="px-2 py-1 text-gray-500">{r.track ?? '—'}</td>
+                    <td className="px-2 py-1 text-gray-500">{r.level ?? '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
       {/* 블로그 싱크 */}
       <div className="bg-white border border-gray-200 rounded p-4">
         <h3 className="text-xs font-semibold text-gray-600 mb-2">블로그</h3>
@@ -227,6 +316,62 @@ export default function SyncTab() {
             </div>
           ))}
           <div ref={logEndRef} />
+        </div>
+      )}
+
+      {allJobs.length > 0 && (
+        <div className="bg-white border border-gray-200 rounded p-4">
+          <h3 className="text-xs font-semibold text-gray-600 mb-3">최근 싱크 작업 ({allJobs.length})</h3>
+          <div className="max-h-64 overflow-y-auto rounded border border-gray-200">
+            <table className="w-full text-xs">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="text-left font-medium text-gray-500 px-3 py-2">시작</th>
+                  <th className="text-left font-medium text-gray-500 px-3 py-2">종류</th>
+                  <th className="text-left font-medium text-gray-500 px-3 py-2">상태</th>
+                  <th className="text-left font-medium text-gray-500 px-3 py-2">메시지</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {allJobs.map((j) => (
+                  <tr key={j.id} className="hover:bg-gray-50">
+                    <td className="px-3 py-2 text-gray-500 whitespace-nowrap">
+                      {new Date(j.startedAt).toLocaleString('ko-KR')}
+                    </td>
+                    <td className="px-3 py-2">
+                      <span
+                        className={`text-xs px-1.5 py-0.5 rounded font-medium border ${
+                          j.repoName
+                            ? 'bg-blue-50 text-blue-700 border-blue-200'
+                            : 'bg-green-50 text-green-700 border-green-200'
+                        }`}
+                      >
+                        {j.repoName ? '레포' : '블로그'}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2">
+                      <span
+                        className={`text-xs px-1.5 py-0.5 rounded font-medium border ${
+                          j.status === 'completed'
+                            ? 'bg-green-100 text-green-700 border-green-200'
+                            : j.status === 'failed'
+                              ? 'bg-red-100 text-red-700 border-red-200'
+                              : j.status === 'running'
+                                ? 'bg-blue-100 text-blue-700 border-blue-200'
+                                : 'bg-gray-100 text-gray-500 border-gray-200'
+                        }`}
+                      >
+                        {j.status}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 text-gray-700 truncate max-w-[300px]">
+                      {j.repoName ? `${j.repoName} — ` : ''}{j.message}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>

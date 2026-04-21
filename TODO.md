@@ -33,7 +33,51 @@
 - [ ] blog.admin.service.ts (279줄), repo.service.ts (256줄) 분리 검토
 - [ ] 하네스 문서(.claude/rules/, .claude/docs/) 업데이트
 
-## 3️⃣ Dependabot 취약점 패치
+## 3️⃣ 어드민 React SPA — 누락 기능 / 버그 (2026-04-22 분석)
+
+> 분석 결과: 마이그레이션된 React 어드민이 DB 스키마/백엔드 API와 심각하게 불일치
+
+### 🔴 P0 — 버그 (필수 수정) ✅ 완료
+
+- [x] **RepoTab `status` 필터 오류**: UI에 `active | inactive | once` 있으나 DB 실제 값은 `active | candidate | excluded`. `inactive`와 `once`는 존재하지 않는 값. `candidate`/`excluded` 필터 불가
+  - 파일: `src/public/admin-spa/src/pages/RepoTab.tsx` line 7
+- [x] **RepoTab `tabCategory` 완전 누락**: DB `MissionRepo.tabCategory` = `base | common | precourse | excluded`. 기준/공통/프리코스/제외 레포 구분 UI 없음
+- [x] **RepoTab `type` 필드 누락**: DB `MissionRepo.type` = `individual | integration`. 개인/통합 미션 구분 UI 없음
+- [x] **RepoTab `toggleStatus()` 로직 오류**: `active ↔ inactive` 토글. DB에는 `inactive` 없음. `candidate` → `active` 승인 플로우 없음
+
+### 🟡 P1 — 기능 누락 ✅ 완료
+
+- [x] **PR 확인 탭**: `Submission` 모델(`prUrl/prNumber/status/submittedAt`) 있는데 UI 전혀 없음. 멤버별/레포별 PR 조회 필요
+  - 파일: `src/public/admin-spa/src/pages/PRTab.tsx` (신규)
+  - 백엔드: `src/features/member/member.route.ts`에 GET `/admin/members/:id` 추가
+- [x] **싱크 스케줄 설정/확인 UI**: `syncMode=continuous` 레포 자동 싱크, `scheduler` 블로그 싱크 상태 확인 불가. "시간마다 돌고 있는지" 확인할 화면 없음
+  - 파일: `src/public/admin-spa/src/pages/SyncTab.tsx` — 연속 싱크 대상 레포 목록 + blogSyncEnabled 상태 표시
+
+### 남은 P1
+
+- [x] **candidate 레포 승인 플로우**: `discover`로 발견된 후보(`candidate`)를 `active`로 승인하는 UI
+  - RepoTab 액션 컬럼에 candidate 상태일 때 ✓ 버튼 추가
+- [ ] **싱크 작업 히스토리**: `/admin/repos/sync-jobs/:jobId` API 존재하나 작업 목록/히스토리 API 없음. 백엔드 추가 필요
+
+### 🟢 P2 — 부가 탭 (API 존재, UI 없음) ✅ 완료
+
+- [x] **아카이브 탭**: `/admin/archive?cohort=N` — 기수별 아카이브 마크다운
+  - 파일: `src/public/admin-spa/src/pages/ArchiveTab.tsx` (신규)
+- [x] **Person 관리 탭**: `/admin/persons` — 멤버 마스터 그룹핑
+  - 파일: `src/public/admin-spa/src/pages/PersonTab.tsx` (신규)
+- [x] **활동 로그 뷰어**: `/admin/logs` — 서버 저장된 어드민 활동 로그
+  - 파일: `src/public/admin-spa/src/pages/LogTab.tsx` (신규)
+
+### 성능 개선 (부분 완료)
+
+- [x] 아바타 이미지 lazy loading 추가 (MemberTable, PRTab)
+- [x] useMembers staleTime 30초 → 60초
+- [ ] 멤버/레포 테이블 가상화(virtualization) — 대용량 시 필요, react-window 등 도입 검토
+- [ ] 탭 전환 시 전체 데이터 refetch 최소화 — React Query gcTime 조정 검토
+
+---
+
+## 4️⃣ Dependabot 취약점 패치
 
 - 현재 2개 high severity (GitHub Security tab 참고)
 

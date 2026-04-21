@@ -194,6 +194,11 @@ export function createRepoService(deps: {
       return serializeJob(job);
     },
 
+    listRepoSyncJobs: () => {
+      cleanupJobs();
+      return [...syncJobs.values()].map(serializeJob).sort((a, b) => b.startedAt.getTime() - a.startedAt.getTime());
+    },
+
     refreshRepoCandidates: async (): Promise<{ discovered: number; created: number; updated: number }> => {
       const workspace = await workspaceService.getOrThrow();
       const orgRepos = await fetchOrgRepos(octokit, workspace.githubOrg);

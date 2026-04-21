@@ -48,6 +48,18 @@ export function createMemberRouter(service: MemberService) {
   );
 
   router.get(
+    '/:id',
+    asyncHandler(async (req, res) => {
+      const member = await service.get(parseId(req.params['id']));
+      if (!member) {
+        res.status(404).json({ error: 'member not found' });
+        return;
+      }
+      res.json(member);
+    }),
+  );
+
+  router.get(
     '/:id/blog-posts',
     asyncHandler(async (req, res) => {
       res.json(await service.getMemberBlogPosts(parseId(req.params['id'])));

@@ -4,10 +4,12 @@ import { apiFetch } from '../lib/api.js';
 import { showToast } from '../components/ui/Toast.js';
 import type { MissionRepo } from '../lib/types.js';
 
-type StatusFilter = '' | 'active' | 'inactive' | 'once';
+type StatusFilter = '' | 'active' | 'candidate' | 'excluded';
+type TabCategoryFilter = '' | 'base' | 'common' | 'precourse' | 'excluded';
 
 export default function RepoTab() {
   const [status, setStatus] = useState<StatusFilter>('');
+  const [tabCategory, setTabCategory] = useState<TabCategoryFilter>('');
   const [syncing, setSyncing] = useState<number | null>(null);
   const [deleting, setDeleting] = useState<number | null>(null);
   const queryClient = useQueryClient();
@@ -20,10 +22,20 @@ export default function RepoTab() {
     },
   });
 
+  const filteredRepos = tabCategory
+    ? repos.filter((r) => r.tabCategory === tabCategory)
+    : repos;
+
   const discoverMutation = useMutation({
-    mutationFn: () => apiFetch<{ added: number }>('/admin/repos/discover', { method: 'POST' }),
+    mutationFn: () =>
+      apiFetch<{ discovered: number; created: number; updated: number }>(
+        '/admin/repos/discover',
+        { method: 'POST' },
+      ),
     onSuccess: (result) => {
-      showToast(`탐색 완료 — ${result.added}개 추가`);
+      showToast(
+        `탐색 완료 — ${result.discovered}개 발견, ${result.created}개 생성, ${result.updated}개 갱신`,
+      );
       void queryClient.invalidateQueries({ queryKey: ['repos'] });
     },
     onError: (e) => showToast(e instanceof Error ? e.message : '탐색 실패', 'error'),
@@ -42,7 +54,7 @@ export default function RepoTab() {
   };
 
   const toggleStatus = async (repo: MissionRepo) => {
-    const newStatus = repo.status === 'active' ? 'inactive' : 'active';
+    const newStatus = repo.status === 'active' ? 'excluded' : 'active';
     try {
       await apiFetch(`/admin/repos/${repo.id}`, {
         method: 'PATCH',
@@ -83,13 +95,37 @@ export default function RepoTab() {
 
   const statusBadge = (s: string) => {
     const colors: Record<string, string> = {
-      active: 'bg-green-100 text-green-700',
-      inactive: 'bg-gray-100 text-gray-500',
-      once: 'bg-blue-100 text-blue-700',
+      active: 'bg-green-100 text-green-700 border-green-200',
+      candidate: 'bg-yellow-100 text-yellow-700 border-yellow-200',
+      excluded: 'bg-red-100 text-red-700 border-red-200',
     };
     return (
-      <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${colors[s] ?? 'bg-gray-100 text-gray-500'}`}>
+      <span
+        className={`text-xs px-1.5 py-0.5 rounded font-medium border ${colors[s] ?? 'bg-gray-100 text-gray-500 border-gray-200'}`}
+      >
         {s}
+      </span>
+    );
+  };
+
+  const tabCategoryBadge = (c: string) => {
+    const labels: Record<string, string> = {
+      base: '기준',
+      common: '공통',
+      precourse: '프리코스',
+      excluded: '제외',
+    };
+    const colors: Record<string, string> = {
+      base: 'bg-blue-50 text-blue-700 border-blue-200',
+      common: 'bg-purple-50 text-purple-700 border-purple-200',
+      precourse: 'bg-orange-50 text-orange-700 border-orange-200',
+      excluded: 'bg-gray-100 text-gray-500 border-gray-200',
+    };
+    return (
+      <span
+        className={`text-xs px-1.5 py-0.5 rounded font-medium border ${colors[c] ?? 'bg-gray-100 text-gray-500 border-gray-200'}`}
+      >
+        {labels[c] ?? c}
       </span>
     );
   };
@@ -98,7 +134,7 @@ export default function RepoTab() {
     <div className="space-y-4">
       <div className="flex items-center gap-3 flex-wrap">
         <div className="flex gap-1">
-          {(['', 'active', 'inactive', 'once'] as StatusFilter[]).map((s) => (
+          {(['', 'active', 'candidate', 'excluded'] as StatusFilter[]).map((s) => (
             <button
               key={s}
               onClick={() => setStatus(s)}
@@ -108,11 +144,28 @@ export default function RepoTab() {
                   : 'border-gray-300 text-gray-600 hover:border-gray-400'
               }`}
             >
-              {s || '전체'}
+              {s || '전체 상태'}
             </button>
           ))}
         </div>
-        <span className="text-xs text-gray-400">{repos.length}개</span>
+
+        <div className="flex gap-1">
+          {(['', 'base', 'common', 'precourse', 'excluded'] as TabCategoryFilter[]).map((c) => (
+            <button
+              key={c}
+              onClick={() => setTabCategory(c)}
+              className={`text-xs px-3 py-1.5 rounded border ${
+                tabCategory === c
+                  ? 'bg-blue-600 text-white border-blue-600'
+                  : 'border-gray-300 text-gray-600 hover:border-gray-400'
+              }`}
+            >
+              {c ? tabCategoryBadge(c) : '전체 카테고리'}
+            </button>
+          ))}
+        </div>
+
+        <span className="text-xs text-gray-400">{filteredRepos.length}개</span>
         <button
           onClick={() => discoverMutation.mutate()}
           disabled={discoverMutation.isPending}
@@ -131,15 +184,18 @@ export default function RepoTab() {
               <tr>
                 <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">레포</th>
                 <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">트랙</th>
+                <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">타입</th>
+                <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">카테고리</th>
                 <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">상태</th>
                 <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">모드</th>
+                <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">Lv</th>
                 <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">기수</th>
                 <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">제출</th>
                 <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">액션</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {repos.map((r) => (
+              {filteredRepos.map((r) => (
                 <tr key={r.id} className="hover:bg-gray-50">
                   <td className="px-3 py-2">
                     <a
@@ -152,6 +208,8 @@ export default function RepoTab() {
                     </a>
                   </td>
                   <td className="px-3 py-2 text-xs text-gray-600">{r.track ?? '—'}</td>
+                  <td className="px-3 py-2 text-xs text-gray-600">{r.type === 'integration' ? '통합' : '개인'}</td>
+                  <td className="px-3 py-2">{tabCategoryBadge(r.tabCategory)}</td>
                   <td className="px-3 py-2">{statusBadge(r.status)}</td>
                   <td className="px-3 py-2">
                     <button
@@ -166,6 +224,7 @@ export default function RepoTab() {
                       {r.syncMode === 'continuous' ? '연속' : '1회'}
                     </button>
                   </td>
+                  <td className="px-3 py-2 text-xs text-gray-600">{r.level ?? '—'}</td>
                   <td className="px-3 py-2 text-xs text-gray-500">{r.cohorts.join(', ') || '—'}</td>
                   <td className="px-3 py-2 text-xs text-gray-600">{r._count.submissions}</td>
                   <td className="px-3 py-2">
@@ -178,13 +237,23 @@ export default function RepoTab() {
                       >
                         {syncing === r.id ? '⟳' : '↺'}
                       </button>
-                      <button
-                        onClick={() => void toggleStatus(r)}
-                        className="text-xs text-gray-500 hover:text-green-600 px-1"
-                        title={r.status === 'active' ? '비활성화' : '활성화'}
-                      >
-                        {r.status === 'active' ? '⏸' : '▶'}
-                      </button>
+                      {r.status === 'candidate' ? (
+                        <button
+                          onClick={() => void toggleStatus(r)}
+                          className="text-xs text-green-600 hover:text-green-700 px-1 font-medium"
+                          title="active로 승인"
+                        >
+                          ✓
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => void toggleStatus(r)}
+                          className="text-xs text-gray-500 hover:text-green-600 px-1"
+                          title={r.status === 'active' ? '제외' : '활성화'}
+                        >
+                          {r.status === 'active' ? '⏸' : '▶'}
+                        </button>
+                      )}
                       <button
                         onClick={() => void deleteRepo(r)}
                         disabled={deleting === r.id}
@@ -199,7 +268,7 @@ export default function RepoTab() {
               ))}
             </tbody>
           </table>
-          {repos.length === 0 && (
+          {filteredRepos.length === 0 && (
             <div className="py-12 text-center text-gray-400 text-sm">레포 없음</div>
           )}
         </div>

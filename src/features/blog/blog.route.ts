@@ -15,6 +15,13 @@ export function createBlogRouter(service: BlogAdminService) {
   );
 
   router.get(
+    '/blog/sync-jobs',
+    asyncHandler(async (_req, res) => {
+      res.json(service.listBlogSyncJobs());
+    }),
+  );
+
+  router.get(
     '/blog/sync-jobs/:jobId',
     asyncHandler(async (req, res) => {
       const jobId = req.params['jobId'];

@@ -159,6 +159,11 @@ export function createBlogAdminService(deps: {
       return serializeJob(job);
     },
 
+    listBlogSyncJobs: () => {
+      cleanupJobs();
+      return [...syncJobs.values()].map(serializeJob).sort((a, b) => b.startedAt.getTime() - a.startedAt.getTime());
+    },
+
     backfillWorkspaceBlogLinks: async (limit = 30, cohort?: number) => {
       const workspace = await workspaceService.getOrThrow();
       return backfillMemberBlogLinks(memberRepo, octokit, workspace.id, limit, cohort);

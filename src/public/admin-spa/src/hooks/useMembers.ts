@@ -21,7 +21,7 @@ export function useMembers(filters: MemberFilters = {}) {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['members', filters],
     queryFn: () => apiFetch<Member[]>(`/admin/members?${params}`),
-    staleTime: 30_000,
+    staleTime: 60_000,
   });
 
   return {
