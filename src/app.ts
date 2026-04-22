@@ -129,11 +129,12 @@ app.post('/admin/deploy', (req, res): void => {
   }
 
   res.json({ ok: true, message: 'deploy started' });
+  const logFile = `/tmp/who-tech-deploy-${Date.now()}.log`;
   const child = spawn(
     'bash',
     [
       '-c',
-      'cd ~/app/who-tech-backend && git pull origin main && npm install --ignore-scripts && npm --prefix src/public/admin-spa install --ignore-scripts && npx prisma generate && npm run build && npx prisma migrate deploy && pm2 restart backend',
+      `cd ~/app/who-tech-backend && git checkout main && git pull origin main && npm install --ignore-scripts && npm --prefix src/public/admin-spa install --ignore-scripts && npx prisma generate && npm run build && npx prisma migrate deploy && pm2 reload backend --update-env > >(tee -a ${logFile}) 2> >(tee -a ${logFile} >&2)`,
     ],
     { detached: true, stdio: 'ignore', shell: false },
   );
