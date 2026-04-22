@@ -1,5 +1,5 @@
-import { useState, useRef, useCallback } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useState, useRef, useCallback, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createEventSource } from '../lib/sse.js';
 import { apiFetch } from '../lib/api.js';
 import { showToast } from '../components/ui/Toast.js';
@@ -34,6 +34,35 @@ export default function SyncTab() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const esRef = useRef<EventSource | null>(null);
   const logEndRef = useRef<HTMLDivElement>(null);
+  const [remainingTime, setRemainingTime] = useState('');
+
+  const getNextSyncTime = () => {
+    const now = new Date();
+    const next = new Date(now);
+    next.setHours(now.getHours() + 1, 0, 0, 0);
+    return next;
+  };
+
+  const formatRemainingTime = (ms: number) => {
+    const totalSeconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}분 ${seconds}초`;
+  };
+
+  useEffect(() => {
+    const updateRemaining = () => {
+      const now = new Date();
+      const next = getNextSyncTime();
+      const diff = next.getTime() - now.getTime();
+      setRemainingTime(formatRemainingTime(diff));
+    };
+
+    updateRemaining();
+    const interval = setInterval(updateRemaining, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const { data: status, refetch: refetchStatus } = useQuery({
     queryKey: ['admin-status'],
@@ -82,6 +111,8 @@ export default function SyncTab() {
     (a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime(),
   );
 
+  const queryClient = useQueryClient();
+
   const blogSyncMutation = useMutation({
     mutationFn: () =>
       apiFetch<{ synced: number; newPosts: number }>('/admin/blog/sync', { method: 'POST' }),
@@ -89,6 +120,18 @@ export default function SyncTab() {
       showToast(`블로그 싱크 완료 — ${result.synced}개 피드, 새 글 ${result.newPosts}개`);
     },
     onError: (e) => showToast(e instanceof Error ? e.message : '블로그 싱크 실패', 'error'),
+  });
+
+  const toggleBlogSyncMutation = useMutation({
+    mutationFn: (enabled: boolean) =>
+      apiFetch<Workspace>('/admin/workspace', {
+        method: 'PUT',
+        body: JSON.stringify({ blogSyncEnabled: enabled }),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['workspace'] });
+    },
+    onError: (e) => showToast(e instanceof Error ? e.message : '변경 실패', 'error'),
   });
 
   const addLog = useCallback((type: LogEntry['type'], message: string) => {
@@ -210,6 +253,9 @@ export default function SyncTab() {
                 {workspace?.blogSyncEnabled ? '활성' : '비활성'}
               </span>
             </div>
+            {workspace?.blogSyncEnabled && (
+              <p className="text-[10px] text-gray-400 mt-1">다음 싱크까지 {remainingTime}</p>
+            )}
           </div>
           <div className="bg-gray-50 border border-gray-200 rounded p-3">
             <div className="flex items-center justify-between">
@@ -245,13 +291,25 @@ export default function SyncTab() {
       {/* 블로그 싱크 */}
       <div className="bg-white border border-gray-200 rounded p-4">
         <h3 className="text-xs font-semibold text-gray-600 mb-2">블로그</h3>
-        <button
-          onClick={() => blogSyncMutation.mutate()}
-          disabled={blogSyncMutation.isPending}
-          className="bg-blue-600 text-white text-sm rounded px-4 py-1.5 hover:bg-blue-700 disabled:opacity-40"
-        >
-          {blogSyncMutation.isPending ? 'RSS 싱크 중...' : 'RSS 전체 싱크'}
-        </button>
+        <div className="flex items-center gap-3 flex-wrap">
+          <button
+            onClick={() => blogSyncMutation.mutate()}
+            disabled={blogSyncMutation.isPending}
+            className="bg-blue-600 text-white text-sm rounded px-4 py-1.5 hover:bg-blue-700 disabled:opacity-40"
+          >
+            {blogSyncMutation.isPending ? 'RSS 싱크 중...' : 'RSS 전체 싱크'}
+          </button>
+          <label className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded px-3 py-1.5 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={workspace?.blogSyncEnabled ?? false}
+              onChange={(e) => toggleBlogSyncMutation.mutate(e.target.checked)}
+              disabled={toggleBlogSyncMutation.isPending}
+              className="rounded"
+            />
+            <span className="text-xs text-gray-700">자동 싱크</span>
+          </label>
+        </div>
       </div>
 
       {/* 컨트롤 */}
