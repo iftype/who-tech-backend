@@ -35,6 +35,8 @@ export default function ArchiveTab() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const logEndRef = useRef<HTMLDivElement>(null);
   const esRef = useRef<EventSource | null>(null);
+  const [editingOrderId, setEditingOrderId] = useState<number | null>(null);
+  const [editingOrderValue, setEditingOrderValue] = useState('');
 
   const cohortNum = cohort ? Number(cohort) : NaN;
 
@@ -63,6 +65,13 @@ export default function ArchiveTab() {
     queryKey: ['repos'],
     queryFn: () => apiFetch<MissionRepo[]>('/admin/repos'),
   });
+
+  const filteredRepos = track
+    ? cohortRepos.filter((cr) => cr.missionRepo.track === track)
+    : cohortRepos;
+
+  const commonRepos = filteredRepos.filter((cr) => cr.missionRepo.tabCategory === 'common');
+  const trackRepos = filteredRepos.filter((cr) => cr.missionRepo.tabCategory !== 'common');
 
   const addLog = useCallback((type: LogEntry['type'], message: string) => {
     setLogs((prev) => [...prev, { ts: Date.now(), type, message }]);
@@ -160,42 +169,27 @@ export default function ArchiveTab() {
         body: JSON.stringify({ order }),
       }),
     onSuccess: () => {
+      setEditingOrderId(null);
       void queryClient.invalidateQueries({ queryKey: ['cohort-repos'] });
       void queryClient.invalidateQueries({ queryKey: ['archive'] });
     },
-    onError: (e) => showToast(e instanceof Error ? e.message : '순서 변경 실패', 'error'),
+    onError: (e) => {
+      showToast(e instanceof Error ? e.message : '순서 변경 실패', 'error');
+      setEditingOrderId(null);
+    },
   });
 
-  const moveUp = (index: number) => {
-    if (index <= 0) return;
-    const current = cohortRepos[index];
-    const prev = cohortRepos[index - 1];
-    const currentOrder = current.order;
-    const prevOrder = prev.order;
-    updateOrderMutation.mutate(
-      { id: current.id, order: prevOrder },
-      {
-        onSuccess: () => {
-          updateOrderMutation.mutate({ id: prev.id, order: currentOrder });
-        },
-      },
-    );
-  };
-
-  const moveDown = (index: number) => {
-    if (index >= cohortRepos.length - 1) return;
-    const current = cohortRepos[index];
-    const next = cohortRepos[index + 1];
-    const currentOrder = current.order;
-    const nextOrder = next.order;
-    updateOrderMutation.mutate(
-      { id: current.id, order: nextOrder },
-      {
-        onSuccess: () => {
-          updateOrderMutation.mutate({ id: next.id, order: currentOrder });
-        },
-      },
-    );
+  const saveOrder = (cr: CohortRepo) => {
+    const newOrder = Number(editingOrderValue);
+    if (isNaN(newOrder)) {
+      showToast('숫자를 입력하세요', 'error');
+      return;
+    }
+    if (newOrder === cr.order) {
+      setEditingOrderId(null);
+      return;
+    }
+    updateOrderMutation.mutate({ id: cr.id, order: newOrder });
   };
 
   const handleAddRepo = () => {
@@ -216,6 +210,68 @@ export default function ArchiveTab() {
     if (type === 'info') return 'text-blue-400';
     return 'text-gray-300';
   };
+
+  const renderRepoRow = (cr: CohortRepo) => (
+    <tr key={cr.id} className="hover:bg-gray-50">
+      <td className="px-3 py-2">
+        {editingOrderId === cr.id ? (
+          <input
+            type="number"
+            value={editingOrderValue}
+            onChange={(e) => setEditingOrderValue(e.target.value)}
+            onBlur={() => saveOrder(cr)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') saveOrder(cr);
+              if (e.key === 'Escape') setEditingOrderId(null);
+            }}
+            className="border border-blue-300 rounded px-1 py-0.5 text-xs w-14 text-center focus:outline-none focus:ring-1 focus:ring-blue-400"
+            autoFocus
+          />
+        ) : (
+          <button
+            onClick={() => {
+              setEditingOrderId(cr.id);
+              setEditingOrderValue(String(cr.order));
+            }}
+            className="text-xs text-gray-600 font-mono hover:text-blue-600 hover:underline px-1"
+            title="클릭하여 순서 변경"
+          >
+            {cr.order}
+          </button>
+        )}
+      </td>
+      <td className="px-3 py-2">
+        <a
+          href={cr.missionRepo.repoUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-600 hover:underline text-xs font-medium"
+        >
+          {cr.missionRepo.name}
+        </a>
+      </td>
+      <td className="px-3 py-2 text-xs text-gray-600">
+        {cr.missionRepo.track ?? '—'}
+      </td>
+      <td className="px-3 py-2 text-xs text-gray-600">
+        {cr.missionRepo.level ?? '—'}
+      </td>
+      <td className="px-3 py-2">
+        <button
+          onClick={() => {
+            if (confirm(`${cr.missionRepo.name}을(를) 삭제하시겠습니까?`)) {
+              deleteMutation.mutate(cr.id);
+            }
+          }}
+          disabled={deleteMutation.isPending}
+          className="text-xs text-gray-400 hover:text-red-500 disabled:opacity-40 px-1"
+          title="삭제"
+        >
+          ✕
+        </button>
+      </td>
+    </tr>
+  );
 
   return (
     <div className="space-y-6">
@@ -250,7 +306,7 @@ export default function ArchiveTab() {
           <div className="flex items-center justify-between flex-wrap gap-2">
             <h3 className="text-sm font-semibold text-gray-700">
               기수별 레포 순서{' '}
-              <span className="text-gray-400 font-normal">({cohortRepos.length}개)</span>
+              <span className="text-gray-400 font-normal">({filteredRepos.length}개)</span>
             </h3>
             <div className="flex items-center gap-2 flex-wrap">
               <button
@@ -303,83 +359,57 @@ export default function ArchiveTab() {
           {reposLoading ? (
             <div className="py-8 text-center text-gray-400 text-sm">로딩 중...</div>
           ) : (
-            <div className="overflow-x-auto rounded border border-gray-200">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                  <tr>
-                    <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">순서</th>
-                    <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">레포</th>
-                    <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">트랙</th>
-                    <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">레벨</th>
-                    <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">작업</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {cohortRepos.map((cr, index) => (
-                    <tr key={cr.id} className="hover:bg-gray-50">
-                      <td className="px-3 py-2">
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => moveUp(index)}
-                            disabled={index === 0 || updateOrderMutation.isPending}
-                            className="text-xs text-gray-400 hover:text-gray-700 disabled:opacity-30 px-1"
-                            title="위로"
-                          >
-                            ↑
-                          </button>
-                          <span className="text-xs text-gray-600 font-mono w-6 text-center">
-                            {cr.order}
-                          </span>
-                          <button
-                            onClick={() => moveDown(index)}
-                            disabled={index === cohortRepos.length - 1 || updateOrderMutation.isPending}
-                            className="text-xs text-gray-400 hover:text-gray-700 disabled:opacity-30 px-1"
-                            title="아래로"
-                          >
-                            ↓
-                          </button>
-                        </div>
-                      </td>
-                      <td className="px-3 py-2">
-                        <a
-                          href={cr.missionRepo.repoUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline text-xs font-medium"
-                        >
-                          {cr.missionRepo.name}
-                        </a>
-                      </td>
-                      <td className="px-3 py-2 text-xs text-gray-600">
-                        {cr.missionRepo.track ?? '—'}
-                      </td>
-                      <td className="px-3 py-2 text-xs text-gray-600">
-                        {cr.missionRepo.level ?? '—'}
-                      </td>
-                      <td className="px-3 py-2">
-                        <button
-                          onClick={() => {
-                            if (confirm(`${cr.missionRepo.name}을(를) 삭제하시겠습니까?`)) {
-                              deleteMutation.mutate(cr.id);
-                            }
-                          }}
-                          disabled={deleteMutation.isPending}
-                          className="text-xs text-gray-400 hover:text-red-500 disabled:opacity-40 px-1"
-                          title="삭제"
-                        >
-                          ✕
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {cohortRepos.length === 0 && (
+            <>
+              {trackRepos.length > 0 && (
+                <div>
+                  {commonRepos.length > 0 && (
+                    <p className="text-xs font-medium text-gray-600 mb-1">트랙 미션</p>
+                  )}
+                  <div className="overflow-x-auto rounded border border-gray-200">
+                    <table className="w-full text-sm">
+                      <thead className="bg-gray-50 border-b border-gray-200">
+                        <tr>
+                          <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">순서</th>
+                          <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">레포</th>
+                          <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">트랙</th>
+                          <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">레벨</th>
+                          <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">작업</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {trackRepos.map(renderRepoRow)}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+              {commonRepos.length > 0 && (
+                <div>
+                  <p className="text-xs font-medium text-gray-600 mb-1">공통 미션</p>
+                  <div className="overflow-x-auto rounded border border-gray-200">
+                    <table className="w-full text-sm">
+                      <thead className="bg-gray-50 border-b border-gray-200">
+                        <tr>
+                          <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">순서</th>
+                          <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">레포</th>
+                          <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">트랙</th>
+                          <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">레벨</th>
+                          <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">작업</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {commonRepos.map(renderRepoRow)}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+              {filteredRepos.length === 0 && (
                 <div className="py-8 text-center text-gray-400 text-sm">
                   등록된 레포가 없습니다. 자동 채우기를 사용하거나 직접 추가하세요.
                 </div>
               )}
-            </div>
+            </>
           )}
         </div>
       )}
