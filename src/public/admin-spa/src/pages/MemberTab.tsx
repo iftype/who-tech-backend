@@ -1,5 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useMembers, type MemberFilters } from '../hooks/useMembers.js';
+import { apiFetch } from '../lib/api.js';
 import StatCards from '../components/StatCards.js';
 import MemberFiltersBar from '../components/members/MemberFilters.js';
 import MemberAddForm from '../components/members/MemberAddForm.js';
@@ -11,15 +13,15 @@ export default function MemberTab() {
   const [cohortFilter, setCohortFilter] = useState<number | undefined>(undefined);
   const { members, loading, error, refetch } = useMembers({ ...filters, cohort: cohortFilter });
 
+  const { data: allCohorts = [] } = useQuery({
+    queryKey: ['member-cohorts'],
+    queryFn: () => apiFetch<number[]>('/admin/members/cohorts'),
+    staleTime: 300_000,
+  });
+
   const handleAdded = (_m: Member) => {
     void refetch();
   };
-
-  const allCohorts = useMemo(() => {
-    const set = new Set<number>();
-    members.forEach(m => m.cohorts.forEach(c => set.add(c.cohort)));
-    return [...set].sort((a, b) => a - b);
-  }, [members]);
 
   return (
     <div className="space-y-4">
