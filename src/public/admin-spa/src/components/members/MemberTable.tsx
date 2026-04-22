@@ -3,7 +3,6 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '../../lib/api.js';
 import { showToast } from '../ui/Toast.js';
 import Modal from '../ui/Modal.js';
-import CohortRoleBadges from './CohortRoleBadges.js';
 import type { Member, BlogPost, MemberCohort, Submission } from '../../lib/types.js';
 
 type SortKey = 'nickname' | 'cohort' | 'githubId' | '_count.submissions' | '_count.blogPosts';
@@ -13,17 +12,9 @@ interface Props {
   onRefresh: () => void;
 }
 
-interface CohortEditModal {
-  member: Member;
-}
-
-interface EditCell {
-  memberId: number;
-  field: 'manualNickname' | 'blog' | 'track' | 'roles';
-}
-
 const TRACK_OPTIONS = ['', 'frontend', 'backend', 'android'] as const;
-const ROLE_OPTIONS = ['크루', '코치', '리뷰어'] as const;
+const ROLE_OPTIONS = ['crew', 'coach', 'reviewer'] as const;
+const ROLE_LABELS: Record<string, string> = { crew: '크루', coach: '코치', reviewer: '리뷰어' };
 
 export default function MemberTable({ members, onRefresh }: Props) {
   const queryClient = useQueryClient();
@@ -31,75 +22,61 @@ export default function MemberTable({ members, onRefresh }: Props) {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [blogModal, setBlogModal] = useState<{ member: Member; posts: BlogPost[] } | null>(null);
   const [prModal, setPrModal] = useState<{ member: Member; submissions: Submission[] } | null>(null);
-  const [cohortModal, setCohortModal] = useState<CohortEditModal | null>(null);
+  const [cohortModal, setCohortModal] = useState<Member | null>(null);
   const [newCohortInput, setNewCohortInput] = useState('');
   const [refreshing, setRefreshing] = useState<number | null>(null);
   const [deleting, setDeleting] = useState<number | null>(null);
-  
-  // Inline editing state
-  const [editCell, setEditCell] = useState<EditCell | null>(null);
-  const [editValue, setEditValue] = useState<string>('');
-  const [editRoles, setEditRoles] = useState<string[]>([]);
+
+  const [editCell, setEditCell] = useState<{ memberId: number; field: 'manualNickname' | 'blog' | 'track' } | null>(null);
+  const [editValue, setEditValue] = useState('');
   const editInputRef = useRef<HTMLInputElement>(null);
   const editSelectRef = useRef<HTMLSelectElement>(null);
   const editContainerRef = useRef<HTMLDivElement>(null);
 
-  // Inline editing mutation
   const updateMemberMutation = useMutation({
     mutationFn: ({ memberId, data }: { memberId: number; data: Record<string, unknown> }) =>
-      apiFetch(`/admin/members/${memberId}`, {
-        method: 'PATCH',
-        body: JSON.stringify(data),
-      }),
+      apiFetch(`/admin/members/${memberId}`, { method: 'PATCH', body: JSON.stringify(data) }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['members'] });
       onRefresh();
       showToast('수정 완료');
       setEditCell(null);
     },
-    onError: (e) => {
-      showToast(e instanceof Error ? e.message : '수정 실패', 'error');
-    },
+    onError: (e) => showToast(e instanceof Error ? e.message : '수정 실패', 'error'),
   });
 
-  const startEdit = useCallback((member: Member, field: EditCell['field']) => {
+  const updateCohortRolesMutation = useMutation({
+    mutationFn: ({ memberId, cohort, roles }: { memberId: number; cohort: number; roles: string[] }) =>
+      apiFetch(`/admin/members/${memberId}`, { method: 'PATCH', body: JSON.stringify({ cohort, roles }) }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['members'] });
+      onRefresh();
+      showToast('역할 수정 완료');
+    },
+    onError: (e) => showToast(e instanceof Error ? e.message : '역할 수정 실패', 'error'),
+  });
+
+  const startEdit = useCallback((member: Member, field: 'manualNickname' | 'blog' | 'track') => {
     setEditCell({ memberId: member.id, field });
-    if (field === 'manualNickname') {
-      setEditValue(member.manualNickname ?? '');
-    } else if (field === 'blog') {
-      setEditValue(member.blog ?? '');
-    } else if (field === 'track') {
-      setEditValue(member.track ?? '');
-    } else if (field === 'roles') {
-      setEditRoles([...member.roles]);
-    }
+    if (field === 'manualNickname') setEditValue(member.manualNickname ?? '');
+    else if (field === 'blog') setEditValue(member.blog ?? '');
+    else if (field === 'track') setEditValue(member.track ?? '');
   }, []);
 
   const saveEdit = useCallback(() => {
     if (!editCell) return;
     const data: Record<string, unknown> = {};
-    if (editCell.field === 'roles') {
-      data.roles = editRoles;
-    } else if (editCell.field === 'track') {
-      data.track = editValue || null;
-    } else {
-      data[editCell.field] = editValue || null;
-    }
+    if (editCell.field === 'track') data.track = editValue || null;
+    else data[editCell.field] = editValue || null;
     updateMemberMutation.mutate({ memberId: editCell.memberId, data });
-  }, [editCell, editValue, editRoles, updateMemberMutation]);
+  }, [editCell, editValue, updateMemberMutation]);
 
-  const cancelEdit = useCallback(() => {
-    setEditCell(null);
-    setEditValue('');
-    setEditRoles([]);
-  }, []);
+  const cancelEdit = useCallback(() => { setEditCell(null); setEditValue(''); }, []);
 
   useEffect(() => {
     if (!editCell) return;
     const handleClickOutside = (e: MouseEvent) => {
-      if (editContainerRef.current && !editContainerRef.current.contains(e.target as Node)) {
-        saveEdit();
-      }
+      if (editContainerRef.current && !editContainerRef.current.contains(e.target as Node)) saveEdit();
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -109,25 +86,12 @@ export default function MemberTable({ members, onRefresh }: Props) {
     if (editCell?.field === 'manualNickname' || editCell?.field === 'blog') {
       editInputRef.current?.focus();
       editInputRef.current?.select();
-    } else if (editCell?.field === 'track') {
-      editSelectRef.current?.focus();
-    }
+    } else if (editCell?.field === 'track') editSelectRef.current?.focus();
   }, [editCell]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      saveEdit();
-    } else if (e.key === 'Escape') {
-      e.preventDefault();
-      cancelEdit();
-    }
-  };
-
-  const toggleRole = (role: string) => {
-    setEditRoles((prev) =>
-      prev.includes(role) ? prev.filter((r) => r !== role) : [...prev, role]
-    );
+    if (e.key === 'Enter') { e.preventDefault(); saveEdit(); }
+    else if (e.key === 'Escape') { e.preventDefault(); cancelEdit(); }
   };
 
   const toggleSort = (key: SortKey) => {
@@ -158,9 +122,7 @@ export default function MemberTable({ members, onRefresh }: Props) {
       onRefresh();
     } catch (e) {
       showToast(e instanceof Error ? e.message : '새로고침 실패', 'error');
-    } finally {
-      setRefreshing(null);
-    }
+    } finally { setRefreshing(null); }
   };
 
   const deleteMember = async (member: Member) => {
@@ -172,74 +134,52 @@ export default function MemberTable({ members, onRefresh }: Props) {
       onRefresh();
     } catch (e) {
       showToast(e instanceof Error ? e.message : '삭제 실패', 'error');
-    } finally {
-      setDeleting(null);
-    }
+    } finally { setDeleting(null); }
   };
 
   const openBlogModal = async (member: Member) => {
     try {
       const posts = await apiFetch<BlogPost[]>(`/admin/members/${member.id}/blog-posts`);
       setBlogModal({ member, posts });
-    } catch {
-      showToast('블로그 포스트 로딩 실패', 'error');
-    }
+    } catch { showToast('블로그 포스트 로딩 실패', 'error'); }
   };
 
   const openPRModal = async (member: Member) => {
-    if (member._count.submissions === 0) {
-      showToast('제출 내역이 없습니다', 'error');
-      return;
-    }
+    if (member._count.submissions === 0) { showToast('제출 내역이 없습니다', 'error'); return; }
     try {
       const detail = await apiFetch<Member>(`/admin/members/${member.id}`);
       setPrModal({ member: detail, submissions: detail.submissions ?? [] });
-    } catch {
-      showToast('PR 로딩 실패', 'error');
-    }
+    } catch { showToast('PR 로딩 실패', 'error'); }
   };
 
   const deleteCohortMutation = useMutation({
     mutationFn: ({ memberId, cohort }: { memberId: number; cohort: number }) =>
       apiFetch(`/admin/members/${memberId}/cohorts/${cohort}`, { method: 'DELETE' }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['members'] });
-      onRefresh();
-      showToast('기수 삭제 완료');
-    },
+    onSuccess: () => { void queryClient.invalidateQueries({ queryKey: ['members'] }); onRefresh(); showToast('기수 삭제 완료'); },
     onError: (e) => showToast(e instanceof Error ? e.message : '기수 삭제 실패', 'error'),
   });
 
   const addCohortMutation = useMutation({
     mutationFn: ({ memberId, cohort }: { memberId: number; cohort: number }) =>
-      apiFetch(`/admin/members/${memberId}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ cohort }),
-      }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['members'] });
-      onRefresh();
-      setNewCohortInput('');
-      showToast('기수 추가 완료');
-    },
+      apiFetch(`/admin/members/${memberId}`, { method: 'PATCH', body: JSON.stringify({ cohort }) }),
+    onSuccess: () => { void queryClient.invalidateQueries({ queryKey: ['members'] }); onRefresh(); setNewCohortInput(''); showToast('기수 추가 완료'); },
     onError: (e) => showToast(e instanceof Error ? e.message : '기수 추가 실패', 'error'),
   });
 
   const handleAddCohort = () => {
     if (!cohortModal) return;
     const cohort = Number(newCohortInput);
-    if (!cohort || isNaN(cohort)) {
-      showToast('유효한 기수를 입력하세요', 'error');
-      return;
-    }
-    addCohortMutation.mutate({ memberId: cohortModal.member.id, cohort });
+    if (!cohort || isNaN(cohort)) { showToast('유효한 기수를 입력하세요', 'error'); return; }
+    addCohortMutation.mutate({ memberId: cohortModal.id, cohort });
+  };
+
+  const toggleCohortRole = (memberId: number, cohort: number, currentRoles: string[], role: string) => {
+    const next = currentRoles.includes(role) ? currentRoles.filter((r) => r !== role) : [...currentRoles, role];
+    updateCohortRolesMutation.mutate({ memberId, cohort, roles: next });
   };
 
   const SortHeader = ({ label, k }: { label: string; k: SortKey }) => (
-    <th
-      className="text-left text-xs font-medium text-gray-500 px-3 py-2 cursor-pointer hover:text-gray-700 whitespace-nowrap"
-      onClick={() => toggleSort(k)}
-    >
+    <th className="text-left text-[11px] font-medium text-gray-500 px-1.5 py-1 cursor-pointer hover:text-gray-700 whitespace-nowrap" onClick={() => toggleSort(k)}>
       {label} {sortKey === k ? (sortDir === 'asc' ? '↑' : '↓') : ''}
     </th>
   );
@@ -247,340 +187,151 @@ export default function MemberTable({ members, onRefresh }: Props) {
   return (
     <>
       <div className="overflow-x-auto rounded border border-gray-200">
-        <table className="w-full text-sm">
+        <table className="w-full text-xs">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              <th className="text-left text-xs font-medium text-gray-500 px-3 py-2 w-8">#</th>
-              <SortHeader label="닉네임" k="nickname" />
-              <SortHeader label="GitHub" k="githubId" />
-              <SortHeader label="기수/역할" k="cohort" />
-              <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">블로그</th>
+              <th className="text-left text-[11px] font-medium text-gray-500 px-1.5 py-1 w-6">#</th>
+              <th className="text-left text-[11px] font-medium text-gray-500 px-1.5 py-1">프로필</th>
+              <th className="text-left text-[11px] font-medium text-gray-500 px-1.5 py-1">기수/역할</th>
+              <th className="text-left text-[11px] font-medium text-gray-500 px-1.5 py-1">트랙</th>
+              <th className="text-left text-[11px] font-medium text-gray-500 px-1.5 py-1">블로그</th>
               <SortHeader label="제출" k="_count.submissions" />
-              <SortHeader label="포스트" k="_count.blogPosts" />
-              <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">액션</th>
+              <SortHeader label="글" k="_count.blogPosts" />
+              <th className="text-left text-[11px] font-medium text-gray-500 px-1.5 py-1">작업</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {sorted.map((m) => (
               <tr key={m.id} className="hover:bg-gray-50">
-                <td className="px-3 py-2 text-gray-400 text-xs">{m.id}</td>
-                <td className="px-3 py-2">
-                  <div className="flex items-center gap-2">
-                    {m.avatarUrl && (
-                      <img src={m.avatarUrl} className="w-6 h-6 rounded-full" alt="" loading="lazy" />
-                    )}
-                    {editCell?.memberId === m.id && editCell.field === 'manualNickname' ? (
-                      <div ref={editContainerRef}>
-                        <input
-                          ref={editInputRef}
-                          type="text"
-                          value={editValue}
-                          onChange={(e) => setEditValue(e.target.value)}
-                          onKeyDown={handleKeyDown}
-                          className="border border-blue-400 rounded px-2 py-1 text-sm w-32 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="닉네임"
-                          disabled={updateMemberMutation.isPending}
-                        />
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => startEdit(m, 'manualNickname')}
-                        className="font-medium text-gray-900 hover:text-blue-600 text-left"
-                        title="닉네임 편집"
-                      >
-                        {m.manualNickname ?? m.nickname ?? m.githubId}
-                      </button>
-                    )}
-                  </div>
-                </td>
-                <td className="px-3 py-2">
-                  <a
-                    href={`https://github.com/${m.githubId}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline text-xs"
-                  >
-                    {m.githubId}
-                  </a>
-                </td>
-                <td className="px-3 py-2">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-1">
-                      {editCell?.memberId === m.id && editCell.field === 'track' ? (
+                <td className="px-1.5 py-1 text-gray-400 text-[10px]">{m.id}</td>
+                <td className="px-1.5 py-1">
+                  <div className="flex items-center gap-1.5">
+                    {m.avatarUrl && <img src={m.avatarUrl} className="w-5 h-5 rounded-full flex-shrink-0" alt="" loading="lazy" />}
+                    <div className="min-w-0">
+                      {editCell?.memberId === m.id && editCell.field === 'manualNickname' ? (
                         <div ref={editContainerRef}>
-                          <select
-                            ref={editSelectRef}
-                            value={editValue}
-                            onChange={(e) => {
-                              setEditValue(e.target.value);
-                              const data: Record<string, unknown> = { track: e.target.value || null };
-                              updateMemberMutation.mutate({ memberId: m.id, data });
-                            }}
-                            onKeyDown={handleKeyDown}
-                            className="border border-blue-400 rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            disabled={updateMemberMutation.isPending}
-                          >
-                            {TRACK_OPTIONS.map((t) => (
-                              <option key={t} value={t}>
-                                {t || '—'}
-                              </option>
-                            ))}
-                          </select>
+                          <input ref={editInputRef} type="text" value={editValue} onChange={(e) => setEditValue(e.target.value)} onKeyDown={handleKeyDown}
+                            className="border border-blue-400 rounded px-1.5 py-0.5 text-xs w-24 focus:outline-none focus:ring-1 focus:ring-blue-500" placeholder="닉네임" disabled={updateMemberMutation.isPending} />
                         </div>
                       ) : (
-                        <button
-                          onClick={() => startEdit(m, 'track')}
-                          className={`text-xs px-1.5 py-0.5 rounded border ${
-                            m.track
-                              ? 'bg-gray-100 text-gray-700 border-gray-200 hover:bg-gray-200'
-                              : 'text-gray-300 border-transparent hover:text-blue-600'
-                          }`}
-                          title="트랙 편집"
-                        >
-                          {m.track || '트랙'}
+                        <button onClick={() => startEdit(m, 'manualNickname')} className="font-medium text-gray-900 hover:text-blue-600 text-xs text-left truncate max-w-[100px] block" title={m.manualNickname ?? m.nickname ?? m.githubId}>
+                          {m.manualNickname ?? m.nickname ?? m.githubId}
                         </button>
                       )}
+                      <a href={`https://github.com/${m.githubId}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-[10px] block truncate max-w-[100px]">{m.githubId}</a>
                     </div>
-                    <div className="flex items-center gap-1 flex-wrap">
-                      {editCell?.memberId === m.id && editCell.field === 'roles' ? (
-                        <div ref={editContainerRef} className="flex flex-wrap gap-1">
-                          {ROLE_OPTIONS.map((role) => (
-                            <button
-                              key={role}
-                              onClick={() => toggleRole(role)}
-                              className={`text-xs px-1.5 py-0.5 rounded border ${
-                                editRoles.includes(role)
-                                  ? 'bg-blue-100 text-blue-700 border-blue-300'
-                                  : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'
-                              }`}
-                              disabled={updateMemberMutation.isPending}
-                            >
-                              {role}
-                            </button>
-                          ))}
-                          <button
-                            onClick={saveEdit}
-                            className="text-xs px-1.5 py-0.5 rounded bg-blue-600 text-white hover:bg-blue-700"
-                            disabled={updateMemberMutation.isPending}
-                          >
-                            저장
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => startEdit(m, 'roles')}
-                          className="hover:opacity-70 transition-opacity"
-                          title="역할 편집"
-                        >
-                          {m.roles.length > 0 ? (
-                            <span className="text-xs text-gray-600">
-                              {m.roles.join(', ')}
-                            </span>
-                          ) : (
-                            <span className="text-xs text-gray-300 hover:text-blue-600">역할</span>
-                          )}
-                        </button>
-                      )}
-                    </div>
-                    <button
-                      onClick={() => { setNewCohortInput(''); setCohortModal({ member: m }); }}
-                      className="hover:opacity-70 transition-opacity"
-                      title="기수 편집"
-                    >
-                      <CohortRoleBadges cohorts={m.cohorts} />
-                    </button>
                   </div>
                 </td>
-                <td className="px-3 py-2">
-                  {editCell?.memberId === m.id && editCell.field === 'blog' ? (
+                <td className="px-1.5 py-1">
+                  <button onClick={() => { setNewCohortInput(''); setCohortModal(m); }} className="hover:opacity-70 transition-opacity text-left" title="기수/역할 편집">
+                    {m.cohorts.length === 0 ? <span className="text-gray-300 text-[10px]">—</span> : (
+                      <div className="flex flex-wrap gap-0.5">
+                        {m.cohorts.map((c) => (
+                          <span key={c.cohort} className="text-[10px] bg-blue-50 text-blue-700 border border-blue-200 rounded px-1 py-0">
+                            {c.cohort}기{c.roles.length > 0 && <span className="text-blue-400">({c.roles.map((r) => ROLE_LABELS[r] ?? r).join(',')})</span>}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </button>
+                </td>
+                <td className="px-1.5 py-1">
+                  {editCell?.memberId === m.id && editCell.field === 'track' ? (
                     <div ref={editContainerRef}>
-                      <input
-                        ref={editInputRef}
-                        type="text"
-                        value={editValue}
-                        onChange={(e) => setEditValue(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        className="border border-blue-400 rounded px-2 py-1 text-sm w-40 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="블로그 URL"
-                        disabled={updateMemberMutation.isPending}
-                      />
+                      <select ref={editSelectRef} value={editValue} onChange={(e) => { setEditValue(e.target.value); const data: Record<string, unknown> = { track: e.target.value || null }; updateMemberMutation.mutate({ memberId: m.id, data }); }} onKeyDown={handleKeyDown}
+                        className="border border-blue-400 rounded px-1 py-0.5 text-[10px] focus:outline-none focus:ring-1 focus:ring-blue-500" disabled={updateMemberMutation.isPending}>
+                        {TRACK_OPTIONS.map((t) => <option key={t} value={t}>{t || '—'}</option>)}
+                      </select>
                     </div>
-                  ) : m.blog ? (
-                    <button
-                      onClick={() => startEdit(m, 'blog')}
-                      className="text-xs text-blue-600 hover:underline max-w-[160px] truncate block text-left"
-                      title={m.blog}
-                    >
-                      {m.blog.replace(/^https?:\/\//, '')}
-                    </button>
                   ) : (
-                    <button
-                      onClick={() => startEdit(m, 'blog')}
-                      className="text-gray-300 text-xs hover:text-blue-600"
-                      title="블로그 추가"
-                    >
-                      —
-                    </button>
+                    <button onClick={() => startEdit(m, 'track')} className={`text-[10px] px-1 py-0 rounded border ${m.track ? 'bg-gray-100 text-gray-700 border-gray-200 hover:bg-gray-200' : 'text-gray-300 border-transparent hover:text-blue-600'}`} title="트랙 편집">{m.track || '—'}</button>
                   )}
                 </td>
-                <td className="px-3 py-2">
-                  <button
-                    onClick={() => void openPRModal(m)}
-                    className="text-xs text-gray-600 hover:text-blue-600 font-medium"
-                    title="PR 확인"
-                  >
-                    {m._count.submissions}
-                  </button>
+                <td className="px-1.5 py-1">
+                  {editCell?.memberId === m.id && editCell.field === 'blog' ? (
+                    <div ref={editContainerRef}>
+                      <input ref={editInputRef} type="text" value={editValue} onChange={(e) => setEditValue(e.target.value)} onKeyDown={handleKeyDown}
+                        className="border border-blue-400 rounded px-1.5 py-0.5 text-xs w-28 focus:outline-none focus:ring-1 focus:ring-blue-500" placeholder="블로그 URL" disabled={updateMemberMutation.isPending} />
+                    </div>
+                  ) : m.blog ? (
+                    <button onClick={() => startEdit(m, 'blog')} className="text-[10px] text-blue-600 hover:underline truncate block text-left max-w-[120px]" title={m.blog}>{m.blog.replace(/^https?:\/\//, '')}</button>
+                  ) : (
+                    <button onClick={() => startEdit(m, 'blog')} className="text-gray-300 text-[10px] hover:text-blue-600" title="블로그 추가">—</button>
+                  )}
                 </td>
-                <td className="px-3 py-2">
-                  <button
-                    onClick={() => void openBlogModal(m)}
-                    className="text-xs text-gray-600 hover:text-blue-600"
-                    title="블로그 글 보기"
-                  >
-                    {m._count.blogPosts}
-                  </button>
+                <td className="px-1.5 py-1">
+                  <button onClick={() => void openPRModal(m)} className="text-[10px] text-gray-600 hover:text-blue-600 font-medium" title="PR 확인">{m._count.submissions}</button>
                 </td>
-                <td className="px-3 py-2">
-                  <div className="flex gap-1">
-                    <button
-                      onClick={() => void refreshProfile(m)}
-                      disabled={refreshing === m.id}
-                      className="text-xs text-gray-500 hover:text-blue-600 disabled:opacity-40 px-1"
-                      title="프로필 새로고침"
-                    >
-                      {refreshing === m.id ? '⟳' : '↺'}
-                    </button>
-                    <button
-                      onClick={() => void deleteMember(m)}
-                      disabled={deleting === m.id}
-                      className="text-xs text-gray-400 hover:text-red-500 disabled:opacity-40 px-1"
-                      title="삭제"
-                    >
-                      ✕
-                    </button>
+                <td className="px-1.5 py-1">
+                  <button onClick={() => void openBlogModal(m)} className="text-[10px] text-gray-600 hover:text-blue-600" title="블로그 글 보기">{m._count.blogPosts}</button>
+                </td>
+                <td className="px-1.5 py-1">
+                  <div className="flex gap-0.5">
+                    <button onClick={() => void refreshProfile(m)} disabled={refreshing === m.id} className="text-[10px] text-gray-500 hover:text-blue-600 disabled:opacity-40 px-0.5" title="프로필 새로고침">{refreshing === m.id ? '⟳' : '↺'}</button>
+                    <button onClick={() => void deleteMember(m)} disabled={deleting === m.id} className="text-[10px] text-gray-400 hover:text-red-500 disabled:opacity-40 px-0.5" title="삭제">✕</button>
                   </div>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-        {sorted.length === 0 && (
-          <div className="py-12 text-center text-gray-400 text-sm">멤버 없음</div>
-        )}
+        {sorted.length === 0 && <div className="py-12 text-center text-gray-400 text-sm">멤버 없음</div>}
       </div>
 
-      <Modal
-        open={!!prModal}
-        onClose={() => setPrModal(null)}
-        title={`${prModal?.member.nickname ?? prModal?.member.githubId} 제출 내역`}
-      >
+      <Modal open={!!prModal} onClose={() => setPrModal(null)} title={`${prModal?.member.nickname ?? prModal?.member.githubId} 제출 내역`}>
         {prModal && (
           <div className="space-y-2 max-h-[60vh] overflow-y-auto">
-            {prModal.submissions.length === 0 ? (
-              <p className="text-gray-400 text-sm">제출 내역 없음</p>
-            ) : (
-              prModal.submissions.map((s) => (
-                <div key={s.id} className="border border-gray-100 rounded p-2">
-                  <div className="flex items-center gap-2">
-                    <a
-                      href={s.prUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-blue-600 hover:underline"
-                    >
-                      #{s.prNumber} {s.title}
-                    </a>
-                    <span
-                      className={`text-xs px-1.5 py-0.5 rounded font-medium border ${
-                        s.status === 'merged'
-                          ? 'bg-purple-100 text-purple-700 border-purple-200'
-                          : s.status === 'open'
-                            ? 'bg-green-100 text-green-700 border-green-200'
-                            : 'bg-gray-100 text-gray-500 border-gray-200'
-                      }`}
-                    >
-                      {s.status}
-                    </span>
-                  </div>
-                  <p className="text-xs text-gray-400 mt-0.5">
-                    {s.missionRepo.name} · {new Date(s.submittedAt).toLocaleDateString('ko-KR')}
-                  </p>
+            {prModal.submissions.length === 0 ? <p className="text-gray-400 text-sm">제출 내역 없음</p> : prModal.submissions.map((s) => (
+              <div key={s.id} className="border border-gray-100 rounded p-2">
+                <div className="flex items-center gap-2">
+                  <a href={s.prUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline">#{s.prNumber} {s.title}</a>
+                  <span className={`text-xs px-1.5 py-0.5 rounded font-medium border ${s.status === 'merged' ? 'bg-purple-100 text-purple-700 border-purple-200' : s.status === 'open' ? 'bg-green-100 text-green-700 border-green-200' : 'bg-gray-100 text-gray-500 border-gray-200'}`}>{s.status}</span>
                 </div>
-              ))
-            )}
+                <p className="text-xs text-gray-400 mt-0.5">{s.missionRepo.name} · {new Date(s.submittedAt).toLocaleDateString('ko-KR')}</p>
+              </div>
+            ))}
           </div>
         )}
       </Modal>
 
-      {/* 블로그 모달 */}
-      <Modal
-        open={!!blogModal}
-        onClose={() => setBlogModal(null)}
-        title={`${blogModal?.member.githubId} 블로그 포스트`}
-      >
+      <Modal open={!!blogModal} onClose={() => setBlogModal(null)} title={`${blogModal?.member.githubId} 블로그 포스트`}>
         {blogModal && (
           <div className="space-y-2">
-            {blogModal.posts.length === 0 ? (
-              <p className="text-gray-400 text-sm">포스트 없음</p>
-            ) : (
-              blogModal.posts.map((p) => (
-                <div key={p.id} className="border border-gray-100 rounded p-2">
-                  <a
-                    href={p.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-blue-600 hover:underline"
-                  >
-                    {p.title}
-                  </a>
-                  <p className="text-xs text-gray-400 mt-0.5">
-                    {new Date(p.publishedAt).toLocaleDateString('ko-KR')}
-                  </p>
-                </div>
-              ))
-            )}
+            {blogModal.posts.length === 0 ? <p className="text-gray-400 text-sm">포스트 없음</p> : blogModal.posts.map((p) => (
+              <div key={p.id} className="border border-gray-100 rounded p-2">
+                <a href={p.url} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline">{p.title}</a>
+                <p className="text-xs text-gray-400 mt-0.5">{new Date(p.publishedAt).toLocaleDateString('ko-KR')}</p>
+              </div>
+            ))}
           </div>
         )}
       </Modal>
 
-      {/* 기수 편집 모달 */}
-      <Modal
-        open={!!cohortModal}
-        onClose={() => setCohortModal(null)}
-        title={`${cohortModal?.member.githubId} 기수 편집`}
-      >
+      <Modal open={!!cohortModal} onClose={() => setCohortModal(null)} title={`${cohortModal?.githubId} 기수/역할 편집`}>
         {cohortModal && (
           <div className="space-y-4">
             <div>
               <p className="text-xs text-gray-500 mb-2">현재 기수</p>
-              {cohortModal.member.cohorts.length === 0 ? (
-                <p className="text-xs text-gray-400">기수 없음</p>
-              ) : (
-                <div className="flex flex-wrap gap-2">
-                  {cohortModal.member.cohorts.map((c: MemberCohort) => (
-                    <span
-                      key={c.cohort}
-                      className="inline-flex items-center gap-1 bg-blue-50 border border-blue-200 text-blue-700 text-xs rounded px-2 py-1"
-                    >
-                      {c.cohort}기
-                      {c.roles.length > 0 && (
-                        <span className="text-blue-400">({c.roles.join(', ')})</span>
-                      )}
-                      <button
-                        onClick={() =>
-                          deleteCohortMutation.mutate({
-                            memberId: cohortModal.member.id,
-                            cohort: c.cohort,
-                          })
-                        }
-                        disabled={deleteCohortMutation.isPending}
-                        className="hover:text-red-500 ml-0.5 disabled:opacity-40"
-                        title="기수 삭제"
-                      >
-                        ✕
-                      </button>
-                    </span>
+              {cohortModal.cohorts.length === 0 ? <p className="text-xs text-gray-400">기수 없음</p> : (
+                <div className="space-y-2">
+                  {cohortModal.cohorts.map((c: MemberCohort) => (
+                    <div key={c.cohort} className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded px-3 py-2">
+                      <span className="text-sm font-semibold text-gray-700 w-10">{c.cohort}기</span>
+                      <div className="flex gap-1 flex-wrap">
+                        {ROLE_OPTIONS.map((role) => (
+                          <button
+                            key={role}
+                            onClick={() => toggleCohortRole(cohortModal.id, c.cohort, c.roles, role)}
+                            disabled={updateCohortRolesMutation.isPending}
+                            className={`text-xs px-2 py-0.5 rounded border transition-colors ${c.roles.includes(role) ? 'bg-blue-100 text-blue-700 border-blue-300' : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-100'}`}
+                          >
+                            {ROLE_LABELS[role]}
+                          </button>
+                        ))}
+                      </div>
+                      <button onClick={() => deleteCohortMutation.mutate({ memberId: cohortModal.id, cohort: c.cohort })} disabled={deleteCohortMutation.isPending}
+                        className="text-xs text-gray-400 hover:text-red-500 ml-auto disabled:opacity-40" title="기수 삭제">✕</button>
+                    </div>
                   ))}
                 </div>
               )}
@@ -588,21 +339,10 @@ export default function MemberTable({ members, onRefresh }: Props) {
             <div>
               <p className="text-xs text-gray-500 mb-2">기수 추가</p>
               <div className="flex gap-2">
-                <input
-                  type="number"
-                  value={newCohortInput}
-                  onChange={(e) => setNewCohortInput(e.target.value)}
-                  placeholder="예: 9"
-                  className="border border-gray-300 rounded px-3 py-1.5 text-sm w-24"
-                  onKeyDown={(e) => { if (e.key === 'Enter') handleAddCohort(); }}
-                />
-                <button
-                  onClick={handleAddCohort}
-                  disabled={addCohortMutation.isPending || !newCohortInput}
-                  className="bg-blue-600 text-white text-sm rounded px-3 py-1.5 hover:bg-blue-700 disabled:opacity-40"
-                >
-                  추가
-                </button>
+                <input type="number" value={newCohortInput} onChange={(e) => setNewCohortInput(e.target.value)} placeholder="예: 9"
+                  className="border border-gray-300 rounded px-3 py-1.5 text-sm w-24" onKeyDown={(e) => { if (e.key === 'Enter') handleAddCohort(); }} />
+                <button onClick={handleAddCohort} disabled={addCohortMutation.isPending || !newCohortInput}
+                  className="bg-blue-600 text-white text-sm rounded px-3 py-1.5 hover:bg-blue-700 disabled:opacity-40">추가</button>
               </div>
             </div>
           </div>
