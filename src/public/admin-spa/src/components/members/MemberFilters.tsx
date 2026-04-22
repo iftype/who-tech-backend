@@ -19,15 +19,6 @@ export default function MemberFiltersBar({ filters, onChange }: Props) {
         onChange={(e: ChangeEvent<HTMLInputElement>) => set('q', e.target.value)}
         className="border border-gray-300 rounded px-3 py-1.5 text-sm w-48"
       />
-      <input
-        type="number"
-        placeholder="기수"
-        value={filters.cohort ?? ''}
-        onChange={(e: ChangeEvent<HTMLInputElement>) =>
-          onChange({ ...filters, cohort: e.target.value ? Number(e.target.value) : undefined })
-        }
-        className="border border-gray-300 rounded px-3 py-1.5 text-sm w-20"
-      />
       <select
         value={filters.role ?? ''}
         onChange={(e) => set('role', e.target.value)}
