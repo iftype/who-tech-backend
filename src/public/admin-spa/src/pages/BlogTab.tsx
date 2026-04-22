@@ -2,33 +2,15 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '../lib/api.js';
 import { showToast } from '../components/ui/Toast.js';
-import type { NewBlogPost, Workspace } from '../lib/types.js';
+import type { NewBlogPost } from '../lib/types.js';
 
 export default function BlogTab() {
   const [sinceMinutes, setSinceMinutes] = useState(65);
   const queryClient = useQueryClient();
 
-  const { data: workspace } = useQuery({
-    queryKey: ['workspace'],
-    queryFn: () => apiFetch<Workspace>('/admin/workspace'),
-    staleTime: 300_000,
-  });
-
   const { data: posts = [], isLoading } = useQuery({
     queryKey: ['blog-new-posts', sinceMinutes],
     queryFn: () => apiFetch<NewBlogPost[]>(`/admin/blog/new-posts?sinceMinutes=${sinceMinutes}`),
-  });
-
-  const toggleBlogSyncMutation = useMutation({
-    mutationFn: (enabled: boolean) =>
-      apiFetch<Workspace>('/admin/workspace', {
-        method: 'PUT',
-        body: JSON.stringify({ blogSyncEnabled: enabled }),
-      }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['workspace'] });
-    },
-    onError: (e) => showToast(e instanceof Error ? e.message : '변경 실패', 'error'),
   });
 
   const syncMutation = useMutation({
@@ -60,16 +42,6 @@ export default function BlogTab() {
         >
           {syncMutation.isPending ? 'RSS 싱크 중...' : 'RSS 전체 싱크'}
         </button>
-        <label className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded px-3 py-1.5 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={workspace?.blogSyncEnabled ?? false}
-            onChange={(e) => toggleBlogSyncMutation.mutate(e.target.checked)}
-            disabled={toggleBlogSyncMutation.isPending}
-            className="rounded"
-          />
-          <span className="text-xs text-gray-700">자동 싱크</span>
-        </label>
         <button
           onClick={() => backfillMutation.mutate()}
           disabled={backfillMutation.isPending}

@@ -40,21 +40,6 @@ export default function ArchiveTab() {
 
   const cohortNum = cohort ? Number(cohort) : NaN;
 
-  const { data: mdData, isLoading: mdLoading } = useQuery({
-    queryKey: ['archive', cohort, track],
-    queryFn: async () => {
-      if (!cohort) return null;
-      const params = new URLSearchParams({ cohort, format: 'md' });
-      if (track) params.set('track', track);
-      const res = await fetch(`/admin/archive?${params.toString()}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('admin_token') ?? ''}` },
-      });
-      if (!res.ok) throw new Error(await res.text());
-      return res.text();
-    },
-    enabled: !!cohort,
-  });
-
   const { data: cohortRepos = [], isLoading: reposLoading } = useQuery({
     queryKey: ['cohort-repos', cohortNum],
     queryFn: () => apiFetch<CohortRepo[]>(`/admin/cohort-repos?cohort=${cohortNum}`),
@@ -132,7 +117,6 @@ export default function ArchiveTab() {
     onSuccess: (result) => {
       showToast(`${result.added}개 레포 자동 추가 완료`);
       void queryClient.invalidateQueries({ queryKey: ['cohort-repos'] });
-      void queryClient.invalidateQueries({ queryKey: ['archive'] });
     },
     onError: (e) => showToast(e instanceof Error ? e.message : '자동 채우기 실패', 'error'),
   });
@@ -147,7 +131,6 @@ export default function ArchiveTab() {
       showToast('레포 추가 완료');
       setSelectedRepoId('');
       void queryClient.invalidateQueries({ queryKey: ['cohort-repos'] });
-      void queryClient.invalidateQueries({ queryKey: ['archive'] });
     },
     onError: (e) => showToast(e instanceof Error ? e.message : '추가 실패', 'error'),
   });
@@ -157,7 +140,6 @@ export default function ArchiveTab() {
     onSuccess: () => {
       showToast('삭제 완료');
       void queryClient.invalidateQueries({ queryKey: ['cohort-repos'] });
-      void queryClient.invalidateQueries({ queryKey: ['archive'] });
     },
     onError: (e) => showToast(e instanceof Error ? e.message : '삭제 실패', 'error'),
   });
@@ -171,7 +153,6 @@ export default function ArchiveTab() {
     onSuccess: () => {
       setEditingOrderId(null);
       void queryClient.invalidateQueries({ queryKey: ['cohort-repos'] });
-      void queryClient.invalidateQueries({ queryKey: ['archive'] });
     },
     onError: (e) => {
       showToast(e instanceof Error ? e.message : '순서 변경 실패', 'error');
@@ -428,20 +409,7 @@ export default function ArchiveTab() {
         </div>
       )}
 
-      <div>
-        <h3 className="text-sm font-semibold text-gray-700 mb-2">아카이브 미리보기</h3>
-        {mdLoading && <div className="py-8 text-center text-gray-400 text-sm">로딩 중...</div>}
-        {mdData && (
-          <div className="bg-gray-900 rounded border border-gray-700 p-4 font-mono text-xs text-gray-300 max-h-[50vh] overflow-y-auto whitespace-pre-wrap leading-relaxed">
-            {mdData}
-          </div>
-        )}
-        {!cohort && !mdData && (
-          <div className="py-12 text-center text-gray-400 text-sm">
-            기수를 입력하면 아카이브 마크다운이 표시됩니다
-          </div>
-        )}
-      </div>
+
     </div>
   );
 }
