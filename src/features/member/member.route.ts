@@ -48,6 +48,13 @@ export function createMemberRouter(service: MemberService) {
   );
 
   router.get(
+    '/cohorts',
+    asyncHandler(async (_req, res) => {
+      res.json(await service.listMemberCohorts());
+    }),
+  );
+
+  router.get(
     '/:id',
     asyncHandler(async (req, res) => {
       const member = await service.get(parseId(req.params['id']));

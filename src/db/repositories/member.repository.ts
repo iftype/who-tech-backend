@@ -209,6 +209,15 @@ export function createMemberRepository(db: PrismaClient) {
     patch: (id: number, data: Partial<Prisma.MemberUpdateInput>) => db.member.update({ where: { id }, data }),
 
     count: () => db.member.count(),
+
+    listMemberCohorts: (workspaceId: number): Promise<number[]> =>
+      db.memberCohort
+        .findMany({
+          where: { member: { workspaceId } },
+          select: { cohort: { select: { number: true } } },
+          distinct: ['cohortId'],
+        })
+        .then((rows) => [...new Set(rows.map((r) => r.cohort.number))].sort((a, b) => a - b)),
   };
 }
 
