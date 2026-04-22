@@ -1,0 +1,11 @@
+- generic [active]:
+  - generic [ref=e2]:
+    - heading "Admin 로그인" [level=2] [ref=e3]
+    - paragraph [ref=e4]: ADMIN_SECRET으로 로그인하세요.
+    - textbox "ADMIN_SECRET" [ref=e5]
+    - button "로그인" [ref=e6] [cursor=pointer]
+  - generic [ref=e8] [cursor=pointer]:
+    - generic [ref=e9]: Activity Log
+    - generic [ref=e10]:
+      - button "지우기" [ref=e11]
+      - button "접기 ▾" [ref=e12]
