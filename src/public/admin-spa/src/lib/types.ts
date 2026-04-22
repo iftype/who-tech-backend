@@ -9,6 +9,7 @@ export interface MissionRepo {
   syncMode: string;
   level: number | null;
   cohorts: number[];
+  description: string | null;
   _count: { submissions: number };
 }
 
@@ -80,6 +81,21 @@ export interface BlogPost {
   url: string;
   title: string;
   publishedAt: string;
+}
+
+export interface CohortRepo {
+  id: number;
+  cohort: number;
+  order: number;
+  missionRepoId: number;
+  missionRepo: {
+    id: number;
+    name: string;
+    repoUrl: string;
+    track: string | null;
+    level: number | null;
+    tabCategory: string;
+  };
 }
 
 export interface Submission {
