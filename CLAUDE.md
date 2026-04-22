@@ -1,4 +1,7 @@
-# CLAUDE.md — Backend
+# CLAUDE.md — who-tech-backend
+
+> ⚠️ **이 파일은 AGENTS.md를 참조합니다.**
+> 실제 규칙은 `AGENTS.md`에 있으며, 이 파일은 하위 호환용입니다.
 
 우아한테크코스 크루 검색 서비스의 백엔드. GitHub 조직(`woowacourse`)의 미션 레포 PR을 수집해 멤버 정보를 저장한다.
 
@@ -6,35 +9,30 @@
 - **서버**: Oracle Cloud AMD, iftype.store, SSH: `ssh oracle`
 - **PM2 앱 이름**: `backend`
 
-## 주요 명령어
-
-```bash
-npm run dev              # tsx watch 핫리로드
-npm run test:unit        # 유닛 테스트 (CI)
-npm run test:integration # 통합 테스트 (로컬, DB 필요)
-npm run lint:fix
-npm run format
-npx prisma migrate dev   # 마이그레이션 생성 + 적용
-npm run seed             # Role + Workspace 시드
-```
-
-## PR/브랜치 규칙
+## 핵심 규칙 (AGENTS.md 참고)
 
 ```
-feat/#이슈번호-설명 → main PR → 머지
+소스 수정 → /typecheck → /test unit → 둘 다 통과 → 완료 선언
 ```
 
-## Agent 하네스
+### PR/브랜치 규칙 (강제)
 
-자동 로드되는 rules (`.claude/rules/`):
+- **main 브랜치 직접 푸시 금지** — 반드시 PR 생성 후 머지
+- 브랜치명: `feat/#이슈번호-설명` → main PR
+- 기능 완성 시에만 PR (중간 커밋 PR 금지)
 
-- **항상**: `protocol.md` (완료 기준·커맨드), `conventions.md` (코드 규칙)
-- **조건부**: `testing.md` (테스트 작업 시), `sync.md` (sync 모듈), `schema.md` (prisma 변경), `deploy.md` (CI/CD)
+### 커맨드 도구 (`.claude/commands/`)
 
-커맨드 도구 (`.claude/commands/`): `typecheck` / `test` / `lint` / `migrate`
+| 커맨드       | 실행 내용                         |
+| ------------ | --------------------------------- |
+| `/typecheck` | `npx tsc --noEmit --skipLibCheck` |
+| `/test`      | 인자별 jest 실행                  |
+| `/lint`      | `lint:fix` + `format`             |
+| `/migrate`   | prisma migrate dev + generate     |
 
 ## 참고 문서 (상세)
 
+- [AGENTS.md](AGENTS.md) — 모든 에이전트 규칙
 - [아키텍처 및 DB 스키마](.claude/docs/ARCHITECTURE.md)
 - [API 엔드포인트](.claude/docs/api.md)
 - [환경 설정](.claude/docs/SETUP.md)
