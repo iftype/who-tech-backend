@@ -236,6 +236,11 @@ export function createMemberService(deps: {
       const workspace = await workspaceService.getOrThrow();
       return memberRepo.deleteAllWithRelations(workspace.id);
     },
+
+    listMemberCohorts: async () => {
+      const workspace = await workspaceService.getOrThrow();
+      return memberRepo.listMemberCohorts(workspace.id);
+    },
   };
 }
 
