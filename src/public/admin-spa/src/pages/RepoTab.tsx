@@ -217,6 +217,7 @@ function RepoTable({
               <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">Lv</th>
               <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">기수</th>
               <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">설명</th>
+              <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">마지막싱크</th>
               <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">제출</th>
               <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">작업</th>
             </tr>
@@ -286,6 +287,9 @@ function RepoTable({
                       {r.description || '—'}
                     </span>
                   )}
+                </td>
+                <td className="px-3 py-2 text-xs text-gray-500 whitespace-nowrap">
+                  {r.lastSyncAt ? new Date(r.lastSyncAt).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }) : '—'}
                 </td>
                 <td className="px-3 py-2 text-xs text-gray-600">{r._count.submissions}</td>
                 <td className="px-3 py-2">

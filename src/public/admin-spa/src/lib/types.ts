@@ -10,6 +10,7 @@ export interface MissionRepo {
   level: number | null;
   cohorts: number[];
   description: string | null;
+  lastSyncAt: string | null;
   _count: { submissions: number };
 }
 

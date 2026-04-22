@@ -186,9 +186,9 @@ export default function MemberTable({ members, onRefresh }: Props) {
 
   return (
     <>
-      <div className="overflow-x-auto rounded border border-gray-200">
+      <div className="overflow-x-auto rounded border border-gray-200 max-h-[60vh] overflow-y-auto">
         <table className="w-full text-xs">
-          <thead className="bg-gray-50 border-b border-gray-200">
+          <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
             <tr>
               <th className="text-left text-[11px] font-medium text-gray-500 px-1.5 py-1 w-6">#</th>
               <th className="text-left text-[11px] font-medium text-gray-500 px-1.5 py-1">프로필</th>
