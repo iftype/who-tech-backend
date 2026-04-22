@@ -1,0 +1,278 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - heading "who.tech 어드민" [level=1] [ref=e3]
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - heading "Members" [level=2] [ref=e6]
+        - generic [ref=e7]: "-"
+        - generic [ref=e8]: 수집된 멤버 수
+      - generic [ref=e9]:
+        - heading "Active Repos" [level=2] [ref=e10]
+        - generic [ref=e11]: "-"
+        - generic [ref=e12]: 활성 미션 레포 수
+      - generic [ref=e13]:
+        - heading "Last Sync" [level=2] [ref=e14]
+        - generic [ref=e15]: "-"
+        - generic [ref=e16]: 마지막 전체 sync 시각
+    - generic [ref=e17]:
+      - generic [ref=e18]:
+        - generic [ref=e19]:
+          - heading "Sync" [level=2] [ref=e20]
+          - generic [ref=e21]: 전체 sync와 단건 테스트를 여기서 실행합니다.
+        - generic [ref=e22]:
+          - spinbutton "기수 입력 시 해당 기수 레포만 Sync/백필" [ref=e23]
+          - button "블로그 링크 백필" [ref=e24] [cursor=pointer]
+          - button "블로그 Sync" [ref=e25] [cursor=pointer]
+          - button "블로그 자동수집 ON" [ref=e26] [cursor=pointer]
+          - button "자동수집" [ref=e27] [cursor=pointer]
+          - button "전체 Sync" [ref=e28] [cursor=pointer]
+          - button "ts-and-learning 테스트" [ref=e29] [cursor=pointer]
+      - generic [ref=e30]: 준비됨
+      - generic [ref=e31]:
+        - generic [ref=e32]: 자동수집 레포 현황 (active 이고 수집모드가 자동수집인 레포만 표시)
+        - table [ref=e34]:
+          - rowgroup [ref=e35]:
+            - row "레포 트랙 마지막 sync" [ref=e36]:
+              - columnheader "레포" [ref=e37]
+              - columnheader "트랙" [ref=e38]
+              - columnheader "마지막 sync" [ref=e39]
+          - rowgroup [ref=e40]:
+            - row "불러오는 중..." [ref=e41]:
+              - cell "불러오는 중..." [ref=e42]
+    - generic [ref=e43]:
+      - generic [ref=e44]:
+        - generic [ref=e45]:
+          - heading "Repo Candidates" [level=2] [ref=e46]
+          - generic [ref=e47]: woowacourse 조직에서 미션 레포 후보를 불러오고 상태, 수집모드, 탭 분류를 관리합니다.
+        - generic [ref=e48]:
+          - button "전체 삭제" [ref=e49] [cursor=pointer]
+          - button "후보 불러오기" [ref=e50] [cursor=pointer]
+      - generic [ref=e51]:
+        - button "기준 레포" [ref=e52] [cursor=pointer]
+        - button "공통 미션" [ref=e53] [cursor=pointer]
+        - button "제외된 레포" [ref=e54] [cursor=pointer]
+        - button "프리코스" [ref=e55] [cursor=pointer]
+      - generic [ref=e56]:
+        - textbox "레포 이름 검색" [ref=e57]
+        - combobox [ref=e58]:
+          - option "모든 상태" [selected]
+          - option "active"
+          - option "candidate"
+          - option "excluded"
+        - combobox [ref=e59]:
+          - option "모든 트랙" [selected]
+          - option "frontend"
+          - option "backend"
+          - option "android"
+      - generic [ref=e60]:
+        - strong [ref=e61]: 빠른 편집 안내
+        - generic [ref=e62]: 상태 배지를 클릭하면 active/candidate/excluded를 바꿉니다.
+        - generic [ref=e63]: 수집모드 칩을 클릭하면 자동수집과 1회수집을 바꿉니다.
+        - generic [ref=e64]: 자동수집 현황 표에는 active + 자동수집 레포만 잡힙니다.
+      - generic [ref=e65]: 자동수집 레포 (수집모드가 자동수집인 레포 묶음)
+      - table [ref=e67]:
+        - rowgroup [ref=e68]:
+          - row "이름 상태 / 수집 트랙/타입 기수 설명 / 후보 사유 마지막 sync 작업" [ref=e69]:
+            - columnheader "이름" [ref=e70]
+            - columnheader "상태 / 수집" [ref=e71]
+            - columnheader "트랙/타입" [ref=e72]
+            - columnheader "기수" [ref=e73]
+            - columnheader "설명 / 후보 사유" [ref=e74]
+            - columnheader "마지막 sync" [ref=e75]
+            - columnheader "작업" [ref=e76]
+        - rowgroup
+      - generic [ref=e77]: 1회수집 레포 (최초 1회 수집 후 기본 전체 Sync에서는 skip)
+      - table [ref=e79]:
+        - rowgroup [ref=e80]:
+          - row "이름 상태 / 수집 트랙/타입 기수 설명 / 후보 사유 마지막 sync 작업" [ref=e81]:
+            - columnheader "이름" [ref=e82]
+            - columnheader "상태 / 수집" [ref=e83]
+            - columnheader "트랙/타입" [ref=e84]
+            - columnheader "기수" [ref=e85]
+            - columnheader "설명 / 후보 사유" [ref=e86]
+            - columnheader "마지막 sync" [ref=e87]
+            - columnheader "작업" [ref=e88]
+        - rowgroup
+    - generic [ref=e89]:
+      - heading "Manual Repo Add" [level=2] [ref=e90]
+      - generic [ref=e91]: 후보에 안 잡히는 레포는 직접 추가할 수 있습니다.
+      - generic [ref=e92]:
+        - textbox "레포 이름" [ref=e93]
+        - textbox "레포 URL" [ref=e94]
+        - textbox "설명 (선택)" [ref=e95]
+        - combobox [ref=e96]:
+          - option "트랙 없음(공통)" [selected]
+          - option "frontend"
+          - option "backend"
+          - option "android"
+        - combobox [ref=e97]:
+          - option "individual" [selected]
+          - option "integration"
+        - combobox [ref=e98]:
+          - option "기준" [selected]
+          - option "공통"
+          - option "제외"
+          - option "프리코스"
+        - combobox [ref=e99]:
+          - option "active" [selected]
+          - option "candidate"
+          - option "excluded"
+        - combobox [ref=e100]:
+          - option "계속 sync" [selected]
+          - option "한 번만"
+        - button "추가" [ref=e101] [cursor=pointer]
+    - generic [ref=e102]:
+      - generic [ref=e103]:
+        - generic [ref=e104]:
+          - heading "Members" [level=2] [ref=e105]
+          - generic [ref=e106]: 대표 닉네임, 블로그 링크, 최근 글 목록을 보고 수정/삭제합니다.
+        - generic [ref=e107]:
+          - button "프로필 새로고침" [ref=e108] [cursor=pointer]
+          - button "전체 삭제" [ref=e109] [cursor=pointer]
+      - generic [ref=e110]:
+        - textbox "GitHub ID 또는 닉네임 검색" [ref=e111]
+        - combobox [ref=e112]:
+          - option "모든 기수"
+          - option "8기" [selected]
+          - option "7기"
+          - option "6기"
+          - option "5기"
+          - option "4기"
+          - option "3기"
+          - option "2기"
+          - option "1기"
+        - combobox [ref=e113]:
+          - option "모든 역할" [selected]
+          - option "크루"
+          - option "코치"
+          - option "리뷰어"
+        - combobox [ref=e114]:
+          - option "모든 트랙" [selected]
+          - option "frontend"
+          - option "backend"
+          - option "android"
+        - combobox [ref=e115]:
+          - option "블로그 전체" [selected]
+          - option "블로그 있음"
+          - option "블로그 없음"
+        - button "⚠️ 페어 의심" [ref=e116] [cursor=pointer]
+      - generic [ref=e117]:
+        - 'textbox "GitHub ID 또는 #12345678 (숫자ID)" [ref=e118]'
+        - textbox "닉네임 (선택)" [ref=e119]
+        - spinbutton [ref=e120]
+        - generic [ref=e121]:
+          - generic [ref=e122] [cursor=pointer]:
+            - checkbox "크루" [checked] [ref=e123]
+            - text: 크루
+          - generic [ref=e124] [cursor=pointer]:
+            - checkbox "코치" [ref=e125]
+            - text: 코치
+          - generic [ref=e126] [cursor=pointer]:
+            - checkbox "리뷰어" [ref=e127]
+            - text: 리뷰어
+        - combobox [ref=e128]:
+          - option "트랙 (선택)" [selected]
+          - option "백엔드"
+          - option "프론트엔드"
+          - option "안드로이드"
+        - textbox "블로그 URL (선택)" [ref=e129]
+        - button "멤버 추가" [ref=e130] [cursor=pointer]
+      - table [ref=e132]:
+        - rowgroup [ref=e133]:
+          - row "프로필 닉네임 역할 기수 트랙 제출 블로그 링크 RSS 블로그 글 목록 작업" [ref=e134]:
+            - columnheader "프로필" [ref=e135]
+            - columnheader "닉네임" [ref=e136]
+            - columnheader "역할" [ref=e137]
+            - columnheader "기수" [ref=e138]
+            - columnheader "트랙" [ref=e139]
+            - columnheader "제출" [ref=e140]
+            - columnheader "블로그 링크" [ref=e141]
+            - columnheader "RSS" [ref=e142]
+            - columnheader "블로그 글 목록" [ref=e143]
+            - columnheader "작업" [ref=e144]
+        - rowgroup
+      - generic [ref=e145]: 불러오는 중...
+    - generic [ref=e146]:
+      - generic [ref=e148]:
+        - heading "기수별 레포 순서" [level=2] [ref=e149]
+        - generic [ref=e150]: 기수별로 레포를 추가하고 순서를 관리합니다. 아카이브 페이지 생성에 사용됩니다.
+      - generic [ref=e151]:
+        - combobox [ref=e152]:
+          - option "기수 선택" [selected]
+          - option "8기"
+          - option "7기"
+          - option "6기"
+          - option "5기"
+          - option "4기"
+          - option "3기"
+          - option "2기"
+          - option "1기"
+        - combobox [ref=e153]:
+          - option "모든 트랙" [selected]
+          - option "frontend"
+          - option "backend"
+          - option "android"
+        - button "자동 채우기" [ref=e154] [cursor=pointer]
+        - button "목록 전체 재 Sync" [ref=e155] [cursor=pointer]
+      - table [ref=e157]:
+        - rowgroup [ref=e158]:
+          - row "순서 레포 트랙 레벨 작업" [ref=e159]:
+            - columnheader "순서" [ref=e160]
+            - columnheader "레포" [ref=e161]
+            - columnheader "트랙" [ref=e162]
+            - columnheader "레벨" [ref=e163]
+            - columnheader "작업" [ref=e164]
+        - rowgroup
+      - generic [ref=e165]:
+        - textbox "레포 검색..." [ref=e166]
+        - combobox [ref=e167]:
+          - option "레포 선택" [selected]
+        - combobox [ref=e168]:
+          - option "레벨 미지정" [selected]
+          - option "레벨 1"
+          - option "레벨 2"
+          - option "레벨 3"
+          - option "레벨 4"
+          - option "레벨 5"
+          - option "레벨 6"
+        - spinbutton [ref=e169]
+        - button "추가" [ref=e170] [cursor=pointer]
+    - generic [ref=e171]:
+      - generic [ref=e172]:
+        - heading "Person (마스터 테이블)" [level=2] [ref=e173]
+        - button "새로고침" [ref=e174] [cursor=pointer]
+      - paragraph [ref=e175]: 같은 사람이 여러 GitHub ID(페어·개명·코치 겸직 등)로 등록된 경우, Person으로 묶어 통합 관리합니다.
+      - generic [ref=e176]:
+        - textbox "표시 이름 (선택)" [ref=e177]
+        - textbox "메모 (선택)" [ref=e178]
+        - button "Person 생성" [ref=e179] [cursor=pointer]
+    - generic [ref=e180]:
+      - heading "Workspace 설정" [level=2] [ref=e181]
+      - generic [ref=e182]:
+        - textbox "기수 규칙 JSON" [ref=e183]
+        - button "Workspace 저장" [ref=e184] [cursor=pointer]
+    - generic [ref=e185]:
+      - generic [ref=e186]:
+        - generic [ref=e187]:
+          - heading "닉네임 금지어" [level=2] [ref=e188]
+          - generic [ref=e189]: 닉네임 토큰 추출 시 제외할 단어 목록 (제출합니다, 미션 등)
+        - button "새로고침" [ref=e190] [cursor=pointer]
+      - generic [ref=e191]: 불러오는 중...
+      - generic [ref=e192]:
+        - textbox "금지어 입력" [ref=e193]
+        - button "추가" [ref=e194] [cursor=pointer]
+    - generic [ref=e195]:
+      - generic [ref=e196]:
+        - generic [ref=e197]:
+          - heading "무시 도메인" [level=2] [ref=e198]
+          - generic [ref=e199]: 블로그로 인정하지 않을 도메인 목록 (github.com 등)
+        - button "새로고침" [ref=e200] [cursor=pointer]
+      - generic [ref=e201]: 불러오는 중...
+      - generic [ref=e202]:
+        - 'textbox "도메인 입력 (예: github.com)" [ref=e203]'
+        - button "추가" [ref=e204] [cursor=pointer]
+  - generic [ref=e206] [cursor=pointer]:
+    - generic [ref=e207]: Activity Log
+    - generic [ref=e208]:
+      - button "지우기" [ref=e209]
+      - button "접기 ▾" [ref=e210]
