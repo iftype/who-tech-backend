@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '../lib/api.js';
 import { showToast } from '../components/ui/Toast.js';
@@ -7,11 +7,130 @@ import type { MissionRepo } from '../lib/types.js';
 type StatusFilter = '' | 'active' | 'candidate' | 'excluded';
 type TabCategoryFilter = '' | 'base' | 'common' | 'precourse' | 'excluded';
 
+type EditableField = 'track' | 'type' | 'tabCategory' | 'level' | 'cohorts' | 'description';
+type EditingCell = { repoId: number; field: EditableField } | null;
+
+interface SelectOption {
+  value: string;
+  label: string;
+}
+
+const TRACK_OPTIONS: SelectOption[] = [
+  { value: '', label: '공통' },
+  { value: 'frontend', label: 'frontend' },
+  { value: 'backend', label: 'backend' },
+  { value: 'android', label: 'android' },
+];
+
+const TYPE_OPTIONS: SelectOption[] = [
+  { value: 'individual', label: '개인' },
+  { value: 'integration', label: '통합' },
+];
+
+const TAB_CATEGORY_OPTIONS: SelectOption[] = [
+  { value: 'base', label: '기준' },
+  { value: 'common', label: '공통' },
+  { value: 'precourse', label: '프리코스' },
+  { value: 'excluded', label: '제외' },
+];
+
+function EditableSelectCell({
+  value,
+  options,
+  onSave,
+  onCancel,
+  saving,
+}: {
+  value: string;
+  options: SelectOption[];
+  onSave: (v: string) => void;
+  onCancel: () => void;
+  saving: boolean;
+}) {
+  const ref = useRef<HTMLSelectElement>(null);
+
+  useEffect(() => {
+    ref.current?.focus();
+  }, []);
+
+  return (
+    <select
+      ref={ref}
+      defaultValue={value}
+      disabled={saving}
+      onChange={(e) => onSave(e.target.value)}
+      onBlur={onCancel}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') onCancel();
+      }}
+      className="text-xs border border-blue-300 rounded px-1 py-0.5 bg-white focus:outline-none focus:ring-1 focus:ring-blue-400 w-full disabled:opacity-50"
+    >
+      {options.map((o) => (
+        <option key={o.value} value={o.value}>
+          {o.label}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+function EditableTextCell({
+  value,
+  onSave,
+  onCancel,
+  saving,
+  type = 'text',
+  placeholder,
+}: {
+  value: string;
+  onSave: (v: string) => void;
+  onCancel: () => void;
+  saving: boolean;
+  type?: 'text' | 'number';
+  placeholder?: string;
+}) {
+  const ref = useRef<HTMLInputElement>(null);
+  const [localValue, setLocalValue] = useState(value);
+
+  useEffect(() => {
+    ref.current?.focus();
+    ref.current?.select();
+  }, []);
+
+  const handleSave = useCallback(() => {
+    onSave(localValue);
+  }, [localValue, onSave]);
+
+  return (
+    <input
+      ref={ref}
+      type={type}
+      value={localValue}
+      disabled={saving}
+      placeholder={placeholder}
+      onChange={(e) => setLocalValue(e.target.value)}
+      onBlur={handleSave}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          handleSave();
+        }
+        if (e.key === 'Escape') {
+          onCancel();
+        }
+      }}
+      className="text-xs border border-blue-300 rounded px-1 py-0.5 bg-white focus:outline-none focus:ring-1 focus:ring-blue-400 w-full disabled:opacity-50"
+    />
+  );
+}
+
 export default function RepoTab() {
   const [status, setStatus] = useState<StatusFilter>('');
   const [tabCategory, setTabCategory] = useState<TabCategoryFilter>('');
   const [syncing, setSyncing] = useState<number | null>(null);
   const [deleting, setDeleting] = useState<number | null>(null);
+  const [editingCell, setEditingCell] = useState<EditingCell>(null);
+  const [savingField, setSavingField] = useState<EditingCell>(null);
   const queryClient = useQueryClient();
 
   const { data: repos = [], isLoading } = useQuery({
@@ -25,6 +144,90 @@ export default function RepoTab() {
   const filteredRepos = tabCategory
     ? repos.filter((r) => r.tabCategory === tabCategory)
     : repos;
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Record<string, unknown> }) =>
+      apiFetch(`/admin/repos/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      }),
+    onSuccess: () => {
+      showToast('수정 완료');
+      void queryClient.invalidateQueries({ queryKey: ['repos'] });
+    },
+    onError: (e) => {
+      showToast(e instanceof Error ? e.message : '수정 실패', 'error');
+    },
+    onSettled: () => {
+      setSavingField(null);
+      setEditingCell(null);
+    },
+  });
+
+  const handleSave = useCallback(
+    (repo: MissionRepo, field: EditableField, rawValue: string) => {
+      let value: string | number | number[] | null;
+
+      if (field === 'level') {
+        value = rawValue === '' ? null : Number(rawValue);
+        if (value !== null && (Number.isNaN(value) || !Number.isInteger(value))) {
+          showToast('숫자를 입력하세요', 'error');
+          setEditingCell(null);
+          return;
+        }
+      } else if (field === 'cohorts') {
+        const trimmed = rawValue.trim();
+        if (trimmed === '') {
+          value = [];
+        } else {
+          const parts = trimmed.split(',').map((s) => s.trim());
+          const nums = parts.map(Number);
+          if (nums.some(Number.isNaN)) {
+            showToast('쉼표로 구분된 숫자를 입력하세요', 'error');
+            setEditingCell(null);
+            return;
+          }
+          value = nums;
+        }
+      } else if (field === 'track') {
+        value = rawValue === '' ? null : rawValue;
+      } else {
+        value = rawValue;
+      }
+
+      const current =
+        field === 'cohorts'
+          ? JSON.stringify((repo[field] as number[]).slice().sort())
+          : String(repo[field] ?? '');
+      const next =
+        field === 'cohorts'
+          ? JSON.stringify((value as number[]).slice().sort())
+          : String(value ?? '');
+
+      if (current === next) {
+        setEditingCell(null);
+        return;
+      }
+
+      setSavingField({ repoId: repo.id, field });
+      updateMutation.mutate({ id: repo.id, data: { [field]: value } });
+    },
+    [updateMutation],
+  );
+
+  const handleCancel = useCallback(() => {
+    setEditingCell(null);
+  }, []);
+
+  const isEditing = (repoId: number, field: EditableField) =>
+    editingCell?.repoId === repoId && editingCell?.field === field;
+
+  const isSaving = (repoId: number, field: EditableField) =>
+    savingField?.repoId === repoId && savingField?.field === field;
+
+  const startEdit = useCallback((repoId: number, field: EditableField) => {
+    setEditingCell({ repoId, field });
+  }, []);
 
   const discoverMutation = useMutation({
     mutationFn: () =>
@@ -130,6 +333,16 @@ export default function RepoTab() {
     );
   };
 
+  const trackLabel = (t: string | null) => {
+    if (!t) return '공통';
+    return t;
+  };
+
+  const typeLabel = (t: string) => (t === 'integration' ? '통합' : '개인');
+
+  const cellClass =
+    'px-3 py-2 cursor-pointer hover:bg-blue-50 transition-colors duration-100';
+
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3 flex-wrap">
@@ -190,6 +403,7 @@ export default function RepoTab() {
                 <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">모드</th>
                 <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">Lv</th>
                 <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">기수</th>
+                <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">설명</th>
                 <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">제출</th>
                 <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">액션</th>
               </tr>
@@ -207,10 +421,60 @@ export default function RepoTab() {
                       {r.name}
                     </a>
                   </td>
-                  <td className="px-3 py-2 text-xs text-gray-600">{r.track ?? '—'}</td>
-                  <td className="px-3 py-2 text-xs text-gray-600">{r.type === 'integration' ? '통합' : '개인'}</td>
-                  <td className="px-3 py-2">{tabCategoryBadge(r.tabCategory)}</td>
+
+                  <td
+                    className={cellClass}
+                    onClick={() => startEdit(r.id, 'track')}
+                  >
+                    {isEditing(r.id, 'track') ? (
+                      <EditableSelectCell
+                        value={r.track ?? ''}
+                        options={TRACK_OPTIONS}
+                        onSave={(v) => handleSave(r, 'track', v)}
+                        onCancel={handleCancel}
+                        saving={isSaving(r.id, 'track')}
+                      />
+                    ) : (
+                      <span className="text-xs text-gray-600">{trackLabel(r.track)}</span>
+                    )}
+                  </td>
+
+                  <td
+                    className={cellClass}
+                    onClick={() => startEdit(r.id, 'type')}
+                  >
+                    {isEditing(r.id, 'type') ? (
+                      <EditableSelectCell
+                        value={r.type}
+                        options={TYPE_OPTIONS}
+                        onSave={(v) => handleSave(r, 'type', v)}
+                        onCancel={handleCancel}
+                        saving={isSaving(r.id, 'type')}
+                      />
+                    ) : (
+                      <span className="text-xs text-gray-600">{typeLabel(r.type)}</span>
+                    )}
+                  </td>
+
+                  <td
+                    className={cellClass}
+                    onClick={() => startEdit(r.id, 'tabCategory')}
+                  >
+                    {isEditing(r.id, 'tabCategory') ? (
+                      <EditableSelectCell
+                        value={r.tabCategory}
+                        options={TAB_CATEGORY_OPTIONS}
+                        onSave={(v) => handleSave(r, 'tabCategory', v)}
+                        onCancel={handleCancel}
+                        saving={isSaving(r.id, 'tabCategory')}
+                      />
+                    ) : (
+                      tabCategoryBadge(r.tabCategory)
+                    )}
+                  </td>
+
                   <td className="px-3 py-2">{statusBadge(r.status)}</td>
+
                   <td className="px-3 py-2">
                     <button
                       onClick={() => void toggleSyncMode(r)}
@@ -224,8 +488,64 @@ export default function RepoTab() {
                       {r.syncMode === 'continuous' ? '연속' : '1회'}
                     </button>
                   </td>
-                  <td className="px-3 py-2 text-xs text-gray-600">{r.level ?? '—'}</td>
-                  <td className="px-3 py-2 text-xs text-gray-500">{r.cohorts.join(', ') || '—'}</td>
+
+                  <td
+                    className={cellClass}
+                    onClick={() => startEdit(r.id, 'level')}
+                  >
+                    {isEditing(r.id, 'level') ? (
+                      <EditableTextCell
+                        value={r.level != null ? String(r.level) : ''}
+                        type="number"
+                        placeholder="—"
+                        onSave={(v) => handleSave(r, 'level', v)}
+                        onCancel={handleCancel}
+                        saving={isSaving(r.id, 'level')}
+                      />
+                    ) : (
+                      <span className="text-xs text-gray-600">{r.level ?? '—'}</span>
+                    )}
+                  </td>
+
+                  <td
+                    className={cellClass}
+                    onClick={() => startEdit(r.id, 'cohorts')}
+                  >
+                    {isEditing(r.id, 'cohorts') ? (
+                      <EditableTextCell
+                        value={r.cohorts.join(', ')}
+                        placeholder="6, 7, 8"
+                        onSave={(v) => handleSave(r, 'cohorts', v)}
+                        onCancel={handleCancel}
+                        saving={isSaving(r.id, 'cohorts')}
+                      />
+                    ) : (
+                      <span className="text-xs text-gray-500">{r.cohorts.join(', ') || '—'}</span>
+                    )}
+                  </td>
+
+                  <td
+                    className={`${cellClass} max-w-[200px]`}
+                    onClick={() => startEdit(r.id, 'description')}
+                  >
+                    {isEditing(r.id, 'description') ? (
+                      <EditableTextCell
+                        value={r.description ?? ''}
+                        placeholder="설명 입력"
+                        onSave={(v) => handleSave(r, 'description', v)}
+                        onCancel={handleCancel}
+                        saving={isSaving(r.id, 'description')}
+                      />
+                    ) : (
+                      <span
+                        className="text-xs text-gray-500 truncate block"
+                        title={r.description ?? undefined}
+                      >
+                        {r.description || '—'}
+                      </span>
+                    )}
+                  </td>
+
                   <td className="px-3 py-2 text-xs text-gray-600">{r._count.submissions}</td>
                   <td className="px-3 py-2">
                     <div className="flex gap-1">
