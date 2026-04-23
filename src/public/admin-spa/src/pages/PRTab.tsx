@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '../lib/api.js';
 import type { Member, Submission } from '../lib/types.js';
@@ -6,8 +6,19 @@ import type { Member, Submission } from '../lib/types.js';
 type StatusFilter = '' | 'open' | 'merged' | 'closed';
 
 export default function PRTab() {
-  const [selectedMemberId, setSelectedMemberId] = useState<number | null>(null);
+  const [selectedMemberId, setSelectedMemberId] = useState<number | null>(() => {
+    const saved = localStorage.getItem('prtab-selected-member');
+    return saved ? Number(saved) : null;
+  });
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('');
+
+  useEffect(() => {
+    if (selectedMemberId !== null) {
+      localStorage.setItem('prtab-selected-member', String(selectedMemberId));
+    } else {
+      localStorage.removeItem('prtab-selected-member');
+    }
+  }, [selectedMemberId]);
 
   const { data: members = [], isLoading: membersLoading } = useQuery({
     queryKey: ['members', 'prs'],

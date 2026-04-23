@@ -236,55 +236,6 @@ export default function SyncTab() {
     setRunning(null);
   }, []);
 
-  const startJob = useCallback(
-    (jobType: JobType, path: string) => {
-      if (running) return;
-      setLogs([]);
-      setRunning(jobType);
-      addLog('info', `${jobType} 시작`);
-
-      const es = createEventSource(path);
-      esRef.current = es;
-
-      es.addEventListener('progress', (e: MessageEvent) => {
-        try {
-          addLog('progress', formatStep(JSON.parse(e.data as string)));
-        } catch {
-          addLog('progress', e.data as string);
-        }
-      });
-
-      es.addEventListener('done', (e: MessageEvent) => {
-        try {
-          const d = JSON.parse(e.data as string) as Record<string, unknown>;
-          const msg = d['message'] ? String(d['message']) : '완료';
-          addLog('done', msg);
-        } catch {
-          addLog('done', '완료');
-        }
-        stop();
-        void refetchStatus();
-      });
-
-      es.addEventListener('error', (e: MessageEvent) => {
-        try {
-          const d = JSON.parse(e.data as string) as Record<string, unknown>;
-          addLog('error', d['message'] ? String(d['message']) : '오류 발생');
-        } catch {
-          addLog('error', '연결 오류');
-        }
-        stop();
-      });
-
-      es.onerror = () => {
-        if (es.readyState === EventSource.CLOSED) {
-          stop();
-        }
-      };
-    },
-    [running, addLog, stop, refetchStatus],
-  );
-
   const runSync = () => {
     enqueueMutation.mutate({
       type: 'workspace',

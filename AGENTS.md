@@ -98,6 +98,13 @@ ssh oracle "cd ~/app/who-tech-backend && git pull origin main && npm install --i
 - PM2 앱 이름: `backend`
 - 자세한 내용: `.claude/docs/deploy.md`, `.claude/docs/infra.md`
 
+### 버전 관리
+
+- `src/public/admin-spa/package.json`의 `version`은 어드민 UI 우측 상단에 표시됨
+- **main push 시 GitHub Actions가 patch 버전을 자동 증가** (`1.0.0` → `1.0.1` → `1.0.2` ...)
+- 수동 증가: `npm run bump:admin-version`
+- `[skip ci]` 태그로 무한 루프 방지
+
 ---
 
 ## 4. 테스트 컨벤션

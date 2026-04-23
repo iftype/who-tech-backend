@@ -20,7 +20,8 @@
     "test:watch": "NODE_OPTIONS=--experimental-vm-modules jest --watch",
     "test:coverage": "NODE_OPTIONS=--experimental-vm-modules jest --coverage",
     "seed": "tsx src/db/seed.ts",
-    "seed:roles": "tsx src/scripts/seed-roles.ts"
+    "seed:roles": "tsx src/scripts/seed-roles.ts",
+    "bump:admin-version": "node -e \"const fs=require('fs'); const p='src/public/admin-spa/package.json'; const pkg=JSON.parse(fs.readFileSync(p,'utf-8')); const v=pkg.version.split('.'); v[2]=String(parseInt(v[2])+1); pkg.version=v.join('.'); fs.writeFileSync(p,JSON.stringify(pkg,null,2)+'\\n'); console.log('admin version bumped to', pkg.version);\""
   },
   "dependencies": {
     "@octokit/plugin-throttling": "^11.0.3",
