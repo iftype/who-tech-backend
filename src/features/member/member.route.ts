@@ -139,6 +139,13 @@ export function createMemberRouter(service: MemberService) {
     }),
   );
 
+  router.post(
+    '/:id/recalculate-cohorts',
+    asyncHandler(async (req, res) => {
+      res.json(await service.recalculateMemberCohorts(parseId(req.params['id'])));
+    }),
+  );
+
   router.delete(
     '/',
     asyncHandler(async (_req, res) => {
