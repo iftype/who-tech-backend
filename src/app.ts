@@ -77,6 +77,7 @@ const syncService = createSyncService({
   workspaceRepo,
   bannedWordRepo,
   ignoredDomainRepo,
+  cohortRepoRepo,
   activityLogService,
 });
 const memberService = createMemberService({ memberRepo, blogPostRepo, bannedWordRepo, workspaceService, octokit });
@@ -99,6 +100,7 @@ const syncAdminService = createSyncAdminService({
   missionRepoRepo,
   workspaceService,
   syncService,
+  activityLogService,
   octokit,
 });
 

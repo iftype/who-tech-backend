@@ -26,6 +26,7 @@ export default function MemberTable({ members, onRefresh }: Props) {
   const [newCohortInput, setNewCohortInput] = useState('');
   const [refreshing, setRefreshing] = useState<number | null>(null);
   const [deleting, setDeleting] = useState<number | null>(null);
+  const [recalculating, setRecalculating] = useState<number | null>(null);
 
   const [editCell, setEditCell] = useState<{ memberId: number; field: 'manualNickname' | 'blog' | 'track' } | null>(null);
   const [editValue, setEditValue] = useState('');
@@ -135,6 +136,18 @@ export default function MemberTable({ members, onRefresh }: Props) {
     } catch (e) {
       showToast(e instanceof Error ? e.message : '삭제 실패', 'error');
     } finally { setDeleting(null); }
+  };
+
+  const recalculateCohorts = async (member: Member) => {
+    if (!confirm(`${member.githubId}의 기수를 submissions 기준으로 재계산합니다. 계속하시겠습니까?`)) return;
+    setRecalculating(member.id);
+    try {
+      await apiFetch(`/admin/members/${member.id}/recalculate-cohorts`, { method: 'POST' });
+      showToast('기수 재계산 완료');
+      onRefresh();
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : '기수 재계산 실패', 'error');
+    } finally { setRecalculating(null); }
   };
 
   const openBlogModal = async (member: Member) => {
@@ -275,6 +288,7 @@ export default function MemberTable({ members, onRefresh }: Props) {
                 <td className="px-1.5 py-1">
                   <div className="flex gap-0.5">
                     <button onClick={() => void refreshProfile(m)} disabled={refreshing === m.id} className="text-[10px] text-gray-500 hover:text-blue-600 disabled:opacity-40 px-0.5" title="프로필 새로고침">{refreshing === m.id ? '⟳' : '↺'}</button>
+                    <button onClick={() => void recalculateCohorts(m)} disabled={recalculating === m.id} className="text-[10px] text-gray-500 hover:text-amber-600 disabled:opacity-40 px-0.5" title="기수 재계산">{recalculating === m.id ? '⟳' : '⚡'}</button>
                     <button onClick={() => void deleteMember(m)} disabled={deleting === m.id} className="text-[10px] text-gray-400 hover:text-red-500 disabled:opacity-40 px-0.5" title="삭제">✕</button>
                   </div>
                 </td>

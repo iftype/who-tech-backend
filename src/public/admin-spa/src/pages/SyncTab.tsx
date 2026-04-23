@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createEventSource } from '../lib/sse.js';
 import { apiFetch } from '../lib/api.js';
 import { showToast } from '../components/ui/Toast.js';
-import type { AdminStatus, MissionRepo, Workspace } from '../lib/types.js';
+import type { AdminStatus, MissionRepo, Workspace, SyncQueueJob } from '../lib/types.js';
 
 type JobType = 'sync' | 'continuous' | 'cohort-repos';
 
@@ -107,6 +107,13 @@ export default function SyncTab() {
     refetchInterval: running ? 2000 : 10_000,
   });
 
+  const { data: queueJobs = [] } = useQuery({
+    queryKey: ['sync-queue-jobs'],
+    queryFn: () => apiFetch<SyncQueueJob[]>('/admin/sync/jobs'),
+    staleTime: 0,
+    refetchInterval: 3000,
+  });
+
   const allJobs = [...repoJobs, ...blogJobs].sort(
     (a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime(),
   );
@@ -153,6 +160,69 @@ export default function SyncTab() {
       void queryClient.invalidateQueries({ queryKey: ['workspace'] });
     },
     onError: (e) => showToast(e instanceof Error ? e.message : '변경 실패', 'error'),
+  });
+
+  const enqueueMutation = useMutation({
+    mutationFn: (params: { type: 'workspace' | 'continuous' | 'cohort-repos'; cohort?: number }) =>
+      apiFetch<{ id: string; status: string; createdAt: string }>('/admin/sync/jobs', {
+        method: 'POST',
+        body: JSON.stringify(params),
+      }),
+    onSuccess: (result) => {
+      void queryClient.invalidateQueries({ queryKey: ['sync-queue-jobs'] });
+      showToast('작업이 큐에 추가되었습니다');
+      setLogs([]);
+      setRunning(result.id as unknown as JobType);
+      addLog('info', `작업 ${result.id} 시작 대기 중`);
+      const es = createEventSource(`/admin/sync/jobs/${result.id}/stream`);
+      esRef.current = es;
+      es.addEventListener('progress', (e: MessageEvent) => {
+        try {
+          addLog('progress', formatStep(JSON.parse(e.data as string)));
+        } catch {
+          addLog('progress', e.data as string);
+        }
+      });
+      es.addEventListener('done', (e: MessageEvent) => {
+        try {
+          const d = JSON.parse(e.data as string) as Record<string, unknown>;
+          const msg = d['message'] ? String(d['message']) : '완료';
+          addLog('done', msg);
+        } catch {
+          addLog('done', '완료');
+        }
+        stop();
+        void refetchStatus();
+        void queryClient.invalidateQueries({ queryKey: ['sync-queue-jobs'] });
+      });
+      es.addEventListener('error', (e: MessageEvent) => {
+        try {
+          const d = JSON.parse(e.data as string) as Record<string, unknown>;
+          addLog('error', d['message'] ? String(d['message']) : '오류 발생');
+        } catch {
+          addLog('error', '연결 오류');
+        }
+        stop();
+        void queryClient.invalidateQueries({ queryKey: ['sync-queue-jobs'] });
+      });
+      es.onerror = () => {
+        if (es.readyState === EventSource.CLOSED) {
+          stop();
+          void queryClient.invalidateQueries({ queryKey: ['sync-queue-jobs'] });
+        }
+      };
+    },
+    onError: (e) => showToast(e instanceof Error ? e.message : '큐 추가 실패', 'error'),
+  });
+
+  const cancelJobMutation = useMutation({
+    mutationFn: (jobId: string) =>
+      apiFetch<{ success: boolean }>(`/admin/sync/jobs/${jobId}`, { method: 'DELETE' }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['sync-queue-jobs'] });
+      showToast('작업이 취소되었습니다');
+    },
+    onError: (e) => showToast(e instanceof Error ? e.message : '취소 실패', 'error'),
   });
 
   const addLog = useCallback((type: LogEntry['type'], message: string) => {
@@ -216,15 +286,17 @@ export default function SyncTab() {
   );
 
   const runSync = () => {
-    const cohort = cohortInput ? `?cohort=${cohortInput}` : '';
-    startJob('sync', `/admin/sync/stream${cohort}`);
+    enqueueMutation.mutate({
+      type: 'workspace',
+      ...(cohortInput ? { cohort: Number(cohortInput) } : {}),
+    });
   };
 
-  const runContinuous = () => startJob('continuous', '/admin/sync/continuous/stream');
+  const runContinuous = () => enqueueMutation.mutate({ type: 'continuous' });
 
   const runCohortRepos = () => {
     if (!cohortInput) return;
-    startJob('cohort-repos', `/admin/sync/cohort-repos/stream?cohort=${cohortInput}`);
+    enqueueMutation.mutate({ type: 'cohort-repos', cohort: Number(cohortInput) });
   };
 
   const logColor = (type: LogEntry['type']) => {
@@ -397,25 +469,25 @@ export default function SyncTab() {
           <div className="flex gap-2 items-end flex-wrap pt-4">
             <button
               onClick={runSync}
-              disabled={!!running}
+              disabled={enqueueMutation.isPending}
               className="bg-blue-600 text-white text-sm rounded px-4 py-1.5 hover:bg-blue-700 disabled:opacity-40"
             >
-              {running === 'sync' ? '싱크 중...' : cohortInput ? `${cohortInput}기 싱크` : '전체 싱크'}
+              {enqueueMutation.isPending ? '큐 추가 중...' : cohortInput ? `${cohortInput}기 싱크` : '전체 싱크'}
             </button>
             <button
               onClick={runContinuous}
-              disabled={!!running}
+              disabled={enqueueMutation.isPending}
               className="bg-purple-600 text-white text-sm rounded px-4 py-1.5 hover:bg-purple-700 disabled:opacity-40"
             >
-              {running === 'continuous' ? '연속 싱크 중...' : '연속 싱크'}
+              {enqueueMutation.isPending ? '큐 추가 중...' : '연속 싱크'}
             </button>
             <button
               onClick={runCohortRepos}
-              disabled={!!running || !cohortInput}
+              disabled={enqueueMutation.isPending || !cohortInput}
               className="bg-gray-700 text-white text-sm rounded px-4 py-1.5 hover:bg-gray-800 disabled:opacity-40"
               title={!cohortInput ? '기수를 입력하세요' : undefined}
             >
-              {running === 'cohort-repos' ? '레포 업데이트 중...' : '기수 레포 업데이트'}
+              {enqueueMutation.isPending ? '큐 추가 중...' : '기수 레포 업데이트'}
             </button>
             {running && (
               <button
@@ -428,6 +500,84 @@ export default function SyncTab() {
           </div>
         </div>
       </div>
+
+      {/* 작업 큐 */}
+      {queueJobs.length > 0 && (
+        <div className="bg-white border border-gray-200 rounded p-4">
+          <h3 className="text-xs font-semibold text-gray-600 mb-3">작업 큐 ({queueJobs.length})</h3>
+          <div className="max-h-64 overflow-y-auto rounded border border-gray-200">
+            <table className="w-full text-xs">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="text-left font-medium text-gray-500 px-3 py-2">시작</th>
+                  <th className="text-left font-medium text-gray-500 px-3 py-2">종류</th>
+                  <th className="text-left font-medium text-gray-500 px-3 py-2">상태</th>
+                  <th className="text-left font-medium text-gray-500 px-3 py-2">진행</th>
+                  <th className="text-left font-medium text-gray-500 px-3 py-2">결과</th>
+                  <th className="text-left font-medium text-gray-500 px-3 py-2">액션</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {queueJobs.map((j) => (
+                  <tr key={j.id} className="hover:bg-gray-50">
+                    <td className="px-3 py-2 text-gray-500 whitespace-nowrap">
+                      {new Date(j.status === 'running' && j.startedAt ? j.startedAt : j.createdAt).toLocaleString('ko-KR')}
+                    </td>
+                    <td className="px-3 py-2">
+                      <span className="text-xs px-1.5 py-0.5 rounded font-medium border bg-blue-50 text-blue-700 border-blue-200">
+                        {j.type === 'workspace' ? '전체' : j.type === 'continuous' ? '연속' : '기수레포'}
+                        {j.cohort != null ? ` (${j.cohort}기)` : ''}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2">
+                      <span
+                        className={`text-xs px-1.5 py-0.5 rounded font-medium ${
+                          j.status === 'queued'
+                            ? 'bg-gray-100 text-gray-600'
+                            : j.status === 'running'
+                              ? 'bg-blue-100 text-blue-700'
+                              : j.status === 'completed'
+                                ? 'bg-green-100 text-green-700'
+                                : j.status === 'failed'
+                                  ? 'bg-red-100 text-red-700'
+                                  : 'bg-orange-100 text-orange-700'
+                        }`}
+                      >
+                        {j.status}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 text-gray-700">
+                      {j.progress
+                        ? `${j.progress.repo} (${j.progress.done}/${j.progress.total})`
+                        : '—'}
+                    </td>
+                    <td className="px-3 py-2 text-gray-700 truncate max-w-[200px]">
+                      {j.status === 'completed' && j.result
+                        ? `✓ ${j.result.totalSynced}개`
+                        : j.status === 'failed' && j.error
+                          ? j.error
+                          : j.status === 'cancelled'
+                            ? '취소됨'
+                            : '—'}
+                    </td>
+                    <td className="px-3 py-2">
+                      {(j.status === 'queued' || j.status === 'running') && (
+                        <button
+                          onClick={() => cancelJobMutation.mutate(j.id)}
+                          disabled={cancelJobMutation.isPending}
+                          className="text-xs px-2 py-0.5 rounded bg-red-50 text-red-600 hover:bg-red-100 disabled:opacity-40"
+                        >
+                          취소
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* 로그 */}
       {logs.length > 0 && (

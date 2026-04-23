@@ -7,7 +7,7 @@ import PQueue from 'p-queue';
 import { normalizeBlogUrl } from '../../shared/blog.js';
 import { buildCohortList } from '../../shared/member-cohort.js';
 import { shouldRefreshProfile } from '../../shared/github-profile.js';
-import { fetchUserProfile } from '../sync/github.service.js';
+import { fetchUserProfile, detectCohort } from '../sync/github.service.js';
 import { toMemberResponse } from './member.response.js';
 import { refreshMemberProfileById } from './member.profile-refresh.js';
 
@@ -264,6 +264,37 @@ export function createMemberService(deps: {
     deleteAllMembers: async () => {
       const workspace = await workspaceService.getOrThrow();
       return memberRepo.deleteAllWithRelations(workspace.id);
+    },
+
+    recalculateMemberCohorts: async (id: number) => {
+      const member = await memberRepo.findByIdWithRelations(id);
+      if (!member) throw new Error('member not found');
+
+      const workspace = await workspaceService.getOrThrow();
+      const cohortRules = JSON.parse(workspace.cohortRules) as { year: number; cohort: number }[];
+
+      const cohortSet = new Set<number>();
+      for (const sub of member.submissions) {
+        const cohort = detectCohort(new Date(sub.submittedAt), cohortRules);
+        if (cohort != null) cohortSet.add(cohort);
+      }
+
+      const currentCohorts = buildCohortList(member.memberCohorts);
+
+      for (const current of currentCohorts) {
+        if (!cohortSet.has(current.cohort)) {
+          await memberRepo.deleteParticipationsByCohort(id, current.cohort);
+        }
+      }
+
+      for (const cohort of cohortSet) {
+        if (!currentCohorts.some((c) => c.cohort === cohort)) {
+          await memberRepo.upsertParticipation(id, cohort, 'crew');
+        }
+      }
+
+      const updated = await memberRepo.findByIdWithRelations(id);
+      return updated ? toMemberResponse(updated) : null;
     },
 
     listMemberCohorts: async () => {

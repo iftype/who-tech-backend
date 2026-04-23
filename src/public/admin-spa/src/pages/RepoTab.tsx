@@ -153,6 +153,7 @@ function RepoTable({
   deleting,
   editingCell,
   savingField,
+  selectedRepoIds,
   onStartEdit,
   onSave,
   onCancel,
@@ -160,6 +161,9 @@ function RepoTable({
   onToggleStatus,
   onToggleSyncMode,
   onDelete,
+  onToggleSelect,
+  onToggleSelectAll,
+  onResetLastSyncAt,
 }: {
   repos: MissionRepo[];
   title: string;
@@ -169,6 +173,7 @@ function RepoTable({
   deleting: number | null;
   editingCell: EditingCell;
   savingField: EditingCell;
+  selectedRepoIds: Set<number>;
   onStartEdit: (repoId: number, field: EditableField) => void;
   onSave: (repo: MissionRepo, field: EditableField, value: string) => void;
   onCancel: () => void;
@@ -176,6 +181,9 @@ function RepoTable({
   onToggleStatus: (repo: MissionRepo) => void;
   onToggleSyncMode: (repo: MissionRepo) => void;
   onDelete: (repo: MissionRepo) => void;
+  onToggleSelect: (repoId: number) => void;
+  onToggleSelectAll: (repoIds: number[], allSelected: boolean) => void;
+  onResetLastSyncAt: (repoId: number) => void;
 }) {
   const isEditing = (repoId: number, field: EditableField) =>
     editingCell?.repoId === repoId && editingCell?.field === field;
@@ -234,6 +242,17 @@ function RepoTable({
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
+              <th className="text-left text-xs font-medium text-gray-500 px-3 py-2 w-8">
+                <input
+                  type="checkbox"
+                  checked={repos.length > 0 && repos.every((r) => selectedRepoIds.has(r.id))}
+                  onChange={() => {
+                    const allSelected = repos.every((r) => selectedRepoIds.has(r.id));
+                    onToggleSelectAll(repos.map((r) => r.id), allSelected);
+                  }}
+                  className="rounded border-gray-300"
+                />
+              </th>
               <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">레포</th>
               <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">트랙</th>
               <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">타입</th>
@@ -254,6 +273,14 @@ function RepoTable({
               const activeJob = activeJobs.get(r.id);
               return (
                 <tr key={r.id} className="hover:bg-gray-50">
+                  <td className="px-3 py-2">
+                    <input
+                      type="checkbox"
+                      checked={selectedRepoIds.has(r.id)}
+                      onChange={() => onToggleSelect(r.id)}
+                      className="rounded border-gray-300"
+                    />
+                  </td>
                   <td className="px-3 py-2">
                     <a href={r.repoUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs font-medium">
                       {r.name}
@@ -333,6 +360,13 @@ function RepoTable({
                         {isSyncing ? '...' : '싱크'}
                       </button>
                       <button
+                        onClick={() => void onResetLastSyncAt(r.id)}
+                        className="text-[10px] px-2 py-1 rounded border border-amber-300 text-amber-600 hover:bg-amber-50"
+                        title="lastSyncAt 초기화 (전체 재싱크)"
+                      >
+                        초기화
+                      </button>
+                      <button
                         onClick={() => void onDelete(r)}
                         disabled={deleting === r.id}
                         className="text-[10px] px-2 py-1 rounded border border-red-300 text-red-500 hover:bg-red-50 disabled:opacity-40"
@@ -361,6 +395,8 @@ export default function RepoTab() {
   const [deleting, setDeleting] = useState<number | null>(null);
   const [editingCell, setEditingCell] = useState<EditingCell>(null);
   const [savingField, setSavingField] = useState<EditingCell>(null);
+  const [selectedRepoIds, setSelectedRepoIds] = useState<Set<number>>(new Set());
+  const [batchTrackValue, setBatchTrackValue] = useState('');
   const queryClient = useQueryClient();
 
   useEffect(() => () => stopPollFns.current.forEach((stop) => stop()), []);
@@ -393,6 +429,37 @@ export default function RepoTab() {
     onSettled: () => {
       setSavingField(null);
       setEditingCell(null);
+    },
+  });
+
+  const batchTrackMutation = useMutation({
+    mutationFn: async ({ ids, track }: { ids: number[]; track: string | null }) => {
+      await Promise.all(
+        ids.map((id) =>
+          apiFetch(`/admin/repos/${id}`, { method: 'PATCH', body: JSON.stringify({ track }) })
+        )
+      );
+    },
+    onSuccess: () => {
+      showToast('일괄 변경 완료');
+      setSelectedRepoIds(new Set());
+      setBatchTrackValue('');
+      void queryClient.invalidateQueries({ queryKey: ['repos'] });
+    },
+    onError: (e) => {
+      showToast(e instanceof Error ? e.message : '일괄 변경 실패', 'error');
+    },
+  });
+
+  const resetLastSyncAtMutation = useMutation({
+    mutationFn: (id: number) =>
+      apiFetch(`/admin/repos/${id}`, { method: 'PATCH', body: JSON.stringify({ lastSyncAt: null }) }),
+    onSuccess: () => {
+      showToast('lastSyncAt 초기화 완료');
+      void queryClient.invalidateQueries({ queryKey: ['repos'] });
+    },
+    onError: (e) => {
+      showToast(e instanceof Error ? e.message : '초기화 실패', 'error');
     },
   });
 
@@ -546,6 +613,44 @@ export default function RepoTab() {
     }
   };
 
+  const toggleSelect = useCallback((repoId: number) => {
+    setSelectedRepoIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(repoId)) {
+        next.delete(repoId);
+      } else {
+        next.add(repoId);
+      }
+      return next;
+    });
+  }, []);
+
+  const toggleSelectAll = useCallback((repoIds: number[], allSelected: boolean) => {
+    if (allSelected) {
+      setSelectedRepoIds((prev) => {
+        const next = new Set(prev);
+        repoIds.forEach((id) => next.delete(id));
+        return next;
+      });
+    } else {
+      setSelectedRepoIds((prev) => {
+        const next = new Set(prev);
+        repoIds.forEach((id) => next.add(id));
+        return next;
+      });
+    }
+  }, []);
+
+  const handleBatchTrackUpdate = useCallback(() => {
+    const ids = Array.from(selectedRepoIds);
+    if (ids.length === 0) {
+      showToast('선택된 레포가 없습니다', 'error');
+      return;
+    }
+    const track = batchTrackValue === '' ? null : batchTrackValue;
+    batchTrackMutation.mutate({ ids, track });
+  }, [selectedRepoIds, batchTrackValue, batchTrackMutation]);
+
   return (
     <div className="space-y-6">
 
@@ -606,6 +711,36 @@ export default function RepoTab() {
         </div>
       </div>
 
+      {selectedRepoIds.size > 0 && (
+        <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-xl px-4 py-2.5">
+          <span className="text-sm font-medium text-blue-700">{selectedRepoIds.size}개 선택됨</span>
+          <select
+            value={batchTrackValue}
+            onChange={(e) => setBatchTrackValue(e.target.value)}
+            className="text-sm border border-blue-300 rounded-lg px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-blue-400"
+          >
+            {TRACK_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+          <button
+            onClick={handleBatchTrackUpdate}
+            disabled={batchTrackMutation.isPending}
+            className="text-sm px-3 py-1 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40"
+          >
+            {batchTrackMutation.isPending ? '변경 중...' : '일괄 변경'}
+          </button>
+          <button
+            onClick={() => setSelectedRepoIds(new Set())}
+            className="text-sm px-3 py-1 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50"
+          >
+            선택 해제
+          </button>
+        </div>
+      )}
+
       {isLoading ? (
         <div className="py-12 text-center text-gray-400 text-sm">로딩 중...</div>
       ) : (
@@ -619,6 +754,7 @@ export default function RepoTab() {
             deleting={deleting}
             editingCell={editingCell}
             savingField={savingField}
+            selectedRepoIds={selectedRepoIds}
             onStartEdit={startEdit}
             onSave={handleSave}
             onCancel={handleCancel}
@@ -626,6 +762,9 @@ export default function RepoTab() {
             onToggleStatus={toggleStatus}
             onToggleSyncMode={toggleSyncMode}
             onDelete={deleteRepo}
+            onToggleSelect={toggleSelect}
+            onToggleSelectAll={toggleSelectAll}
+            onResetLastSyncAt={(id) => resetLastSyncAtMutation.mutate(id)}
           />
           <RepoTable
             repos={onceRepos}
@@ -636,6 +775,7 @@ export default function RepoTab() {
             deleting={deleting}
             editingCell={editingCell}
             savingField={savingField}
+            selectedRepoIds={selectedRepoIds}
             onStartEdit={startEdit}
             onSave={handleSave}
             onCancel={handleCancel}
@@ -643,6 +783,9 @@ export default function RepoTab() {
             onToggleStatus={toggleStatus}
             onToggleSyncMode={toggleSyncMode}
             onDelete={deleteRepo}
+            onToggleSelect={toggleSelect}
+            onToggleSelectAll={toggleSelectAll}
+            onResetLastSyncAt={(id) => resetLastSyncAtMutation.mutate(id)}
           />
         </>
       )}
