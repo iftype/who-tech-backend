@@ -91,6 +91,20 @@ export function createSyncAdminService(deps: {
       return queue.subscribeDone(id, cb as Parameters<typeof queue.subscribeDone>[1]);
     },
 
+    getGithubStatus: async () => {
+      try {
+        const { data } = await octokit.rest.rateLimit.get();
+        return {
+          ok: true,
+          remaining: data.rate.remaining,
+          limit: data.rate.limit,
+          resetAt: new Date(data.rate.reset * 1000).toISOString(),
+        };
+      } catch {
+        return { ok: false, remaining: 0, limit: 0, resetAt: null };
+      }
+    },
+
     getQueue: (): SyncQueue => queue,
   };
 }

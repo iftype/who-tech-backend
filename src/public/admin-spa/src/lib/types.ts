@@ -48,6 +48,13 @@ export interface AdminStatus {
   lastProfileRefreshAt: string | null;
 }
 
+export interface GithubStatus {
+  ok: boolean;
+  remaining: number;
+  limit: number;
+  resetAt: string | null;
+}
+
 export interface MemberCohort {
   cohort: number;
   roles: string[];

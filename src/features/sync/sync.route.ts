@@ -14,6 +14,13 @@ export function createSyncRouter(service: SyncAdminService) {
     }),
   );
 
+  router.get(
+    '/github-status',
+    asyncHandler(async (_req, res) => {
+      res.json(await service.getGithubStatus());
+    }),
+  );
+
   router.post(
     '/sync',
     asyncHandler(async (req, res) => {
