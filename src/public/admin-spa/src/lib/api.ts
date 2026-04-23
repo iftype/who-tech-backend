@@ -16,8 +16,19 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
     throw new Error('Unauthorized');
   }
   if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    throw new Error(`${res.status}: ${text}`);
+    let body: unknown;
+    try {
+      body = JSON.parse(await res.text());
+    } catch {
+      body = undefined;
+    }
+    const message =
+      body && typeof body === 'object' && 'message' in body ? String(body.message) : await res.text().catch(() => '');
+    const err = new Error(`${res.status}: ${message}`);
+    if (body && typeof body === 'object' && 'remainingSeconds' in body) {
+      (err as Error & { remainingSeconds: number }).remainingSeconds = Number(body.remainingSeconds);
+    }
+    throw err;
   }
   return res.json() as Promise<T>;
 }
