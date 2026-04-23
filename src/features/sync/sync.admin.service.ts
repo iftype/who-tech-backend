@@ -16,10 +16,22 @@ export function createSyncAdminService(deps: {
   const { cohortRepoRepo, memberRepo, missionRepoRepo, workspaceService, syncService, octokit } = deps;
 
   return {
-    getAdminStatus: async (): Promise<{ memberCount: number; repoCount: number; lastSyncAt: Date | null }> => {
+    getAdminStatus: async (): Promise<{
+      memberCount: number;
+      repoCount: number;
+      lastSyncAt: Date | null;
+      profileRefreshEnabled: boolean;
+      lastProfileRefreshAt: Date | null;
+    }> => {
       const workspace = await workspaceService.getOrThrow().catch(() => null);
       const [memberCount, repoCount] = await Promise.all([memberRepo.count(), missionRepoRepo.count()]);
-      return { memberCount, repoCount, lastSyncAt: workspace?.updatedAt ?? null };
+      return {
+        memberCount,
+        repoCount,
+        lastSyncAt: workspace?.updatedAt ?? null,
+        profileRefreshEnabled: workspace?.profileRefreshEnabled ?? true,
+        lastProfileRefreshAt: workspace?.lastProfileRefreshAt ?? null,
+      };
     },
 
     syncWorkspace: async (
@@ -64,7 +76,7 @@ export function createSyncAdminService(deps: {
           totalSynced += synced;
           reposSynced++;
           onProgress?.({ repo: missionRepo.name, done: i + 1, total: cohortRepos.length, synced });
-        } catch (err) {
+        } catch {
           // Log is already handled within syncRepo or we can add it here if needed
           // Since syncRepo doesn't log its own errors (the callers do), I should add logging here if I want it.
           // In sync.service.ts, the callers (syncContinuousRepos etc) log.

@@ -143,6 +143,18 @@ export default function SyncTab() {
     onError: (e) => showToast(e instanceof Error ? e.message : '변경 실패', 'error'),
   });
 
+  const toggleProfileRefreshMutation = useMutation({
+    mutationFn: (enabled: boolean) =>
+      apiFetch<Workspace>('/admin/workspace', {
+        method: 'PUT',
+        body: JSON.stringify({ profileRefreshEnabled: enabled }),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['workspace'] });
+    },
+    onError: (e) => showToast(e instanceof Error ? e.message : '변경 실패', 'error'),
+  });
+
   const addLog = useCallback((type: LogEntry['type'], message: string) => {
     setLogs((prev) => [...prev, { ts: Date.now(), type, message }]);
     setTimeout(() => logEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
@@ -248,7 +260,7 @@ export default function SyncTab() {
 
       <div className="bg-white border border-gray-200 rounded p-4 space-y-3">
         <h3 className="text-xs font-semibold text-gray-600">싱크 스케줄 상태</h3>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           <div className="bg-gray-50 border border-gray-200 rounded p-3">
             <div className="flex items-center justify-between">
               <span className="text-xs text-gray-500">블로그 RSS 자동 싱크</span>
@@ -264,6 +276,28 @@ export default function SyncTab() {
             </div>
             {workspace?.blogSyncEnabled && (
               <p className="text-[10px] text-gray-400 mt-1">다음 싱크까지 {remainingTime}</p>
+            )}
+          </div>
+          <div className="bg-gray-50 border border-gray-200 rounded p-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-gray-500">프로필 자동 새로고침</span>
+              <span
+                className={`text-xs px-2 py-0.5 rounded font-medium ${
+                  workspace?.profileRefreshEnabled
+                    ? 'bg-green-100 text-green-700'
+                    : 'bg-gray-100 text-gray-500'
+                }`}
+              >
+                {workspace?.profileRefreshEnabled ? '활성' : '비활성'}
+              </span>
+            </div>
+            {workspace?.profileRefreshEnabled && (
+              <p className="text-[10px] text-gray-400 mt-1">다음 새로고침까지 {remainingTime}</p>
+            )}
+            {status?.lastProfileRefreshAt && (
+              <p className="text-[10px] text-gray-400 mt-1">
+                마지막: {new Date(status.lastProfileRefreshAt).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+              </p>
             )}
           </div>
           <div className="bg-gray-50 border border-gray-200 rounded p-3">
@@ -332,6 +366,16 @@ export default function SyncTab() {
           >
             {profileRefreshMutation.isPending ? '프로필 새로고침 중...' : '프로필 전체 새로고침'}
           </button>
+          <label className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded px-3 py-1.5 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={workspace?.profileRefreshEnabled ?? false}
+              onChange={(e) => toggleProfileRefreshMutation.mutate(e.target.checked)}
+              disabled={toggleProfileRefreshMutation.isPending}
+              className="rounded"
+            />
+            <span className="text-xs text-gray-700">자동 새로고침</span>
+          </label>
         </div>
       </div>
 

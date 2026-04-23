@@ -8,20 +8,22 @@ datasource db {
 }
 
 model Workspace {
-  id               Int                  @id @default(autoincrement())
-  name             String               @unique
-  githubOrg        String
-  cohortRules      String
-  blogSyncEnabled  Boolean              @default(true)
-  createdAt        DateTime             @default(now())
-  updatedAt        DateTime             @updatedAt
-  activityLogs     ActivityLog[]
-  cohortRepos      CohortRepo[]
-  members          Member[]
-  missionRepos     MissionRepo[]
-  persons          Person[]
-  bannedWords      NicknameBannedWord[]
-  ignoredDomains   IgnoredDomain[]
+  id                   Int                  @id @default(autoincrement())
+  name                 String               @unique
+  githubOrg            String
+  cohortRules          String
+  blogSyncEnabled      Boolean              @default(true)
+  profileRefreshEnabled Boolean             @default(true)
+  lastProfileRefreshAt DateTime?
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  activityLogs         ActivityLog[]
+  cohortRepos          CohortRepo[]
+  members              Member[]
+  missionRepos         MissionRepo[]
+  persons              Person[]
+  bannedWords          NicknameBannedWord[]
+  ignoredDomains       IgnoredDomain[]
 }
 
 model Person {

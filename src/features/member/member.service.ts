@@ -254,6 +254,8 @@ export function createMemberService(deps: {
         .filter((r): r is Extract<ProcessResult, { ok: false }> => !r.ok)
         .map((r) => ({ githubId: r.githubId, reason: r.reason }));
 
+      await workspaceService.touchProfileRefresh();
+
       return { checked, refreshed, failed: failures.length, failures: failures.slice(0, 10) };
     },
 

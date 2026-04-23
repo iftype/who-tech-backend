@@ -6,8 +6,15 @@ export function createWorkspaceRepository(db: PrismaClient) {
     findOrThrow: () => db.workspace.findFirstOrThrow({ where: { name: WORKSPACE_NAME } }),
     find: () => db.workspace.findFirst({ where: { name: WORKSPACE_NAME } }),
     findByIdOrThrow: (id: number) => db.workspace.findUniqueOrThrow({ where: { id } }),
-    update: (id: number, data: { cohortRules?: string; blogSyncEnabled?: boolean }) =>
-      db.workspace.update({ where: { id }, data }),
+    update: (
+      id: number,
+      data: {
+        cohortRules?: string;
+        blogSyncEnabled?: boolean;
+        profileRefreshEnabled?: boolean;
+        lastProfileRefreshAt?: Date;
+      },
+    ) => db.workspace.update({ where: { id }, data }),
     touch: (id: number) => db.workspace.update({ where: { id }, data: {} }),
   };
 }
