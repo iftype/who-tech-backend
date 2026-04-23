@@ -187,7 +187,8 @@ export function createMemberService(deps: {
       const workspace = await workspaceService.getOrThrow();
       const bannedWordRows = await bannedWordRepo.findAll(workspace.id);
       const bannedWords = new Set(bannedWordRows.map((r) => r.word));
-      const cohortRules = JSON.parse(workspace.cohortRules) as { year: number; cohort: number }[];
+      const cohortRulesRaw = workspace.cohortRules ?? '[]';
+      const cohortRules = JSON.parse(cohortRulesRaw) as { year: number; cohort: number }[];
       return refreshMemberProfileById(id, bannedWords, true, memberRepo, octokit, cohortRules);
     },
 
@@ -202,7 +203,8 @@ export function createMemberService(deps: {
       const bannedWordRows = await bannedWordRepo.findAll(workspace.id);
       const bannedWords = new Set(bannedWordRows.map((r) => r.word));
       const staleHours = input?.staleHours ?? 24;
-      const cohortRules = JSON.parse(workspace.cohortRules) as { year: number; cohort: number }[];
+      const cohortRulesRaw = workspace.cohortRules ?? '[]';
+      const cohortRules = JSON.parse(cohortRulesRaw) as { year: number; cohort: number }[];
 
       const allMembers = await memberRepo.findWithFilters(workspace.id, {
         ...(input?.cohort !== undefined ? { cohort: input.cohort } : {}),
@@ -280,7 +282,8 @@ export function createMemberService(deps: {
       if (!member) throw new Error('member not found');
 
       const workspace = await workspaceService.getOrThrow();
-      const cohortRules = JSON.parse(workspace.cohortRules) as { year: number; cohort: number }[];
+      const cohortRulesRaw = workspace.cohortRules ?? '[]';
+      const cohortRules = JSON.parse(cohortRulesRaw) as { year: number; cohort: number }[];
 
       const cohortFreq = new Map<number, number>();
       for (const sub of member.submissions) {
