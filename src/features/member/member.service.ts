@@ -187,7 +187,8 @@ export function createMemberService(deps: {
       const workspace = await workspaceService.getOrThrow();
       const bannedWordRows = await bannedWordRepo.findAll(workspace.id);
       const bannedWords = new Set(bannedWordRows.map((r) => r.word));
-      return refreshMemberProfileById(id, bannedWords, true, memberRepo, octokit);
+      const cohortRules = JSON.parse(workspace.cohortRules) as { year: number; cohort: number }[];
+      return refreshMemberProfileById(id, bannedWords, true, memberRepo, octokit, cohortRules);
     },
 
     refreshWorkspaceProfiles: async (input?: {
@@ -201,6 +202,7 @@ export function createMemberService(deps: {
       const bannedWordRows = await bannedWordRepo.findAll(workspace.id);
       const bannedWords = new Set(bannedWordRows.map((r) => r.word));
       const staleHours = input?.staleHours ?? 24;
+      const cohortRules = JSON.parse(workspace.cohortRules) as { year: number; cohort: number }[];
 
       const allMembers = await memberRepo.findWithFilters(workspace.id, {
         ...(input?.cohort !== undefined ? { cohort: input.cohort } : {}),
@@ -222,7 +224,14 @@ export function createMemberService(deps: {
         member: Awaited<ReturnType<typeof memberRepo.findWithFilters>>[number],
       ): Promise<ProcessResult> => {
         try {
-          await refreshMemberProfileById(member.id, bannedWords, githubTargetIds.has(member.id), memberRepo, octokit);
+          await refreshMemberProfileById(
+            member.id,
+            bannedWords,
+            githubTargetIds.has(member.id),
+            memberRepo,
+            octokit,
+            cohortRules,
+          );
           return { githubId: member.githubId, ok: true };
         } catch (error) {
           const reason = error instanceof Error ? error.message : String(error);
@@ -273,23 +282,40 @@ export function createMemberService(deps: {
       const workspace = await workspaceService.getOrThrow();
       const cohortRules = JSON.parse(workspace.cohortRules) as { year: number; cohort: number }[];
 
-      const cohortSet = new Set<number>();
+      const cohortFreq = new Map<number, number>();
       for (const sub of member.submissions) {
         const cohort = detectCohort(new Date(sub.submittedAt), cohortRules);
-        if (cohort != null) cohortSet.add(cohort);
+        if (cohort != null) {
+          cohortFreq.set(cohort, (cohortFreq.get(cohort) ?? 0) + 1);
+        }
       }
 
       const currentCohorts = buildCohortList(member.memberCohorts);
 
       for (const current of currentCohorts) {
-        if (!cohortSet.has(current.cohort)) {
+        const isStaff = current.roles.some((r) => r === 'coach' || r === 'reviewer');
+        if (isStaff) continue;
+
+        if (!cohortFreq.has(current.cohort)) {
           await memberRepo.deleteParticipationsByCohort(id, current.cohort);
         }
       }
 
-      for (const cohort of cohortSet) {
-        if (!currentCohorts.some((c) => c.cohort === cohort)) {
-          await memberRepo.upsertParticipation(id, cohort, 'crew');
+      const remainingCrewCohorts = currentCohorts.filter(
+        (c) => !c.roles.some((r) => r === 'coach' || r === 'reviewer'),
+      );
+
+      if (cohortFreq.size > 0) {
+        const dominantCohort = [...cohortFreq.entries()].sort((a, b) => b[1] - a[1])[0]![0];
+
+        for (const c of remainingCrewCohorts) {
+          if (c.cohort !== dominantCohort) {
+            await memberRepo.deleteParticipationsByCohort(id, c.cohort);
+          }
+        }
+
+        if (!remainingCrewCohorts.some((c) => c.cohort === dominantCohort)) {
+          await memberRepo.upsertParticipation(id, dominantCohort, 'crew');
         }
       }
 
