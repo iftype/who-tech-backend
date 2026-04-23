@@ -122,6 +122,15 @@ export default function SyncTab() {
     onError: (e) => showToast(e instanceof Error ? e.message : '블로그 싱크 실패', 'error'),
   });
 
+  const profileRefreshMutation = useMutation({
+    mutationFn: () =>
+      apiFetch<{ checked: number; refreshed: number; failed: number }>('/admin/members/refresh-profiles', { method: 'POST' }),
+    onSuccess: (result) => {
+      showToast(`프로필 새로고침 완료 — ${result.refreshed}/${result.checked}명, 실패 ${result.failed}명`);
+    },
+    onError: (e) => showToast(e instanceof Error ? e.message : '프로필 새로고침 실패', 'error'),
+  });
+
   const toggleBlogSyncMutation = useMutation({
     mutationFn: (enabled: boolean) =>
       apiFetch<Workspace>('/admin/workspace', {
@@ -309,6 +318,20 @@ export default function SyncTab() {
             />
             <span className="text-xs text-gray-700">자동 싱크</span>
           </label>
+        </div>
+      </div>
+
+      {/* 프로필 새로고침 */}
+      <div className="bg-white border border-gray-200 rounded p-4">
+        <h3 className="text-xs font-semibold text-gray-600 mb-2">프로필</h3>
+        <div className="flex items-center gap-3 flex-wrap">
+          <button
+            onClick={() => profileRefreshMutation.mutate()}
+            disabled={profileRefreshMutation.isPending}
+            className="bg-green-600 text-white text-sm rounded px-4 py-1.5 hover:bg-green-700 disabled:opacity-40"
+          >
+            {profileRefreshMutation.isPending ? '프로필 새로고침 중...' : '프로필 전체 새로고침'}
+          </button>
         </div>
       </div>
 
