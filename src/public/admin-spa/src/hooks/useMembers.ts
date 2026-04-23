@@ -6,7 +6,6 @@ export interface MemberFilters {
   q?: string;
   cohort?: number;
   hasBlog?: boolean;
-  hasCohort?: boolean;
   track?: string;
   role?: string;
 }
@@ -16,7 +15,6 @@ export function useMembers(filters: MemberFilters = {}) {
   if (filters.q) params.set('q', filters.q);
   if (filters.cohort !== undefined) params.set('cohort', String(filters.cohort));
   if (filters.hasBlog !== undefined) params.set('hasBlog', String(filters.hasBlog));
-  if (filters.hasCohort !== undefined) params.set('hasCohort', String(filters.hasCohort));
   if (filters.track) params.set('track', filters.track);
   if (filters.role) params.set('role', filters.role);
 

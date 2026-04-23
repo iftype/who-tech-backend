@@ -27,7 +27,6 @@ export function createMemberService(deps: {
       hasBlog?: boolean;
       track?: string;
       role?: string;
-      hasCohort?: boolean;
     }) => {
       const workspace = await workspaceService.getOrThrow();
       const members = await memberRepo.findWithFilters(workspace.id, filters);
