@@ -87,6 +87,19 @@ export interface BlogPost {
   publishedAt: string;
 }
 
+export interface SyncQueueJob {
+  id: string;
+  type: 'workspace' | 'continuous' | 'cohort-repos';
+  cohort?: number;
+  status: 'queued' | 'running' | 'completed' | 'failed' | 'cancelled';
+  createdAt: string;
+  startedAt?: string;
+  completedAt?: string;
+  progress?: { repo: string; done: number; total: number; synced: number };
+  result?: { totalSynced: number; reposSynced: number };
+  error?: string;
+}
+
 export interface CohortRepo {
   id: number;
   cohort: number;
