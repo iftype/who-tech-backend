@@ -17,6 +17,15 @@ export default defineConfig(({ command }) => ({
   build: {
     outDir: '../../../dist/public/admin-dist',
     emptyOutDir: true,
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          query: ['@tanstack/react-query'],
+        },
+      },
+    },
   },
   server: {
     proxy: {

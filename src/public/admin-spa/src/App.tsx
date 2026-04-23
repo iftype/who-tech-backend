@@ -1,16 +1,24 @@
-import { useEffect } from 'react';
+import { useEffect, Suspense, lazy } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext.js';
 import Layout from './components/Layout.js';
 import LoginPage from './components/LoginPage.js';
 import MemberTab from './pages/MemberTab.js';
-import SyncTab from './pages/SyncTab.js';
-import RepoTab from './pages/RepoTab.js';
-import BlogTab from './pages/BlogTab.js';
-import ArchiveTab from './pages/ArchiveTab.js';
-import PersonTab from './pages/PersonTab.js';
-import LogTab from './pages/LogTab.js';
-import SettingsTab from './pages/SettingsTab.js';
 import { useHashLocation } from './hooks/useHashLocation.js';
+
+const SyncTab = lazy(() => import('./pages/SyncTab.js'));
+const RepoTab = lazy(() => import('./pages/RepoTab.js'));
+const BlogTab = lazy(() => import('./pages/BlogTab.js'));
+const ArchiveTab = lazy(() => import('./pages/ArchiveTab.js'));
+const PersonTab = lazy(() => import('./pages/PersonTab.js'));
+const LogTab = lazy(() => import('./pages/LogTab.js'));
+const SettingsTab = lazy(() => import('./pages/SettingsTab.js'));
+
+const PageLoader = () => (
+  <div className="flex items-center justify-center h-64 text-sm text-slate-400">
+    <div className="animate-spin h-5 w-5 border-2 border-slate-300 border-t-teal-700 rounded-full mr-2" />
+    로딩 중...
+  </div>
+);
 
 function Router() {
   const { isAuthenticated } = useAuth();
@@ -36,7 +44,11 @@ function Router() {
     return <MemberTab />;
   })();
 
-  return <Layout>{page}</Layout>;
+  return (
+    <Layout>
+      <Suspense fallback={<PageLoader />}>{page}</Suspense>
+    </Layout>
+  );
 }
 
 export default function App() {
