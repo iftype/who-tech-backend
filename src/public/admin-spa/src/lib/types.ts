@@ -18,6 +18,7 @@ export interface Workspace {
   id: number;
   cohortRules: Record<string, number>;
   blogSyncEnabled: boolean;
+  profileRefreshEnabled: boolean;
 }
 
 export interface BannedWord {
@@ -43,6 +44,8 @@ export interface AdminStatus {
   memberCount: number;
   activeRepoCount: number;
   lastSyncAt: string | null;
+  profileRefreshEnabled: boolean;
+  lastProfileRefreshAt: string | null;
 }
 
 export interface MemberCohort {

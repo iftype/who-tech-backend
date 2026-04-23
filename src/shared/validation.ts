@@ -37,12 +37,13 @@ export function parseNullableString(value: unknown, fieldName: string): string |
 export function parseWorkspaceUpdateInput(body: unknown): {
   cohortRules?: CohortRule[];
   blogSyncEnabled?: boolean;
+  profileRefreshEnabled?: boolean;
 } {
   if (!isRecord(body)) {
     badRequest('invalid body');
   }
 
-  const { cohortRules, blogSyncEnabled } = body;
+  const { cohortRules, blogSyncEnabled, profileRefreshEnabled } = body;
 
   if (cohortRules !== undefined && !isCohortRules(cohortRules)) {
     badRequest('invalid cohortRules');
@@ -52,9 +53,14 @@ export function parseWorkspaceUpdateInput(body: unknown): {
     badRequest('invalid blogSyncEnabled');
   }
 
+  if (profileRefreshEnabled !== undefined && typeof profileRefreshEnabled !== 'boolean') {
+    badRequest('invalid profileRefreshEnabled');
+  }
+
   return {
     ...(cohortRules !== undefined ? { cohortRules } : {}),
     ...(blogSyncEnabled !== undefined ? { blogSyncEnabled } : {}),
+    ...(profileRefreshEnabled !== undefined ? { profileRefreshEnabled } : {}),
   };
 }
 
