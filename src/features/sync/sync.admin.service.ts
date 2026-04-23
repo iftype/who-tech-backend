@@ -3,7 +3,10 @@ import type { CohortRepoRepository } from '../../db/repositories/cohort-repo.rep
 import type { MemberRepository } from '../../db/repositories/member.repository.js';
 import type { MissionRepoRepository } from '../../db/repositories/mission-repo.repository.js';
 import type { WorkspaceService } from '../workspace/workspace.service.js';
+import type { ActivityLogService } from '../activity-log/activity-log.service.js';
 import type { SyncService } from './sync.service.js';
+import type { SyncQueue, SyncJobType } from './sync.queue.js';
+import { createSyncQueue } from './sync.queue.js';
 
 export function createSyncAdminService(deps: {
   cohortRepoRepo: CohortRepoRepository;
@@ -11,9 +14,17 @@ export function createSyncAdminService(deps: {
   missionRepoRepo: MissionRepoRepository;
   workspaceService: WorkspaceService;
   syncService: SyncService;
+  activityLogService: ActivityLogService;
   octokit: Octokit;
 }) {
-  const { cohortRepoRepo, memberRepo, missionRepoRepo, workspaceService, syncService, octokit } = deps;
+  const { memberRepo, missionRepoRepo, workspaceService, syncService, activityLogService, octokit } = deps;
+
+  const queue: SyncQueue = createSyncQueue({
+    syncService,
+    activityLogService,
+    workspaceService,
+    octokit,
+  });
 
   return {
     getAdminStatus: async (): Promise<{
@@ -53,42 +64,34 @@ export function createSyncAdminService(deps: {
       cohort: number,
       onProgress?: (step: { repo: string; done: number; total: number; synced: number }) => void,
     ) => {
-      const context = await workspaceService.getSyncContext();
-      const cohortRepos = await cohortRepoRepo.findByCohort(context.id, cohort);
-
-      let totalSynced = 0;
-      let reposSynced = 0;
-      for (let i = 0; i < cohortRepos.length; i++) {
-        const missionRepo = cohortRepos[i]!.missionRepo;
-        try {
-          const { synced } = await syncService.syncRepo(
-            octokit,
-            context.id,
-            context.githubOrg,
-            {
-              id: missionRepo.id,
-              name: missionRepo.name,
-              track: missionRepo.track,
-              lastSyncAt: null, // cohort-repos sync usually ignores history
-            },
-            context.cohortRules,
-          );
-          totalSynced += synced;
-          reposSynced++;
-          onProgress?.({ repo: missionRepo.name, done: i + 1, total: cohortRepos.length, synced });
-        } catch {
-          // Log is already handled within syncRepo or we can add it here if needed
-          // Since syncRepo doesn't log its own errors (the callers do), I should add logging here if I want it.
-          // In sync.service.ts, the callers (syncContinuousRepos etc) log.
-          // syncAdminService has access to workspaceService but not activityLogService directly unless I inject it.
-          // Actually, syncService should probably handle its own detailed logging if we want it everywhere.
-          // But for now, I'll just keep it consistent.
-          onProgress?.({ repo: `${missionRepo.name} (failed)`, done: i + 1, total: cohortRepos.length, synced: 0 });
-        }
-      }
-
-      return { totalSynced, reposSynced };
+      const workspace = await workspaceService.getOrThrow();
+      return syncService.syncCohortRepoList(octokit, workspace.id, cohort, onProgress);
     },
+
+    createJob: (type: SyncJobType, cohort?: number): string => {
+      return queue.enqueue(type, cohort);
+    },
+
+    getJobs: () => queue.getJobs(),
+
+    getJob: (id: string) => queue.getJob(id),
+
+    cancelJob: (id: string): boolean => {
+      return queue.cancel(id);
+    },
+
+    subscribeProgress: (
+      id: string,
+      cb: (progress: { repo: string; done: number; total: number; synced: number }) => void,
+    ) => {
+      return queue.subscribeProgress(id, cb);
+    },
+
+    subscribeDone: (id: string, cb: (job: unknown) => void) => {
+      return queue.subscribeDone(id, cb as Parameters<typeof queue.subscribeDone>[1]);
+    },
+
+    getQueue: (): SyncQueue => queue,
   };
 }
 

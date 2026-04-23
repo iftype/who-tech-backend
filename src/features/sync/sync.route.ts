@@ -75,5 +75,106 @@ export function createSyncRouter(service: SyncAdminService) {
     );
   });
 
+  // --- Job Queue Endpoints ---
+
+  router.post(
+    '/sync/jobs',
+    asyncHandler(async (req, res) => {
+      const type = req.body?.type as string | undefined;
+      const cohort = typeof req.body?.cohort === 'number' ? req.body.cohort : undefined;
+
+      if (type !== 'workspace' && type !== 'continuous' && type !== 'cohort-repos') {
+        res.status(400).json({ error: 'type must be workspace, continuous, or cohort-repos' });
+        return;
+      }
+
+      if (type === 'cohort-repos' && cohort == null) {
+        res.status(400).json({ error: 'cohort is required for cohort-repos job' });
+        return;
+      }
+
+      const id = service.createJob(type, cohort);
+      const job = service.getJob(id);
+      res.status(201).json(job);
+    }),
+  );
+
+  router.get(
+    '/sync/jobs',
+    asyncHandler(async (_req, res) => {
+      res.json(service.getJobs());
+    }),
+  );
+
+  router.delete(
+    '/sync/jobs/:id',
+    asyncHandler(async (req, res) => {
+      const success = service.cancelJob(String(req.params['id'] ?? ''));
+      if (!success) {
+        res.status(404).json({ error: 'job not found or already completed' });
+        return;
+      }
+      res.json({ success: true });
+    }),
+  );
+
+  router.get('/sync/jobs/:id/stream', (req, res) => {
+    const jobId = String(req.params['id'] ?? '');
+    const job = service.getJob(jobId);
+
+    if (!job) {
+      res.status(404).json({ error: 'job not found' });
+      return;
+    }
+
+    const send = startSse(res);
+
+    if (job.progress) {
+      send('progress', job.progress);
+    }
+
+    if (job.status === 'completed') {
+      send('done', job.result ?? {});
+      res.end();
+      return;
+    }
+
+    if (job.status === 'failed') {
+      send('error', { message: job.error ?? 'unknown error' });
+      res.end();
+      return;
+    }
+
+    if (job.status === 'cancelled') {
+      send('error', { message: 'cancelled' });
+      res.end();
+      return;
+    }
+
+    const unsubProgress = service.subscribeProgress(jobId, (step) => {
+      send('progress', step);
+    });
+
+    const jobDonePromise = new Promise<unknown>((resolve) => {
+      const unsubDone = service.subscribeDone(jobId, (completedJob) => {
+        unsubDone();
+        resolve(completedJob);
+      });
+    });
+
+    runSseJob(
+      res,
+      send,
+      jobDonePromise.then((completedJob) => {
+        unsubProgress();
+        const j = completedJob as { status: string; result?: unknown; error?: string };
+        if (j.status === 'cancelled') {
+          throw new Error('cancelled');
+        }
+        return j.result ?? {};
+      }),
+    );
+  });
+
   return router;
 }
