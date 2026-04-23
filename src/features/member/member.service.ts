@@ -3,6 +3,7 @@ import type { MemberRepository } from '../../db/repositories/member.repository.j
 import type { BlogPostRepository } from '../../db/repositories/blog-post.repository.js';
 import type { BannedWordRepository } from '../../db/repositories/banned-word.repository.js';
 import type { WorkspaceService } from '../workspace/workspace.service.js';
+import PQueue from 'p-queue';
 import { normalizeBlogUrl } from '../../shared/blog.js';
 import { buildCohortList } from '../../shared/member-cohort.js';
 import { shouldRefreshProfile } from '../../shared/github-profile.js';
@@ -194,6 +195,7 @@ export function createMemberService(deps: {
       cohort?: number;
       staleHours?: number;
       force?: boolean;
+      concurrency?: number;
     }) => {
       const workspace = await workspaceService.getOrThrow();
       const bannedWordRows = await bannedWordRepo.findAll(workspace.id);
@@ -212,20 +214,45 @@ export function createMemberService(deps: {
           .map((m) => m.id),
       );
 
-      let checked = 0;
-      let refreshed = 0;
-      const failures: { githubId: string; reason: string }[] = [];
+      type ProcessResult = { githubId: string; ok: true } | { githubId: string; ok: false; reason: string };
 
-      for (const member of allMembers) {
-        checked += 1;
+      const githubQueue = new PQueue({ concurrency: input?.concurrency ?? 5 });
+
+      const processMember = async (
+        member: Awaited<ReturnType<typeof memberRepo.findWithFilters>>[number],
+      ): Promise<ProcessResult> => {
         try {
           await refreshMemberProfileById(member.id, bannedWords, githubTargetIds.has(member.id), memberRepo, octokit);
-          refreshed += 1;
+          return { githubId: member.githubId, ok: true };
         } catch (error) {
           const reason = error instanceof Error ? error.message : String(error);
-          failures.push({ githubId: member.githubId, reason });
+          return { githubId: member.githubId, ok: false, reason };
         }
+      };
+
+      const githubMembers = allMembers.filter((m) => githubTargetIds.has(m.id));
+      const otherMembers = allMembers.filter((m) => !githubTargetIds.has(m.id));
+
+      const githubTasks = githubMembers.map((member) => githubQueue.add(() => processMember(member)));
+
+      const otherResults: ProcessResult[] = [];
+      for (const member of otherMembers) {
+        otherResults.push(await processMember(member));
       }
+
+      const settledGithubResults = await Promise.allSettled(githubTasks);
+      const githubResults: ProcessResult[] = settledGithubResults.map((r) =>
+        r.status === 'fulfilled'
+          ? r.value
+          : { githubId: 'unknown', ok: false, reason: r.reason instanceof Error ? r.reason.message : String(r.reason) },
+      );
+
+      const allResults = [...githubResults, ...otherResults];
+      const checked = allResults.length;
+      const refreshed = allResults.filter((r) => r.ok).length;
+      const failures = allResults
+        .filter((r): r is Extract<ProcessResult, { ok: false }> => !r.ok)
+        .map((r) => ({ githubId: r.githubId, reason: r.reason }));
 
       return { checked, refreshed, failed: failures.length, failures: failures.slice(0, 10) };
     },

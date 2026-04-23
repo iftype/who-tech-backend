@@ -2,7 +2,7 @@ name: Member Profile Refresh
 
 on:
   schedule:
-    - cron: '0 0 * * *' # 매일 자정
+    - cron: '0 * * * *' # 매시간
   workflow_dispatch: # 수동 트리거
 
 jobs:
@@ -17,7 +17,7 @@ jobs:
           fi
 
           response=$(curl -s -w "\n%{http_code}" \
-            -X POST "$BASE_URL/admin/members/refresh-profiles?staleHours=24&limit=30" \
+            -X POST "$BASE_URL/admin/members/refresh-profiles?staleHours=12&limit=100" \
             -H "Authorization: Bearer ${{ secrets.ADMIN_SECRET }}")
 
           http_code=$(echo "$response" | tail -n 1)
