@@ -5,6 +5,7 @@ import type { SubmissionRepository } from '../../db/repositories/submission.repo
 import type { WorkspaceRepository } from '../../db/repositories/workspace.repository.js';
 import type { BannedWordRepository } from '../../db/repositories/banned-word.repository.js';
 import type { IgnoredDomainRepository } from '../../db/repositories/ignored-domain.repository.js';
+import type { CohortRepoRepository } from '../../db/repositories/cohort-repo.repository.js';
 import { parseCohorts } from '../../shared/cohort-regex.js';
 import { createRepoSyncer } from './sync.repo-sync.js';
 import type { CohortRule } from '../../shared/types/index.js';
@@ -18,6 +19,7 @@ export function createSyncService(deps: {
   workspaceRepo: WorkspaceRepository;
   bannedWordRepo: BannedWordRepository;
   ignoredDomainRepo: IgnoredDomainRepository;
+  cohortRepoRepo: CohortRepoRepository;
   activityLogService: ActivityLogService;
 }) {
   const {
@@ -27,6 +29,7 @@ export function createSyncService(deps: {
     workspaceRepo,
     bannedWordRepo,
     ignoredDomainRepo,
+    cohortRepoRepo,
     activityLogService,
   } = deps;
 
@@ -46,14 +49,16 @@ export function createSyncService(deps: {
     org: string,
     logPrefix: string,
     onProgress?: (step: { repo: string; done: number; total: number; synced: number }) => void,
+    signal?: AbortSignal,
   ) => {
     let totalSynced = 0;
     let reposSynced = 0;
 
     for (let i = 0; i < repos.length; i++) {
+      if (signal?.aborted) throw new Error('cancelled');
       const repo = repos[i]!;
       try {
-        const { synced } = await syncRepo(octokit, workspaceId, org, repo, cohortRules);
+        const { synced } = await syncRepo(octokit, workspaceId, org, repo, cohortRules, undefined, signal);
         totalSynced += synced;
         reposSynced++;
         onProgress?.({ repo: repo.name, done: i + 1, total: repos.length, synced });
@@ -75,6 +80,7 @@ export function createSyncService(deps: {
     workspaceId: number,
     onProgress?: (step: { repo: string; done: number; total: number; synced: number }) => void,
     cohort?: number,
+    signal?: AbortSignal,
   ) => {
     const workspace = await workspaceRepo.findByIdOrThrow(workspaceId);
     const cohortRules: CohortRule[] = JSON.parse(workspace.cohortRules);
@@ -92,6 +98,7 @@ export function createSyncService(deps: {
       workspace.githubOrg,
       'Workspace Sync',
       onProgress,
+      signal,
     );
     await workspaceRepo.touch(workspaceId);
     return result;
@@ -101,6 +108,7 @@ export function createSyncService(deps: {
     octokit: Octokit,
     workspaceId: number,
     onProgress?: (step: { repo: string; done: number; total: number; synced: number }) => void,
+    signal?: AbortSignal,
   ) => {
     const workspace = await workspaceRepo.findByIdOrThrow(workspaceId);
     const cohortRules: CohortRule[] = JSON.parse(workspace.cohortRules);
@@ -114,10 +122,56 @@ export function createSyncService(deps: {
       workspace.githubOrg,
       'Continuous Sync',
       onProgress,
+      signal,
     );
   };
 
-  return { syncRepo, syncWorkspace, syncContinuousRepos };
+  const syncCohortRepoList = async (
+    octokit: Octokit,
+    workspaceId: number,
+    cohort: number,
+    onProgress?: (step: { repo: string; done: number; total: number; synced: number }) => void,
+    signal?: AbortSignal,
+  ) => {
+    const workspace = await workspaceRepo.findByIdOrThrow(workspaceId);
+    const cohortRules: CohortRule[] = JSON.parse(workspace.cohortRules);
+    const cohortRepos = await cohortRepoRepo.findByCohort(workspaceId, cohort);
+
+    let totalSynced = 0;
+    let reposSynced = 0;
+    for (let i = 0; i < cohortRepos.length; i++) {
+      if (signal?.aborted) throw new Error('cancelled');
+      const missionRepo = cohortRepos[i]!.missionRepo;
+      try {
+        const { synced } = await syncRepo(
+          octokit,
+          workspaceId,
+          workspace.githubOrg,
+          {
+            id: missionRepo.id,
+            name: missionRepo.name,
+            track: missionRepo.track,
+            lastSyncAt: null,
+          },
+          cohortRules,
+          undefined,
+          signal,
+        );
+        totalSynced += synced;
+        reposSynced++;
+        onProgress?.({ repo: missionRepo.name, done: i + 1, total: cohortRepos.length, synced });
+      } catch (err) {
+        if (err instanceof Error && err.message === 'cancelled') throw err;
+        const message = err instanceof Error ? err.message : String(err);
+        await activityLogService.addLog('sync_error', `Cohort Sync Failed: [${missionRepo.name}] - ${message}`);
+        onProgress?.({ repo: `${missionRepo.name} (failed)`, done: i + 1, total: cohortRepos.length, synced: 0 });
+      }
+    }
+
+    return { totalSynced, reposSynced };
+  };
+
+  return { syncRepo, syncWorkspace, syncContinuousRepos, syncCohortRepoList };
 }
 
 export type SyncService = ReturnType<typeof createSyncService>;

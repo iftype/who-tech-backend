@@ -56,6 +56,7 @@ export function createRepoSyncer(deps: {
     org: string,
     repo: { name: string; lastSyncAt?: Date | null },
     cohortRules: CohortRule[],
+    signal?: AbortSignal,
   ) => {
     const since = repo.lastSyncAt ? new Date(repo.lastSyncAt.getTime() - 5 * 60 * 1000) : undefined;
     const maxPages = since ? 1 : 30;
@@ -69,7 +70,11 @@ export function createRepoSyncer(deps: {
 
     let prs: Awaited<ReturnType<typeof fetchRepoPRs>>;
     try {
-      prs = await fetchRepoPRs(octokit, org, repo.name, { ...(since ? { since } : {}), maxPages });
+      prs = await fetchRepoPRs(octokit, org, repo.name, {
+        ...(since ? { since } : { sort: 'created', direction: 'asc' }),
+        maxPages,
+        ...(signal ? { signal } : {}),
+      });
     } catch (error) {
       const detail = error instanceof Error ? error.message : String(error);
       throw new HttpError(500, `repo sync fetch failed: ${repo.name} — ${detail}`);
@@ -85,6 +90,7 @@ export function createRepoSyncer(deps: {
     existingMember: ExistingMember,
     profileCache: Map<string, ProfileCacheEntry>,
     ignoredDomains: string[],
+    signal?: AbortSignal,
   ): Promise<ResolvedProfile> => {
     let blog = existingMember?.blog ?? null;
     let avatarUrl = existingMember?.avatarUrl ?? null;
@@ -101,6 +107,7 @@ export function createRepoSyncer(deps: {
             octokit,
             { githubUserId, username: s.githubId },
             ignoredDomains,
+            signal,
           );
           let validBlog = null;
           for (const url of candidates) {
@@ -189,6 +196,7 @@ export function createRepoSyncer(deps: {
     repo: { id: number; name: string; track?: string | null; lastSyncAt?: Date | null },
     cohortRules: CohortRule[],
     onProgress?: (step: { total: number; processed: number; synced: number; percent: number; phase: string }) => void,
+    signal?: AbortSignal,
   ): Promise<{ synced: number; failures: { prNumber: number; prUrl: string; error: string }[] }> => {
     const isCommonMission = repo.track === null || repo.track === undefined;
     const { submissions, bannedWords, ignoredDomains } = await fetchAndParse(
@@ -197,6 +205,7 @@ export function createRepoSyncer(deps: {
       org,
       repo,
       cohortRules,
+      signal,
     );
 
     const total = submissions.length;
@@ -208,6 +217,7 @@ export function createRepoSyncer(deps: {
     onProgress?.({ total, processed, synced, percent: total === 0 ? 100 : 0, phase: 'PR 파싱 완료' });
 
     for (const s of submissions) {
+      if (signal?.aborted) throw new Error('cancelled');
       try {
         const existingMember =
           (s.githubUserId != null ? await memberRepo.findByGithubUserId(s.githubUserId, workspaceId) : null) ??
@@ -227,7 +237,7 @@ export function createRepoSyncer(deps: {
           statsValue,
           existingMember?.nickname ?? null,
         );
-        const profile = await resolveProfile(octokit, s, existingMember, profileCache, ignoredDomains);
+        const profile = await resolveProfile(octokit, s, existingMember, profileCache, ignoredDomains, signal);
         await upsertMemberAndSubmission(workspaceId, s, profile, repo, statsValue, displayNickname, existingMember);
         synced++;
       } catch (err) {
