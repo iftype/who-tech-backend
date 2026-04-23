@@ -12,6 +12,8 @@ export function createMemberRouter(service: MemberService) {
       const q = typeof req.query['q'] === 'string' ? req.query['q'] : undefined;
       const cohort = parseOptionalNumberQuery(req.query['cohort']);
       const hasBlog = req.query['hasBlog'] === 'true' ? true : req.query['hasBlog'] === 'false' ? false : undefined;
+      const hasCohort =
+        req.query['hasCohort'] === 'true' ? true : req.query['hasCohort'] === 'false' ? false : undefined;
       const track = typeof req.query['track'] === 'string' ? req.query['track'] : undefined;
       const role = typeof req.query['role'] === 'string' ? req.query['role'] : undefined;
       res.json(
@@ -19,6 +21,7 @@ export function createMemberRouter(service: MemberService) {
           ...(q ? { q } : {}),
           ...(cohort !== undefined ? { cohort } : {}),
           ...(hasBlog !== undefined ? { hasBlog } : {}),
+          ...(hasCohort !== undefined ? { hasCohort } : {}),
           ...(track ? { track } : {}),
           ...(role ? { role } : {}),
         }),

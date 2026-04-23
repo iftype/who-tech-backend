@@ -43,6 +43,20 @@ export default function MemberFiltersBar({ filters, onChange }: Props) {
         <option value="true">있음</option>
         <option value="false">없음</option>
       </select>
+      <select
+        value={filters.hasCohort === undefined ? '' : String(filters.hasCohort)}
+        onChange={(e) =>
+          onChange({
+            ...filters,
+            hasCohort: e.target.value === '' ? undefined : e.target.value === 'true',
+          })
+        }
+        className="border border-gray-300 rounded px-3 py-1.5 text-sm"
+      >
+        <option value="">기수 전체</option>
+        <option value="true">확정</option>
+        <option value="false">미확정</option>
+      </select>
       <button
         onClick={() => onChange({})}
         className="text-xs text-gray-400 hover:text-gray-600 px-2"

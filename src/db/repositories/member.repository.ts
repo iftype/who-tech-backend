@@ -44,7 +44,7 @@ export function createMemberRepository(db: PrismaClient) {
     // 필터 기반 조회
     findWithFilters: (
       workspaceId: number,
-      filters?: { q?: string; cohort?: number; hasBlog?: boolean; track?: string; role?: string },
+      filters?: { q?: string; cohort?: number; hasBlog?: boolean; track?: string; role?: string; hasCohort?: boolean },
     ): Promise<MemberWithRelations[]> =>
       db.member.findMany({
         where: {
@@ -53,6 +53,8 @@ export function createMemberRepository(db: PrismaClient) {
           ...(filters?.role ? { memberCohorts: { some: { role: { name: { contains: filters.role } } } } } : {}),
           ...(filters?.hasBlog === true ? { blog: { not: null } } : {}),
           ...(filters?.hasBlog === false ? { blog: null } : {}),
+          ...(filters?.hasCohort === true ? { memberCohorts: { some: {} } } : {}),
+          ...(filters?.hasCohort === false ? { memberCohorts: { none: {} } } : {}),
           ...(filters?.track ? { submissions: { some: { missionRepo: { track: filters.track } } } } : {}),
           ...(filters?.q
             ? {
