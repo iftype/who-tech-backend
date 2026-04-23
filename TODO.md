@@ -83,6 +83,46 @@
 
 ---
 
+## 5️⃣ 프로필 새로고침 시스템 재설계 + AGENTS.md 문서화 (BETA 1.0.1)
+
+> 분석 완료: 2026-04-23
+
+### 배경
+
+- 현재 매시간 GitHub Actions cron으로 전체 멤버 프로필 새로고침 (비효율적)
+- 변경 없어도 GitHub API + RSS Probe 호출
+- 클라이언트에서 개별 멤버 새로고침 불가
+- ActivityLog 7일/200개 제한 — 추적 용도 부족
+- Cohort 판별이 날짜 기반 (연도→기수) — 부정확
+
+### 목표
+
+- 클라이언트(Next.js)에서 개별 멤버 새로고침 버튼 제공
+- Rate limiting: 개별 1분, 전체 1일 (admin만)
+- ActivityLog 확장: source/memberGithubId/metadata 필드, 월별 보존
+- Cohort 빈도수 기반 판별 (nicknameStats와 동일 방식)
+- 각 폴더별 AGENTS.md 작성
+
+### 설계 결정
+
+- **로그 보존**: 3개월 롤링, 최대 제한 없음 (SQLite 용량 허용)
+- **멤버별 요청 추적**: memberGithubId 인덱스 + countByMember 쿼리
+- **기존 인원 처리**: 점진적 적용 (새로고침 시 → 배치 스크립트 → 자동)
+- **PR 4개 이하**: minSubmissions=3, minDominance=0.5, 동률 시 최신 기수 우선
+- **전체 새로고침**: 클라이언트에서 제거, GitHub Actions cron만 유지 (6시간)
+
+### TODO
+
+- [x] Phase 0: AGENTS.md 작성 (각 폴더별) — 12개 파일 완료
+- [x] Phase 1: DB 스키마 변경 (ActivityLog 확장) — source, memberGithubId, metadata 필드 + 인덱스 4개
+- [x] Phase 2: ActivityLog 확장 + Rate Limiting 로직 — repository 3개 메서드 추가, service에 checkRateLimit/getLogsByType 추가
+- [x] Phase 3: 퍼블릭 엔드포인트 (개별 새로고침) — POST /members/:githubId/refresh, 1분 rate limit, 429 응답
+- [x] Phase 4: Cohort 빈도수 기반 개선 + console.log 제거 — minSubmissions=3, minDominance=0.5 적용, console.log/console.error 제거
+- [x] Phase 5: 프론트엔드 새로고침 버튼 ([githubId] 페이지) — RefreshButton 컴포넌트, api.members.refresh, 429 처리, 카운트다운
+- [x] Phase 6: GitHub Actions cron 조정 (매시간 → 6시간) — member-refresh.yml cron '0 _/6 _ \* \*'
+
+---
+
 ## 서버 운영 메모
 
 - GitHub Token: Classic PAT (`public_repo` + `read:user`), `.env`에 저장
