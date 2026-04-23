@@ -63,5 +63,32 @@ export function createMemberPublicRouter(service: MemberPublicService) {
     }),
   );
 
+  // POST /members/:githubId/refresh
+  router.post(
+    '/:githubId/refresh',
+    asyncHandler(async (req, res) => {
+      const githubId = typeof req.params['githubId'] === 'string' ? req.params['githubId'] : '';
+      try {
+        const result = await service.refreshMemberProfile(githubId);
+        if ('rateLimited' in result && result.rateLimited) {
+          res.status(429).json({
+            error: 'Rate limited',
+            remainingSeconds: result.remainingSeconds,
+            message: `${result.remainingSeconds}초 후에 다시 시도해주세요`,
+          });
+          return;
+        }
+        res.json(result.member);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        if (message === 'Member not found') {
+          res.status(404).json({ error: 'Member not found' });
+          return;
+        }
+        res.status(500).json({ error: message });
+      }
+    }),
+  );
+
   return router;
 }

@@ -156,12 +156,20 @@ model BlogPost {
 }
 
 model ActivityLog {
-  id          Int       @id @default(autoincrement())
-  type        String
-  message     String
-  workspaceId Int
-  createdAt   DateTime  @default(now())
-  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  id             Int       @id @default(autoincrement())
+  type           String
+  message        String
+  source         String?   // "admin" | "client" | "system"
+  memberGithubId String?   // 새로고침 대상 멤버 (rate limit 추적용)
+  metadata       String?   // JSON: { "remainingSeconds", "requestCount" } 등 확장 필드
+  workspaceId    Int
+  createdAt      DateTime  @default(now())
+  workspace      Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([type])
+  @@index([memberGithubId])
+  @@index([source])
+  @@index([createdAt])
 }
 
 model NicknameBannedWord {

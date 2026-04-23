@@ -92,7 +92,15 @@ const blogAdminService = createBlogAdminService({
   activityLogService,
   octokit,
 });
-const memberPublicService = createMemberPublicService({ memberRepo, blogPostRepo, cohortRepoRepo, workspaceService });
+const memberPublicService = createMemberPublicService({
+  memberRepo,
+  blogPostRepo,
+  cohortRepoRepo,
+  bannedWordRepo,
+  workspaceService,
+  activityLogService,
+  octokit,
+});
 const archiveService = createArchiveService({ memberRepo, cohortRepoRepo, workspaceService });
 const syncAdminService = createSyncAdminService({
   cohortRepoRepo,

@@ -285,6 +285,11 @@ export function createMemberService(deps: {
       const cohortRulesRaw = workspace.cohortRules ?? '[]';
       const cohortRules = JSON.parse(cohortRulesRaw) as { year: number; cohort: number }[];
 
+      if (member.submissions.length < 3) {
+        const updated = await memberRepo.findByIdWithRelations(id);
+        return updated ? toMemberResponse(updated) : null;
+      }
+
       const cohortFreq = new Map<number, number>();
       for (const sub of member.submissions) {
         const cohort = detectCohort(new Date(sub.submittedAt), cohortRules);
@@ -293,12 +298,26 @@ export function createMemberService(deps: {
         }
       }
 
+      const totalWithCohort = [...cohortFreq.values()].reduce((sum, c) => sum + c, 0);
+      if (totalWithCohort < 3) {
+        const updated = await memberRepo.findByIdWithRelations(id);
+        return updated ? toMemberResponse(updated) : null;
+      }
+
+      const sorted = [...cohortFreq.entries()].sort((a, b) => b[1] - a[1]);
+      const [dominantCohort, dominantCount] = sorted[0]!;
+      const dominanceRatio = dominantCount / totalWithCohort;
+
+      if (dominanceRatio < 0.5) {
+        const updated = await memberRepo.findByIdWithRelations(id);
+        return updated ? toMemberResponse(updated) : null;
+      }
+
       const currentCohorts = buildCohortList(member.memberCohorts);
 
       for (const current of currentCohorts) {
         const isStaff = current.roles.some((r) => r === 'coach' || r === 'reviewer');
         if (isStaff) continue;
-
         if (!cohortFreq.has(current.cohort)) {
           await memberRepo.deleteParticipationsByCohort(id, current.cohort);
         }
@@ -308,18 +327,14 @@ export function createMemberService(deps: {
         (c) => !c.roles.some((r) => r === 'coach' || r === 'reviewer'),
       );
 
-      if (cohortFreq.size > 0) {
-        const dominantCohort = [...cohortFreq.entries()].sort((a, b) => b[1] - a[1])[0]![0];
-
-        for (const c of remainingCrewCohorts) {
-          if (c.cohort !== dominantCohort) {
-            await memberRepo.deleteParticipationsByCohort(id, c.cohort);
-          }
+      for (const c of remainingCrewCohorts) {
+        if (c.cohort !== dominantCohort) {
+          await memberRepo.deleteParticipationsByCohort(id, c.cohort);
         }
+      }
 
-        if (!remainingCrewCohorts.some((c) => c.cohort === dominantCohort)) {
-          await memberRepo.upsertParticipation(id, dominantCohort, 'crew');
-        }
+      if (!remainingCrewCohorts.some((c) => c.cohort === dominantCohort)) {
+        await memberRepo.upsertParticipation(id, dominantCohort, 'crew');
       }
 
       const updated = await memberRepo.findByIdWithRelations(id);

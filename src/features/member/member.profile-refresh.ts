@@ -8,6 +8,9 @@ import { toMemberResponse } from './member.response.js';
 import { buildCohortList } from '../../shared/member-cohort.js';
 import type { CohortRule } from '../../shared/types/index.js';
 
+const MIN_SUBMISSIONS = 3;
+const MIN_DOMINANCE = 0.5;
+
 export async function refreshMemberProfileById(
   id: number,
   bannedWords: Set<string>,
@@ -19,7 +22,6 @@ export async function refreshMemberProfileById(
   const member = await memberRepo.findByIdWithRelations(id);
   if (!member) throw new Error('member not found');
 
-  // nicknameStats는 항상 재계산
   let statsValue: string | null = null;
   for (const submission of member.submissions) {
     for (const token of extractNicknameTokens(submission.title)) {
@@ -29,7 +31,6 @@ export async function refreshMemberProfileById(
     }
   }
 
-  // refresh 시 fallback으로 기존 nickname을 쓰면 ban된 값이 그대로 남음 → null로 교체
   const resolvedNickname = resolveDisplayNickname(member.manualNickname, statsValue, null);
 
   let updated: Awaited<ReturnType<MemberRepository['update']>>;
@@ -68,7 +69,6 @@ export async function refreshMemberProfileById(
         blog: resolvedBlog ?? member.blog ?? null,
       };
     } catch (error) {
-      console.error(`[refreshMemberProfile ERROR] ${member.githubId}:`, error);
       profileFields = {
         githubId: member.githubId,
         githubUserId: member.githubUserId ?? null,
@@ -87,8 +87,7 @@ export async function refreshMemberProfileById(
     });
   }
 
-  // 기수 재계산: fetchGithub 여부와 무관하게 submission 데이터가 있으면 실행
-  if (cohortRules && updated.submissions.length > 0) {
+  if (cohortRules && updated.submissions.length >= MIN_SUBMISSIONS) {
     const cohortFreq = new Map<number, number>();
     for (const sub of updated.submissions) {
       const cohort = detectCohort(new Date(sub.submittedAt), cohortRules);
@@ -97,40 +96,38 @@ export async function refreshMemberProfileById(
       }
     }
 
-    const currentCohorts = buildCohortList(updated.memberCohorts);
+    const totalWithCohort = [...cohortFreq.values()].reduce((sum, c) => sum + c, 0);
+    if (totalWithCohort >= MIN_SUBMISSIONS) {
+      const sorted = [...cohortFreq.entries()].sort((a, b) => b[1] - a[1]);
+      const [dominantCohort, dominantCount] = sorted[0]!;
+      const dominanceRatio = dominantCount / totalWithCohort;
 
-    for (const current of currentCohorts) {
-      const isStaff = current.roles.some((r) => r === 'coach' || r === 'reviewer');
-      if (isStaff) continue;
+      if (dominanceRatio >= MIN_DOMINANCE) {
+        const currentCohorts = buildCohortList(updated.memberCohorts);
 
-      if (!cohortFreq.has(current.cohort)) {
-        await memberRepo.deleteParticipationsByCohort(id, current.cohort);
-      }
-    }
+        for (const current of currentCohorts) {
+          const isStaff = current.roles.some((r) => r === 'coach' || r === 'reviewer');
+          if (isStaff) continue;
+          if (!cohortFreq.has(current.cohort)) {
+            await memberRepo.deleteParticipationsByCohort(id, current.cohort);
+          }
+        }
 
-    const remainingCrewCohorts = currentCohorts.filter((c) => !c.roles.some((r) => r === 'coach' || r === 'reviewer'));
+        const remainingCrewCohorts = currentCohorts.filter(
+          (c) => !c.roles.some((r) => r === 'coach' || r === 'reviewer'),
+        );
 
-    if (cohortFreq.size > 0) {
-      const dominantCohort = [...cohortFreq.entries()].sort((a, b) => b[1] - a[1])[0]![0];
+        for (const c of remainingCrewCohorts) {
+          if (c.cohort !== dominantCohort) {
+            await memberRepo.deleteParticipationsByCohort(id, c.cohort);
+          }
+        }
 
-      for (const c of remainingCrewCohorts) {
-        if (c.cohort !== dominantCohort) {
-          await memberRepo.deleteParticipationsByCohort(id, c.cohort);
+        if (!remainingCrewCohorts.some((c) => c.cohort === dominantCohort)) {
+          await memberRepo.upsertParticipation(id, dominantCohort, 'crew');
         }
       }
-
-      if (!remainingCrewCohorts.some((c) => c.cohort === dominantCohort)) {
-        await memberRepo.upsertParticipation(id, dominantCohort, 'crew');
-      }
     }
-
-    console.log(
-      `[refreshMemberProfile] ${member.githubId}: cohorts recalculated, dominant=${[...cohortFreq.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? 'none'}`,
-    );
-  } else {
-    console.log(
-      `[refreshMemberProfile] ${member.githubId}: cohort recalculation skipped (rules=${!!cohortRules}, submissions=${updated.submissions.length})`,
-    );
   }
 
   return toMemberResponse(updated);

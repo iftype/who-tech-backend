@@ -1,17 +1,25 @@
 import type { MemberRepository } from '../../db/repositories/member.repository.js';
 import type { BlogPostRepository } from '../../db/repositories/blog-post.repository.js';
 import type { CohortRepoRepository } from '../../db/repositories/cohort-repo.repository.js';
+import type { BannedWordRepository } from '../../db/repositories/banned-word.repository.js';
 import type { WorkspaceService } from '../workspace/workspace.service.js';
+import type { ActivityLogService } from '../activity-log/activity-log.service.js';
+import type { Octokit } from '@octokit/rest';
 import { resolveDisplayNickname } from '../../shared/nickname.js';
 import { buildCohortList } from '../../shared/member-cohort.js';
+import { refreshMemberProfileById } from './member.profile-refresh.js';
 
 export function createMemberPublicService(deps: {
   memberRepo: MemberRepository;
   blogPostRepo: BlogPostRepository;
   cohortRepoRepo: CohortRepoRepository;
+  bannedWordRepo: BannedWordRepository;
   workspaceService: WorkspaceService;
+  activityLogService: ActivityLogService;
+  octokit: Octokit;
 }) {
-  const { memberRepo, blogPostRepo, cohortRepoRepo, workspaceService } = deps;
+  const { memberRepo, blogPostRepo, cohortRepoRepo, bannedWordRepo, workspaceService, activityLogService, octokit } =
+    deps;
 
   interface ArchiveRepo {
     name: string;
@@ -215,6 +223,42 @@ export function createMemberPublicService(deps: {
           },
         };
       });
+    },
+
+    refreshMemberProfile: async (githubId: string) => {
+      const workspace = await workspaceService.getOrThrow();
+      const member = await memberRepo.findByGithubId(githubId, workspace.id);
+      if (!member) throw new Error('Member not found');
+
+      const rateLimit = await activityLogService.checkRateLimit(githubId, 1);
+      if (!rateLimit.allowed) {
+        await activityLogService.addLog('rate_limit_member', `Rate limited: ${githubId}`, {
+          source: 'client',
+          memberGithubId: githubId,
+          metadata: { remainingSeconds: rateLimit.remainingSeconds, requestCount: rateLimit.requestCount },
+        });
+        return { rateLimited: true, remainingSeconds: rateLimit.remainingSeconds };
+      }
+
+      const bannedWordRows = await bannedWordRepo.findAll(workspace.id);
+      const bannedWords = new Set(bannedWordRows.map((r) => r.word));
+      const cohortRules = JSON.parse(workspace.cohortRules) as { year: number; cohort: number }[];
+
+      try {
+        const result = await refreshMemberProfileById(member.id, bannedWords, true, memberRepo, octokit, cohortRules);
+        await activityLogService.addLog('refresh_member', `Profile refreshed: ${githubId}`, {
+          source: 'client',
+          memberGithubId: githubId,
+        });
+        return { rateLimited: false, member: result };
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        await activityLogService.addLog('refresh_error', `Profile refresh failed: ${githubId} - ${message}`, {
+          source: 'client',
+          memberGithubId: githubId,
+        });
+        throw error;
+      }
     },
   };
 }
