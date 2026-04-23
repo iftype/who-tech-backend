@@ -32,60 +32,62 @@ export async function refreshMemberProfileById(
   // refresh 시 fallback으로 기존 nickname을 쓰면 ban된 값이 그대로 남음 → null로 교체
   const resolvedNickname = resolveDisplayNickname(member.manualNickname, statsValue, null);
 
-  if (!fetchGithub) {
-    const updated = await memberRepo.update(id, { nicknameStats: statsValue, nickname: resolvedNickname });
-    return toMemberResponse(updated);
-  }
-
+  let updated: Awaited<ReturnType<MemberRepository['update']>>;
   let profileRefreshError: string | null = null;
-  let profileFields: {
-    githubId: string;
-    githubUserId: number | null;
-    previousGithubIds: string | null;
-    avatarUrl: string | null;
-    blog?: string | null;
-  };
 
-  try {
-    const { profile, candidates } = await fetchUserBlogCandidates(octokit, {
-      githubUserId: member.githubUserId,
-      username: member.githubId,
-    });
-    let validBlog: string | null = null;
-    for (const url of candidates) {
-      const rssCheck = await probeRss(url);
-      if (rssCheck.status === 'available') {
-        validBlog = url;
-        break;
+  if (!fetchGithub) {
+    updated = await memberRepo.update(id, { nicknameStats: statsValue, nickname: resolvedNickname });
+  } else {
+    let profileFields: {
+      githubId: string;
+      githubUserId: number | null;
+      previousGithubIds: string | null;
+      avatarUrl: string | null;
+      blog?: string | null;
+    };
+
+    try {
+      const { profile, candidates } = await fetchUserBlogCandidates(octokit, {
+        githubUserId: member.githubUserId,
+        username: member.githubId,
+      });
+      let validBlog: string | null = null;
+      for (const url of candidates) {
+        const rssCheck = await probeRss(url);
+        if (rssCheck.status === 'available') {
+          validBlog = url;
+          break;
+        }
       }
+      const resolvedBlog = validBlog ?? candidates[0] ?? null;
+      profileFields = {
+        githubId: profile.githubId,
+        githubUserId: profile.githubUserId,
+        previousGithubIds: mergePreviousGithubIds(member.previousGithubIds, member.githubId, profile.githubId),
+        avatarUrl: profile.avatarUrl ?? member.avatarUrl ?? null,
+        blog: resolvedBlog ?? member.blog ?? null,
+      };
+    } catch (error) {
+      console.error(`[refreshMemberProfile ERROR] ${member.githubId}:`, error);
+      profileFields = {
+        githubId: member.githubId,
+        githubUserId: member.githubUserId ?? null,
+        previousGithubIds: member.previousGithubIds ?? null,
+        avatarUrl: member.avatarUrl ?? null,
+      };
+      profileRefreshError = error instanceof Error ? error.message : String(error);
     }
-    const resolvedBlog = validBlog ?? candidates[0] ?? null;
-    profileFields = {
-      githubId: profile.githubId,
-      githubUserId: profile.githubUserId,
-      previousGithubIds: mergePreviousGithubIds(member.previousGithubIds, member.githubId, profile.githubId),
-      avatarUrl: profile.avatarUrl ?? member.avatarUrl ?? null,
-      blog: resolvedBlog ?? member.blog ?? null,
-    };
-  } catch (error) {
-    console.error(`[refreshMemberProfile ERROR] ${member.githubId}:`, error);
-    profileFields = {
-      githubId: member.githubId,
-      githubUserId: member.githubUserId ?? null,
-      previousGithubIds: member.previousGithubIds ?? null,
-      avatarUrl: member.avatarUrl ?? null,
-    };
-    profileRefreshError = error instanceof Error ? error.message : String(error);
+
+    updated = await memberRepo.update(id, {
+      ...profileFields,
+      nicknameStats: statsValue,
+      nickname: resolvedNickname,
+      profileFetchedAt: new Date(),
+      profileRefreshError,
+    });
   }
 
-  const updated = await memberRepo.update(id, {
-    ...profileFields,
-    nicknameStats: statsValue,
-    nickname: resolvedNickname,
-    profileFetchedAt: new Date(),
-    profileRefreshError,
-  });
-
+  // 기수 재계산: fetchGithub 여부와 무관하게 submission 데이터가 있으면 실행
   if (cohortRules && updated.submissions.length > 0) {
     const cohortFreq = new Map<number, number>();
     for (const sub of updated.submissions) {
@@ -121,6 +123,14 @@ export async function refreshMemberProfileById(
         await memberRepo.upsertParticipation(id, dominantCohort, 'crew');
       }
     }
+
+    console.log(
+      `[refreshMemberProfile] ${member.githubId}: cohorts recalculated, dominant=${[...cohortFreq.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? 'none'}`,
+    );
+  } else {
+    console.log(
+      `[refreshMemberProfile] ${member.githubId}: cohort recalculation skipped (rules=${!!cohortRules}, submissions=${updated.submissions.length})`,
+    );
   }
 
   return toMemberResponse(updated);
