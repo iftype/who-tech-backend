@@ -28,7 +28,7 @@ export function createMemberPublicService(deps: {
     submissions: Array<{ prUrl: string; prNumber: number; title: string; status: string; submittedAt: Date }> | null;
   }
 
-  return {
+  const service = {
     searchMembers: async (filters?: { q?: string; cohort?: number; track?: string; role?: string }) => {
       const workspace = await workspaceService.getOrThrow();
       const members = await memberRepo.findWithFilters(workspace.id, filters);
@@ -245,12 +245,13 @@ export function createMemberPublicService(deps: {
       const cohortRules = JSON.parse(workspace.cohortRules) as { year: number; cohort: number }[];
 
       try {
-        const result = await refreshMemberProfileById(member.id, bannedWords, true, memberRepo, octokit, cohortRules);
+        await refreshMemberProfileById(member.id, bannedWords, true, memberRepo, octokit, cohortRules);
         await activityLogService.addLog('refresh_member', `Profile refreshed: ${githubId}`, {
           source: 'client',
           memberGithubId: githubId,
         });
-        return { rateLimited: false, member: result };
+        const refreshedMember = await service.getMemberDetail(githubId);
+        return { rateLimited: false, member: refreshedMember };
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         await activityLogService.addLog('refresh_error', `Profile refresh failed: ${githubId} - ${message}`, {
@@ -261,6 +262,8 @@ export function createMemberPublicService(deps: {
       }
     },
   };
+
+  return service;
 }
 
 export type MemberPublicService = ReturnType<typeof createMemberPublicService>;
