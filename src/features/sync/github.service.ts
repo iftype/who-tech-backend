@@ -38,23 +38,33 @@ export async function fetchRepoPRs(
   octokit: Octokit,
   org: string,
   repo: string,
-  options: { perPage?: number; since?: Date; maxPages?: number } = {},
+  options: {
+    perPage?: number;
+    since?: Date;
+    maxPages?: number;
+    signal?: AbortSignal;
+    sort?: 'updated' | 'created';
+    direction?: 'asc' | 'desc';
+  } = {},
 ): Promise<Awaited<ReturnType<typeof octokit.pulls.list>>['data']> {
-  const { perPage = 100, since, maxPages } = options;
+  const { perPage = 100, since, maxPages, signal, sort = 'updated', direction = 'desc' } = options;
   const allPRs = [];
   let page = 1;
 
   while (true) {
+    if (signal?.aborted) throw new Error('cancelled');
+
     let data: Awaited<ReturnType<typeof octokit.pulls.list>>['data'];
     try {
       ({ data } = await octokit.pulls.list({
         owner: org,
         repo,
         state: 'all',
-        sort: 'updated',
-        direction: 'desc',
+        sort,
+        direction,
         per_page: perPage,
         page,
+        ...(signal ? { request: { signal } } : {}),
       }));
     } catch (error) {
       const status =
@@ -84,14 +94,21 @@ export async function fetchUserProfile(
   octokit: Octokit,
   input: { username?: string; githubUserId?: number | null },
   ignoredDomains: string[] = [],
+  signal?: AbortSignal,
 ): Promise<{ githubUserId: number | null; githubId: string; blog: string | null; avatarUrl: string | null }> {
   let data;
 
   if (input.githubUserId != null) {
-    const response = await octokit.request('GET /user/{account_id}', { account_id: input.githubUserId });
+    const response = await octokit.request('GET /user/{account_id}', {
+      account_id: input.githubUserId,
+      ...(signal ? { request: { signal } } : {}),
+    });
     data = response.data;
   } else if (input.username) {
-    const response = await octokit.users.getByUsername({ username: input.username });
+    const response = await octokit.users.getByUsername({
+      username: input.username,
+      ...(signal ? { request: { signal } } : {}),
+    });
     data = response.data;
   } else {
     throw new Error('username or githubUserId required');
@@ -114,6 +131,7 @@ export async function fetchUserBlogCandidates(
   octokit: Octokit,
   input: { username?: string; githubUserId?: number | null },
   ignoredDomains: string[] = [],
+  signal?: AbortSignal,
 ): Promise<{
   profile: { githubUserId: number | null; githubId: string; avatarUrl: string | null };
   candidates: string[];
@@ -121,10 +139,16 @@ export async function fetchUserBlogCandidates(
   let data;
 
   if (input.githubUserId != null) {
-    const response = await octokit.request('GET /user/{account_id}', { account_id: input.githubUserId });
+    const response = await octokit.request('GET /user/{account_id}', {
+      account_id: input.githubUserId,
+      ...(signal ? { request: { signal } } : {}),
+    });
     data = response.data;
   } else if (input.username) {
-    const response = await octokit.users.getByUsername({ username: input.username });
+    const response = await octokit.users.getByUsername({
+      username: input.username,
+      ...(signal ? { request: { signal } } : {}),
+    });
     data = response.data;
   } else {
     throw new Error('username or githubUserId required');
@@ -153,6 +177,7 @@ export async function fetchUserBlogCandidates(
   try {
     const { data: socials } = await octokit.request('GET /users/{username}/social_accounts', {
       username: data.login,
+      ...(signal ? { request: { signal } } : {}),
     });
     for (const s of socials) push(s.url);
   } catch {
