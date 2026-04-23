@@ -122,6 +122,10 @@ function makeDeps(overrides: Record<string, Record<string, jest.Mock>> = {}) {
       addLog: jest.fn().mockResolvedValue(undefined as never),
       ...overrides['activityLogService'],
     },
+    cohortRepoRepo: {
+      findByCohort: jest.fn().mockResolvedValue([] as never),
+      ...overrides['cohortRepoRepo'],
+    },
   };
 }
 

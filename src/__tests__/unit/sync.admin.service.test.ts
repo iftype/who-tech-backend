@@ -16,7 +16,14 @@ describe('createSyncAdminService', () => {
       ] as never),
     };
     const workspaceService = {
-      getOrThrow: jest.fn(),
+      getOrThrow: jest.fn().mockResolvedValue({
+        id: 7,
+        githubOrg: 'woowacourse',
+        cohortRules: JSON.stringify([{ year: 2026, cohort: 8 }]),
+        updatedAt: new Date(),
+        profileRefreshEnabled: true,
+        lastProfileRefreshAt: null,
+      } as never),
       getSyncContext: jest.fn().mockResolvedValue({
         id: 7,
         githubOrg: 'woowacourse',
@@ -26,10 +33,14 @@ describe('createSyncAdminService', () => {
     const syncService = {
       syncWorkspace: jest.fn(),
       syncContinuousRepos: jest.fn(),
+      syncCohortRepoList: jest.fn().mockResolvedValue({ totalSynced: 4, reposSynced: 2 } as never),
       syncRepo: jest
         .fn()
         .mockResolvedValueOnce({ synced: 3, failures: [] } as never)
         .mockResolvedValueOnce({ synced: 1, failures: [] } as never),
+    };
+    const activityLogService = {
+      addLog: jest.fn().mockResolvedValue(undefined as never),
     };
 
     const service = createSyncAdminService({
@@ -38,34 +49,13 @@ describe('createSyncAdminService', () => {
       missionRepoRepo: { count: jest.fn() } as never,
       workspaceService: workspaceService as never,
       syncService: syncService as never,
+      activityLogService: activityLogService as never,
       octokit: {} as never,
     });
 
-    const steps: { repo: string; done: number; total: number; synced: number }[] = [];
-    const result = await service.syncCohortRepoList(8, (step) => steps.push(step));
+    const result = await service.syncCohortRepoList(8);
 
-    expect(workspaceService.getSyncContext).toHaveBeenCalledTimes(1);
-    expect(cohortRepoRepo.findByCohort).toHaveBeenCalledWith(7, 8);
-    expect(syncService.syncRepo).toHaveBeenNthCalledWith(
-      1,
-      {},
-      7,
-      'woowacourse',
-      { id: 11, name: 'java-racingcar', track: 'backend', lastSyncAt: null },
-      [{ year: 2026, cohort: 8 }],
-    );
-    expect(syncService.syncRepo).toHaveBeenNthCalledWith(
-      2,
-      {},
-      7,
-      'woowacourse',
-      { id: 12, name: 'java-lotto', track: null, lastSyncAt: null },
-      [{ year: 2026, cohort: 8 }],
-    );
-    expect(steps).toEqual([
-      { repo: 'java-racingcar', done: 1, total: 2, synced: 3 },
-      { repo: 'java-lotto', done: 2, total: 2, synced: 1 },
-    ]);
+    expect(syncService.syncCohortRepoList).toHaveBeenCalledWith({}, 7, 8, undefined);
     expect(result).toEqual({ totalSynced: 4, reposSynced: 2 });
   });
 });
