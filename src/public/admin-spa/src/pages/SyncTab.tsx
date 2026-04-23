@@ -114,9 +114,20 @@ export default function SyncTab() {
     refetchInterval: 3000,
   });
 
-  const allJobs = [...repoJobs, ...blogJobs].sort(
-    (a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime(),
+  const activeQueueJobs = queueJobs.filter((j) => j.status === 'queued' || j.status === 'running');
+  const recentQueueJobs = queueJobs.filter(
+    (j) => j.status === 'completed' || j.status === 'failed' || j.status === 'cancelled',
   );
+
+  const allJobs = [...recentQueueJobs, ...repoJobs, ...blogJobs].sort((a, b) => {
+    const aDate = new Date(
+      (a as SyncQueueJob).completedAt ?? (a as typeof repoJobs[number]).startedAt ?? 0,
+    );
+    const bDate = new Date(
+      (b as SyncQueueJob).completedAt ?? (b as typeof repoJobs[number]).startedAt ?? 0,
+    );
+    return bDate.getTime() - aDate.getTime();
+  });
 
   const queryClient = useQueryClient();
 
@@ -452,10 +463,9 @@ export default function SyncTab() {
         </div>
       </div>
 
-      {/* 작업 큐 */}
-      {queueJobs.length > 0 && (
+      {activeQueueJobs.length > 0 && (
         <div className="bg-white border border-gray-200 rounded p-4">
-          <h3 className="text-xs font-semibold text-gray-600 mb-3">작업 큐 ({queueJobs.length})</h3>
+          <h3 className="text-xs font-semibold text-gray-600 mb-3">현재 싱크 작업 ({activeQueueJobs.length})</h3>
           <div className="max-h-64 overflow-y-auto rounded border border-gray-200">
             <table className="w-full text-xs">
               <thead className="bg-gray-50 border-b border-gray-200">
@@ -469,7 +479,7 @@ export default function SyncTab() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {queueJobs.map((j) => (
+                {activeQueueJobs.map((j) => (
                   <tr key={j.id} className="hover:bg-gray-50">
                     <td className="px-3 py-2 text-gray-500 whitespace-nowrap">
                       {new Date(j.status === 'running' && j.startedAt ? j.startedAt : j.createdAt).toLocaleString('ko-KR')}
@@ -485,13 +495,7 @@ export default function SyncTab() {
                         className={`text-xs px-1.5 py-0.5 rounded font-medium ${
                           j.status === 'queued'
                             ? 'bg-gray-100 text-gray-600'
-                            : j.status === 'running'
-                              ? 'bg-blue-100 text-blue-700'
-                              : j.status === 'completed'
-                                ? 'bg-green-100 text-green-700'
-                                : j.status === 'failed'
-                                  ? 'bg-red-100 text-red-700'
-                                  : 'bg-orange-100 text-orange-700'
+                            : 'bg-blue-100 text-blue-700'
                         }`}
                       >
                         {j.status}
@@ -502,25 +506,15 @@ export default function SyncTab() {
                         ? `${j.progress.repo} (${j.progress.done}/${j.progress.total})`
                         : '—'}
                     </td>
-                    <td className="px-3 py-2 text-gray-700 truncate max-w-[200px]">
-                      {j.status === 'completed' && j.result
-                        ? `✓ ${j.result.totalSynced}개`
-                        : j.status === 'failed' && j.error
-                          ? j.error
-                          : j.status === 'cancelled'
-                            ? '취소됨'
-                            : '—'}
-                    </td>
+                    <td className="px-3 py-2 text-gray-700 truncate max-w-[200px]">—</td>
                     <td className="px-3 py-2">
-                      {(j.status === 'queued' || j.status === 'running') && (
-                        <button
-                          onClick={() => cancelJobMutation.mutate(j.id)}
-                          disabled={cancelJobMutation.isPending}
-                          className="text-xs px-2 py-0.5 rounded bg-red-50 text-red-600 hover:bg-red-100 disabled:opacity-40"
-                        >
-                          취소
-                        </button>
-                      )}
+                      <button
+                        onClick={() => cancelJobMutation.mutate(j.id)}
+                        disabled={cancelJobMutation.isPending}
+                        className="text-xs px-2 py-0.5 rounded bg-red-50 text-red-600 hover:bg-red-100 disabled:opacity-40"
+                      >
+                        취소
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -559,42 +553,66 @@ export default function SyncTab() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {allJobs.map((j) => (
-                  <tr key={j.id} className="hover:bg-gray-50">
-                    <td className="px-3 py-2 text-gray-500 whitespace-nowrap">
-                      {new Date(j.startedAt).toLocaleString('ko-KR')}
-                    </td>
-                    <td className="px-3 py-2">
-                      <span
-                        className={`text-xs px-1.5 py-0.5 rounded font-medium border ${
-                          j.repoName
-                            ? 'bg-blue-50 text-blue-700 border-blue-200'
-                            : 'bg-green-50 text-green-700 border-green-200'
-                        }`}
-                      >
-                        {j.repoName ? '레포' : '블로그'}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2">
-                      <span
-                        className={`text-xs px-1.5 py-0.5 rounded font-medium border ${
-                          j.status === 'completed'
-                            ? 'bg-green-100 text-green-700 border-green-200'
-                            : j.status === 'failed'
-                              ? 'bg-red-100 text-red-700 border-red-200'
-                              : j.status === 'running'
-                                ? 'bg-blue-100 text-blue-700 border-blue-200'
-                                : 'bg-gray-100 text-gray-500 border-gray-200'
-                        }`}
-                      >
-                        {j.status}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2 text-gray-700 truncate max-w-[300px]">
-                      {j.repoName ? `${j.repoName} — ` : ''}{j.message}
-                    </td>
-                  </tr>
-                ))}
+                {allJobs.map((j) => {
+                  const isQueueJob = !('repoName' in j);
+                  const queueJob = j as SyncQueueJob;
+                  const repoJob = j as typeof repoJobs[number];
+                  return (
+                    <tr key={j.id} className="hover:bg-gray-50">
+                      <td className="px-3 py-2 text-gray-500 whitespace-nowrap">
+                        {new Date(
+                          isQueueJob
+                            ? (queueJob.completedAt ?? queueJob.createdAt)
+                            : repoJob.startedAt,
+                        ).toLocaleString('ko-KR')}
+                      </td>
+                      <td className="px-3 py-2">
+                        {isQueueJob ? (
+                          <span className="text-xs px-1.5 py-0.5 rounded font-medium border bg-purple-50 text-purple-700 border-purple-200">
+                            {queueJob.type === 'workspace'
+                              ? '전체'
+                              : queueJob.type === 'continuous'
+                                ? '연속'
+                                : '기수레포'}
+                            {queueJob.cohort != null ? ` (${queueJob.cohort}기)` : ''}
+                          </span>
+                        ) : (
+                          <span
+                            className={`text-xs px-1.5 py-0.5 rounded font-medium border ${
+                              repoJob.repoName
+                                ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                : 'bg-green-50 text-green-700 border-green-200'
+                            }`}
+                          >
+                            {repoJob.repoName ? '레포' : '블로그'}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2">
+                        <span
+                          className={`text-xs px-1.5 py-0.5 rounded font-medium border ${
+                            (isQueueJob ? queueJob.status : repoJob.status) === 'completed'
+                              ? 'bg-green-100 text-green-700 border-green-200'
+                              : (isQueueJob ? queueJob.status : repoJob.status) === 'failed'
+                                ? 'bg-red-100 text-red-700 border-red-200'
+                                : (isQueueJob ? queueJob.status : repoJob.status) === 'running'
+                                  ? 'bg-blue-100 text-blue-700 border-blue-200'
+                                  : 'bg-gray-100 text-gray-500 border-gray-200'
+                          }`}
+                        >
+                          {isQueueJob ? queueJob.status : repoJob.status}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2 text-gray-700 truncate max-w-[300px]">
+                        {isQueueJob
+                          ? queueJob.result
+                            ? `✓ ${queueJob.result.totalSynced}개`
+                            : queueJob.error ?? '—'
+                          : `${repoJob.repoName ? `${repoJob.repoName} — ` : ''}${repoJob.message}`}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
