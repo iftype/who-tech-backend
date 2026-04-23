@@ -2,6 +2,21 @@
 
 ---
 
+## 2026-04-23
+
+**싱크 작업 큐 및 기수 재계산**
+
+- **왜**: 여러 싱크 동시 실행 시 GitHub API 요청 폭증. 프리코스 레포 싱크 후 삭제 시 잘못된 기수 태그 잔존.
+- **핵심 파일**: `src/features/sync/sync.queue.ts`, `src/features/member/member.service.ts`
+- **결정**:
+  - `SyncQueue`: in-memory job queue, 순차 처리, 취소 가능
+  - `POST /admin/sync/jobs`, `GET /admin/sync/jobs`, `DELETE /admin/sync/jobs/:id`, `GET /admin/sync/jobs/:id/stream`
+  - `AbortSignal` 전달: 취소 시 GitHub API fetch 즉시 중단
+  - `recalculateMemberCohorts`: submissions 기준으로 기수 재계산, 불필요한 기수 자동 삭제
+  - 전체 싱크 시 `sort: 'created', direction: 'asc'` → 오래된 PR부터 수집
+
+---
+
 ## 2026-04-09
 
 **PR 수집 로직 개선 (수정일 기준 + 100개 제한)**
