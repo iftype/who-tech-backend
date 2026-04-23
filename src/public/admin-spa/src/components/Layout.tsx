@@ -1,5 +1,6 @@
 import { type ReactNode } from 'react';
 import TabNav from './TabNav.js';
+import LogPanel from './LogPanel.js';
 import { useAuth } from '../context/AuthContext.js';
 
 declare const __APP_VERSION__: string;
@@ -18,7 +19,8 @@ export default function Layout({ children }: { children: ReactNode }) {
         </button>
       </header>
       <TabNav />
-      <main className="flex-1 p-6">{children}</main>
+      <main className="flex-1 p-6 pb-48">{children}</main>
+      <LogPanel />
     </div>
   );
 }

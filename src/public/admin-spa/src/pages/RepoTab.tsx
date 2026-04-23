@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiFetch } from '../lib/api.js';
+import { apiFetch, pollSyncJob, type SyncJob } from '../lib/api.js';
 import { showToast } from '../components/ui/Toast.js';
+import { addLog } from '../components/LogPanel.js';
 import type { MissionRepo } from '../lib/types.js';
 
 type StatusFilter = '' | 'active' | 'candidate' | 'excluded';
@@ -33,6 +34,12 @@ const TAB_CATEGORY_OPTIONS: SelectOption[] = [
   { value: 'precourse', label: '프리코스' },
   { value: 'excluded', label: '제외' },
 ];
+
+const STATUS_CYCLE: Record<string, string> = {
+  active: 'candidate',
+  candidate: 'excluded',
+  excluded: 'active',
+};
 
 function EditableSelectCell({
   value,
@@ -124,11 +131,25 @@ function EditableTextCell({
   );
 }
 
+function SyncProgress({ job }: { job: SyncJob }) {
+  const pct = job.progress?.percent ?? 0;
+  const phase = job.progress?.phase ?? job.message ?? '';
+  return (
+    <div className="mt-1">
+      <div className="text-[11px] text-slate-500 mb-0.5">{pct}% — {phase}</div>
+      <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+        <div className="h-full bg-gradient-to-r from-teal-700 to-sky-700 rounded-full transition-all duration-300" style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  );
+}
+
 function RepoTable({
   repos,
   title,
   emptyMessage,
-  syncing,
+  syncingRepos,
+  activeJobs,
   deleting,
   editingCell,
   savingField,
@@ -143,7 +164,8 @@ function RepoTable({
   repos: MissionRepo[];
   title: string;
   emptyMessage: string;
-  syncing: number | null;
+  syncingRepos: Set<number>;
+  activeJobs: Map<number, SyncJob>;
   deleting: number | null;
   editingCell: EditingCell;
   savingField: EditingCell;
@@ -160,16 +182,20 @@ function RepoTable({
   const isSaving = (repoId: number, field: EditableField) =>
     savingField?.repoId === repoId && savingField?.field === field;
 
-  const statusBadge = (s: string) => {
+  const statusBadge = (s: string, repo: MissionRepo) => {
     const colors: Record<string, string> = {
       active: 'bg-green-100 text-green-700 border-green-200',
       candidate: 'bg-yellow-100 text-yellow-700 border-yellow-200',
       excluded: 'bg-red-100 text-red-700 border-red-200',
     };
     return (
-      <span className={`text-xs px-1.5 py-0.5 rounded font-medium border ${colors[s] ?? 'bg-gray-100 text-gray-500 border-gray-200'}`}>
+      <button
+        onClick={() => onToggleStatus(repo)}
+        title="클릭하여 상태 전환 (active → candidate → excluded → active)"
+        className={`text-xs px-1.5 py-0.5 rounded font-medium border cursor-pointer hover:scale-105 transition-transform ${colors[s] ?? 'bg-gray-100 text-gray-500 border-gray-200'}`}
+      >
         {s}
-      </span>
+      </button>
     );
   };
 
@@ -196,7 +222,7 @@ function RepoTable({
     return (
       <div className="space-y-2">
         <h3 className="text-sm font-semibold text-gray-700">{title}</h3>
-        <div className="py-8 text-center text-gray-400 text-sm bg-white rounded border border-gray-200">{emptyMessage}</div>
+        <div className="py-8 text-center text-gray-400 text-sm bg-white/90 backdrop-blur-sm border border-slate-200/60 rounded-2xl">{emptyMessage}</div>
       </div>
     );
   }
@@ -204,7 +230,7 @@ function RepoTable({
   return (
     <div className="space-y-2">
       <h3 className="text-sm font-semibold text-gray-700">{title} <span className="text-gray-400 font-normal">({repos.length}개)</span></h3>
-      <div className="overflow-x-auto rounded border border-gray-200">
+      <div className="overflow-x-auto rounded-2xl border border-slate-200/60">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
@@ -223,118 +249,102 @@ function RepoTable({
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {repos.map((r) => (
-              <tr key={r.id} className="hover:bg-gray-50">
-                <td className="px-3 py-2">
-                  <a href={r.repoUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs font-medium">
-                    {r.name}
-                  </a>
-                </td>
-                <td className={cellClass} onClick={() => onStartEdit(r.id, 'track')}>
-                  {isEditing(r.id, 'track') ? (
-                    <EditableSelectCell value={r.track ?? ''} options={TRACK_OPTIONS} onSave={(v) => onSave(r, 'track', v)} onCancel={onCancel} saving={isSaving(r.id, 'track')} />
-                  ) : (
-                    <span className="text-xs text-gray-600">{trackLabel(r.track)}</span>
-                  )}
-                </td>
-                <td className={cellClass} onClick={() => onStartEdit(r.id, 'type')}>
-                  {isEditing(r.id, 'type') ? (
-                    <EditableSelectCell value={r.type} options={TYPE_OPTIONS} onSave={(v) => onSave(r, 'type', v)} onCancel={onCancel} saving={isSaving(r.id, 'type')} />
-                  ) : (
-                    <span className="text-xs text-gray-600">{typeLabel(r.type)}</span>
-                  )}
-                </td>
-                <td className={cellClass} onClick={() => onStartEdit(r.id, 'tabCategory')}>
-                  {isEditing(r.id, 'tabCategory') ? (
-                    <EditableSelectCell value={r.tabCategory} options={TAB_CATEGORY_OPTIONS} onSave={(v) => onSave(r, 'tabCategory', v)} onCancel={onCancel} saving={isSaving(r.id, 'tabCategory')} />
-                  ) : (
-                    tabCategoryBadge(r.tabCategory)
-                  )}
-                </td>
-                <td className="px-3 py-2">{statusBadge(r.status)}</td>
-                <td className="px-3 py-2">
-                  <button
-                    onClick={() => void onToggleSyncMode(r)}
-                    title="클릭하여 전환"
-                    className={`text-xs px-1.5 py-0.5 rounded font-medium border ${
-                      r.syncMode === 'continuous'
-                        ? 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100'
-                        : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'
-                    }`}
-                  >
-                    {r.syncMode === 'continuous' ? '연속' : '1회'}
-                  </button>
-                </td>
-                <td className={cellClass} onClick={() => onStartEdit(r.id, 'level')}>
-                  {isEditing(r.id, 'level') ? (
-                    <EditableTextCell value={r.level != null ? String(r.level) : ''} type="number" placeholder="—" onSave={(v) => onSave(r, 'level', v)} onCancel={onCancel} saving={isSaving(r.id, 'level')} />
-                  ) : (
-                    <span className="text-xs text-gray-600">{r.level ?? '—'}</span>
-                  )}
-                </td>
-                <td className={cellClass} onClick={() => onStartEdit(r.id, 'cohorts')}>
-                  {isEditing(r.id, 'cohorts') ? (
-                    <EditableTextCell value={r.cohorts.join(', ')} placeholder="6, 7, 8" onSave={(v) => onSave(r, 'cohorts', v)} onCancel={onCancel} saving={isSaving(r.id, 'cohorts')} />
-                  ) : (
-                    <span className="text-xs text-gray-500">{r.cohorts.join(', ') || '—'}</span>
-                  )}
-                </td>
-                <td className={`${cellClass} max-w-[200px]`} onClick={() => onStartEdit(r.id, 'description')}>
-                  {isEditing(r.id, 'description') ? (
-                    <EditableTextCell value={r.description ?? ''} placeholder="설명 입력" onSave={(v) => onSave(r, 'description', v)} onCancel={onCancel} saving={isSaving(r.id, 'description')} />
-                  ) : (
-                    <span className="text-xs text-gray-500 truncate block" title={r.description ?? undefined}>
-                      {r.description || '—'}
-                    </span>
-                  )}
-                </td>
-                <td className="px-3 py-2 text-xs text-gray-500 whitespace-nowrap">
-                  {r.lastSyncAt ? new Date(r.lastSyncAt).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }) : '—'}
-                </td>
-                <td className="px-3 py-2 text-xs text-gray-600">{r._count.submissions}</td>
-                <td className="px-3 py-2">
-                  <div className="flex gap-1 items-center">
-                    <button
-                      onClick={() => void onSync(r)}
-                      disabled={syncing === r.id}
-                      className="text-[10px] px-2 py-1 rounded border border-blue-300 text-blue-600 hover:bg-blue-50 disabled:opacity-40"
-                      title="싱크"
-                    >
-                      {syncing === r.id ? '...' : '싱크'}
-                    </button>
-                    {r.status === 'candidate' ? (
-                      <button
-                        onClick={() => void onToggleStatus(r)}
-                        className="text-[10px] px-2 py-1 rounded border border-green-300 text-green-600 hover:bg-green-50"
-                        title="active로 승인"
-                      >
-                        승인
-                      </button>
+            {repos.map((r) => {
+              const isSyncing = syncingRepos.has(r.id);
+              const activeJob = activeJobs.get(r.id);
+              return (
+                <tr key={r.id} className="hover:bg-gray-50">
+                  <td className="px-3 py-2">
+                    <a href={r.repoUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs font-medium">
+                      {r.name}
+                    </a>
+                    {activeJob && <SyncProgress job={activeJob} />}
+                  </td>
+                  <td className={cellClass} onClick={() => onStartEdit(r.id, 'track')}>
+                    {isEditing(r.id, 'track') ? (
+                      <EditableSelectCell value={r.track ?? ''} options={TRACK_OPTIONS} onSave={(v) => onSave(r, 'track', v)} onCancel={onCancel} saving={isSaving(r.id, 'track')} />
                     ) : (
-                      <button
-                        onClick={() => void onToggleStatus(r)}
-                        className={`text-[10px] px-2 py-1 rounded border ${
-                          r.status === 'active'
-                            ? 'border-gray-300 text-gray-600 hover:bg-gray-100'
-                            : 'border-green-300 text-green-600 hover:bg-green-50'
-                        }`}
-                        title={r.status === 'active' ? '제외' : '활성화'}
-                      >
-                        {r.status === 'active' ? '제외' : '활성'}
-                      </button>
+                      <span className="text-xs text-gray-600">{trackLabel(r.track)}</span>
                     )}
+                  </td>
+                  <td className={cellClass} onClick={() => onStartEdit(r.id, 'type')}>
+                    {isEditing(r.id, 'type') ? (
+                      <EditableSelectCell value={r.type} options={TYPE_OPTIONS} onSave={(v) => onSave(r, 'type', v)} onCancel={onCancel} saving={isSaving(r.id, 'type')} />
+                    ) : (
+                      <span className="text-xs text-gray-600">{typeLabel(r.type)}</span>
+                    )}
+                  </td>
+                  <td className={cellClass} onClick={() => onStartEdit(r.id, 'tabCategory')}>
+                    {isEditing(r.id, 'tabCategory') ? (
+                      <EditableSelectCell value={r.tabCategory} options={TAB_CATEGORY_OPTIONS} onSave={(v) => onSave(r, 'tabCategory', v)} onCancel={onCancel} saving={isSaving(r.id, 'tabCategory')} />
+                    ) : (
+                      tabCategoryBadge(r.tabCategory)
+                    )}
+                  </td>
+                  <td className="px-3 py-2">{statusBadge(r.status, r)}</td>
+                  <td className="px-3 py-2">
                     <button
-                      onClick={() => void onDelete(r)}
-                      disabled={deleting === r.id}
-                      className="text-[10px] px-2 py-1 rounded border border-red-300 text-red-500 hover:bg-red-50 disabled:opacity-40"
-                      title="삭제"
+                      onClick={() => void onToggleSyncMode(r)}
+                      title="클릭하여 전환"
+                      className={`text-xs px-1.5 py-0.5 rounded font-medium border ${
+                        r.syncMode === 'continuous'
+                          ? 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100'
+                          : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'
+                      }`}
                     >
-                      삭제
+                      {r.syncMode === 'continuous' ? '연속' : '1회'}
                     </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+                  </td>
+                  <td className={cellClass} onClick={() => onStartEdit(r.id, 'level')}>
+                    {isEditing(r.id, 'level') ? (
+                      <EditableTextCell value={r.level != null ? String(r.level) : ''} type="number" placeholder="—" onSave={(v) => onSave(r, 'level', v)} onCancel={onCancel} saving={isSaving(r.id, 'level')} />
+                    ) : (
+                      <span className="text-xs text-gray-600">{r.level ?? '—'}</span>
+                    )}
+                  </td>
+                  <td className={cellClass} onClick={() => onStartEdit(r.id, 'cohorts')}>
+                    {isEditing(r.id, 'cohorts') ? (
+                      <EditableTextCell value={r.cohorts.join(', ')} placeholder="6, 7, 8" onSave={(v) => onSave(r, 'cohorts', v)} onCancel={onCancel} saving={isSaving(r.id, 'cohorts')} />
+                    ) : (
+                      <span className="text-xs text-gray-500">{r.cohorts.join(', ') || '—'}</span>
+                    )}
+                  </td>
+                  <td className={`${cellClass} max-w-[200px]`} onClick={() => onStartEdit(r.id, 'description')}>
+                    {isEditing(r.id, 'description') ? (
+                      <EditableTextCell value={r.description ?? ''} placeholder="설명 입력" onSave={(v) => onSave(r, 'description', v)} onCancel={onCancel} saving={isSaving(r.id, 'description')} />
+                    ) : (
+                      <span className="text-xs text-gray-500 truncate block" title={r.description ?? undefined}>
+                        {r.description || '—'}
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-3 py-2 text-xs text-gray-500 whitespace-nowrap">
+                    {r.lastSyncAt ? new Date(r.lastSyncAt).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }) : '—'}
+                  </td>
+                  <td className="px-3 py-2 text-xs text-gray-600">{r._count.submissions}</td>
+                  <td className="px-3 py-2">
+                    <div className="flex gap-1 items-center">
+                      <button
+                        onClick={() => void onSync(r)}
+                        disabled={isSyncing}
+                        className="text-[10px] px-2 py-1 rounded border border-blue-300 text-blue-600 hover:bg-blue-50 disabled:opacity-40"
+                        title="싱크"
+                      >
+                        {isSyncing ? '...' : '싱크'}
+                      </button>
+                      <button
+                        onClick={() => void onDelete(r)}
+                        disabled={deleting === r.id}
+                        className="text-[10px] px-2 py-1 rounded border border-red-300 text-red-500 hover:bg-red-50 disabled:opacity-40"
+                        title="삭제"
+                      >
+                        삭제
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -345,11 +355,15 @@ function RepoTable({
 export default function RepoTab() {
   const [status, setStatus] = useState<StatusFilter>('');
   const [tabCategory, setTabCategory] = useState<TabCategoryFilter>('');
-  const [syncing, setSyncing] = useState<number | null>(null);
+  const [syncingRepos, setSyncingRepos] = useState<Set<number>>(new Set());
+  const [activeJobs, setActiveJobs] = useState<Map<number, SyncJob>>(new Map());
+  const stopPollFns = useRef<Map<number, () => void>>(new Map());
   const [deleting, setDeleting] = useState<number | null>(null);
   const [editingCell, setEditingCell] = useState<EditingCell>(null);
   const [savingField, setSavingField] = useState<EditingCell>(null);
   const queryClient = useQueryClient();
+
+  useEffect(() => () => stopPollFns.current.forEach((stop) => stop()), []);
 
   const { data: repos = [], isLoading } = useQuery({
     queryKey: ['repos', status],
@@ -452,19 +466,54 @@ export default function RepoTab() {
   });
 
   const syncRepo = async (repo: MissionRepo) => {
-    setSyncing(repo.id);
+    setSyncingRepos((prev) => new Set(prev).add(repo.id));
+    addLog('run', `[${repo.name}] 싱크 시작`);
     try {
-      await apiFetch(`/admin/repos/${repo.id}/sync`, { method: 'POST' });
-      showToast(`${repo.name} 싱크 완료`);
+      const job = await apiFetch<SyncJob>(`/admin/repos/${repo.id}/sync`, { method: 'POST' });
+      setActiveJobs((prev) => new Map(prev).set(repo.id, job));
+
+      const stop = pollSyncJob(job.id, (updated) => {
+        setActiveJobs((prev) => new Map(prev).set(repo.id, updated));
+        if (updated.progress) {
+          addLog('run', `[${repo.name}] ${updated.progress.percent}% — ${updated.progress.phase}`);
+        }
+        if (updated.status === 'completed') {
+          addLog('ok', `[${repo.name}] 싱크 완료 (${updated.result?.synced ?? 0}건)`);
+          showToast(`${repo.name} 싱크 완료`);
+          setSyncingRepos((prev) => { const s = new Set(prev); s.delete(repo.id); return s; });
+          setActiveJobs((prev) => { const m = new Map(prev); m.delete(repo.id); return m; });
+          stopPollFns.current.delete(repo.id);
+          void queryClient.invalidateQueries({ queryKey: ['repos'] });
+        } else if (updated.status === 'failed') {
+          addLog('err', `[${repo.name}] 싱크 실패: ${updated.error ?? updated.message}`);
+          showToast(`${repo.name} 싱크 실패`, 'error');
+          setSyncingRepos((prev) => { const s = new Set(prev); s.delete(repo.id); return s; });
+          setActiveJobs((prev) => { const m = new Map(prev); m.delete(repo.id); return m; });
+          stopPollFns.current.delete(repo.id);
+        }
+      });
+      stopPollFns.current.set(repo.id, stop);
     } catch (e) {
+      addLog('err', `[${repo.name}] 싱크 요청 실패`);
       showToast(e instanceof Error ? e.message : '싱크 실패', 'error');
-    } finally {
-      setSyncing(null);
+      setSyncingRepos((prev) => { const s = new Set(prev); s.delete(repo.id); return s; });
     }
   };
 
+  const syncAllBase = async () => {
+    const targets = repos.filter((r) => r.tabCategory === 'base' && r.status === 'active');
+    if (targets.length === 0) { showToast('대상 레포가 없습니다', 'error'); return; }
+    if (!confirm(`base 카테고리의 active 레포 ${targets.length}개를 순차적으로 싱크합니다. 계속하시겠습니까?`)) return;
+    addLog('info', `[Batch] base 전체 싱크 시작 — ${targets.length}개`);
+    for (const repo of targets) {
+      await syncRepo(repo);
+    }
+    addLog('ok', `[Batch] base 전체 싱크 완료 — ${targets.length}개`);
+    showToast('base 전체 싱크 완료');
+  };
+
   const toggleStatus = async (repo: MissionRepo) => {
-    const newStatus = repo.status === 'active' ? 'excluded' : 'active';
+    const newStatus = STATUS_CYCLE[repo.status] ?? 'active';
     try {
       await apiFetch(`/admin/repos/${repo.id}`, { method: 'PATCH', body: JSON.stringify({ status: newStatus }) });
       void queryClient.invalidateQueries({ queryKey: ['repos'] });
@@ -499,14 +548,24 @@ export default function RepoTab() {
 
   return (
     <div className="space-y-6">
+
+      <div className="bg-white/90 backdrop-blur-sm border border-slate-200/60 rounded-2xl px-4 py-3 text-xs text-slate-600">
+        <div className="font-semibold text-slate-700 mb-1.5">상태 설명</div>
+        <div className="flex flex-wrap gap-x-4 gap-y-1">
+          <span><span className="inline-block px-1.5 py-0.5 rounded font-medium border bg-green-100 text-green-700 border-green-200 mr-1">active</span> 전체 싱크 대상에 포함됨</span>
+          <span><span className="inline-block px-1.5 py-0.5 rounded font-medium border bg-yellow-100 text-yellow-700 border-yellow-200 mr-1">candidate</span> 후보 상태, 수동으로 active로 승인 필요</span>
+          <span><span className="inline-block px-1.5 py-0.5 rounded font-medium border bg-red-100 text-red-700 border-red-200 mr-1">excluded</span> 싱크 대상에서 제외됨</span>
+        </div>
+      </div>
+
       <div className="flex items-center gap-3 flex-wrap">
         <div className="flex gap-1">
           {(['', 'active', 'candidate', 'excluded'] as StatusFilter[]).map((s) => (
             <button
               key={s}
               onClick={() => setStatus(s)}
-              className={`text-xs px-3 py-1.5 rounded border ${
-                status === s ? 'bg-gray-800 text-white border-gray-800' : 'border-gray-300 text-gray-600 hover:border-gray-400'
+              className={`rounded-lg px-4 py-2 text-sm font-semibold ${
+                status === s ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
               }`}
             >
               {s || '전체 상태'}
@@ -519,8 +578,8 @@ export default function RepoTab() {
             <button
               key={c}
               onClick={() => setTabCategory(c)}
-              className={`text-xs px-3 py-1.5 rounded border ${
-                tabCategory === c ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 text-gray-600 hover:border-gray-400'
+              className={`rounded-lg px-4 py-2 text-sm font-semibold ${
+                tabCategory === c ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
               }`}
             >
               {c || '전체 카테고리'}
@@ -529,13 +588,22 @@ export default function RepoTab() {
         </div>
 
         <span className="text-xs text-gray-400">{filteredRepos.length}개</span>
-        <button
-          onClick={() => discoverMutation.mutate()}
-          disabled={discoverMutation.isPending}
-          className="ml-auto bg-purple-600 text-white text-sm rounded px-3 py-1.5 hover:bg-purple-700 disabled:opacity-40"
-        >
-          {discoverMutation.isPending ? '탐색 중...' : '레포 탐색'}
-        </button>
+        <div className="ml-auto flex gap-2">
+          <button
+            onClick={() => void syncAllBase()}
+            disabled={syncingRepos.size > 0}
+            className="bg-gradient-to-br from-teal-700 to-sky-700 text-white rounded-xl px-3 py-1.5 text-sm hover:opacity-90 disabled:opacity-40"
+          >
+            Base 전체 싱크
+          </button>
+          <button
+            onClick={() => discoverMutation.mutate()}
+            disabled={discoverMutation.isPending}
+            className="bg-gradient-to-br from-teal-700 to-sky-700 text-white rounded-xl px-3 py-1.5 text-sm hover:opacity-90 disabled:opacity-40"
+          >
+            {discoverMutation.isPending ? '탐색 중...' : '레포 탐색'}
+          </button>
+        </div>
       </div>
 
       {isLoading ? (
@@ -546,7 +614,8 @@ export default function RepoTab() {
             repos={continuousRepos}
             title="자동수집 레포"
             emptyMessage="자동수집 레포가 없습니다"
-            syncing={syncing}
+            syncingRepos={syncingRepos}
+            activeJobs={activeJobs}
             deleting={deleting}
             editingCell={editingCell}
             savingField={savingField}
@@ -562,7 +631,8 @@ export default function RepoTab() {
             repos={onceRepos}
             title="1회수집 레포"
             emptyMessage="1회수집 레포가 없습니다"
-            syncing={syncing}
+            syncingRepos={syncingRepos}
+            activeJobs={activeJobs}
             deleting={deleting}
             editingCell={editingCell}
             savingField={savingField}
