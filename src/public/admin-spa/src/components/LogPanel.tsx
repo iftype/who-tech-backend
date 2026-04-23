@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { apiFetch } from '../lib/api.js';
 
 export interface LogEntry {
   ts: number;
@@ -21,6 +22,10 @@ export default function LogPanel() {
   useEffect(() => {
     const handler = (entry: LogEntry) => {
       setEntries((prev) => [...prev, entry]);
+      void apiFetch('/admin/logs', {
+        method: 'POST',
+        body: JSON.stringify({ type: entry.tag, message: entry.msg }),
+      }).catch(() => {});
     };
     logListeners.push(handler);
     return () => {

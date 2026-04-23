@@ -168,7 +168,14 @@ export default function MemberTable({ members, onRefresh }: Props) {
       showToast(`${member.githubId} 새로고침 완료`);
       onRefresh();
     } catch (e) {
-      showToast(e instanceof Error ? e.message : '새로고침 실패', 'error');
+      const err = e as Error & { remainingSeconds?: number };
+      if (err.remainingSeconds && err.remainingSeconds > 0) {
+        localStorage.setItem(COOLDOWN_KEY(member.id), String(Date.now()));
+        setCooldowns((prev) => ({ ...prev, [member.id]: err.remainingSeconds! }));
+        showToast(`${err.remainingSeconds}초 후에 다시 시도해주세요`, 'error');
+      } else {
+        showToast(err.message || '새로고침 실패', 'error');
+      }
     } finally { setRefreshing(null); }
   };
 
