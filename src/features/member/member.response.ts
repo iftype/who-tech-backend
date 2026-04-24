@@ -25,6 +25,7 @@ export function toMemberResponse(member: MemberWithRelations) {
     cohorts,
     cohort: primaryCohort?.cohort ?? null,
     roles: primaryCohort?.roles ?? ['crew'],
+    cohortLocked: member.cohortLocked,
     track: member.track ?? null,
     tracks: [
       ...new Set([

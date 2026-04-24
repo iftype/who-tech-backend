@@ -54,6 +54,7 @@ model Member {
   rssError            String?
   lastPostedAt        DateTime?
   track               String?
+  cohortLocked        Boolean          @default(false)
   workspaceId         Int
   personId            Int?
   createdAt           DateTime         @default(now())

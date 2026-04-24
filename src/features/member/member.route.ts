@@ -111,6 +111,7 @@ export function createMemberRouter(service: MemberService) {
         roles?: string[];
         cohort?: number;
         track?: string | null;
+        cohortLocked?: boolean;
       };
       res.json(await service.updateMember(id, body));
     }),

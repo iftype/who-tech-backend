@@ -154,6 +154,7 @@ export interface Member {
   cohort: number | null;
   cohorts: MemberCohort[];
   roles: string[];
+  cohortLocked: boolean;
   track: string | null;
   tracks: string[];
   blogPosts: BlogPost[];
