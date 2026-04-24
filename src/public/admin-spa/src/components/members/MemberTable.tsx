@@ -184,6 +184,7 @@ export default function MemberTable({ members, onRefresh }: Props) {
     setDeleting(member.id);
     try {
       await apiFetch(`/admin/members/${member.id}`, { method: 'DELETE' });
+      void queryClient.invalidateQueries({ queryKey: ['members'] });
       showToast('삭제 완료');
       onRefresh();
     } catch (e) {
