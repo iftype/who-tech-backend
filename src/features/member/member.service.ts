@@ -291,13 +291,14 @@ export function createMemberService(deps: {
       const cohortRulesRaw = workspace.cohortRules ?? '[]';
       const cohortRules = JSON.parse(cohortRulesRaw) as { year: number; cohort: number }[];
 
-      if (member.submissions.length < 3) {
+      const mergedSubmissions = member.submissions.filter((s) => s.status === 'merged');
+      if (mergedSubmissions.length < 3) {
         const updated = await memberRepo.findByIdWithRelations(id);
         return updated ? toMemberResponse(updated) : null;
       }
 
       const cohortFreq = new Map<number, number>();
-      for (const sub of member.submissions) {
+      for (const sub of mergedSubmissions) {
         const cohort = detectCohort(new Date(sub.submittedAt), cohortRules);
         if (cohort != null) {
           cohortFreq.set(cohort, (cohortFreq.get(cohort) ?? 0) + 1);

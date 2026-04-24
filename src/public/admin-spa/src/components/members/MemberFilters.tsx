@@ -1,4 +1,4 @@
-import { type ChangeEvent } from 'react';
+import type { ChangeEvent } from 'react';
 import type { MemberFilters } from '../../hooks/useMembers.js';
 
 interface Props {
@@ -28,6 +28,16 @@ export default function MemberFiltersBar({ filters, onChange }: Props) {
         <option value="crew">크루</option>
         <option value="coach">코치</option>
         <option value="reviewer">리뷰어</option>
+      </select>
+      <select
+        value={filters.track ?? ''}
+        onChange={(e) => set('track', e.target.value)}
+        className="border border-gray-300 rounded px-3 py-1.5 text-sm"
+      >
+        <option value="">전체 트랙</option>
+        <option value="frontend">프론트엔드</option>
+        <option value="backend">백엔드</option>
+        <option value="android">안드로이드</option>
       </select>
       <select
         value={filters.hasBlog === undefined ? '' : String(filters.hasBlog)}
