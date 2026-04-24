@@ -53,7 +53,22 @@ export function createMemberRepository(db: PrismaClient) {
           ...(filters?.role ? { memberCohorts: { some: { role: { name: { contains: filters.role } } } } } : {}),
           ...(filters?.hasBlog === true ? { blog: { not: null } } : {}),
           ...(filters?.hasBlog === false ? { blog: null } : {}),
-          ...(filters?.track ? { submissions: { some: { missionRepo: { track: filters.track } } } } : {}),
+          ...(filters?.track
+            ? {
+                OR: [
+                  { track: filters.track },
+                  {
+                    track: null,
+                    submissions: {
+                      some: {
+                        status: { not: 'closed' },
+                        missionRepo: { track: filters.track },
+                      },
+                    },
+                  },
+                ],
+              }
+            : {}),
           ...(filters?.q
             ? {
                 OR: [

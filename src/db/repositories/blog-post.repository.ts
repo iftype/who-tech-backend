@@ -85,7 +85,22 @@ export function createBlogPostRepository(db: PrismaClient) {
             workspaceId,
             ...(filters?.cohort ? { memberCohorts: { some: { cohort: { number: filters.cohort } } } } : {}),
             ...(filters?.role ? { memberCohorts: { some: { role: { name: filters.role } } } } : {}),
-            ...(filters?.track ? { submissions: { some: { missionRepo: { track: filters.track } } } } : {}),
+            ...(filters?.track
+              ? {
+                  OR: [
+                    { track: filters.track },
+                    {
+                      track: null,
+                      submissions: {
+                        some: {
+                          status: { not: 'closed' },
+                          missionRepo: { track: filters.track },
+                        },
+                      },
+                    },
+                  ],
+                }
+              : {}),
           },
         },
         take: filters?.limit ?? 30,
