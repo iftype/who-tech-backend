@@ -7,6 +7,7 @@ import type { ActivityLogService } from '../activity-log/activity-log.service.js
 import type { Octokit } from '@octokit/rest';
 import { resolveDisplayNickname } from '../../shared/nickname.js';
 import { buildCohortList } from '../../shared/member-cohort.js';
+import { computeDominantTrack } from '../../shared/member-track.js';
 import { refreshMemberProfileById } from './member.profile-refresh.js';
 
 export function createMemberPublicService(deps: {
@@ -37,16 +38,22 @@ export function createMemberPublicService(deps: {
 
         const targetCohort = filters?.cohort ? cohorts.find((c) => c.cohort === filters.cohort) : cohorts[0];
 
+        const inferredTrack = computeDominantTrack(m.submissions);
         return {
           githubId: m.githubId,
           nickname: resolveDisplayNickname(m.manualNickname, m.nicknameStats, m.nickname),
           avatarUrl: m.avatarUrl,
           cohort: targetCohort?.cohort ?? null,
           roles: targetCohort?.roles ?? ['crew'],
+          track: m.track ?? inferredTrack ?? null,
           tracks: [
             ...new Set([
               ...(m.track ? [m.track] : []),
-              ...m.submissions.map((s) => s.missionRepo.track).filter((t) => t !== null),
+              ...(inferredTrack ? [inferredTrack] : []),
+              ...m.submissions
+                .filter((s) => s.status !== 'closed')
+                .map((s) => s.missionRepo.track)
+                .filter((t) => t !== null),
             ]),
           ],
           blog: m.blog,
@@ -166,15 +173,21 @@ export function createMemberPublicService(deps: {
         });
       }
 
+      const inferredTrack = computeDominantTrack(member.submissions);
       return {
         githubId: member.githubId,
         nickname,
         avatarUrl: member.avatarUrl,
         cohorts,
+        track: member.track ?? inferredTrack ?? null,
         tracks: [
           ...new Set([
             ...(member.track ? [member.track] : []),
-            ...member.submissions.map((s) => s.missionRepo.track).filter((t) => t !== null),
+            ...(inferredTrack ? [inferredTrack] : []),
+            ...member.submissions
+              .filter((s) => s.status !== 'closed')
+              .map((s) => s.missionRepo.track)
+              .filter((t) => t !== null),
           ]),
         ],
         blog: member.blog,
@@ -204,6 +217,7 @@ export function createMemberPublicService(deps: {
 
         const targetCohort = filters?.cohort ? cohorts.find((c) => c.cohort === filters.cohort) : cohorts[0];
 
+        const inferredTrack = computeDominantTrack(p.member.submissions);
         return {
           url: p.url,
           title: p.title,
@@ -214,10 +228,15 @@ export function createMemberPublicService(deps: {
             avatarUrl: p.member.avatarUrl,
             cohort: targetCohort?.cohort ?? null,
             roles: targetCohort?.roles ?? ['crew'],
+            track: p.member.track ?? inferredTrack ?? null,
             tracks: [
               ...new Set([
                 ...(p.member.track ? [p.member.track] : []),
-                ...p.member.submissions.map((s) => s.missionRepo.track).filter((t) => t !== null),
+                ...(inferredTrack ? [inferredTrack] : []),
+                ...p.member.submissions
+                  .filter((s) => s.status !== 'closed')
+                  .map((s) => s.missionRepo.track)
+                  .filter((t) => t !== null),
               ]),
             ],
           },
