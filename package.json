@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc && cp -r src/public dist/ && npm run build:admin",
+    "build": "rm -rf dist && tsc && cp -r src/public dist/ && npm run build:admin",
     "build:admin": "cd src/public/admin-spa && npm run build",
     "dev:admin": "cd src/public/admin-spa && npm run dev",
     "start": "node dist/index.js",
