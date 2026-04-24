@@ -1,4 +1,4 @@
-import { type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import TabNav from './TabNav.js';
 import LogPanel from './LogPanel.js';

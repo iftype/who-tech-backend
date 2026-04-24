@@ -1,10 +1,12 @@
 import type { MemberWithRelations } from '../../db/repositories/member.repository.js';
 import { buildCohortList } from '../../shared/member-cohort.js';
 import { resolveDisplayNickname, parseNicknameStats } from '../../shared/nickname.js';
+import { computeDominantTrack } from '../../shared/member-track.js';
 
 export function toMemberResponse(member: MemberWithRelations) {
   const cohorts = buildCohortList(member.memberCohorts);
   const primaryCohort = cohorts[0];
+  const inferredTrack = computeDominantTrack(member.submissions);
 
   return {
     id: member.id,
@@ -26,11 +28,15 @@ export function toMemberResponse(member: MemberWithRelations) {
     cohort: primaryCohort?.cohort ?? null,
     roles: primaryCohort?.roles ?? ['crew'],
     cohortLocked: member.cohortLocked,
-    track: member.track ?? null,
+    track: member.track ?? inferredTrack ?? null,
     tracks: [
       ...new Set([
         ...(member.track ? [member.track] : []),
-        ...member.submissions.map((s) => s.missionRepo.track).filter((t) => t !== null),
+        ...(inferredTrack ? [inferredTrack] : []),
+        ...member.submissions
+          .filter((s) => s.status !== 'closed')
+          .map((s) => s.missionRepo.track)
+          .filter((t) => t !== null),
       ]),
     ],
     blogPosts: member.blogPosts,
