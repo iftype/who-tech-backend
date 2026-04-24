@@ -130,11 +130,13 @@ export function createMemberService(deps: {
         roles?: string[];
         cohort?: number;
         track?: string | null;
+        cohortLocked?: boolean;
       },
     ) => {
       await memberRepo.update(id, {
         ...(input.manualNickname !== undefined ? { manualNickname: input.manualNickname } : {}),
         ...(input.track !== undefined ? { track: input.track } : {}),
+        ...(input.cohortLocked !== undefined ? { cohortLocked: input.cohortLocked } : {}),
         ...(input.blog !== undefined
           ? {
               blog: normalizeBlogUrl(input.blog),
@@ -280,6 +282,10 @@ export function createMemberService(deps: {
     recalculateMemberCohorts: async (id: number) => {
       const member = await memberRepo.findByIdWithRelations(id);
       if (!member) throw new Error('member not found');
+
+      if (member.cohortLocked) {
+        return toMemberResponse(member);
+      }
 
       const workspace = await workspaceService.getOrThrow();
       const cohortRulesRaw = workspace.cohortRules ?? '[]';

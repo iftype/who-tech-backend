@@ -87,7 +87,7 @@ export async function refreshMemberProfileById(
     });
   }
 
-  if (cohortRules && updated.submissions.length >= MIN_SUBMISSIONS) {
+  if (cohortRules && !updated.cohortLocked && updated.submissions.length >= MIN_SUBMISSIONS) {
     const cohortFreq = new Map<number, number>();
     for (const sub of updated.submissions) {
       const cohort = detectCohort(new Date(sub.submittedAt), cohortRules);

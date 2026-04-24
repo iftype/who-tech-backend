@@ -384,6 +384,22 @@ export default function MemberTable({ members, onRefresh }: Props) {
       <Modal open={!!cohortModal} onClose={() => setCohortModal(null)} title={`${cohortModal?.githubId} 기수/역할`}>
         {cohortModal && (
           <div className="space-y-3">
+            <div className="flex items-center justify-between rounded border border-gray-200 bg-gray-50 px-3 py-2">
+              <div>
+                <p className="text-xs font-medium text-gray-700">자동 산정 잠금</p>
+                <p className="text-[10px] text-gray-400">활성화 시 기수 자동 재산정을 건너뜁니다</p>
+              </div>
+              <button
+                onClick={() => apiFetch(`/admin/members/${cohortModal.id}`, {
+                  method: 'PATCH',
+                  body: JSON.stringify({ cohortLocked: !cohortModal.cohortLocked }),
+                }).then(() => { setCohortModal({ ...cohortModal, cohortLocked: !cohortModal.cohortLocked }); onRefresh(); })}
+                className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${cohortModal.cohortLocked ? 'bg-blue-600' : 'bg-gray-200'}`}
+                title={cohortModal.cohortLocked ? '잠금 해제' : '잠금 설정'}
+              >
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${cohortModal.cohortLocked ? 'translate-x-4' : 'translate-x-0'}`} />
+              </button>
+            </div>
             <div>
               <p className="text-xs text-gray-500 mb-2">현재 기수</p>
               {cohortModal.cohorts.length === 0 ? <p className="text-xs text-gray-400">기수 없음</p> : (
