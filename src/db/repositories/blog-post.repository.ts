@@ -12,6 +12,7 @@ const blogPostWithMemberInclude = {
       },
       submissions: {
         select: {
+          status: true,
           missionRepo: {
             select: { track: true },
           },
