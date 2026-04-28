@@ -560,11 +560,11 @@ export default function SyncTab() {
                   return (
                     <tr key={j.id} className="hover:bg-gray-50">
                       <td className="px-3 py-2 text-gray-500 whitespace-nowrap">
-                        {new Date(
-                          isQueueJob
-                            ? (queueJob.completedAt ?? queueJob.createdAt)
-                            : repoJob.startedAt,
-                        ).toLocaleString('ko-KR')}
+                        {isQueueJob
+                          ? new Date(queueJob.completedAt ?? queueJob.createdAt).toLocaleString('ko-KR')
+                          : repoJob.startedAt
+                            ? new Date(repoJob.startedAt).toLocaleString('ko-KR')
+                            : '—'}
                       </td>
                       <td className="px-3 py-2">
                         {isQueueJob ? (
@@ -605,7 +605,7 @@ export default function SyncTab() {
                       </td>
                       <td className="px-3 py-2 text-gray-700 truncate max-w-[300px]">
                         {isQueueJob
-                          ? queueJob.result
+                          ? typeof queueJob.result?.totalSynced === 'number'
                             ? `✓ ${queueJob.result.totalSynced}개`
                             : queueJob.error ?? '—'
                           : `${repoJob.repoName ? `${repoJob.repoName} — ` : ''}${repoJob.message}`}

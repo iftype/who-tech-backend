@@ -532,6 +532,16 @@ export default function RepoTab() {
     onError: (e) => showToast(e instanceof Error ? e.message : '탐색 실패', 'error'),
   });
 
+  const continuousSyncMutation = useMutation({
+    mutationFn: () =>
+      apiFetch<{ totalSynced: number; reposSynced: number }>('/admin/sync/continuous', { method: 'POST' }),
+    onSuccess: (result) => {
+      showToast(`연속 싱크 완료 — ${result.totalSynced}건, ${result.reposSynced}개 레포`);
+      void queryClient.invalidateQueries({ queryKey: ['repos'] });
+    },
+    onError: (e) => showToast(e instanceof Error ? e.message : '연속 싱크 실패', 'error'),
+  });
+
   const syncRepo = async (repo: MissionRepo) => {
     setSyncingRepos((prev) => new Set(prev).add(repo.id));
     addLog('run', `[${repo.name}] 싱크 시작`);
@@ -694,6 +704,13 @@ export default function RepoTab() {
 
         <span className="text-xs text-gray-400">{filteredRepos.length}개</span>
         <div className="ml-auto flex gap-2">
+          <button
+            onClick={() => void continuousSyncMutation.mutate()}
+            disabled={continuousSyncMutation.isPending || syncingRepos.size > 0}
+            className="bg-purple-600 text-white rounded-xl px-3 py-1.5 text-sm hover:bg-purple-700 disabled:opacity-40"
+          >
+            {continuousSyncMutation.isPending ? '연속 싱크 중...' : '연속 싱크'}
+          </button>
           <button
             onClick={() => void syncAllBase()}
             disabled={syncingRepos.size > 0}

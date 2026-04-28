@@ -37,6 +37,7 @@ export default function ArchiveTab() {
   const esRef = useRef<EventSource | null>(null);
   const [editingOrderId, setEditingOrderId] = useState<number | null>(null);
   const [editingOrderValue, setEditingOrderValue] = useState('');
+  const [levelFilter, setLevelFilter] = useState('');
 
   const cohortNum = cohort ? Number(cohort) : NaN;
 
@@ -183,7 +184,9 @@ export default function ArchiveTab() {
   };
 
   const existingRepoIds = new Set(cohortRepos.map((cr) => cr.missionRepoId));
-  const availableRepos = allRepos.filter((r) => !existingRepoIds.has(r.id));
+  const availableRepos = allRepos
+    .filter((r) => !existingRepoIds.has(r.id))
+    .filter((r) => (levelFilter ? String(r.level ?? '') === levelFilter : true));
 
   const logColor = (type: LogEntry['type']) => {
     if (type === 'done') return 'text-green-400';
@@ -317,6 +320,25 @@ export default function ArchiveTab() {
 
           <div className="flex items-center gap-2 flex-wrap">
             <select
+              value={levelFilter}
+              onChange={(e) => {
+                setLevelFilter(e.target.value);
+                setSelectedRepoId('');
+              }}
+              className="border border-gray-300 rounded px-2 py-1.5 text-sm"
+            >
+              <option value="">모든 레벨</option>
+              {Array.from(
+                new Set(allRepos.map((r) => r.level).filter((l): l is number => l != null)),
+              )
+                .sort((a, b) => a - b)
+                .map((l) => (
+                  <option key={l} value={String(l)}>
+                    Lv {l}
+                  </option>
+                ))}
+            </select>
+            <select
               value={selectedRepoId}
               onChange={(e) => setSelectedRepoId(e.target.value)}
               className="border border-gray-300 rounded px-2 py-1.5 text-sm min-w-[200px]"
@@ -324,7 +346,7 @@ export default function ArchiveTab() {
               <option value="">레포 선택</option>
               {availableRepos.map((r) => (
                 <option key={r.id} value={r.id}>
-                  {r.name} {r.track ? `(${r.track})` : ''}
+                  {r.name} {r.track ? `(${r.track})` : ''} {r.level != null ? `Lv${r.level}` : ''}
                 </option>
               ))}
             </select>
