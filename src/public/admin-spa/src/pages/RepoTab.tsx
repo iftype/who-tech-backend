@@ -397,6 +397,7 @@ export default function RepoTab() {
   const [savingField, setSavingField] = useState<EditingCell>(null);
   const [selectedRepoIds, setSelectedRepoIds] = useState<Set<number>>(new Set());
   const [batchTrackValue, setBatchTrackValue] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const queryClient = useQueryClient();
 
   useEffect(() => () => stopPollFns.current.forEach((stop) => stop()), []);
@@ -409,9 +410,13 @@ export default function RepoTab() {
     },
   });
 
-  const filteredRepos = tabCategory
-    ? repos.filter((r) => r.tabCategory === tabCategory)
+  const searchedRepos = searchQuery.trim()
+    ? repos.filter((r) => r.name.toLowerCase().includes(searchQuery.trim().toLowerCase()))
     : repos;
+
+  const filteredRepos = tabCategory
+    ? searchedRepos.filter((r) => r.tabCategory === tabCategory)
+    : searchedRepos;
 
   const continuousRepos = filteredRepos.filter((r) => r.syncMode === 'continuous');
   const onceRepos = filteredRepos.filter((r) => r.syncMode === 'once');
@@ -702,6 +707,13 @@ export default function RepoTab() {
           ))}
         </div>
 
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="레포 검색..."
+          className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm w-48 focus:outline-none focus:ring-1 focus:ring-blue-400"
+        />
         <span className="text-xs text-gray-400">{filteredRepos.length}개</span>
         <div className="ml-auto flex gap-2">
           <button
