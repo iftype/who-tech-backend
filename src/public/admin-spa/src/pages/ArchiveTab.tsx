@@ -38,6 +38,7 @@ export default function ArchiveTab() {
   const [editingOrderId, setEditingOrderId] = useState<number | null>(null);
   const [editingOrderValue, setEditingOrderValue] = useState('');
   const [levelFilter, setLevelFilter] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const cohortNum = cohort ? Number(cohort) : NaN;
 
@@ -186,7 +187,20 @@ export default function ArchiveTab() {
   const existingRepoIds = new Set(cohortRepos.map((cr) => cr.missionRepoId));
   const availableRepos = allRepos
     .filter((r) => !existingRepoIds.has(r.id))
-    .filter((r) => (levelFilter ? String(r.level ?? '') === levelFilter : true));
+    .filter((r) => {
+      if (levelFilter) {
+        const filterLevel = Number(levelFilter);
+        const repoLevel = r.level ?? -1;
+        if (repoLevel !== filterLevel) return false;
+      }
+      if (searchQuery.trim()) {
+        const q = searchQuery.trim().toLowerCase();
+        const nameMatch = r.name.toLowerCase().includes(q);
+        const trackMatch = r.track?.toLowerCase().includes(q) ?? false;
+        if (!nameMatch && !trackMatch) return false;
+      }
+      return true;
+    });
 
   const logColor = (type: LogEntry['type']) => {
     if (type === 'done') return 'text-green-400';
@@ -319,6 +333,16 @@ export default function ArchiveTab() {
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setSelectedRepoId('');
+              }}
+              placeholder="레포 검색..."
+              className="border border-gray-300 rounded px-2 py-1.5 text-sm w-40"
+            />
             <select
               value={levelFilter}
               onChange={(e) => {
@@ -343,7 +367,7 @@ export default function ArchiveTab() {
               onChange={(e) => setSelectedRepoId(e.target.value)}
               className="border border-gray-300 rounded px-2 py-1.5 text-sm min-w-[200px]"
             >
-              <option value="">레포 선택</option>
+              <option value="">레포 선택 ({availableRepos.length}개)</option>
               {availableRepos.map((r) => (
                 <option key={r.id} value={r.id}>
                   {r.name} {r.track ? `(${r.track})` : ''} {r.level != null ? `Lv${r.level}` : ''}
