@@ -183,7 +183,7 @@ export function createMemberService(deps: {
       return member ? toMemberResponse(member) : null;
     },
 
-    getMemberBlogPosts: (id: number) => blogPostRepo.findByMember(id),
+    getMemberBlogPosts: (id: number, page?: number) => blogPostRepo.findByMember(id, page, 10, 100),
 
     refreshMemberProfile: async (id: number) => {
       const workspace = await workspaceService.getOrThrow();

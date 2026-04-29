@@ -1,6 +1,37 @@
 import type { PrismaClient, Prisma } from '@prisma/client';
 
-// 1. 공통 Include 설정 (멤버, 기수, 트랙 정보 포함)
+// 1. Feed 전용 select (필요한 필드만 가져와 페이로드 최소화)
+const feedPostSelect = {
+  url: true,
+  title: true,
+  publishedAt: true,
+  member: {
+    select: {
+      githubId: true,
+      manualNickname: true,
+      nicknameStats: true,
+      nickname: true,
+      avatarUrl: true,
+      track: true,
+      memberCohorts: {
+        select: {
+          cohort: { select: { number: true } },
+          role: { select: { name: true } },
+        },
+      },
+      submissions: {
+        select: {
+          status: true,
+          missionRepo: { select: { track: true } },
+        },
+      },
+    },
+  },
+} satisfies Prisma.BlogPostSelect;
+
+export type FeedPost = Prisma.BlogPostGetPayload<{ select: typeof feedPostSelect }>;
+
+// 2. 공통 Include 설정 (멤버, 기수, 트랙 정보 포함)
 const blogPostWithMemberInclude = {
   member: {
     include: {
@@ -44,41 +75,49 @@ export function createBlogPostRepository(db: PrismaClient) {
         where: { memberId, publishedAt: { gte: since }, url: { notIn: urls } },
       }),
 
-    /**
-     * [조회] 특정 멤버의 블로그 포스트 목록
-     * 이제 별도 테이블이 없으므로, 7일 기준(Latest)과 전체(Archive)를
-     * 원본 테이블에서 날짜 필터로 구분해서 가져옵니다.
-     */
-    findByMember: async (memberId: number) => {
+    findByMember: async (memberId: number, page?: number, perPage?: number, maxPosts = 100) => {
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-      // 전체 포스트 조회 (최신순)
+      const take = perPage ?? 10;
+      const skip = page && page > 1 ? (page - 1) * take : 0;
+
       const allPosts = await db.blogPost.findMany({
         where: { memberId },
         orderBy: { publishedAt: 'desc' },
+        take: maxPosts,
         select: { url: true, title: true, publishedAt: true },
       });
 
-      // 자바스크립트 단에서 7일 기준 필터링 (DB 재조회보다 빠름)
       const latest = allPosts.filter((post) => post.publishedAt >= sevenDaysAgo);
+      const archive = allPosts.slice(skip, skip + take);
+      const totalPages = Math.ceil(allPosts.length / take);
 
-      return { archive: allPosts, latest };
+      return { archive, latest, page: page ?? 1, totalPages };
     },
 
-    /**
-     * [조회] 메인 피드 목록 (필터링 포함)
-     * 이제 BlogPostLatest를 쓰지 않고 BlogPost 원본에서 직접 7일(또는 days)치를 가져옵니다.
-     */
-    findFeed: (
+    findFeed: async (
       workspaceId: number,
-      filters?: { limit?: number; cohort?: number; track?: string; days?: number; role?: string },
+      filters?: {
+        limit?: number;
+        cohort?: number;
+        track?: string;
+        days?: number;
+        role?: string;
+        cursor?: string;
+      },
     ) => {
       const days = filters?.days ?? 30;
       const since = new Date();
       since.setDate(since.getDate() - days);
 
-      return db.blogPost.findMany({
+      const perMemberLimit = days <= 7 ? 3 : 5;
+      const fetchLimit = filters?.limit ?? 50;
+
+      const cursorDate = filters?.cursor ? new Date(filters.cursor) : null;
+      const hasValidCursor = cursorDate !== null && !isNaN(cursorDate.getTime());
+
+      const posts = await db.blogPost.findMany({
         where: {
           publishedAt: { gte: since },
           member: {
@@ -102,18 +141,28 @@ export function createBlogPostRepository(db: PrismaClient) {
                 }
               : {}),
           },
+          ...(hasValidCursor ? { publishedAt: { lt: cursorDate } } : {}),
         },
-        take: filters?.limit ?? 30,
+        take: fetchLimit * 3,
         orderBy: { publishedAt: 'desc' },
-        include: blogPostWithMemberInclude,
+        select: feedPostSelect,
       });
+
+      const memberCount = new Map<string, number>();
+      const filtered = posts.filter((post) => {
+        const count = memberCount.get(post.member.githubId) ?? 0;
+        if (count >= perMemberLimit) return false;
+        memberCount.set(post.member.githubId, count + 1);
+        return true;
+      });
+
+      const result = filtered.slice(0, fetchLimit);
+      const lastPost = result[result.length - 1];
+      const nextCursor = lastPost ? lastPost.publishedAt.toISOString() : null;
+
+      return { posts: result, nextCursor };
     },
 
-    /**
-     * [중요] refreshLatest는 이제 더 이상 필요하지 않습니다.
-     * 스키마에서 BlogPostLatest 모델을 삭제할 것이기 때문입니다.
-     * 하지만 다른 코드와의 호환성을 위해 빈 함수로 두거나, 점진적으로 제거하세요.
-     */
     findSince: (workspaceId: number, since: Date) =>
       db.blogPost.findMany({
         where: { createdAt: { gte: since }, member: { workspaceId } },
@@ -122,8 +171,22 @@ export function createBlogPostRepository(db: PrismaClient) {
       }),
 
     refreshLatest: async (_since: Date) => {
-      // 이제 단일 테이블 구조이므로 복사 로직이 필요 없습니다.
       return Promise.resolve();
+    },
+
+    deleteExcessByMember: async (memberId: number, maxCount: number) => {
+      const excessPosts = await db.blogPost.findMany({
+        where: { memberId },
+        orderBy: { publishedAt: 'desc' },
+        skip: maxCount,
+        select: { id: true },
+      });
+
+      if (excessPosts.length === 0) return { count: 0 };
+
+      return db.blogPost.deleteMany({
+        where: { id: { in: excessPosts.map((p) => p.id) } },
+      });
     },
   };
 }

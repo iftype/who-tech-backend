@@ -69,7 +69,8 @@ export function createMemberRouter(service: MemberService) {
   router.get(
     '/:id/blog-posts',
     asyncHandler(async (req, res) => {
-      res.json(await service.getMemberBlogPosts(parseId(req.params['id'])));
+      const page = parseOptionalNumberQuery(req.query['page']) ?? 1;
+      res.json(await service.getMemberBlogPosts(parseId(req.params['id']), page));
     }),
   );
 
