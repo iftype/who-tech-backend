@@ -1,16 +1,16 @@
 # Blog Module (`src/features/blog/`)
 
-> 블로그 RSS 수집, 동기화, 백필, 최신 글 조회. 30일치 데이터를 유지하고 7일 필터로 노출.
+> 블로그 RSS 수집, 동기화, 백필, 최신 글 조회. 90일치 데이터를 유지하고 7일/30일 필터로 노출. 멤버당 최대 100개 저장.
 
 ## 파일 구조
 
-| 파일                    | 라인 | 책임                                                         |
-| ----------------------- | ---- | ------------------------------------------------------------ |
-| `blog.service.ts`       | 129  | RSS 기반 블로그 동기화 핵심 로직                             |
-| `blog.admin.service.ts` | 192  | job 큐잉, 자동/수동 sync 조율, 활동 로그 기록                |
-| `blog.rss.ts`           | 177  | RSS fetch, URL 후보 생성, velog/tistory/medium 특화 처리     |
-| `blog.backfill.ts`      | 91   | GitHub 프로필에서 블로그 후보를 추출해 RSS 검증 후 자동 등록 |
-| `blog.route.ts`         | 71   | sync, backfill, new-posts 엔드포인트                         |
+| 파일                    | 라인 | 책임                                                                      |
+| ----------------------- | ---- | ------------------------------------------------------------------------- |
+| `blog.service.ts`       | 147  | RSS 기반 블로그 동기화 핵심 로직. 90일 저장/100개 롤오버/멤버별 병렬 정리 |
+| `blog.admin.service.ts` | 192  | job 큐잉, 자동/수동 sync 조율, 활동 로그 기록                             |
+| `blog.rss.ts`           | 177  | RSS fetch, URL 후보 생성, velog/tistory/medium 특화 처리                  |
+| `blog.backfill.ts`      | 91   | GitHub 프로필에서 블로그 후보를 추출해 RSS 검증 후 자동 등록              |
+| `blog.route.ts`         | 71   | sync, backfill, new-posts 엔드포인트                                      |
 
 ## 주요 함수
 
@@ -47,6 +47,8 @@ createBlogAdminService({ memberRepo, blogPostRepo, workspaceService, blogService
 
 ## 주요 비즈니스 규칙
 
-- 저장 기한 30일. 조회 기한 7일(또는 days 파라미터).
+- 저장 기한 90일 (`RETENTION_DAYS = 90`). 조회 기한 7일/30일 (`days` 파라미터).
+- 멤버당 최대 저장 100개 (`MAX_POSTS_PER_MEMBER = 100`). 초과 시 오래된 글부터 삭제.
 - RSS URL이 변경되면 기존 글 전체 삭제 후 재수집.
-- 피드에서 사라진 글은 30일 이내 데이터만 삭제 대상.
+- 피드에서 사라진 글은 90일 이내 데이터만 삭제 대상.
+- sync 완료 후 멤버별 초과분 병렬 삭제 (`Promise.all`).
