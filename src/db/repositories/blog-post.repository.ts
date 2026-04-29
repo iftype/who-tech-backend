@@ -111,7 +111,7 @@ export function createBlogPostRepository(db: PrismaClient) {
       const since = new Date();
       since.setDate(since.getDate() - days);
 
-      const perMemberLimit = days <= 7 ? 3 : 5;
+      const perDayLimit = 3;
       const fetchLimit = filters?.limit ?? 50;
 
       const cursorDate = filters?.cursor ? new Date(filters.cursor) : null;
@@ -143,16 +143,18 @@ export function createBlogPostRepository(db: PrismaClient) {
           },
           ...(hasValidCursor ? { publishedAt: { lt: cursorDate } } : {}),
         },
-        take: fetchLimit * 3,
+        take: fetchLimit * 4,
         orderBy: { publishedAt: 'desc' },
         select: feedPostSelect,
       });
 
-      const memberCount = new Map<string, number>();
+      const memberDayCount = new Map<string, number>();
       const filtered = posts.filter((post) => {
-        const count = memberCount.get(post.member.githubId) ?? 0;
-        if (count >= perMemberLimit) return false;
-        memberCount.set(post.member.githubId, count + 1);
+        const day = post.publishedAt.toISOString().split('T')[0];
+        const key = `${post.member.githubId}|${day}`;
+        const count = memberDayCount.get(key) ?? 0;
+        if (count >= perDayLimit) return false;
+        memberDayCount.set(key, count + 1);
         return true;
       });
 
@@ -165,7 +167,7 @@ export function createBlogPostRepository(db: PrismaClient) {
 
     findSince: (workspaceId: number, since: Date) =>
       db.blogPost.findMany({
-        where: { createdAt: { gte: since }, member: { workspaceId } },
+        where: { publishedAt: { gte: since }, member: { workspaceId } },
         orderBy: { publishedAt: 'desc' },
         include: blogPostWithMemberInclude,
       }),
