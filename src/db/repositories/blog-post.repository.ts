@@ -143,7 +143,7 @@ export function createBlogPostRepository(db: PrismaClient) {
           },
           ...(hasValidCursor ? { publishedAt: { lt: cursorDate } } : {}),
         },
-        take: fetchLimit * 4,
+        take: fetchLimit * 10,
         orderBy: { publishedAt: 'desc' },
         select: feedPostSelect,
       });
