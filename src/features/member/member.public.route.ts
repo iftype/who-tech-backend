@@ -53,7 +53,8 @@ export function createMemberPublicRouter(service: MemberPublicService) {
     '/:githubId',
     asyncHandler(async (req, res) => {
       const githubId = typeof req.params['githubId'] === 'string' ? req.params['githubId'] : '';
-      const member = await service.getMemberDetail(githubId);
+      const blogPage = parseOptionalNumberQuery(req.query['blogPage']);
+      const member = await service.getMemberDetail(githubId, blogPage);
       if (!member) {
         res.status(404).json({ error: 'Member not found' });
         return;

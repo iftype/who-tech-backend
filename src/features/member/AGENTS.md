@@ -21,8 +21,8 @@ The member module manages course participants (members). It handles member CRUD 
 | `member.profile-refresh.ts` | 137   | Single-member profile refresh. GitHub API lookup, RSS blog probe, nickname recalculation, cohort recalculation. |
 | `member.response.ts`        | 39    | Response DTO transformation. Converts `MemberWithRelations` to public-facing response shape.                    |
 | `member.route.ts`           | 166   | Admin router. All endpoints under `/admin/members/*`.                                                           |
-| `member.public.route.ts`    | 67    | Public router. All endpoints under `/members/*`.                                                                |
-| `member.public.service.ts`  | 222   | Public business logic. Member search, detail view with archive, feed aggregation.                               |
+| `member.public.route.ts`    | 93    | Public router. All endpoints under `/members/*`. Supports cursor-based feed pagination and blog page query.     |
+| `member.public.service.ts`  | 298   | Public business logic. Member search, detail view with archive/blog pagination, feed aggregation.               |
 
 ### Key Dependencies
 
@@ -158,11 +158,11 @@ Members with `coach` or `reviewer` roles in any cohort keep those participations
 
 ### Public Routes (`/members/*`)
 
-| Method | Endpoint     | Description                                                    |
-| ------ | ------------ | -------------------------------------------------------------- |
-| GET    | `/`          | Search members with filters (q, cohort, track, role).          |
-| GET    | `/feed`      | Get recent blog post feed. Supports cohort, track, role, days. |
-| GET    | `/:githubId` | Get public member detail including archive.                    |
+| Method | Endpoint     | Description                                                                  |
+| ------ | ------------ | ---------------------------------------------------------------------------- |
+| GET    | `/`          | Search members with filters (q, cohort, track, role).                        |
+| GET    | `/feed`      | Get recent blog post feed. Supports cohort, track, role, days, cursor.       |
+| GET    | `/:githubId` | Get public member detail including archive. Supports `blogPage` query param. |
 
 ---
 

@@ -62,7 +62,7 @@ export function createMemberPublicService(deps: {
       });
     },
 
-    getMemberDetail: async (githubId: string) => {
+    getMemberDetail: async (githubId: string, blogPage?: number) => {
       const workspace = await workspaceService.getOrThrow();
       const member = await memberRepo.findByGithubId(githubId, workspace.id);
       if (!member) return null;
@@ -174,6 +174,7 @@ export function createMemberPublicService(deps: {
       }
 
       const inferredTrack = computeDominantTrack(member.submissions);
+      const blogPosts = await blogPostRepo.findByMember(member.id, blogPage);
       return {
         githubId: member.githubId,
         nickname,
@@ -193,7 +194,7 @@ export function createMemberPublicService(deps: {
         blog: member.blog,
         lastPostedAt: member.lastPostedAt,
         archive,
-        blogPosts: member.blogPosts,
+        blogPosts,
         person: member.person
           ? {
               id: member.person.id,
