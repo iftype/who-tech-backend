@@ -25,9 +25,6 @@ export function createMemberPublicRouter(service: MemberPublicService) {
     }),
   );
 
-  // GET /members/feed?cohort=&track=
-  // [수정된 라우터 코드]
-
   router.get(
     '/feed',
     asyncHandler(async (req, res) => {
@@ -35,18 +32,20 @@ export function createMemberPublicRouter(service: MemberPublicService) {
       const track = typeof req.query['track'] === 'string' ? req.query['track'] : undefined;
       const role = typeof req.query['role'] === 'string' ? req.query['role'] : undefined;
       const days = parseOptionalNumberQuery(req.query['days']) ?? 7;
+      const cursor = typeof req.query['cursor'] === 'string' ? req.query['cursor'] : undefined;
 
-      const limit = days <= 7 ? 50 : 200;
+      const limit = days <= 7 ? 20 : 30;
 
-      res.json(
-        await service.getFeed({
-          ...(cohort !== undefined ? { cohort } : {}),
-          ...(track ? { track } : {}),
-          ...(role ? { role } : {}),
-          days,
-          limit,
-        }),
-      );
+      const result = await service.getFeed({
+        ...(cohort !== undefined ? { cohort } : {}),
+        ...(track ? { track } : {}),
+        ...(role ? { role } : {}),
+        days,
+        limit,
+        ...(cursor ? { cursor } : {}),
+      });
+
+      res.json(result);
     }),
   );
   // GET /members/:githubId

@@ -6,6 +6,9 @@ import { fetchRSSItems, errorMessage } from './blog.rss.js';
 export type { BlogSyncFailure, BlogSyncProgress, RssCheckResult } from './blog.rss.js';
 export { sanitizeXml, resolveRSSUrlsForBlog, probeRss } from './blog.rss.js';
 
+const RETENTION_DAYS = 90;
+const MAX_POSTS_PER_MEMBER = 100;
+
 export function createBlogService(deps: { memberRepo: MemberRepository; blogPostRepo: BlogPostRepository }) {
   const { memberRepo, blogPostRepo } = deps;
 
@@ -30,7 +33,7 @@ export function createBlogService(deps: { memberRepo: MemberRepository; blogPost
         error: string;
       }[];
     }> => {
-      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      const cutoff = new Date(Date.now() - RETENTION_DAYS * 24 * 60 * 60 * 1000);
       const members = await memberRepo.findWithFilters(workspaceId, { hasBlog: true });
 
       let synced = 0;
@@ -82,13 +85,13 @@ export function createBlogService(deps: { memberRepo: MemberRepository; blogPost
         }
 
         const feedUrls = result.items.map((item) => item.link).filter((url): url is string => !!url);
-        const feedDeleteResult = await blogPostRepo.deleteByMemberNotInUrls(member.id, feedUrls, thirtyDaysAgo);
+        const feedDeleteResult = await blogPostRepo.deleteByMemberNotInUrls(member.id, feedUrls, cutoff);
         deleted += feedDeleteResult.count;
 
         for (const item of result.items) {
           if (!item.link || !item.title || !item.pubDate) continue;
           const publishedAt = new Date(item.pubDate);
-          if (isNaN(publishedAt.getTime()) || publishedAt < thirtyDaysAgo) continue;
+          if (isNaN(publishedAt.getTime()) || publishedAt < cutoff) continue;
 
           try {
             await blogPostRepo.upsert({
@@ -112,9 +115,27 @@ export function createBlogService(deps: { memberRepo: MemberRepository; blogPost
         emitProgress(`${member.githubId} RSS 확인 완료`);
       }
 
+      emitProgress('멤버별 저장 개수 정리 중', total === 0 ? 100 : Math.max(Math.round((processed / total) * 100), 93));
+      const excessResults = await Promise.all(
+        members.map(async (member) => {
+          try {
+            return await blogPostRepo.deleteExcessByMember(member.id, MAX_POSTS_PER_MEMBER);
+          } catch (error) {
+            failures.push({
+              githubId: member.githubId,
+              blog: member.blog!,
+              step: 'cleanup',
+              error: errorMessage(error),
+            });
+            return { count: 0 };
+          }
+        }),
+      );
+      deleted += excessResults.reduce((sum, r) => sum + r.count, 0);
+
       emitProgress('오래된 글 정리 중', total === 0 ? 100 : Math.max(Math.round((processed / total) * 100), 95));
       try {
-        const cleanupResult = await blogPostRepo.deleteBefore(thirtyDaysAgo);
+        const cleanupResult = await blogPostRepo.deleteBefore(cutoff);
         deleted += cleanupResult.count;
       } catch (error) {
         throw new HttpError(500, `blog sync cleanup failed: ${errorMessage(error)}`);

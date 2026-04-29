@@ -204,15 +204,22 @@ export function createMemberPublicService(deps: {
       };
     },
 
-    getFeed: async (filters?: { cohort?: number; track?: string; days?: number; limit?: number; role?: string }) => {
+    getFeed: async (filters?: {
+      cohort?: number;
+      track?: string;
+      days?: number;
+      limit?: number;
+      role?: string;
+      cursor?: string;
+    }) => {
       const workspace = await workspaceService.getOrThrow();
 
-      const posts = await blogPostRepo.findFeed(workspace.id, {
+      const feed = await blogPostRepo.findFeed(workspace.id, {
         ...filters,
         days: filters?.days ?? 30,
       });
 
-      return posts.map((p) => {
+      const posts = feed.posts.map((p) => {
         const cohorts = buildCohortList(p.member.memberCohorts);
 
         const targetCohort = filters?.cohort ? cohorts.find((c) => c.cohort === filters.cohort) : cohorts[0];
@@ -242,6 +249,8 @@ export function createMemberPublicService(deps: {
           },
         };
       });
+
+      return { posts, nextCursor: feed.nextCursor };
     },
 
     refreshMemberProfile: async (githubId: string) => {

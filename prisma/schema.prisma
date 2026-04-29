@@ -154,6 +154,7 @@ model BlogPost {
   member      Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
   @@index([publishedAt])
+  @@index([memberId, publishedAt])
 }
 
 model ActivityLog {
