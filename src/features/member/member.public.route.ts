@@ -62,6 +62,19 @@ export function createMemberPublicRouter(service: MemberPublicService) {
     }),
   );
 
+  router.get(
+    '/:githubId/blog-posts',
+    asyncHandler(async (req, res) => {
+      const githubId = typeof req.params['githubId'] === 'string' ? req.params['githubId'] : '';
+      const posts = await service.getMemberBlogPosts(githubId);
+      if (!posts) {
+        res.status(404).json({ error: 'Member not found' });
+        return;
+      }
+      res.json(posts);
+    }),
+  );
+
   // POST /members/:githubId/refresh
   router.post(
     '/:githubId/refresh',

@@ -148,17 +148,51 @@ export function createBlogPostRepository(db: PrismaClient) {
         select: feedPostSelect,
       });
 
-      const memberDayCount = new Map<string, number>();
-      const filtered = posts.filter((post) => {
-        const day = post.publishedAt.toISOString().split('T')[0];
-        const key = `${post.member.githubId}|${day}`;
-        const count = memberDayCount.get(key) ?? 0;
-        if (count >= perDayLimit) return false;
-        memberDayCount.set(key, count + 1);
-        return true;
-      });
+      const postsByDay = new Map<string, FeedPost[]>();
+      for (const post of posts) {
+        const day = post.publishedAt.toISOString().split('T')[0] ?? '';
+        if (!postsByDay.has(day)) postsByDay.set(day, []);
+        postsByDay.get(day)!.push(post);
+      }
 
-      const result = filtered.slice(0, fetchLimit);
+      const memberDayCount = new Map<string, number>();
+      const filtered: FeedPost[] = [];
+      for (const [day, dayPosts] of postsByDay) {
+        for (const post of dayPosts) {
+          const key = `${post.member.githubId}|${day}`;
+          const count = memberDayCount.get(key) ?? 0;
+          if (count >= perDayLimit) continue;
+          memberDayCount.set(key, count + 1);
+          filtered.push(post);
+        }
+      }
+
+      const dayKeys: string[] = [];
+      for (const key of postsByDay.keys()) {
+        dayKeys.push(key);
+      }
+      dayKeys.sort((a, b) => b.localeCompare(a));
+      const dayQueues = new Map<string, FeedPost[]>();
+      for (const post of filtered) {
+        const day = post.publishedAt.toISOString().split('T')[0] ?? '';
+        if (!dayQueues.has(day)) dayQueues.set(day, []);
+        dayQueues.get(day)!.push(post);
+      }
+
+      const result: FeedPost[] = [];
+      let hasMore = true;
+      while (hasMore && result.length < fetchLimit) {
+        hasMore = false;
+        for (const day of dayKeys) {
+          const queue = dayQueues.get(day)!;
+          if (queue.length > 0) {
+            result.push(queue.shift()!);
+            hasMore = true;
+            if (result.length >= fetchLimit) break;
+          }
+        }
+      }
+
       const lastPost = result[result.length - 1];
       const nextCursor = lastPost ? lastPost.publishedAt.toISOString() : null;
 
