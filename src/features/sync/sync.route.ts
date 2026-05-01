@@ -89,9 +89,17 @@ export function createSyncRouter(service: SyncAdminService) {
     asyncHandler(async (req, res) => {
       const type = req.body?.type as string | undefined;
       const cohort = typeof req.body?.cohort === 'number' ? req.body.cohort : undefined;
+      const repoId = typeof req.body?.repoId === 'number' ? req.body.repoId : undefined;
+      const blogSource = typeof req.body?.blogSource === 'string' ? req.body.blogSource : undefined;
 
-      if (type !== 'workspace' && type !== 'continuous' && type !== 'cohort-repos') {
-        res.status(400).json({ error: 'type must be workspace, continuous, or cohort-repos' });
+      if (
+        type !== 'workspace' &&
+        type !== 'continuous' &&
+        type !== 'cohort-repos' &&
+        type !== 'repo' &&
+        type !== 'blog'
+      ) {
+        res.status(400).json({ error: 'type must be workspace, continuous, cohort-repos, repo, or blog' });
         return;
       }
 
@@ -100,7 +108,12 @@ export function createSyncRouter(service: SyncAdminService) {
         return;
       }
 
-      const id = service.createJob(type, cohort);
+      if (type === 'repo' && repoId == null) {
+        res.status(400).json({ error: 'repoId is required for repo job' });
+        return;
+      }
+
+      const id = service.createJob(type, cohort, repoId, blogSource);
       const job = service.getJob(id);
       res.status(201).json(job);
     }),

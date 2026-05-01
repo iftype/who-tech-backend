@@ -127,6 +127,22 @@ export function createRepoService(deps: {
       return toResponse(repo);
     },
 
+    executeRepoSync: async (
+      id: number,
+      onProgress?: (progress: RepoSyncJob['progress']) => void,
+    ): Promise<RepoSyncResult> => {
+      const context = await workspaceService.getSyncContext();
+      const repo = await missionRepoRepo.findByIdOrThrow(id);
+      return syncService.syncRepo(
+        octokit,
+        context.id,
+        context.githubOrg,
+        { ...repo, lastSyncAt: null },
+        context.cohortRules,
+        onProgress,
+      );
+    },
+
     enqueueRepoSyncById: async (id: number) => {
       cleanupJobs();
       const existingJobId = runningRepoJobs.get(id);
@@ -160,7 +176,7 @@ export function createRepoService(deps: {
             octokit,
             context.id,
             context.githubOrg,
-            { ...repo, lastSyncAt: null }, // 수동 sync: 전체 PR 재수집
+            { ...repo, lastSyncAt: null },
             context.cohortRules,
             (progress) => {
               job.progress = progress;

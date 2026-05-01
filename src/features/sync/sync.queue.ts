@@ -3,8 +3,10 @@ import type { Octokit } from '@octokit/rest';
 import type { SyncService } from './sync.service.js';
 import type { ActivityLogService } from '../activity-log/activity-log.service.js';
 import type { WorkspaceService } from '../workspace/workspace.service.js';
+import type { RepoService } from '../repo/repo.service.js';
+import type { BlogAdminService } from '../blog/blog.admin.service.js';
 
-export type SyncJobType = 'workspace' | 'continuous' | 'cohort-repos';
+export type SyncJobType = 'workspace' | 'continuous' | 'cohort-repos' | 'repo' | 'blog';
 
 export type SyncJobStatus = 'queued' | 'running' | 'completed' | 'failed' | 'cancelled';
 
@@ -24,6 +26,8 @@ export type SyncJob = {
   id: string;
   type: SyncJobType;
   cohort?: number;
+  repoId?: number;
+  blogSource?: string;
   status: SyncJobStatus;
   createdAt: Date;
   startedAt?: Date;
@@ -42,8 +46,10 @@ export function createSyncQueue(deps: {
   activityLogService: ActivityLogService;
   workspaceService: WorkspaceService;
   octokit: Octokit;
+  repoService: RepoService;
+  blogAdminService: BlogAdminService;
 }) {
-  const { syncService, activityLogService, workspaceService, octokit } = deps;
+  const { syncService, activityLogService, workspaceService, octokit, repoService, blogAdminService } = deps;
 
   const jobs: SyncJob[] = [];
   let processing = false;
@@ -77,12 +83,14 @@ export function createSyncQueue(deps: {
     }
   };
 
-  const enqueue = (type: SyncJobType, cohort?: number): string => {
+  const enqueue = (type: SyncJobType, cohort?: number, repoId?: number, blogSource?: string): string => {
     const id = randomUUID();
     const job: SyncJob = {
       id,
       type,
       ...(cohort != null ? { cohort } : {}),
+      ...(repoId != null ? { repoId } : {}),
+      ...(blogSource != null ? { blogSource } : {}),
       status: 'queued',
       createdAt: new Date(),
       abortController: new AbortController(),
@@ -90,7 +98,7 @@ export function createSyncQueue(deps: {
     jobs.push(job);
     void activityLogService.addLog(
       'sync',
-      `Job queued: ${type}${cohort != null ? ` cohort=${cohort}` : ''} (id=${id})`,
+      `Job queued: ${type}${cohort != null ? ` cohort=${cohort}` : ''}${repoId != null ? ` repoId=${repoId}` : ''}${blogSource != null ? ` source=${blogSource}` : ''} (id=${id})`,
     );
     processLoop();
     return id;
@@ -191,6 +199,24 @@ export function createSyncQueue(deps: {
               onProgress,
               job.abortController.signal,
             );
+          } else if (job.type === 'repo') {
+            if (job.repoId == null) {
+              throw new Error('repoId is required for repo job');
+            }
+            const repoResult = await repoService.executeRepoSync(job.repoId, (progress) => {
+              onProgress({
+                repo: progress.phase,
+                done: progress.processed,
+                total: progress.total,
+                synced: progress.synced,
+              });
+            });
+            result = { totalSynced: repoResult.synced, reposSynced: 1 };
+          } else if (job.type === 'blog') {
+            const blogResult = await blogAdminService.executeWorkspaceBlogSync(
+              (job.blogSource as 'manual' | 'github-actions' | 'scheduler') ?? 'manual',
+            );
+            result = { totalSynced: blogResult.synced, reposSynced: 1 };
           } else {
             throw new Error(`Unknown job type: ${job.type}`);
           }

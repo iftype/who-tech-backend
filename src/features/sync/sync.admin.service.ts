@@ -5,6 +5,8 @@ import type { MissionRepoRepository } from '../../db/repositories/mission-repo.r
 import type { WorkspaceService } from '../workspace/workspace.service.js';
 import type { ActivityLogService } from '../activity-log/activity-log.service.js';
 import type { SyncService } from './sync.service.js';
+import type { RepoService } from '../repo/repo.service.js';
+import type { BlogAdminService } from '../blog/blog.admin.service.js';
 import type { SyncQueue, SyncJobType } from './sync.queue.js';
 import { createSyncQueue } from './sync.queue.js';
 
@@ -16,14 +18,27 @@ export function createSyncAdminService(deps: {
   syncService: SyncService;
   activityLogService: ActivityLogService;
   octokit: Octokit;
+  repoService: RepoService;
+  blogAdminService: BlogAdminService;
 }) {
-  const { memberRepo, missionRepoRepo, workspaceService, syncService, activityLogService, octokit } = deps;
+  const {
+    memberRepo,
+    missionRepoRepo,
+    workspaceService,
+    syncService,
+    activityLogService,
+    octokit,
+    repoService,
+    blogAdminService,
+  } = deps;
 
   const queue: SyncQueue = createSyncQueue({
     syncService,
     activityLogService,
     workspaceService,
     octokit,
+    repoService,
+    blogAdminService,
   });
 
   return {
@@ -68,8 +83,8 @@ export function createSyncAdminService(deps: {
       return syncService.syncCohortRepoList(octokit, workspace.id, cohort, onProgress);
     },
 
-    createJob: (type: SyncJobType, cohort?: number): string => {
-      return queue.enqueue(type, cohort);
+    createJob: (type: SyncJobType, cohort?: number, repoId?: number, blogSource?: string): string => {
+      return queue.enqueue(type, cohort, repoId, blogSource);
     },
 
     getJobs: () => queue.getJobs(),
