@@ -106,9 +106,7 @@ export function createBlogPostRepository(db: PrismaClient) {
         cursor?: string;
       },
     ) => {
-      const days = filters?.days ?? 30;
-      const since = new Date();
-      since.setDate(since.getDate() - days);
+      const since = filters?.days != null ? new Date(Date.now() - filters.days * 24 * 60 * 60 * 1000) : null;
 
       const perDayLimit = 3;
       const fetchLimit = filters?.limit ?? 50;
@@ -118,7 +116,7 @@ export function createBlogPostRepository(db: PrismaClient) {
 
       const posts = await db.blogPost.findMany({
         where: {
-          publishedAt: { gte: since },
+          ...(since ? { publishedAt: { gte: since } } : {}),
           workspaceId,
           ...(filters?.cohort ? { cohort: filters.cohort } : {}),
           ...(filters?.track
