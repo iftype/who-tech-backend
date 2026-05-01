@@ -2,6 +2,7 @@ import type { PrismaClient, Prisma } from '@prisma/client';
 
 // 1. Feed 전용 select (필요한 필드만 가져와 페이로드 최소화)
 const feedPostSelect = {
+  id: true,
   url: true,
   title: true,
   publishedAt: true,
@@ -111,7 +112,8 @@ export function createBlogPostRepository(db: PrismaClient) {
       const perDayLimit = 3;
       const fetchLimit = filters?.limit ?? 50;
 
-      const cursorDate = filters?.cursor ? new Date(filters.cursor) : null;
+      const [cursorDateStr, cursorId] = (filters?.cursor ?? '').split('|');
+      const cursorDate = cursorDateStr ? new Date(cursorDateStr) : null;
       const hasValidCursor = cursorDate !== null && !isNaN(cursorDate.getTime());
 
       const posts = await db.blogPost.findMany({
@@ -124,7 +126,11 @@ export function createBlogPostRepository(db: PrismaClient) {
                 OR: [{ track: filters.track }, { track: null }],
               }
             : {}),
-          ...(hasValidCursor ? { publishedAt: { lt: cursorDate } } : {}),
+          ...(hasValidCursor
+            ? {
+                OR: [{ publishedAt: { lt: cursorDate } }, { publishedAt: cursorDate, id: { lt: Number(cursorId) } }],
+              }
+            : {}),
         },
         take: fetchLimit * 10,
         orderBy: { publishedAt: 'desc' },
@@ -177,7 +183,7 @@ export function createBlogPostRepository(db: PrismaClient) {
       }
 
       const lastPost = result[result.length - 1];
-      const nextCursor = lastPost ? lastPost.publishedAt.toISOString() : null;
+      const nextCursor = lastPost ? `${lastPost.publishedAt.toISOString()}|${lastPost.id}` : null;
 
       return { posts: result, nextCursor };
     },
