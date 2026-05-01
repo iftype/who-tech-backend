@@ -67,6 +67,7 @@ model Member {
 
   @@unique([githubId, workspaceId])
   @@unique([githubUserId, workspaceId])
+  @@index([workspaceId, nickname])
 }
 
 model Cohort {
