@@ -4,9 +4,12 @@ import { apiFetch } from '../lib/api.js';
 import { showToast } from '../components/ui/Toast.js';
 import type { ActivityLog } from '../lib/types.js';
 
+type LogCategory = 'all' | 'repo' | 'blog';
+
 export default function LogTab() {
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState('');
+  const [category, setCategory] = useState<LogCategory>('all');
 
   const { data: logs = [], isLoading } = useQuery({
     queryKey: ['activity-logs'],
@@ -22,9 +25,14 @@ export default function LogTab() {
     onError: (e) => showToast(e instanceof Error ? e.message : '삭제 실패', 'error'),
   });
 
-  const filtered = filter
-    ? logs.filter((l) => l.type.includes(filter) || l.message.includes(filter))
-    : logs;
+  const filtered = logs.filter((l) => {
+    if (category === 'repo') return l.type.includes('sync') || l.type.includes('repo');
+    if (category === 'blog') return l.type.includes('blog');
+    return true;
+  }).filter((l) => {
+    if (!filter) return true;
+    return l.type.includes(filter) || l.message.includes(filter);
+  });
 
   const logColor = (type: string) => {
     if (type.includes('error')) return 'text-red-400';
@@ -33,10 +41,26 @@ export default function LogTab() {
     return 'text-gray-300';
   };
 
+  const tabClass = (active: boolean) =>
+    `px-3 py-1.5 text-xs font-medium rounded transition-colors cursor-pointer ${
+      active ? 'bg-blue-100 text-blue-700' : 'text-gray-500 hover:bg-gray-100'
+    }`;
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1 bg-gray-50 rounded p-0.5">
+            <button onClick={() => setCategory('all')} className={tabClass(category === 'all')}>
+              전체
+            </button>
+            <button onClick={() => setCategory('repo')} className={tabClass(category === 'repo')}>
+              레포 싱크
+            </button>
+            <button onClick={() => setCategory('blog')} className={tabClass(category === 'blog')}>
+              블로그 싱크
+            </button>
+          </div>
           <input
             value={filter}
             onChange={(e) => setFilter(e.target.value)}

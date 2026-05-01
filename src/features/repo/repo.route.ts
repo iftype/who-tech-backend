@@ -2,8 +2,9 @@ import { Router } from 'express';
 import { asyncHandler, HttpError } from '../../shared/http.js';
 import { parseId, parseRepoCreateInput, parseRepoUpdateInput } from '../../shared/validation.js';
 import type { RepoService } from './repo.service.js';
+import type { SyncAdminService } from '../sync/sync.admin.service.js';
 
-export function createRepoRouter(service: RepoService) {
+export function createRepoRouter(service: RepoService, syncAdminService: SyncAdminService) {
   const router = Router();
 
   router.get(
@@ -38,7 +39,10 @@ export function createRepoRouter(service: RepoService) {
   router.post(
     '/:id/sync',
     asyncHandler(async (req, res) => {
-      res.status(202).json(await service.enqueueRepoSyncById(parseId(req.params['id'])));
+      const repoId = parseId(req.params['id']);
+      const jobId = syncAdminService.createJob('repo', undefined, repoId);
+      const job = syncAdminService.getJob(jobId);
+      res.status(202).json(job);
     }),
   );
 

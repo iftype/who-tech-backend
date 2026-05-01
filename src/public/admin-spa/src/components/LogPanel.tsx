@@ -21,7 +21,11 @@ export default function LogPanel() {
 
   useEffect(() => {
     const handler = (entry: LogEntry) => {
-      setEntries((prev) => [...prev, entry]);
+      setEntries((prev) => {
+        const next = [...prev, entry];
+        if (next.length > 100) next.splice(0, next.length - 100);
+        return next;
+      });
       void apiFetch('/admin/logs', {
         method: 'POST',
         body: JSON.stringify({ type: entry.tag, message: entry.msg }),

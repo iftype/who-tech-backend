@@ -103,6 +103,8 @@ export function createBlogAdminService(deps: {
   return {
     syncWorkspaceBlogs: async (source: BlogSyncSource = 'manual') => runWorkspaceBlogSync(source),
 
+    executeWorkspaceBlogSync: async (source: BlogSyncSource = 'manual') => runWorkspaceBlogSync(source),
+
     enqueueWorkspaceBlogSync: async (source: BlogSyncSource = 'manual') => {
       cleanupJobs();
       if (runningJobId) {
