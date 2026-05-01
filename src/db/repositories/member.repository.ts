@@ -1,8 +1,26 @@
 import { Prisma } from '@prisma/client';
 import type { PrismaClient } from '@prisma/client';
 
-// 1. 포함할 관계 정의 (타입 추론의 핵심)
-const memberWithRelationsInclude = Prisma.validator<Prisma.MemberInclude>()({
+const memberListInclude = Prisma.validator<Prisma.MemberInclude>()({
+  memberCohorts: {
+    include: {
+      cohort: true,
+      role: true,
+    },
+  },
+  submissions: {
+    orderBy: { submittedAt: 'desc' as const },
+    take: 20,
+    select: {
+      id: true,
+      status: true,
+      missionRepoId: true,
+      missionRepo: { select: { id: true, track: true } },
+    },
+  },
+});
+
+const memberDetailInclude = Prisma.validator<Prisma.MemberInclude>()({
   _count: { select: { submissions: true } },
   blogPosts: { orderBy: { publishedAt: 'desc' as const }, take: 10 },
   person: {
@@ -20,6 +38,7 @@ const memberWithRelationsInclude = Prisma.validator<Prisma.MemberInclude>()({
   },
   submissions: {
     orderBy: { submittedAt: 'desc' as const },
+    take: 50,
     select: {
       id: true,
       prNumber: true,
@@ -34,9 +53,12 @@ const memberWithRelationsInclude = Prisma.validator<Prisma.MemberInclude>()({
   },
 });
 
-// 2. 외부에서 사용할 타입 정의
 export type MemberWithRelations = Prisma.MemberGetPayload<{
-  include: typeof memberWithRelationsInclude;
+  include: typeof memberListInclude;
+}>;
+
+export type MemberDetailWithRelations = Prisma.MemberGetPayload<{
+  include: typeof memberDetailInclude;
 }>;
 
 export function createMemberRepository(db: PrismaClient) {
@@ -45,7 +67,7 @@ export function createMemberRepository(db: PrismaClient) {
     findWithFilters: (
       workspaceId: number,
       filters?: { q?: string; cohort?: number; hasBlog?: boolean; track?: string; role?: string },
-    ): Promise<MemberWithRelations[]> =>
+    ): Promise<MemberDetailWithRelations[]> =>
       db.member.findMany({
         where: {
           workspaceId,
@@ -53,22 +75,7 @@ export function createMemberRepository(db: PrismaClient) {
           ...(filters?.role ? { memberCohorts: { some: { role: { name: { contains: filters.role } } } } } : {}),
           ...(filters?.hasBlog === true ? { blog: { not: null } } : {}),
           ...(filters?.hasBlog === false ? { blog: null } : {}),
-          ...(filters?.track
-            ? {
-                OR: [
-                  { track: filters.track },
-                  {
-                    track: null,
-                    submissions: {
-                      some: {
-                        status: { not: 'closed' },
-                        missionRepo: { track: filters.track },
-                      },
-                    },
-                  },
-                ],
-              }
-            : {}),
+          ...(filters?.track ? { track: filters.track } : {}),
           ...(filters?.q
             ? {
                 OR: [
@@ -81,79 +88,69 @@ export function createMemberRepository(db: PrismaClient) {
             : {}),
         },
         orderBy: [{ nickname: 'asc' }],
-        include: memberWithRelationsInclude,
+        include: memberDetailInclude,
       }),
 
     // 기본 조회 메서드들
-    findByGithubId: (githubId: string, workspaceId: number): Promise<MemberWithRelations | null> =>
+    findByGithubId: (githubId: string, workspaceId: number): Promise<MemberDetailWithRelations | null> =>
       db.member.findUnique({
         where: { githubId_workspaceId: { githubId, workspaceId } },
-        include: memberWithRelationsInclude,
+        include: memberDetailInclude,
       }),
 
-    findByGithubUserId: (githubUserId: number, workspaceId: number): Promise<MemberWithRelations | null> =>
+    findByGithubUserId: (githubUserId: number, workspaceId: number): Promise<MemberDetailWithRelations | null> =>
       db.member.findUnique({
         where: { githubUserId_workspaceId: { githubUserId, workspaceId } },
-        include: memberWithRelationsInclude,
+        include: memberDetailInclude,
       }),
 
-    findByIdWithRelations: (id: number): Promise<MemberWithRelations | null> =>
-      db.member.findUnique({ where: { id }, include: memberWithRelationsInclude }),
+    findByIdWithRelations: (id: number): Promise<MemberDetailWithRelations | null> =>
+      db.member.findUnique({ where: { id }, include: memberDetailInclude }),
 
-    // 생성 및 업데이트
-    create: (data: Prisma.MemberUncheckedCreateInput): Promise<MemberWithRelations> =>
-      db.member.create({ data, include: memberWithRelationsInclude }),
+    create: (data: Prisma.MemberUncheckedCreateInput): Promise<MemberDetailWithRelations> =>
+      db.member.create({ data, include: memberDetailInclude }),
 
-    update: (id: number, data: Prisma.MemberUncheckedUpdateInput): Promise<MemberWithRelations> =>
-      db.member.update({ where: { id }, data, include: memberWithRelationsInclude }),
-
-    // MemberRepository.ts 내부
+    update: (id: number, data: Prisma.MemberUncheckedUpdateInput): Promise<MemberDetailWithRelations> =>
+      db.member.update({ where: { id }, data, include: memberDetailInclude }),
 
     listStaleProfiles: (
       workspaceId: number,
-      params: { staleBefore: Date; cohort?: number; limit: number }, // 👈 객체 타입으로 변경
+      params: { staleBefore: Date; cohort?: number; limit: number },
     ): Promise<MemberWithRelations[]> =>
       db.member.findMany({
         where: {
           workspaceId,
-          // 1. 특정 날짜(staleBefore) 이전에 업데이트된 사람만
           profileFetchedAt: { lt: params.staleBefore },
-          // 2. 기수(cohort) 필터가 있다면 추가
           ...(params.cohort ? { memberCohorts: { some: { cohort: { number: params.cohort } } } } : {}),
         },
         orderBy: { profileFetchedAt: 'asc' },
-        take: params.limit, // 👈 넘겨받은 limit 적용
-        include: memberWithRelationsInclude,
+        take: params.limit,
+        include: memberListInclude,
       }),
 
-    // 2. Public Service에서 에러 났던 상세 조회 (필요하다면 별칭으로 추가)
-    findPublicDetail: (githubId: string, workspaceId: number): Promise<MemberWithRelations | null> =>
+    findPublicDetail: (githubId: string, workspaceId: number): Promise<MemberDetailWithRelations | null> =>
       db.member.findUnique({
         where: { githubId_workspaceId: { githubId, workspaceId } },
-        include: memberWithRelationsInclude,
+        include: memberDetailInclude,
       }),
 
-    // 3. 닉네임으로 찾기 (보통 다른 서비스에서 많이 씁니다)
     findManyByNickname: (nickname: string, workspaceId: number): Promise<MemberWithRelations[]> =>
       db.member.findMany({
         where: {
           workspaceId,
           OR: [{ nickname }, { manualNickname: nickname }],
         },
-        include: memberWithRelationsInclude,
+        include: memberListInclude,
       }),
-    // ★ [핵심] Race Condition 방지를 위한 upsert 메서드
-    // member.repository.ts
 
     upsert: async (
       workspaceId: number,
       githubUserId: number,
       data: Prisma.MemberUncheckedCreateInput,
-    ): Promise<MemberWithRelations> => {
-      // exactOptionalPropertyTypes 대응: undefined 필드를 명시적으로 처리
+    ): Promise<MemberDetailWithRelations> => {
       const updateData: Prisma.MemberUncheckedUpdateInput = {
         githubId: data.githubId,
-        previousGithubIds: data.previousGithubIds ?? null, // undefined 대신 null 처리
+        previousGithubIds: data.previousGithubIds ?? null,
         nickname: data.nickname ?? null,
         avatarUrl: data.avatarUrl ?? null,
         nicknameStats: data.nicknameStats ?? null,
@@ -171,13 +168,12 @@ export function createMemberRepository(db: PrismaClient) {
           ...data,
           workspaceId,
         },
-        include: memberWithRelationsInclude,
+        include: memberDetailInclude,
       });
 
-      return result as unknown as MemberWithRelations;
+      return result as unknown as MemberDetailWithRelations;
     },
 
-    // 기수 참여 정보 관리
     upsertParticipation: async (memberId: number, cohortNumber: number, roleName: string) => {
       const cohort = await db.cohort.upsert({
         where: { number: cohortNumber },

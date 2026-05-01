@@ -1,9 +1,9 @@
-import type { MemberWithRelations } from '../../db/repositories/member.repository.js';
+import type { MemberDetailWithRelations } from '../../db/repositories/member.repository.js';
 import { buildCohortList } from '../../shared/member-cohort.js';
 import { resolveDisplayNickname, parseNicknameStats } from '../../shared/nickname.js';
 import { computeDominantTrack } from '../../shared/member-track.js';
 
-export function toMemberResponse(member: MemberWithRelations) {
+export function toMemberResponse(member: MemberDetailWithRelations) {
   const cohorts = buildCohortList(member.memberCohorts);
   const primaryCohort = cohorts[0];
   const inferredTrack = computeDominantTrack(member.submissions);
