@@ -263,7 +263,7 @@ export function createMemberPublicService(deps: {
         };
       });
 
-      return { posts, nextCursor: feed.nextCursor };
+      return { posts, nextCursor: feed.nextCursor, totalCount: feed.totalCount };
     },
 
     refreshMemberProfile: async (githubId: string) => {
