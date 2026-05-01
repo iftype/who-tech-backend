@@ -299,7 +299,7 @@ export function createMemberRepository(db: PrismaClient) {
           select: { cohort: { select: { number: true } } },
           distinct: ['cohortId'],
         })
-        .then((rows) => [...new Set(rows.map((r) => r.cohort.number))].sort((a, b) => a - b)),
+        .then((rows) => [...new Set(rows.map((r) => r.cohort.number))].sort((a, b) => b - a)),
   };
 }
 
