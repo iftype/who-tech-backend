@@ -1,7 +1,8 @@
 /*
   Warnings:
 
-  - Added the required column `workspaceId` to the `BlogPost` table without a default value. This is not possible if the table is not empty.
+  - Added the column `workspaceId` to the `BlogPost` table without a default value.
+    Backfilled from Member.workspaceId before setting NOT NULL.
 
 */
 -- RedefineTables
@@ -15,11 +16,20 @@ CREATE TABLE "new_BlogPost" (
     "memberId" INTEGER NOT NULL,
     "cohort" INTEGER,
     "track" TEXT,
-    "workspaceId" INTEGER NOT NULL,
+    "workspaceId" INTEGER,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "BlogPost_memberId_fkey" FOREIGN KEY ("memberId") REFERENCES "Member" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 INSERT INTO "new_BlogPost" ("createdAt", "id", "memberId", "publishedAt", "title", "url") SELECT "createdAt", "id", "memberId", "publishedAt", "title", "url" FROM "BlogPost";
+
+-- Backfill workspaceId from Member table
+UPDATE "new_BlogPost" SET "workspaceId" = (
+    SELECT "workspaceId" FROM "Member" WHERE "Member"."id" = "new_BlogPost"."memberId"
+);
+
+-- Make workspaceId NOT NULL after backfill
+ALTER TABLE "new_BlogPost" ALTER COLUMN "workspaceId" SET NOT NULL;
+
 DROP TABLE "BlogPost";
 ALTER TABLE "new_BlogPost" RENAME TO "BlogPost";
 CREATE UNIQUE INDEX "BlogPost_url_key" ON "BlogPost"("url");
