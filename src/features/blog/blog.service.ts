@@ -1,6 +1,7 @@
 import type { MemberRepository } from '../../db/repositories/member.repository.js';
 import type { BlogPostRepository } from '../../db/repositories/blog-post.repository.js';
 import { HttpError } from '../../shared/http.js';
+import { buildCohortList } from '../../shared/member-cohort.js';
 import { fetchRSSItems, errorMessage } from './blog.rss.js';
 
 export type { BlogSyncFailure, BlogSyncProgress, RssCheckResult } from './blog.rss.js';
@@ -56,6 +57,9 @@ export function createBlogService(deps: { memberRepo: MemberRepository; blogPost
       emitProgress(total === 0 ? '수집 대상 없음' : 'RSS 수집 준비 중', total === 0 ? 100 : 0);
 
       for (const member of members) {
+        const cohorts = buildCohortList(member.memberCohorts);
+        const primaryCohort = cohorts[0]?.cohort ?? null;
+
         const result = await fetchRSSItems(member.blog!);
 
         const latestDate = result.items
@@ -96,8 +100,21 @@ export function createBlogService(deps: { memberRepo: MemberRepository; blogPost
           try {
             await blogPostRepo.upsert({
               where: { url: item.link },
-              create: { url: item.link, title: item.title, publishedAt, memberId: member.id },
-              update: { title: item.title, publishedAt },
+              create: {
+                url: item.link,
+                title: item.title,
+                publishedAt,
+                memberId: member.id,
+                cohort: primaryCohort,
+                track: member.track,
+                workspaceId,
+              },
+              update: {
+                title: item.title,
+                publishedAt,
+                cohort: primaryCohort,
+                track: member.track,
+              },
             });
             synced++;
           } catch (error) {

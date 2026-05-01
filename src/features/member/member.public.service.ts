@@ -30,9 +30,15 @@ export function createMemberPublicService(deps: {
   }
 
   const service = {
-    searchMembers: async (filters?: { q?: string; cohort?: number; track?: string; role?: string }) => {
+    searchMembers: async (filters?: {
+      q?: string;
+      cohort?: number;
+      track?: string;
+      role?: string;
+      roleGroup?: 'crew' | 'staff';
+    }) => {
       const workspace = await workspaceService.getOrThrow();
-      const members = await memberRepo.findWithFilters(workspace.id, filters);
+      const members = await memberRepo.findWithFiltersLight(workspace.id, filters);
       return members.map((m) => {
         const cohorts = buildCohortList(m.memberCohorts);
 
@@ -210,19 +216,20 @@ export function createMemberPublicService(deps: {
       return blogPostRepo.findByMember(member.id, 1, 100);
     },
 
-    getFeed: async (filters?: {
-      cohort?: number;
-      track?: string;
-      days?: number;
-      limit?: number;
-      role?: string;
-      cursor?: string;
-    }) => {
+    getCohorts: async () => {
+      const workspace = await workspaceService.getOrThrow();
+      return memberRepo.listMemberCohorts(workspace.id);
+    },
+
+    getFeed: async (filters?: { cohort?: number; track?: string; days?: number; limit?: number; cursor?: string }) => {
       const workspace = await workspaceService.getOrThrow();
 
       const feed = await blogPostRepo.findFeed(workspace.id, {
-        ...filters,
+        ...(filters?.cohort != null ? { cohort: filters.cohort } : {}),
+        ...(filters?.track ? { track: filters.track } : {}),
+        ...(filters?.cursor ? { cursor: filters.cursor } : {}),
         days: filters?.days ?? 30,
+        ...(filters?.limit != null ? { limit: filters.limit } : {}),
       });
 
       const posts = feed.posts.map((p) => {

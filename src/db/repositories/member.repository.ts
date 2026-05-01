@@ -66,13 +66,25 @@ export function createMemberRepository(db: PrismaClient) {
     // 필터 기반 조회
     findWithFilters: (
       workspaceId: number,
-      filters?: { q?: string; cohort?: number; hasBlog?: boolean; track?: string; role?: string },
+      filters?: {
+        q?: string;
+        cohort?: number;
+        hasBlog?: boolean;
+        track?: string;
+        role?: string;
+        roleGroup?: 'crew' | 'staff';
+      },
     ): Promise<MemberDetailWithRelations[]> =>
       db.member.findMany({
         where: {
           workspaceId,
           ...(filters?.cohort ? { memberCohorts: { some: { cohort: { number: filters.cohort } } } } : {}),
           ...(filters?.role ? { memberCohorts: { some: { role: { name: { contains: filters.role } } } } } : {}),
+          ...(filters?.roleGroup === 'crew'
+            ? { memberCohorts: { some: { role: { name: 'crew' } } } }
+            : filters?.roleGroup === 'staff'
+              ? { memberCohorts: { some: { role: { name: { in: ['coach', 'reviewer'] } } } } }
+              : {}),
           ...(filters?.hasBlog === true ? { blog: { not: null } } : {}),
           ...(filters?.hasBlog === false ? { blog: null } : {}),
           ...(filters?.track ? { track: filters.track } : {}),
@@ -80,7 +92,7 @@ export function createMemberRepository(db: PrismaClient) {
             ? {
                 OR: [
                   { githubId: { contains: filters.q } },
-                  { previousGithubIds: { contains: `"${filters.q}"` } },
+                  { previousIds: { some: { githubId: { contains: filters.q } } } },
                   { nickname: { contains: filters.q } },
                   { manualNickname: { contains: filters.q } },
                 ] satisfies Prisma.MemberWhereInput[],
@@ -89,6 +101,45 @@ export function createMemberRepository(db: PrismaClient) {
         },
         orderBy: [{ nickname: 'asc' }],
         include: memberDetailInclude,
+      }),
+
+    findWithFiltersLight: (
+      workspaceId: number,
+      filters?: {
+        q?: string;
+        cohort?: number;
+        hasBlog?: boolean;
+        track?: string;
+        role?: string;
+        roleGroup?: 'crew' | 'staff';
+      },
+    ): Promise<MemberWithRelations[]> =>
+      db.member.findMany({
+        where: {
+          workspaceId,
+          ...(filters?.cohort ? { memberCohorts: { some: { cohort: { number: filters.cohort } } } } : {}),
+          ...(filters?.role ? { memberCohorts: { some: { role: { name: { contains: filters.role } } } } } : {}),
+          ...(filters?.roleGroup === 'crew'
+            ? { memberCohorts: { some: { role: { name: 'crew' } } } }
+            : filters?.roleGroup === 'staff'
+              ? { memberCohorts: { some: { role: { name: { in: ['coach', 'reviewer'] } } } } }
+              : {}),
+          ...(filters?.hasBlog === true ? { blog: { not: null } } : {}),
+          ...(filters?.hasBlog === false ? { blog: null } : {}),
+          ...(filters?.track ? { track: filters.track } : {}),
+          ...(filters?.q
+            ? {
+                OR: [
+                  { githubId: { contains: filters.q } },
+                  { previousIds: { some: { githubId: { contains: filters.q } } } },
+                  { nickname: { contains: filters.q } },
+                  { manualNickname: { contains: filters.q } },
+                ] satisfies Prisma.MemberWhereInput[],
+              }
+            : {}),
+        },
+        orderBy: [{ nickname: 'asc' }],
+        include: memberListInclude,
       }),
 
     // 기본 조회 메서드들
@@ -192,6 +243,26 @@ export function createMemberRepository(db: PrismaClient) {
         create: { memberId, cohortId: cohort.id, roleId: role.id },
         update: {},
       });
+    },
+
+    // 이전 GitHub ID 동기화 (previousGithubIds JSON + PreviousGithubId 테이블)
+    syncPreviousGithubIds: async (memberId: number, previousIdsJson: string | null) => {
+      const existing = await db.previousGithubId.findMany({ where: { memberId } });
+      const existingIds = new Set(existing.map((r) => r.githubId));
+      const newIds = previousIdsJson ? (JSON.parse(previousIdsJson) as string[]) : [];
+      const newIdSet = new Set(newIds);
+
+      const toDelete = existing.filter((r) => !newIdSet.has(r.githubId));
+      const toAdd = newIds.filter((id) => !existingIds.has(id));
+
+      if (toDelete.length > 0) {
+        await db.previousGithubId.deleteMany({
+          where: { memberId, githubId: { in: toDelete.map((r) => r.githubId) } },
+        });
+      }
+      for (const githubId of toAdd) {
+        await db.previousGithubId.create({ data: { githubId, memberId } }).catch(() => null);
+      }
     },
 
     // 특정 기수에 대한 참여 정보 전체 삭제 (역할 교체 시 사용)

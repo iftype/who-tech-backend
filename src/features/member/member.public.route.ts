@@ -14,12 +14,15 @@ export function createMemberPublicRouter(service: MemberPublicService) {
       const cohort = parseOptionalNumberQuery(req.query['cohort']);
       const track = typeof req.query['track'] === 'string' ? req.query['track'] : undefined;
       const role = typeof req.query['role'] === 'string' ? req.query['role'] : undefined;
+      const roleGroup =
+        typeof req.query['roleGroup'] === 'string' ? (req.query['roleGroup'] as 'crew' | 'staff') : undefined;
       res.json(
         await service.searchMembers({
           ...(q ? { q } : {}),
           ...(cohort !== undefined ? { cohort } : {}),
           ...(track ? { track } : {}),
           ...(role ? { role } : {}),
+          ...(roleGroup ? { roleGroup } : {}),
         }),
       );
     }),
@@ -30,7 +33,6 @@ export function createMemberPublicRouter(service: MemberPublicService) {
     asyncHandler(async (req, res) => {
       const cohort = parseOptionalNumberQuery(req.query['cohort']);
       const track = typeof req.query['track'] === 'string' ? req.query['track'] : undefined;
-      const role = typeof req.query['role'] === 'string' ? req.query['role'] : undefined;
       const days = parseOptionalNumberQuery(req.query['days']) ?? 7;
       const cursor = typeof req.query['cursor'] === 'string' ? req.query['cursor'] : undefined;
 
@@ -39,7 +41,6 @@ export function createMemberPublicRouter(service: MemberPublicService) {
       const result = await service.getFeed({
         ...(cohort !== undefined ? { cohort } : {}),
         ...(track ? { track } : {}),
-        ...(role ? { role } : {}),
         days,
         limit,
         ...(cursor ? { cursor } : {}),
@@ -48,6 +49,13 @@ export function createMemberPublicRouter(service: MemberPublicService) {
       res.json(result);
     }),
   );
+  router.get(
+    '/cohorts',
+    asyncHandler(async (req, res) => {
+      res.json(await service.getCohorts());
+    }),
+  );
+
   // GET /members/:githubId
   router.get(
     '/:githubId',

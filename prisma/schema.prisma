@@ -37,7 +37,7 @@ model Person {
 }
 
 model Member {
-  id                  Int              @id @default(autoincrement())
+  id                  Int                @id @default(autoincrement())
   githubUserId        Int?
   githubId            String
   previousGithubIds   String?
@@ -48,26 +48,38 @@ model Member {
   profileFetchedAt    DateTime?
   profileRefreshError String?
   blog                String?
-  rssStatus           String           @default("unknown")
+  rssStatus           String             @default("unknown")
   rssUrl              String?
   rssCheckedAt        DateTime?
   rssError            String?
   lastPostedAt        DateTime?
   track               String?
-  cohortLocked        Boolean          @default(false)
+  cohortLocked        Boolean            @default(false)
   workspaceId         Int
   personId            Int?
-  createdAt           DateTime         @default(now())
-  updatedAt           DateTime         @updatedAt
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
   blogPosts           BlogPost[]
-  workspace           Workspace        @relation(fields: [workspaceId], references: [id])
-  person              Person?          @relation(fields: [personId], references: [id])
+  workspace           Workspace          @relation(fields: [workspaceId], references: [id])
+  person              Person?            @relation(fields: [personId], references: [id])
   memberCohorts       MemberCohort[]
   submissions         Submission[]
+  previousIds         PreviousGithubId[]
 
   @@unique([githubId, workspaceId])
   @@unique([githubUserId, workspaceId])
   @@index([workspaceId, nickname])
+  @@index([githubId])
+}
+
+model PreviousGithubId {
+  id       Int    @id @default(autoincrement())
+  githubId String
+  memberId Int
+  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([githubId, memberId])
+  @@index([githubId])
 }
 
 model Cohort {
@@ -151,11 +163,17 @@ model BlogPost {
   title       String
   publishedAt DateTime
   memberId    Int
+  cohort      Int?     // denormalized: primary cohort from member.memberCohorts
+  track       String?  // denormalized: member.track
+  workspaceId Int      // denormalized: member.workspaceId
   createdAt   DateTime @default(now())
   member      Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
   @@index([publishedAt])
   @@index([memberId, publishedAt])
+  @@index([workspaceId, publishedAt])
+  @@index([cohort, publishedAt])
+  @@index([track, publishedAt])
 }
 
 model ActivityLog {
