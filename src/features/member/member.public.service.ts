@@ -228,7 +228,7 @@ export function createMemberPublicService(deps: {
         ...(filters?.cohort != null ? { cohort: filters.cohort } : {}),
         ...(filters?.track ? { track: filters.track } : {}),
         ...(filters?.cursor ? { cursor: filters.cursor } : {}),
-        days: filters?.days ?? 30,
+        ...(filters?.days != null ? { days: filters.days } : {}),
         ...(filters?.limit != null ? { limit: filters.limit } : {}),
       });
 

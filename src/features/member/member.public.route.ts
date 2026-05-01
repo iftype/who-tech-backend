@@ -33,15 +33,14 @@ export function createMemberPublicRouter(service: MemberPublicService) {
     asyncHandler(async (req, res) => {
       const cohort = parseOptionalNumberQuery(req.query['cohort']);
       const track = typeof req.query['track'] === 'string' ? req.query['track'] : undefined;
-      const days = parseOptionalNumberQuery(req.query['days']) ?? 7;
+      const days = parseOptionalNumberQuery(req.query['days']);
       const cursor = typeof req.query['cursor'] === 'string' ? req.query['cursor'] : undefined;
-
-      const limit = days <= 7 ? 20 : 30;
+      const limit = days != null && days <= 7 ? 20 : 30;
 
       const result = await service.getFeed({
         ...(cohort !== undefined ? { cohort } : {}),
         ...(track ? { track } : {}),
-        days,
+        ...(days != null ? { days } : {}),
         limit,
         ...(cursor ? { cursor } : {}),
       });
