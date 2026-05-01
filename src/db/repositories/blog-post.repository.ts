@@ -103,7 +103,6 @@ export function createBlogPostRepository(db: PrismaClient) {
         cohort?: number;
         track?: string;
         days?: number;
-        role?: string;
         cursor?: string;
       },
     ) => {
@@ -120,27 +119,13 @@ export function createBlogPostRepository(db: PrismaClient) {
       const posts = await db.blogPost.findMany({
         where: {
           publishedAt: { gte: since },
-          member: {
-            workspaceId,
-            ...(filters?.cohort ? { memberCohorts: { some: { cohort: { number: filters.cohort } } } } : {}),
-            ...(filters?.role ? { memberCohorts: { some: { role: { name: filters.role } } } } : {}),
-            ...(filters?.track
-              ? {
-                  OR: [
-                    { track: filters.track },
-                    {
-                      track: null,
-                      submissions: {
-                        some: {
-                          status: { not: 'closed' },
-                          missionRepo: { track: filters.track },
-                        },
-                      },
-                    },
-                  ],
-                }
-              : {}),
-          },
+          workspaceId,
+          ...(filters?.cohort ? { cohort: filters.cohort } : {}),
+          ...(filters?.track
+            ? {
+                OR: [{ track: filters.track }, { track: null }],
+              }
+            : {}),
           ...(hasValidCursor ? { publishedAt: { lt: cursorDate } } : {}),
         },
         take: fetchLimit * 10,

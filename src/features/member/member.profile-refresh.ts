@@ -86,6 +86,8 @@ export async function refreshMemberProfileById(
       profileFetchedAt: new Date(),
       profileRefreshError,
     });
+
+    await memberRepo.syncPreviousGithubIds(id, updated.previousGithubIds);
   }
 
   const dominantTrack = computeDominantTrack(updated.submissions);
