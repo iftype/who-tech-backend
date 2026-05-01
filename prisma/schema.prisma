@@ -165,7 +165,7 @@ model BlogPost {
   memberId    Int
   cohort      Int?     // denormalized: primary cohort from member.memberCohorts
   track       String?  // denormalized: member.track
-    workspaceId Int?     // denormalized: member.workspaceId
+  workspaceId Int?     // denormalized: member.workspaceId
   createdAt   DateTime @default(now())
   member      Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
