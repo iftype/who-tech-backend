@@ -134,6 +134,7 @@ model CohortRepo {
   id            Int         @id @default(autoincrement())
   cohort        Int
   order         Int         @default(0)
+  level         Int?
   missionRepoId Int
   workspaceId   Int
   workspace     Workspace   @relation(fields: [workspaceId], references: [id])

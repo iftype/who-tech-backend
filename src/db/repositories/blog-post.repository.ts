@@ -155,13 +155,27 @@ export function createBlogPostRepository(db: PrismaClient) {
       const lastPost = result[result.length - 1];
       const nextCursor = lastPost ? `${lastPost.publishedAt.toISOString()}|${lastPost.id}` : null;
 
-      const countWhere = {
-        ...(since ? { publishedAt: { gte: since } } : {}),
-        workspaceId,
-        ...(filters?.cohort ? { cohort: filters.cohort } : {}),
-        ...(filters?.track ? { OR: [{ track: filters.track }, { track: null }] } : {}),
-      };
-      const totalCount = await db.blogPost.count({ where: countWhere });
+      const countRows = await db.blogPost.findMany({
+        where: {
+          ...(since ? { publishedAt: { gte: since } } : {}),
+          workspaceId,
+          ...(filters?.cohort ? { cohort: filters.cohort } : {}),
+          ...(filters?.track ? { OR: [{ track: filters.track }, { track: null }] } : {}),
+        },
+        orderBy: { publishedAt: 'desc' },
+        select: { id: true, publishedAt: true, member: { select: { githubId: true } } },
+      });
+
+      const totalMemberDayCount = new Map<string, number>();
+      let totalCount = 0;
+      for (const row of countRows) {
+        const day = row.publishedAt.toISOString().split('T')[0] ?? '';
+        const key = `${row.member.githubId}|${day}`;
+        const count = totalMemberDayCount.get(key) ?? 0;
+        if (count >= perDayLimit) continue;
+        totalMemberDayCount.set(key, count + 1);
+        totalCount++;
+      }
 
       return { posts: result, nextCursor, totalCount };
     },

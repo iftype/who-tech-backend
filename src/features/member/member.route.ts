@@ -164,5 +164,23 @@ export function createMemberRouter(service: MemberService) {
     }),
   );
 
+  router.delete(
+    '/:id/submissions/:submissionId',
+    asyncHandler(async (req, res) => {
+      const memberId = parseId(req.params['id']);
+      const submissionId = parseId(req.params['submissionId']);
+      await service.deleteSubmission(memberId, submissionId);
+      res.status(204).end();
+    }),
+  );
+
+  router.post(
+    '/:id/resync-submissions',
+    asyncHandler(async (req, res) => {
+      const result = await service.resyncMemberPRs(parseId(req.params['id']));
+      res.json(result);
+    }),
+  );
+
   return router;
 }

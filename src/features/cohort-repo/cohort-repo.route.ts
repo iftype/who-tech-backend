@@ -40,20 +40,30 @@ export function createCohortRepoRouter(service: CohortRepoService) {
   router.post(
     '/',
     asyncHandler(async (req, res) => {
-      const { cohort, missionRepoId, order } = req.body as { cohort: number; missionRepoId: number; order?: number };
+      const { cohort, missionRepoId, order, level } = req.body as {
+        cohort: number;
+        missionRepoId: number;
+        order?: number;
+        level?: number | null;
+      };
       if (!cohort || !missionRepoId) {
         res.status(400).json({ error: 'cohort and missionRepoId required' });
         return;
       }
-      res.status(201).json(await service.create({ cohort, missionRepoId, order: order ?? 0 }));
+      res.status(201).json(await service.create({ cohort, missionRepoId, order: order ?? 0, level: level ?? null }));
     }),
   );
 
   router.patch(
     '/:id',
     asyncHandler(async (req, res) => {
-      const { order } = req.body as { order: number };
-      res.json(await service.update(parseId(req.params['id']), { order }));
+      const { order, level } = req.body as { order?: number; level?: number | null };
+      res.json(
+        await service.update(parseId(req.params['id']), {
+          ...(order !== undefined ? { order } : {}),
+          ...(level !== undefined ? { level } : {}),
+        }),
+      );
     }),
   );
 

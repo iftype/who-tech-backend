@@ -37,7 +37,8 @@ export default function ArchiveTab() {
   const esRef = useRef<EventSource | null>(null);
   const [editingOrderId, setEditingOrderId] = useState<number | null>(null);
   const [editingOrderValue, setEditingOrderValue] = useState('');
-  const [levelFilter, setLevelFilter] = useState('');
+  const [editingLevelId, setEditingLevelId] = useState<number | null>(null);
+  const [editingLevelValue, setEditingLevelValue] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
 
   const cohortNum = cohort ? Number(cohort) : NaN;
@@ -59,6 +60,21 @@ export default function ArchiveTab() {
 
   const commonRepos = filteredRepos.filter((cr) => cr.missionRepo.tabCategory === 'common');
   const trackRepos = filteredRepos.filter((cr) => cr.missionRepo.tabCategory !== 'common');
+
+  const reposByLevel = useCallback(() => {
+    const map = new Map<number | null, CohortRepo[]>();
+    for (const cr of filteredRepos) {
+      const level = cr.level ?? null;
+      if (!map.has(level)) map.set(level, []);
+      map.get(level)!.push(cr);
+    }
+    const sortedLevels = [...map.keys()].sort((a, b) => {
+      if (a === null) return 1;
+      if (b === null) return -1;
+      return a - b;
+    });
+    return sortedLevels.map((level) => ({ level, repos: map.get(level)! }));
+  }, [filteredRepos]);
 
   const addLog = useCallback((type: LogEntry['type'], message: string) => {
     setLogs((prev) => [...prev, { ts: Date.now(), type, message }]);
@@ -162,6 +178,22 @@ export default function ArchiveTab() {
     },
   });
 
+  const updateLevelMutation = useMutation({
+    mutationFn: ({ id, level }: { id: number; level: number | null }) =>
+      apiFetch<CohortRepo>(`/admin/cohort-repos/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ level }),
+      }),
+    onSuccess: () => {
+      setEditingLevelId(null);
+      void queryClient.invalidateQueries({ queryKey: ['cohort-repos'] });
+    },
+    onError: (e) => {
+      showToast(e instanceof Error ? e.message : '레벨 변경 실패', 'error');
+      setEditingLevelId(null);
+    },
+  });
+
   const saveOrder = (cr: CohortRepo) => {
     const newOrder = Number(editingOrderValue);
     if (isNaN(newOrder)) {
@@ -173,6 +205,20 @@ export default function ArchiveTab() {
       return;
     }
     updateOrderMutation.mutate({ id: cr.id, order: newOrder });
+  };
+
+  const saveLevel = (cr: CohortRepo) => {
+    const raw = editingLevelValue.trim();
+    const newLevel = raw === '' ? null : Number(raw);
+    if (raw !== '' && isNaN(newLevel as number)) {
+      showToast('숫자를 입력하세요', 'error');
+      return;
+    }
+    if (newLevel === cr.level) {
+      setEditingLevelId(null);
+      return;
+    }
+    updateLevelMutation.mutate({ id: cr.id, level: newLevel });
   };
 
   const handleAddRepo = () => {
@@ -188,11 +234,6 @@ export default function ArchiveTab() {
   const availableRepos = allRepos
     .filter((r) => !existingRepoIds.has(r.id))
     .filter((r) => {
-      if (levelFilter) {
-        const filterLevel = Number(levelFilter);
-        const repoLevel = r.level ?? -1;
-        if (repoLevel !== filterLevel) return false;
-      }
       if (searchQuery.trim()) {
         const q = searchQuery.trim().toLowerCase();
         const nameMatch = r.name.toLowerCase().includes(q);
@@ -251,8 +292,32 @@ export default function ArchiveTab() {
       <td className="px-3 py-2 text-xs text-gray-600">
         {cr.missionRepo.track ?? '—'}
       </td>
-      <td className="px-3 py-2 text-xs text-gray-600">
-        {cr.missionRepo.level ?? '—'}
+      <td className="px-3 py-2">
+        {editingLevelId === cr.id ? (
+          <input
+            type="number"
+            value={editingLevelValue}
+            onChange={(e) => setEditingLevelValue(e.target.value)}
+            onBlur={() => saveLevel(cr)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') saveLevel(cr);
+              if (e.key === 'Escape') setEditingLevelId(null);
+            }}
+            className="border border-blue-300 rounded px-1 py-0.5 text-xs w-14 text-center focus:outline-none focus:ring-1 focus:ring-blue-400"
+            autoFocus
+          />
+        ) : (
+          <button
+            onClick={() => {
+              setEditingLevelId(cr.id);
+              setEditingLevelValue(cr.level != null ? String(cr.level) : '');
+            }}
+            className="text-xs text-gray-600 font-mono hover:text-blue-600 hover:underline px-1"
+            title="클릭하여 레벨 변경"
+          >
+            {cr.level ?? '—'}
+          </button>
+        )}
       </td>
       <td className="px-3 py-2">
         <button
@@ -344,25 +409,6 @@ export default function ArchiveTab() {
               className="border border-gray-300 rounded px-2 py-1.5 text-sm w-40"
             />
             <select
-              value={levelFilter}
-              onChange={(e) => {
-                setLevelFilter(e.target.value);
-                setSelectedRepoId('');
-              }}
-              className="border border-gray-300 rounded px-2 py-1.5 text-sm"
-            >
-              <option value="">모든 레벨</option>
-              {Array.from(
-                new Set(allRepos.map((r) => r.level).filter((l): l is number => l != null)),
-              )
-                .sort((a, b) => a - b)
-                .map((l) => (
-                  <option key={l} value={String(l)}>
-                    Lv {l}
-                  </option>
-                ))}
-            </select>
-            <select
               value={selectedRepoId}
               onChange={(e) => setSelectedRepoId(e.target.value)}
               className="border border-gray-300 rounded px-2 py-1.5 text-sm min-w-[200px]"
@@ -370,7 +416,7 @@ export default function ArchiveTab() {
               <option value="">레포 선택 ({availableRepos.length}개)</option>
               {availableRepos.map((r) => (
                 <option key={r.id} value={r.id}>
-                  {r.name} {r.track ? `(${r.track})` : ''} {r.level != null ? `Lv${r.level}` : ''}
+                  {r.name} {r.track ? `(${r.track})` : ''}
                 </option>
               ))}
             </select>
@@ -434,6 +480,36 @@ export default function ArchiveTab() {
               {filteredRepos.length === 0 && (
                 <div className="py-8 text-center text-gray-400 text-sm">
                   등록된 레포가 없습니다. 자동 채우기를 사용하거나 직접 추가하세요.
+                </div>
+              )}
+
+              {filteredRepos.length > 0 && (
+                <div className="space-y-4 mt-6">
+                  <h4 className="text-sm font-semibold text-gray-700">레벨별 레포</h4>
+                  {reposByLevel().map(({ level, repos }) => (
+                    <div key={level ?? 'null'}>
+                      <p className="text-xs font-medium text-gray-600 mb-1">
+                        {level !== null ? `Lv ${level}` : '미분류'}
+                        <span className="text-gray-400 font-normal ml-1">({repos.length}개)</span>
+                      </p>
+                      <div className="overflow-x-auto rounded border border-gray-200">
+                        <table className="w-full text-sm">
+                          <thead className="bg-gray-50 border-b border-gray-200">
+                            <tr>
+                              <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">순서</th>
+                              <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">레포</th>
+                              <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">트랙</th>
+                              <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">레벨</th>
+                              <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">작업</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-100">
+                            {repos.map(renderRepoRow)}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </>

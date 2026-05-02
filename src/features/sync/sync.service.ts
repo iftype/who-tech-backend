@@ -171,7 +171,58 @@ export function createSyncService(deps: {
     return { totalSynced, reposSynced };
   };
 
-  return { syncRepo, syncWorkspace, syncContinuousRepos, syncCohortRepoList };
+  const syncMemberPRs = async (
+    octokit: Octokit,
+    workspaceId: number,
+    githubId: string,
+    onProgress?: (step: { repo: string; done: number; total: number; synced: number }) => void,
+    signal?: AbortSignal,
+  ) => {
+    const workspace = await workspaceRepo.findByIdOrThrow(workspaceId);
+    const cohortRules: CohortRule[] = JSON.parse(workspace.cohortRules);
+    const repos = await missionRepoRepo.findMany({ workspaceId });
+    const activeRepos = repos.filter((r) => r.status === 'active');
+
+    let totalSynced = 0;
+    let reposSynced = 0;
+    for (let i = 0; i < activeRepos.length; i++) {
+      if (signal?.aborted) throw new Error('cancelled');
+      const repo = activeRepos[i]!;
+      try {
+        const { synced } = await syncRepo(
+          octokit,
+          workspaceId,
+          workspace.githubOrg,
+          {
+            id: repo.id,
+            name: repo.name,
+            track: repo.track,
+            lastSyncAt: repo.lastSyncAt,
+          },
+          cohortRules,
+          undefined,
+          signal,
+          githubId,
+        );
+        totalSynced += synced;
+        if (synced > 0) reposSynced++;
+        onProgress?.({ repo: repo.name, done: i + 1, total: activeRepos.length, synced });
+      } catch (err) {
+        if (err instanceof Error && err.message === 'cancelled') throw err;
+        const message = err instanceof Error ? err.message : String(err);
+        await activityLogService.addLog('sync_error', `Member Sync Failed: [${repo.name}] - ${message}`);
+        onProgress?.({ repo: `${repo.name} (failed)`, done: i + 1, total: activeRepos.length, synced: 0 });
+      }
+    }
+
+    if (totalSynced > 0) {
+      await activityLogService.addLog('sync', `Member PR Sync: [${githubId}] synced ${totalSynced} items`);
+    }
+
+    return { totalSynced, reposSynced };
+  };
+
+  return { syncRepo, syncWorkspace, syncContinuousRepos, syncCohortRepoList, syncMemberPRs };
 }
 
 export type SyncService = ReturnType<typeof createSyncService>;

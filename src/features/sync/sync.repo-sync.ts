@@ -197,16 +197,18 @@ export function createRepoSyncer(deps: {
     cohortRules: CohortRule[],
     onProgress?: (step: { total: number; processed: number; synced: number; percent: number; phase: string }) => void,
     signal?: AbortSignal,
+    targetGithubId?: string,
   ): Promise<{ synced: number; failures: { prNumber: number; prUrl: string; error: string }[] }> => {
     const isCommonMission = repo.track === null || repo.track === undefined;
-    const { submissions, bannedWords, ignoredDomains } = await fetchAndParse(
-      octokit,
-      workspaceId,
-      org,
-      repo,
-      cohortRules,
-      signal,
-    );
+    const {
+      submissions: allSubmissions,
+      bannedWords,
+      ignoredDomains,
+    } = await fetchAndParse(octokit, workspaceId, org, repo, cohortRules, signal);
+
+    const submissions = targetGithubId
+      ? allSubmissions.filter((s) => s.githubId.toLowerCase() === targetGithubId.toLowerCase())
+      : allSubmissions;
 
     const total = submissions.length;
     const profileCache = new Map<string, ProfileCacheEntry>();

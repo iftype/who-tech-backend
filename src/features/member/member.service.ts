@@ -11,14 +11,19 @@ import { fetchUserProfile, detectCohort } from '../sync/github.service.js';
 import { toMemberResponse } from './member.response.js';
 import { refreshMemberProfileById } from './member.profile-refresh.js';
 
+import type { SubmissionRepository } from '../../db/repositories/submission.repository.js';
+import type { SyncService } from '../sync/sync.service.js';
+
 export function createMemberService(deps: {
   memberRepo: MemberRepository;
   blogPostRepo: BlogPostRepository;
   bannedWordRepo: BannedWordRepository;
   workspaceService: WorkspaceService;
   octokit: Octokit;
+  submissionRepo: SubmissionRepository;
+  syncService: SyncService;
 }) {
-  const { memberRepo, blogPostRepo, bannedWordRepo, workspaceService, octokit } = deps;
+  const { memberRepo, blogPostRepo, bannedWordRepo, workspaceService, octokit, submissionRepo, syncService } = deps;
 
   return {
     listMembers: async (filters?: {
@@ -277,6 +282,23 @@ export function createMemberService(deps: {
     deleteAllMembers: async () => {
       const workspace = await workspaceService.getOrThrow();
       return memberRepo.deleteAllWithRelations(workspace.id);
+    },
+
+    deleteSubmission: async (memberId: number, submissionId: number) => {
+      const member = await memberRepo.findByIdWithRelations(memberId);
+      if (!member) throw new Error('member not found');
+      const submission = member.submissions.find((s) => s.id === submissionId);
+      if (!submission) throw new Error('submission not found');
+      await submissionRepo.deleteById(submissionId);
+      return { success: true };
+    },
+
+    resyncMemberPRs: async (id: number) => {
+      const member = await memberRepo.findByIdWithRelations(id);
+      if (!member) throw new Error('member not found');
+      const workspace = await workspaceService.getOrThrow();
+      const result = await syncService.syncMemberPRs(octokit, workspace.id, member.githubId);
+      return result;
     },
 
     recalculateMemberCohorts: async (id: number) => {

@@ -44,8 +44,9 @@ export default function MemberTable({ members, onRefresh }: Props) {
   const [cohortModal, setCohortModal] = useState<Member | null>(null);
   const [newCohortInput, setNewCohortInput] = useState('');
   const [refreshing, setRefreshing] = useState<number | null>(null);
-  const [deleting, setDeleting] = useState<number | null>(null);
+  const [deleting] = useState<number | null>(null);
   const [recalculating, setRecalculating] = useState<number | null>(null);
+  const [resyncing, setResyncing] = useState<number | null>(null);
   const [cooldowns, setCooldowns] = useState<Record<number, number>>(loadCooldowns);
 
   const [editCell, setEditCell] = useState<{ memberId: number; field: 'manualNickname' | 'blog' | 'track' } | null>(null);
@@ -179,17 +180,34 @@ export default function MemberTable({ members, onRefresh }: Props) {
     } finally { setRefreshing(null); }
   };
 
-  const deleteMember = async (member: Member) => {
-    if (!confirm(`${member.githubId} 삭제하시겠습니까?`)) return;
-    setDeleting(member.id);
-    try {
-      await apiFetch(`/admin/members/${member.id}`, { method: 'DELETE' });
-      void queryClient.invalidateQueries({ queryKey: ['members'] });
+  const deleteMemberMutation = useMutation({
+    mutationFn: (memberId: number) => apiFetch(`/admin/members/${memberId}`, { method: 'DELETE' }),
+    onMutate: async (memberId) => {
+      await queryClient.cancelQueries({ queryKey: ['members'] });
+      const previousMembers = queryClient.getQueryData<Member[]>(['members']);
+      queryClient.setQueryData(['members'], (old: Member[] | undefined) =>
+        old?.filter((m) => m.id !== memberId) ?? []
+      );
+      return { previousMembers };
+    },
+    onError: (_err, _memberId, context) => {
+      if (context?.previousMembers) {
+        queryClient.setQueryData(['members'], context.previousMembers);
+      }
+      showToast('삭제 실패', 'error');
+    },
+    onSuccess: () => {
       showToast('삭제 완료');
       onRefresh();
-    } catch (e) {
-      showToast(e instanceof Error ? e.message : '삭제 실패', 'error');
-    } finally { setDeleting(null); }
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: ['members'] });
+    },
+  });
+
+  const deleteMember = (member: Member) => {
+    if (!confirm(`${member.githubId} 삭제하시겠습니까?`)) return;
+    deleteMemberMutation.mutate(member.id);
   };
 
   const recalculateCohorts = async (member: Member) => {
@@ -202,6 +220,18 @@ export default function MemberTable({ members, onRefresh }: Props) {
     } catch (e) {
       showToast(e instanceof Error ? e.message : '기수 재계산 실패', 'error');
     } finally { setRecalculating(null); }
+  };
+
+  const resyncSubmissions = async (member: Member) => {
+    if (!confirm(`${member.githubId}의 PR을 모든 레포지토리에서 재수집합니다. 계속하시겠습니까?`)) return;
+    setResyncing(member.id);
+    try {
+      const result = await apiFetch<{ totalSynced: number }>(`/admin/members/${member.id}/resync-submissions`, { method: 'POST' });
+      showToast(`${member.githubId} PR 재수집 완료 (${result.totalSynced}개)`);
+      onRefresh();
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'PR 재수집 실패', 'error');
+    } finally { setResyncing(null); }
   };
 
   const openBlogModal = async (member: Member) => {
@@ -342,6 +372,7 @@ export default function MemberTable({ members, onRefresh }: Props) {
                 <td className="px-1.5 py-1">
                   <div className="flex gap-0.5">
                     <button onClick={() => void refreshProfile(m)} disabled={refreshing === m.id || !!(cooldowns[m.id] && cooldowns[m.id] > 0)} className="text-[10px] text-gray-500 hover:text-blue-600 disabled:opacity-40 px-0.5 min-w-[20px]" title={cooldowns[m.id] ? `${cooldowns[m.id]}초 후 가능` : '프로필 새로고침'}>{refreshing === m.id ? '⟳' : cooldowns[m.id] ? `${cooldowns[m.id]}s` : '↺'}</button>
+                    <button onClick={() => void resyncSubmissions(m)} disabled={resyncing === m.id} className="text-[10px] text-gray-500 hover:text-green-600 disabled:opacity-40 px-0.5" title="PR 재수집">{resyncing === m.id ? '⟳' : '↻'}</button>
                     <button onClick={() => void recalculateCohorts(m)} disabled={recalculating === m.id} className="text-[10px] text-gray-500 hover:text-amber-600 disabled:opacity-40 px-0.5" title="기수 재계산">{recalculating === m.id ? '⟳' : '⚡'}</button>
                     <button onClick={() => void deleteMember(m)} disabled={deleting === m.id} className="text-[10px] text-gray-400 hover:text-red-500 disabled:opacity-40 px-0.5" title="삭제">✕</button>
                   </div>
@@ -357,12 +388,32 @@ export default function MemberTable({ members, onRefresh }: Props) {
         {prModal && (
           <div className="space-y-2 max-h-[60vh] overflow-y-auto">
             {prModal.submissions.length === 0 ? <p className="text-gray-400 text-sm">제출 내역 없음</p> : prModal.submissions.map((s) => (
-              <div key={s.id} className="border border-gray-100 rounded p-2">
-                <div className="flex items-center gap-2">
-                  <a href={s.prUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline">#{s.prNumber} {s.title}</a>
-                  <span className={`text-xs px-1.5 py-0.5 rounded font-medium border ${s.status === 'merged' ? 'bg-purple-100 text-purple-700 border-purple-200' : s.status === 'open' ? 'bg-green-100 text-green-700 border-green-200' : 'bg-gray-100 text-gray-500 border-gray-200'}`}>{s.status}</span>
+              <div key={s.id} className="border border-gray-100 rounded p-2 flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <a href={s.prUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline">#{s.prNumber} {s.title}</a>
+                    <span className={`text-xs px-1.5 py-0.5 rounded font-medium border ${s.status === 'merged' ? 'bg-purple-100 text-purple-700 border-purple-200' : s.status === 'open' ? 'bg-green-100 text-green-700 border-green-200' : 'bg-gray-100 text-gray-500 border-gray-200'}`}>{s.status}</span>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-0.5">{s.missionRepo.name} · {new Date(s.submittedAt).toLocaleDateString('ko-KR')}</p>
                 </div>
-                <p className="text-xs text-gray-400 mt-0.5">{s.missionRepo.name} · {new Date(s.submittedAt).toLocaleDateString('ko-KR')}</p>
+                <button
+                  onClick={() => {
+                    if (confirm(`PR #${s.prNumber} ${s.title}을(를) 삭제하시겠습니까?`)) {
+                      apiFetch(`/admin/members/${prModal.member.id}/submissions/${s.id}`, { method: 'DELETE' })
+                        .then(() => {
+                          showToast('PR 삭제 완료');
+                          setPrModal({ member: prModal.member, submissions: prModal.submissions.filter((sub) => sub.id !== s.id) });
+                          void queryClient.invalidateQueries({ queryKey: ['members'] });
+                          onRefresh();
+                        })
+                        .catch((e) => showToast(e instanceof Error ? e.message : '삭제 실패', 'error'));
+                    }
+                  }}
+                  className="text-xs text-gray-400 hover:text-red-500 px-1"
+                  title="PR 삭제"
+                >
+                  ✕
+                </button>
               </div>
             ))}
           </div>
