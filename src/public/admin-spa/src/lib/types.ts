@@ -111,13 +111,13 @@ export interface CohortRepo {
   id: number;
   cohort: number;
   order: number;
+  level: number | null;
   missionRepoId: number;
   missionRepo: {
     id: number;
     name: string;
     repoUrl: string;
     track: string | null;
-    level: number | null;
     tabCategory: string;
   };
 }

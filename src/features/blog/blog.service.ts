@@ -2,6 +2,7 @@ import type { MemberRepository } from '../../db/repositories/member.repository.j
 import type { BlogPostRepository } from '../../db/repositories/blog-post.repository.js';
 import { HttpError } from '../../shared/http.js';
 import { buildCohortList } from '../../shared/member-cohort.js';
+import { computeDominantTrack } from '../../shared/member-track.js';
 import { fetchRSSItems, errorMessage } from './blog.rss.js';
 
 export type { BlogSyncFailure, BlogSyncProgress, RssCheckResult } from './blog.rss.js';
@@ -59,6 +60,8 @@ export function createBlogService(deps: { memberRepo: MemberRepository; blogPost
       for (const member of members) {
         const cohorts = buildCohortList(member.memberCohorts);
         const primaryCohort = cohorts[0]?.cohort ?? null;
+        const inferredTrack = computeDominantTrack(member.submissions);
+        const memberTrack = member.track ?? inferredTrack ?? null;
 
         const result = await fetchRSSItems(member.blog!);
 
@@ -106,14 +109,14 @@ export function createBlogService(deps: { memberRepo: MemberRepository; blogPost
                 publishedAt,
                 memberId: member.id,
                 cohort: primaryCohort,
-                track: member.track,
+                track: memberTrack,
                 workspaceId,
               },
               update: {
                 title: item.title,
                 publishedAt,
                 cohort: primaryCohort,
-                track: member.track,
+                track: memberTrack,
               },
             });
             synced++;

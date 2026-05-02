@@ -134,6 +134,7 @@ model CohortRepo {
   id            Int         @id @default(autoincrement())
   cohort        Int
   order         Int         @default(0)
+  level         Int?
   missionRepoId Int
   workspaceId   Int
   workspace     Workspace   @relation(fields: [workspaceId], references: [id])
@@ -165,7 +166,7 @@ model BlogPost {
   memberId    Int
   cohort      Int?     // denormalized: primary cohort from member.memberCohorts
   track       String?  // denormalized: member.track
-    workspaceId Int?     // denormalized: member.workspaceId
+  workspaceId Int?     // denormalized: member.workspaceId
   createdAt   DateTime @default(now())
   member      Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
 

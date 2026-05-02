@@ -21,10 +21,9 @@ export function createArchiveService(deps: {
         return { markdown: `# ${cohort}기 아카이브\n\n등록된 레포가 없습니다.\n` };
       }
 
-      // Level별 레포 그룹핑
       const levelMap = new Map<number | null, typeof cohortRepos>();
       for (const cr of cohortRepos) {
-        const level = cr.missionRepo.level;
+        const level = cr.level;
         if (!levelMap.has(level)) levelMap.set(level, []);
         levelMap.get(level)!.push(cr);
       }

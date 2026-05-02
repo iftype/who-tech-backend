@@ -80,7 +80,15 @@ const syncService = createSyncService({
   cohortRepoRepo,
   activityLogService,
 });
-const memberService = createMemberService({ memberRepo, blogPostRepo, bannedWordRepo, workspaceService, octokit });
+const memberService = createMemberService({
+  memberRepo,
+  blogPostRepo,
+  bannedWordRepo,
+  workspaceService,
+  octokit,
+  submissionRepo,
+  syncService,
+});
 const repoService = createRepoService({ missionRepoRepo, workspaceService, syncService, octokit });
 const blogService = createBlogService({ memberRepo, blogPostRepo });
 const cohortRepoService = createCohortRepoService({ cohortRepoRepo, missionRepoRepo, workspaceService });

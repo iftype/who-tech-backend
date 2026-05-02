@@ -109,7 +109,7 @@ export function createMemberPublicService(deps: {
         const levelMap = new Map<number | null, ArchiveRepo[]>();
         for (const cr of cohortRepos) {
           processedRepoIds.add(cr.missionRepoId);
-          const level = cr.missionRepo.level;
+          const level = cr.level;
           if (!levelMap.has(level)) levelMap.set(level, []);
           // Precourse check first (highest priority)
           let tabCategory: string;

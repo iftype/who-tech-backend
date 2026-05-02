@@ -24,7 +24,7 @@ export function createCohortRepoService(deps: {
       return rows.map((r) => r.cohort);
     },
 
-    create: async (input: { cohort: number; missionRepoId: number; order: number }) => {
+    create: async (input: { cohort: number; missionRepoId: number; order: number; level?: number | null }) => {
       const workspace = await workspaceService.getOrThrow();
       try {
         return await cohortRepoRepo.create({ ...input, workspaceId: workspace.id });
@@ -36,7 +36,7 @@ export function createCohortRepoService(deps: {
       }
     },
 
-    update: (id: number, input: { order: number }) => cohortRepoRepo.update(id, input),
+    update: (id: number, input: { order?: number; level?: number | null }) => cohortRepoRepo.update(id, input),
 
     delete: (id: number) => cohortRepoRepo.delete(id),
 
@@ -72,6 +72,7 @@ export function createCohortRepoService(deps: {
         missionRepoId: r.id,
         order: maxOrder + 1 + i,
         workspaceId: workspace.id,
+        level: r.level ?? null,
       }));
 
       await cohortRepoRepo.createMany(rows);
