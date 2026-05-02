@@ -108,13 +108,15 @@ export function createBlogPostRepository(db: PrismaClient) {
       },
     ) => {
       const since = filters?.days != null ? new Date(Date.now() - filters.days * 24 * 60 * 60 * 1000) : null;
+      const perDayLimit = 3;
       const fetchLimit = filters?.limit ?? 50;
+      const bufferMultiplier = 4;
 
       const [cursorDateStr, cursorId] = (filters?.cursor ?? '').split('|');
       const cursorDate = cursorDateStr ? new Date(cursorDateStr) : null;
       const hasValidCursor = cursorDate !== null && !isNaN(cursorDate.getTime());
 
-      const posts = await db.blogPost.findMany({
+      const rawPosts = await db.blogPost.findMany({
         where: {
           ...(since ? { publishedAt: { gte: since } } : {}),
           workspaceId,
@@ -130,24 +132,49 @@ export function createBlogPostRepository(db: PrismaClient) {
               }
             : {}),
         },
-        take: fetchLimit,
+        take: fetchLimit * bufferMultiplier,
         orderBy: { publishedAt: 'desc' },
         select: feedPostSelect,
       });
 
-      const lastPost = posts[posts.length - 1];
+      const memberDayCount = new Map<string, number>();
+      const filtered: FeedPost[] = [];
+      for (const post of rawPosts) {
+        const day = post.publishedAt.toISOString().split('T')[0] ?? '';
+        const key = `${post.member.githubId}|${day}`;
+        const count = memberDayCount.get(key) ?? 0;
+        if (count >= perDayLimit) continue;
+        memberDayCount.set(key, count + 1);
+        filtered.push(post);
+      }
+
+      const result = filtered.slice(0, fetchLimit);
+      const lastPost = result[result.length - 1];
       const nextCursor = lastPost ? `${lastPost.publishedAt.toISOString()}|${lastPost.id}` : null;
 
-      const totalCount = await db.blogPost.count({
+      const countRows = await db.blogPost.findMany({
         where: {
           ...(since ? { publishedAt: { gte: since } } : {}),
           workspaceId,
           ...(filters?.cohort ? { cohort: filters.cohort } : {}),
           ...(filters?.track ? { OR: [{ track: filters.track }, { track: null }] } : {}),
         },
+        orderBy: { publishedAt: 'desc' },
+        select: { id: true, publishedAt: true, member: { select: { githubId: true } } },
       });
 
-      return { posts, nextCursor, totalCount };
+      const totalMemberDayCount = new Map<string, number>();
+      let totalCount = 0;
+      for (const row of countRows) {
+        const day = row.publishedAt.toISOString().split('T')[0] ?? '';
+        const key = `${row.member.githubId}|${day}`;
+        const count = totalMemberDayCount.get(key) ?? 0;
+        if (count >= perDayLimit) continue;
+        totalMemberDayCount.set(key, count + 1);
+        totalCount++;
+      }
+
+      return { posts: result, nextCursor, totalCount };
     },
 
     findSince: (workspaceId: number, since: Date) =>
