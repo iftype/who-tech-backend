@@ -149,8 +149,8 @@ export function createBlogPostRepository(db: PrismaClient) {
       }
 
       const result = filtered.slice(0, fetchLimit);
-      const lastPost = result[result.length - 1];
-      const nextCursor = lastPost ? `${lastPost.publishedAt.toISOString()}|${lastPost.id}` : null;
+      const lastRawPost = rawPosts[rawPosts.length - 1];
+      const nextCursor = lastRawPost ? `${lastRawPost.publishedAt.toISOString()}|${lastRawPost.id}` : null;
 
       const countRows = await db.blogPost.findMany({
         where: {
