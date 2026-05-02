@@ -108,7 +108,6 @@ export function createBlogPostRepository(db: PrismaClient) {
       },
     ) => {
       const since = filters?.days != null ? new Date(Date.now() - filters.days * 24 * 60 * 60 * 1000) : null;
-
       const fetchLimit = filters?.limit ?? 50;
 
       const [cursorDateStr, cursorId] = (filters?.cursor ?? '').split('|');
@@ -131,14 +130,12 @@ export function createBlogPostRepository(db: PrismaClient) {
               }
             : {}),
         },
-        take: fetchLimit * 10,
+        take: fetchLimit,
         orderBy: { publishedAt: 'desc' },
         select: feedPostSelect,
       });
 
-      const result = posts.slice(0, fetchLimit);
-
-      const lastPost = result[result.length - 1];
+      const lastPost = posts[posts.length - 1];
       const nextCursor = lastPost ? `${lastPost.publishedAt.toISOString()}|${lastPost.id}` : null;
 
       const totalCount = await db.blogPost.count({
@@ -150,7 +147,7 @@ export function createBlogPostRepository(db: PrismaClient) {
         },
       });
 
-      return { posts: result, nextCursor, totalCount };
+      return { posts, nextCursor, totalCount };
     },
 
     findSince: (workspaceId: number, since: Date) =>
