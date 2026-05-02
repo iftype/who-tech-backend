@@ -109,7 +109,6 @@ export function createBlogPostRepository(db: PrismaClient) {
     ) => {
       const since = filters?.days != null ? new Date(Date.now() - filters.days * 24 * 60 * 60 * 1000) : null;
 
-      const perDayLimit = 3;
       const fetchLimit = filters?.limit ?? 50;
 
       const [cursorDateStr, cursorId] = (filters?.cursor ?? '').split('|');
@@ -137,45 +136,19 @@ export function createBlogPostRepository(db: PrismaClient) {
         select: feedPostSelect,
       });
 
-      // per-member-per-day 제한 적용
-      const memberDayCount = new Map<string, number>();
-      const filtered: FeedPost[] = [];
-      for (const post of posts) {
-        const day = post.publishedAt.toISOString().split('T')[0] ?? '';
-        const key = `${post.member.githubId}|${day}`;
-        const count = memberDayCount.get(key) ?? 0;
-        if (count >= perDayLimit) continue;
-        memberDayCount.set(key, count + 1);
-        filtered.push(post);
-      }
-
-      // 이미 publishedAt desc 로 정렬되어 있으므로 slice 만
-      const result = filtered.slice(0, fetchLimit);
+      const result = posts.slice(0, fetchLimit);
 
       const lastPost = result[result.length - 1];
       const nextCursor = lastPost ? `${lastPost.publishedAt.toISOString()}|${lastPost.id}` : null;
 
-      const countRows = await db.blogPost.findMany({
+      const totalCount = await db.blogPost.count({
         where: {
           ...(since ? { publishedAt: { gte: since } } : {}),
           workspaceId,
           ...(filters?.cohort ? { cohort: filters.cohort } : {}),
           ...(filters?.track ? { OR: [{ track: filters.track }, { track: null }] } : {}),
         },
-        orderBy: { publishedAt: 'desc' },
-        select: { id: true, publishedAt: true, member: { select: { githubId: true } } },
       });
-
-      const totalMemberDayCount = new Map<string, number>();
-      let totalCount = 0;
-      for (const row of countRows) {
-        const day = row.publishedAt.toISOString().split('T')[0] ?? '';
-        const key = `${row.member.githubId}|${day}`;
-        const count = totalMemberDayCount.get(key) ?? 0;
-        if (count >= perDayLimit) continue;
-        totalMemberDayCount.set(key, count + 1);
-        totalCount++;
-      }
 
       return { posts: result, nextCursor, totalCount };
     },

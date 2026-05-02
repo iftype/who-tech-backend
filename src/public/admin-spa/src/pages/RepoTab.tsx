@@ -8,7 +8,7 @@ import type { MissionRepo } from '../lib/types.js';
 type StatusFilter = '' | 'active' | 'candidate' | 'excluded';
 type TabCategoryFilter = '' | 'base' | 'common' | 'precourse' | 'excluded';
 
-type EditableField = 'track' | 'type' | 'tabCategory' | 'level' | 'cohorts' | 'description';
+type EditableField = 'track' | 'type' | 'tabCategory' | 'cohorts' | 'description';
 type EditingCell = { repoId: number; field: EditableField } | null;
 
 interface SelectOption {
@@ -258,9 +258,8 @@ function RepoTable({
               <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">타입</th>
               <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">카테고리</th>
               <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">상태</th>
-              <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">모드</th>
-              <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">Lv</th>
-              <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">기수</th>
+                  <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">모드</th>
+                  <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">기수</th>
               <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">설명</th>
               <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">마지막싱크</th>
               <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">제출</th>
@@ -321,13 +320,6 @@ function RepoTable({
                     >
                       {r.syncMode === 'continuous' ? '연속' : '1회'}
                     </button>
-                  </td>
-                  <td className={cellClass} onClick={() => onStartEdit(r.id, 'level')}>
-                    {isEditing(r.id, 'level') ? (
-                      <EditableTextCell value={r.level != null ? String(r.level) : ''} type="number" placeholder="—" onSave={(v) => onSave(r, 'level', v)} onCancel={onCancel} saving={isSaving(r.id, 'level')} />
-                    ) : (
-                      <span className="text-xs text-gray-600">{r.level ?? '—'}</span>
-                    )}
                   </td>
                   <td className={cellClass} onClick={() => onStartEdit(r.id, 'cohorts')}>
                     {isEditing(r.id, 'cohorts') ? (
@@ -472,14 +464,7 @@ export default function RepoTab() {
     (repo: MissionRepo, field: EditableField, rawValue: string) => {
       let value: string | number | number[] | null;
 
-      if (field === 'level') {
-        value = rawValue === '' ? null : Number(rawValue);
-        if (value !== null && (Number.isNaN(value) || !Number.isInteger(value))) {
-          showToast('숫자를 입력하세요', 'error');
-          setEditingCell(null);
-          return;
-        }
-      } else if (field === 'cohorts') {
+      if (field === 'cohorts') {
         const trimmed = rawValue.trim();
         if (trimmed === '') {
           value = [];

@@ -56,12 +56,7 @@ export function createCohortRepoService(deps: {
       const toAdd = matching.filter((r) => !existingIds.has(r.id));
       if (!toAdd.length) return { added: 0 };
 
-      // level asc → name asc 순으로 order 자동 부여
-      const sorted = [...toAdd].sort((a, b) => {
-        const la = a.level ?? 999;
-        const lb = b.level ?? 999;
-        return la !== lb ? la - lb : a.name.localeCompare(b.name);
-      });
+      const sorted = [...toAdd].sort((a, b) => a.name.localeCompare(b.name));
 
       // 기존 마지막 order 다음부터
       const existing2 = await cohortRepoRepo.findByCohort(workspace.id, cohort);
@@ -72,7 +67,7 @@ export function createCohortRepoService(deps: {
         missionRepoId: r.id,
         order: maxOrder + 1 + i,
         workspaceId: workspace.id,
-        level: r.level ?? null,
+        level: null,
       }));
 
       await cohortRepoRepo.createMany(rows);

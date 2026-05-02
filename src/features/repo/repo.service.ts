@@ -91,7 +91,6 @@ export function createRepoService(deps: {
         syncMode: input.syncMode ?? 'continuous',
         candidateReason: input.candidateReason ?? null,
         ...(input.cohorts?.length ? { cohorts: JSON.stringify(input.cohorts) } : {}),
-        ...(input.level !== undefined ? { level: input.level } : {}),
         workspaceId: workspace.id,
       });
       return toResponse(repo);
@@ -122,7 +121,6 @@ export function createRepoService(deps: {
         ...(input.cohorts !== undefined
           ? { cohorts: input.cohorts === null ? null : JSON.stringify(input.cohorts) }
           : {}),
-        ...(input.level !== undefined ? { level: input.level } : {}),
       });
       return toResponse(repo);
     },
