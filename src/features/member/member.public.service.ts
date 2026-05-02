@@ -101,8 +101,11 @@ export function createMemberPublicService(deps: {
 
       const processedRepoIds = new Set<number>();
 
-      // Build archive only for cohorts with defined repos in CohortRepo
-      for (const { cohort } of cohorts) {
+      const crewOnlyCohorts = cohorts.filter(
+        (c) => c.roles.includes('crew') && !c.roles.some((r) => r === 'coach' || r === 'reviewer'),
+      );
+
+      for (const { cohort } of crewOnlyCohorts) {
         const cohortRepos = await cohortRepoRepo.findByCohort(workspace.id, cohort);
         if (cohortRepos.length === 0) continue;
 
