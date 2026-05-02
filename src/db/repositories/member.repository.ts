@@ -48,7 +48,7 @@ const memberDetailInclude = Prisma.validator<Prisma.MemberInclude>()({
       submittedAt: true,
       memberId: true,
       missionRepoId: true,
-      missionRepo: { select: { id: true, name: true, track: true, level: true, tabCategory: true } },
+      missionRepo: { select: { id: true, name: true, track: true, tabCategory: true } },
     },
   },
 });

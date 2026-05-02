@@ -7,7 +7,6 @@ export interface MissionRepo {
   tabCategory: string;
   status: string;
   syncMode: string;
-  level: number | null;
   cohorts: number[];
   description: string | null;
   lastSyncAt: string | null;

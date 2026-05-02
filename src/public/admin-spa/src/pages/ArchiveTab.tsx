@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '../lib/api.js';
 import { showToast } from '../components/ui/Toast.js';
@@ -37,8 +37,10 @@ export default function ArchiveTab() {
   const esRef = useRef<EventSource | null>(null);
   const [editingOrderId, setEditingOrderId] = useState<number | null>(null);
   const [editingOrderValue, setEditingOrderValue] = useState('');
+  const orderInputRef = useRef<HTMLInputElement>(null);
   const [editingLevelId, setEditingLevelId] = useState<number | null>(null);
   const [editingLevelValue, setEditingLevelValue] = useState('');
+  const levelInputRef = useRef<HTMLInputElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
   const cohortNum = cohort ? Number(cohort) : NaN;
@@ -221,6 +223,18 @@ export default function ArchiveTab() {
     updateLevelMutation.mutate({ id: cr.id, level: newLevel });
   };
 
+  useEffect(() => {
+    if (editingOrderId != null) {
+      setTimeout(() => orderInputRef.current?.focus(), 0);
+    }
+  }, [editingOrderId]);
+
+  useEffect(() => {
+    if (editingLevelId != null) {
+      setTimeout(() => levelInputRef.current?.focus(), 0);
+    }
+  }, [editingLevelId]);
+
   const handleAddRepo = () => {
     const id = Number(selectedRepoId);
     if (!id || isNaN(id)) {
@@ -255,16 +269,15 @@ export default function ArchiveTab() {
       <td className="px-3 py-2">
         {editingOrderId === cr.id ? (
           <input
+            ref={orderInputRef}
             type="number"
             value={editingOrderValue}
             onChange={(e) => setEditingOrderValue(e.target.value)}
-            onBlur={() => saveOrder(cr)}
             onKeyDown={(e) => {
               if (e.key === 'Enter') saveOrder(cr);
               if (e.key === 'Escape') setEditingOrderId(null);
             }}
             className="border border-blue-300 rounded px-1 py-0.5 text-xs w-14 text-center focus:outline-none focus:ring-1 focus:ring-blue-400"
-            autoFocus
           />
         ) : (
           <button
@@ -295,16 +308,15 @@ export default function ArchiveTab() {
       <td className="px-3 py-2">
         {editingLevelId === cr.id ? (
           <input
+            ref={levelInputRef}
             type="number"
             value={editingLevelValue}
             onChange={(e) => setEditingLevelValue(e.target.value)}
-            onBlur={() => saveLevel(cr)}
             onKeyDown={(e) => {
               if (e.key === 'Enter') saveLevel(cr);
               if (e.key === 'Escape') setEditingLevelId(null);
             }}
             className="border border-blue-300 rounded px-1 py-0.5 text-xs w-14 text-center focus:outline-none focus:ring-1 focus:ring-blue-400"
-            autoFocus
           />
         ) : (
           <button

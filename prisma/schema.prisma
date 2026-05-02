@@ -119,7 +119,6 @@ model MissionRepo {
   status          String       @default("active")
   candidateReason String?
   cohorts         String?
-  level           Int?
   syncMode        String       @default("continuous")
   lastSyncAt      DateTime?
   workspaceId     Int

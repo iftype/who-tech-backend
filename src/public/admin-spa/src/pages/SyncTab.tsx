@@ -348,7 +348,6 @@ export default function SyncTab() {
                 <tr>
                   <th className="text-left font-medium text-gray-500 px-2 py-1">레포</th>
                   <th className="text-left font-medium text-gray-500 px-2 py-1">트랙</th>
-                  <th className="text-left font-medium text-gray-500 px-2 py-1">Lv</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -356,7 +355,6 @@ export default function SyncTab() {
                   <tr key={r.id} className="hover:bg-gray-50">
                     <td className="px-2 py-1 font-medium text-gray-700 truncate max-w-[200px]">{r.name}</td>
                     <td className="px-2 py-1 text-gray-500">{r.track ?? '—'}</td>
-                    <td className="px-2 py-1 text-gray-500">{r.level ?? '—'}</td>
                   </tr>
                 ))}
               </tbody>
