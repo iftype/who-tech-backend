@@ -110,47 +110,58 @@ export function createBlogPostRepository(db: PrismaClient) {
       const since = filters?.days != null ? new Date(Date.now() - filters.days * 24 * 60 * 60 * 1000) : null;
       const perDayLimit = 3;
       const fetchLimit = filters?.limit ?? 50;
-      const bufferMultiplier = 4;
+      const maxLoops = 10;
 
-      const [cursorDateStr, cursorId] = (filters?.cursor ?? '').split('|');
-      const cursorDate = cursorDateStr ? new Date(cursorDateStr) : null;
-      const hasValidCursor = cursorDate !== null && !isNaN(cursorDate.getTime());
+      let currentCursor = filters?.cursor;
+      const allFiltered: FeedPost[] = [];
+      let lastRawPost: FeedPost | undefined;
+      const globalMemberDayCount = new Map<string, number>();
 
-      const rawPosts = await db.blogPost.findMany({
-        where: {
-          ...(since ? { publishedAt: { gte: since } } : {}),
-          workspaceId,
-          ...(filters?.cohort ? { cohort: filters.cohort } : {}),
-          ...(filters?.track
-            ? {
-                OR: [{ track: filters.track }, { track: null }],
-              }
-            : {}),
-          ...(hasValidCursor
-            ? {
-                OR: [{ publishedAt: { lt: cursorDate } }, { publishedAt: cursorDate, id: { lt: Number(cursorId) } }],
-              }
-            : {}),
-        },
-        take: fetchLimit * bufferMultiplier,
-        orderBy: { publishedAt: 'desc' },
-        select: feedPostSelect,
-      });
+      for (let i = 0; i < maxLoops && allFiltered.length < fetchLimit; i++) {
+        const [cursorDateStr, cursorId] = (currentCursor ?? '').split('|');
+        const cursorDate = cursorDateStr ? new Date(cursorDateStr) : null;
+        const hasValidCursor = cursorDate !== null && !isNaN(cursorDate.getTime());
 
-      const memberDayCount = new Map<string, number>();
-      const filtered: FeedPost[] = [];
-      for (const post of rawPosts) {
-        const day = post.publishedAt.toISOString().split('T')[0] ?? '';
-        const key = `${post.member.githubId}|${day}`;
-        const count = memberDayCount.get(key) ?? 0;
-        if (count >= perDayLimit) continue;
-        memberDayCount.set(key, count + 1);
-        filtered.push(post);
+        const rawPosts = await db.blogPost.findMany({
+          where: {
+            ...(since ? { publishedAt: { gte: since } } : {}),
+            workspaceId,
+            ...(filters?.cohort ? { cohort: filters.cohort } : {}),
+            ...(filters?.track
+              ? {
+                  OR: [{ track: filters.track }, { track: null }],
+                }
+              : {}),
+            ...(hasValidCursor
+              ? {
+                  OR: [{ publishedAt: { lt: cursorDate } }, { publishedAt: cursorDate, id: { lt: Number(cursorId) } }],
+                }
+              : {}),
+          },
+          take: fetchLimit,
+          orderBy: { publishedAt: 'desc' },
+          select: feedPostSelect,
+        });
+
+        if (rawPosts.length === 0) break;
+
+        lastRawPost = rawPosts[rawPosts.length - 1];
+
+        for (const post of rawPosts) {
+          if (allFiltered.length >= fetchLimit) break;
+          const day = post.publishedAt.toISOString().split('T')[0] ?? '';
+          const key = `${post.member.githubId}|${day}`;
+          const count = globalMemberDayCount.get(key) ?? 0;
+          if (count >= perDayLimit) continue;
+          globalMemberDayCount.set(key, count + 1);
+          allFiltered.push(post);
+        }
+
+        currentCursor = lastRawPost ? `${lastRawPost.publishedAt.toISOString()}|${lastRawPost.id}` : undefined;
       }
 
-      const result = filtered.slice(0, fetchLimit);
-      const lastRawPost = rawPosts[rawPosts.length - 1];
       const nextCursor = lastRawPost ? `${lastRawPost.publishedAt.toISOString()}|${lastRawPost.id}` : null;
+
       const countRows = await db.blogPost.findMany({
         where: {
           ...(since ? { publishedAt: { gte: since } } : {}),
@@ -173,7 +184,7 @@ export function createBlogPostRepository(db: PrismaClient) {
         totalCount++;
       }
 
-      return { posts: result, nextCursor, totalCount };
+      return { posts: allFiltered, nextCursor, totalCount };
     },
 
     findSince: (workspaceId: number, since: Date) =>
