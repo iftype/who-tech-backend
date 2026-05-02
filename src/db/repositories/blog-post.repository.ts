@@ -108,82 +108,46 @@ export function createBlogPostRepository(db: PrismaClient) {
       },
     ) => {
       const since = filters?.days != null ? new Date(Date.now() - filters.days * 24 * 60 * 60 * 1000) : null;
-      const perDayLimit = 3;
       const fetchLimit = filters?.limit ?? 50;
-      const maxLoops = 10;
 
-      let currentCursor = filters?.cursor;
-      const allFiltered: FeedPost[] = [];
-      let lastRawPost: FeedPost | undefined;
-      const globalMemberDayCount = new Map<string, number>();
+      const [cursorDateStr, cursorId] = (filters?.cursor ?? '').split('|');
+      const cursorDate = cursorDateStr ? new Date(cursorDateStr) : null;
+      const hasValidCursor = cursorDate !== null && !isNaN(cursorDate.getTime());
 
-      for (let i = 0; i < maxLoops && allFiltered.length < fetchLimit; i++) {
-        const [cursorDateStr, cursorId] = (currentCursor ?? '').split('|');
-        const cursorDate = cursorDateStr ? new Date(cursorDateStr) : null;
-        const hasValidCursor = cursorDate !== null && !isNaN(cursorDate.getTime());
+      const posts = await db.blogPost.findMany({
+        where: {
+          ...(since ? { publishedAt: { gte: since } } : {}),
+          workspaceId,
+          ...(filters?.cohort ? { cohort: filters.cohort } : {}),
+          ...(filters?.track
+            ? {
+                OR: [{ track: filters.track }, { track: null }],
+              }
+            : {}),
+          ...(hasValidCursor
+            ? {
+                OR: [{ publishedAt: { lt: cursorDate } }, { publishedAt: cursorDate, id: { lt: Number(cursorId) } }],
+              }
+            : {}),
+        },
+        take: fetchLimit,
+        orderBy: { publishedAt: 'desc' },
+        select: feedPostSelect,
+      });
 
-        const rawPosts = await db.blogPost.findMany({
-          where: {
-            ...(since ? { publishedAt: { gte: since } } : {}),
-            workspaceId,
-            ...(filters?.cohort ? { cohort: filters.cohort } : {}),
-            ...(filters?.track
-              ? {
-                  OR: [{ track: filters.track }, { track: null }],
-                }
-              : {}),
-            ...(hasValidCursor
-              ? {
-                  OR: [{ publishedAt: { lt: cursorDate } }, { publishedAt: cursorDate, id: { lt: Number(cursorId) } }],
-                }
-              : {}),
-          },
-          take: fetchLimit,
-          orderBy: { publishedAt: 'desc' },
-          select: feedPostSelect,
-        });
+      const lastPost = posts[posts.length - 1];
+      const nextCursor = lastPost ? `${lastPost.publishedAt.toISOString()}|${lastPost.id}` : null;
 
-        if (rawPosts.length === 0) break;
-
-        lastRawPost = rawPosts[rawPosts.length - 1];
-
-        for (const post of rawPosts) {
-          if (allFiltered.length >= fetchLimit) break;
-          const day = post.publishedAt.toISOString().split('T')[0] ?? '';
-          const key = `${post.member.githubId}|${day}`;
-          const count = globalMemberDayCount.get(key) ?? 0;
-          if (count >= perDayLimit) continue;
-          globalMemberDayCount.set(key, count + 1);
-          allFiltered.push(post);
-        }
-
-        currentCursor = lastRawPost ? `${lastRawPost.publishedAt.toISOString()}|${lastRawPost.id}` : undefined;
-      }
-
-      const nextCursor = lastRawPost ? `${lastRawPost.publishedAt.toISOString()}|${lastRawPost.id}` : null;
-      const countRows = await db.blogPost.findMany({
+      const totalCount = await db.blogPost.count({
         where: {
           ...(since ? { publishedAt: { gte: since } } : {}),
           workspaceId,
           ...(filters?.cohort ? { cohort: filters.cohort } : {}),
           ...(filters?.track ? { OR: [{ track: filters.track }, { track: null }] } : {}),
         },
-        orderBy: { publishedAt: 'desc' },
-        select: { id: true, publishedAt: true, member: { select: { githubId: true } } },
       });
 
-      const totalMemberDayCount = new Map<string, number>();
-      let totalCount = 0;
-      for (const row of countRows) {
-        const day = row.publishedAt.toISOString().split('T')[0] ?? '';
-        const key = `${row.member.githubId}|${day}`;
-        const count = totalMemberDayCount.get(key) ?? 0;
-        if (count >= perDayLimit) continue;
-        totalMemberDayCount.set(key, count + 1);
-        totalCount++;
-      }
-
-      return { posts: allFiltered, nextCursor, totalCount };
+      return { posts, nextCursor, totalCount };
     },
 
     findSince: (workspaceId: number, since: Date) =>
@@ -209,6 +173,33 @@ export function createBlogPostRepository(db: PrismaClient) {
 
       return db.blogPost.deleteMany({
         where: { id: { in: excessPosts.map((p) => p.id) } },
+      });
+    },
+
+    deleteExcessPerDayByMember: async (memberId: number, perDayLimit: number) => {
+      const posts = await db.blogPost.findMany({
+        where: { memberId },
+        orderBy: { publishedAt: 'desc' },
+        select: { id: true, publishedAt: true },
+      });
+
+      const dayCount = new Map<string, number>();
+      const idsToDelete: number[] = [];
+
+      for (const post of posts) {
+        const day = post.publishedAt.toISOString().split('T')[0] ?? '';
+        const count = dayCount.get(day) ?? 0;
+        if (count >= perDayLimit) {
+          idsToDelete.push(post.id);
+        } else {
+          dayCount.set(day, count + 1);
+        }
+      }
+
+      if (idsToDelete.length === 0) return { count: 0 };
+
+      return db.blogPost.deleteMany({
+        where: { id: { in: idsToDelete } },
       });
     },
   };

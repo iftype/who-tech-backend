@@ -10,6 +10,7 @@ export { sanitizeXml, resolveRSSUrlsForBlog, probeRss } from './blog.rss.js';
 
 const RETENTION_DAYS = 90;
 const MAX_POSTS_PER_MEMBER = 100;
+const MAX_POSTS_PER_DAY = 3;
 
 export function createBlogService(deps: { memberRepo: MemberRepository; blogPostRepo: BlogPostRepository }) {
   const { memberRepo, blogPostRepo } = deps;
@@ -152,6 +153,27 @@ export function createBlogService(deps: { memberRepo: MemberRepository; blogPost
         }),
       );
       deleted += excessResults.reduce((sum, r) => sum + r.count, 0);
+
+      emitProgress(
+        '멤버별 일일 저장 개수 정리 중',
+        total === 0 ? 100 : Math.max(Math.round((processed / total) * 100), 94),
+      );
+      const perDayResults = await Promise.all(
+        members.map(async (member) => {
+          try {
+            return await blogPostRepo.deleteExcessPerDayByMember(member.id, MAX_POSTS_PER_DAY);
+          } catch (error) {
+            failures.push({
+              githubId: member.githubId,
+              blog: member.blog!,
+              step: 'cleanup',
+              error: errorMessage(error),
+            });
+            return { count: 0 };
+          }
+        }),
+      );
+      deleted += perDayResults.reduce((sum, r) => sum + r.count, 0);
 
       emitProgress('오래된 글 정리 중', total === 0 ? 100 : Math.max(Math.round((processed / total) * 100), 95));
       try {
