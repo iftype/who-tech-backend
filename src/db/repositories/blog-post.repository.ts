@@ -118,7 +118,17 @@ export function createBlogPostRepository(db: PrismaClient) {
         where: {
           ...(since ? { publishedAt: { gte: since } } : {}),
           workspaceId,
-          ...(filters?.cohort ? { cohort: filters.cohort } : {}),
+          ...(filters?.cohort
+            ? {
+                member: {
+                  memberCohorts: {
+                    some: {
+                      cohort: { number: filters.cohort },
+                    },
+                  },
+                },
+              }
+            : {}),
           ...(filters?.track
             ? {
                 OR: [{ track: filters.track }, { track: null }],
@@ -142,7 +152,17 @@ export function createBlogPostRepository(db: PrismaClient) {
         where: {
           ...(since ? { publishedAt: { gte: since } } : {}),
           workspaceId,
-          ...(filters?.cohort ? { cohort: filters.cohort } : {}),
+          ...(filters?.cohort
+            ? {
+                member: {
+                  memberCohorts: {
+                    some: {
+                      cohort: { number: filters.cohort },
+                    },
+                  },
+                },
+              }
+            : {}),
           ...(filters?.track ? { OR: [{ track: filters.track }, { track: null }] } : {}),
         },
       });
