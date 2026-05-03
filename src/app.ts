@@ -3,7 +3,7 @@ import compression from 'compression';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { existsSync } from 'fs';
-import { spawn } from 'child_process';
+import { spawn, execSync } from 'child_process';
 import { PrismaClient } from '@prisma/client';
 import { adminAuth } from './shared/middleware/auth.js';
 import { errorHandler } from './shared/middleware/error.js';
@@ -150,17 +150,39 @@ app.post('/admin/deploy', (req, res): void => {
     return;
   }
 
-  res.json({ ok: true, message: 'deploy started' });
   const logFile = `/tmp/who-tech-deploy-${Date.now()}.log`;
-  const child = spawn(
-    'bash',
-    [
-      '-c',
-      `cd ~/app/who-tech-backend && git checkout main && git pull origin main && npm install --ignore-scripts && npm --prefix src/public/admin-spa install --ignore-scripts && npx prisma generate && npm run build && npx prisma migrate deploy && pm2 reload backend --update-env > >(tee -a ${logFile}) 2> >(tee -a ${logFile} >&2)`,
-    ],
-    { detached: true, stdio: 'ignore', shell: false },
-  );
+  res.json({ ok: true, message: 'deploy started', logFile });
+
+  const child = spawn('bash', [join(__dirname, '..', 'scripts', 'deploy.sh')], {
+    detached: true,
+    stdio: 'ignore',
+    shell: false,
+  });
   child.unref();
+});
+
+app.get('/admin/deploy/logs', (req, res): void => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader?.replace('Bearer ', '');
+  if (token !== process.env['ADMIN_SECRET']) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+
+  try {
+    const logs = execSync('ls -t /tmp/who-tech-deploy-*.log 2>/dev/null | head -10')
+      .toString()
+      .trim()
+      .split('\n')
+      .filter(Boolean);
+    const result = logs.map((log) => ({
+      file: log,
+      content: execSync(`tail -n 30 "${log}" 2>/dev/null || echo "Unable to read log"`).toString(),
+    }));
+    res.json(result);
+  } catch {
+    res.json([]);
+  }
 });
 
 app.use('/admin', adminAuth);
