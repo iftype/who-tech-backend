@@ -114,26 +114,26 @@ export function createBlogPostRepository(db: PrismaClient) {
       const cursorDate = cursorDateStr ? new Date(cursorDateStr) : null;
       const hasValidCursor = cursorDate !== null && !isNaN(cursorDate.getTime());
 
+      const memberWhere: Record<string, unknown> = {};
+      if (filters?.cohort) {
+        memberWhere.memberCohorts = {
+          some: { cohort: { number: filters.cohort } },
+        };
+      }
+      if (filters?.track) {
+        memberWhere.OR = [{ track: filters.track }, { track: null }];
+      }
+      const hasMemberFilter = Object.keys(memberWhere).length > 0;
+
+      const baseWhere = {
+        ...(since ? { publishedAt: { gte: since } } : {}),
+        workspaceId,
+        ...(hasMemberFilter ? { member: memberWhere } : {}),
+      };
+
       const posts = await db.blogPost.findMany({
         where: {
-          ...(since ? { publishedAt: { gte: since } } : {}),
-          workspaceId,
-          ...(filters?.cohort
-            ? {
-                member: {
-                  memberCohorts: {
-                    some: {
-                      cohort: { number: filters.cohort },
-                    },
-                  },
-                },
-              }
-            : {}),
-          ...(filters?.track
-            ? {
-                OR: [{ track: filters.track }, { track: null }],
-              }
-            : {}),
+          ...baseWhere,
           ...(hasValidCursor
             ? {
                 OR: [{ publishedAt: { lt: cursorDate } }, { publishedAt: cursorDate, id: { lt: Number(cursorId) } }],
@@ -148,24 +148,7 @@ export function createBlogPostRepository(db: PrismaClient) {
       const lastPost = posts[posts.length - 1];
       const nextCursor = lastPost ? `${lastPost.publishedAt.toISOString()}|${lastPost.id}` : null;
 
-      const totalCount = await db.blogPost.count({
-        where: {
-          ...(since ? { publishedAt: { gte: since } } : {}),
-          workspaceId,
-          ...(filters?.cohort
-            ? {
-                member: {
-                  memberCohorts: {
-                    some: {
-                      cohort: { number: filters.cohort },
-                    },
-                  },
-                },
-              }
-            : {}),
-          ...(filters?.track ? { OR: [{ track: filters.track }, { track: null }] } : {}),
-        },
-      });
+      const totalCount = await db.blogPost.count({ where: baseWhere });
 
       return { posts, nextCursor, totalCount };
     },
