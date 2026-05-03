@@ -136,7 +136,28 @@ export function createBlogService(deps: { memberRepo: MemberRepository; blogPost
         emitProgress(`${member.githubId} RSS 확인 완료`);
       }
 
-      emitProgress('멤버별 저장 개수 정리 중', total === 0 ? 100 : Math.max(Math.round((processed / total) * 100), 93));
+      emitProgress(
+        '멤버별 일일 저장 개수 정리 중',
+        total === 0 ? 100 : Math.max(Math.round((processed / total) * 100), 93),
+      );
+      const perDayResults = await Promise.all(
+        members.map(async (member) => {
+          try {
+            return await blogPostRepo.deleteExcessPerDayByMember(member.id, MAX_POSTS_PER_DAY);
+          } catch (error) {
+            failures.push({
+              githubId: member.githubId,
+              blog: member.blog!,
+              step: 'cleanup',
+              error: errorMessage(error),
+            });
+            return { count: 0 };
+          }
+        }),
+      );
+      deleted += perDayResults.reduce((sum, r) => sum + r.count, 0);
+
+      emitProgress('멤버별 저장 개수 정리 중', total === 0 ? 100 : Math.max(Math.round((processed / total) * 100), 94));
       const excessResults = await Promise.all(
         members.map(async (member) => {
           try {
