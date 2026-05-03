@@ -51,6 +51,7 @@ export function createMemberPublicService(deps: {
           avatarUrl: m.avatarUrl,
           cohort: targetCohort?.cohort ?? null,
           roles: targetCohort?.roles ?? ['crew'],
+          cohorts,
           track: m.track ?? inferredTrack ?? null,
           tracks: [
             ...new Set([
@@ -251,6 +252,7 @@ export function createMemberPublicService(deps: {
             avatarUrl: p.member.avatarUrl,
             cohort: targetCohort?.cohort ?? null,
             roles: targetCohort?.roles ?? ['crew'],
+            cohorts,
             track: p.member.track ?? inferredTrack ?? null,
             tracks: [
               ...new Set([
