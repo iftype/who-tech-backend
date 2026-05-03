@@ -236,8 +236,15 @@ export default function MemberTable({ members, onRefresh }: Props) {
 
   const openBlogModal = async (member: Member) => {
     try {
-      const posts = await apiFetch<BlogPost[]>(`/admin/members/${member.id}/blog-posts`);
-      setBlogModal({ member, posts });
+      interface BlogPostResponse {
+        archive: BlogPost[];
+        latest: BlogPost[];
+        page: number;
+        totalPages: number;
+      }
+      const result = await apiFetch<BlogPostResponse>(`/admin/members/${member.id}/blog-posts`);
+      const allPosts = [...result.latest, ...result.archive];
+      setBlogModal({ member, posts: allPosts });
     } catch { showToast('블로그 포스트 로딩 실패', 'error'); }
   };
 
