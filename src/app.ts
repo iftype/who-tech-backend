@@ -107,6 +107,7 @@ const memberPublicService = createMemberPublicService({
   bannedWordRepo,
   workspaceService,
   activityLogService,
+  blogService,
   octokit,
 });
 const archiveService = createArchiveService({ memberRepo, cohortRepoRepo, workspaceService });

@@ -78,6 +78,8 @@ describe('createBlogService - syncBlogs', () => {
     id: 1,
     githubId: 'testuser',
     blog: 'https://testblog.com',
+    memberCohorts: [],
+    submissions: [],
   } as unknown as MemberWithRelations;
 
   function makeMockDeps(

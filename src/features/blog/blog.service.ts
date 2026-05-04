@@ -1,4 +1,4 @@
-import type { MemberRepository } from '../../db/repositories/member.repository.js';
+import type { MemberRepository, MemberDetailWithRelations } from '../../db/repositories/member.repository.js';
 import type { BlogPostRepository } from '../../db/repositories/blog-post.repository.js';
 import { HttpError } from '../../shared/http.js';
 import { buildCohortList } from '../../shared/member-cohort.js';
@@ -14,6 +14,129 @@ const MAX_POSTS_PER_DAY = 3;
 
 export function createBlogService(deps: { memberRepo: MemberRepository; blogPostRepo: BlogPostRepository }) {
   const { memberRepo, blogPostRepo } = deps;
+
+  async function doSyncMemberBlog(
+    member: MemberDetailWithRelations,
+    workspaceId: number,
+  ): Promise<{
+    synced: number;
+    deleted: number;
+    failures: {
+      githubId: string;
+      blog: string;
+      rssUrl?: string;
+      step: 'rss_fetch' | 'blog_post_upsert' | 'cleanup';
+      error: string;
+    }[];
+  }> {
+    const cutoff = new Date(Date.now() - RETENTION_DAYS * 24 * 60 * 60 * 1000);
+    const cohorts = buildCohortList(member.memberCohorts);
+    const primaryCohort = cohorts[0]?.cohort ?? null;
+    const inferredTrack = computeDominantTrack(member.submissions);
+    const memberTrack = member.track ?? inferredTrack ?? null;
+
+    let synced = 0;
+    let deleted = 0;
+    const failures: {
+      githubId: string;
+      blog: string;
+      rssUrl?: string;
+      step: 'rss_fetch' | 'blog_post_upsert' | 'cleanup';
+      error: string;
+    }[] = [];
+
+    const result = await fetchRSSItems(member.blog!);
+
+    const latestDate = result.items
+      .map((item) => (item.pubDate ? new Date(item.pubDate) : null))
+      .filter((d): d is Date => d !== null && !isNaN(d.getTime()))
+      .sort((a, b) => b.getTime() - a.getTime())[0];
+
+    await memberRepo.patch(member.id, {
+      rssStatus: result.rssCheck.status,
+      rssUrl: result.rssCheck.rssUrl ?? null,
+      rssCheckedAt: new Date(),
+      rssError: result.rssCheck.error ?? null,
+      ...(latestDate && { lastPostedAt: latestDate }),
+    });
+
+    if (result.failure) {
+      failures.push({ githubId: member.githubId, ...result.failure });
+      return { synced, deleted, failures };
+    }
+
+    const previousRssUrl = member.rssUrl;
+    const currentRssUrl = result.rssCheck.rssUrl;
+    if (previousRssUrl && currentRssUrl && previousRssUrl !== currentRssUrl) {
+      await blogPostRepo.deleteByMember(member.id);
+    }
+
+    const feedUrls = result.items.map((item) => item.link).filter((url): url is string => !!url);
+    const feedDeleteResult = await blogPostRepo.deleteByMemberNotInUrls(member.id, feedUrls, cutoff);
+    deleted += feedDeleteResult.count;
+
+    for (const item of result.items) {
+      if (!item.link || !item.title || !item.pubDate) continue;
+      const publishedAt = new Date(item.pubDate);
+      if (isNaN(publishedAt.getTime()) || publishedAt < cutoff) continue;
+
+      try {
+        await blogPostRepo.upsert({
+          where: { url: item.link },
+          create: {
+            url: item.link,
+            title: item.title,
+            publishedAt,
+            memberId: member.id,
+            cohort: primaryCohort,
+            track: memberTrack,
+            workspaceId,
+          },
+          update: {
+            title: item.title,
+            publishedAt,
+            cohort: primaryCohort,
+            track: memberTrack,
+          },
+        });
+        synced++;
+      } catch (error) {
+        failures.push({
+          githubId: member.githubId,
+          blog: member.blog!,
+          rssUrl: item.link,
+          step: 'blog_post_upsert',
+          error: errorMessage(error),
+        });
+      }
+    }
+
+    try {
+      const perDayResult = await blogPostRepo.deleteExcessPerDayByMember(member.id, MAX_POSTS_PER_DAY);
+      deleted += perDayResult.count;
+    } catch (error) {
+      failures.push({
+        githubId: member.githubId,
+        blog: member.blog!,
+        step: 'cleanup',
+        error: errorMessage(error),
+      });
+    }
+
+    try {
+      const excessResult = await blogPostRepo.deleteExcessByMember(member.id, MAX_POSTS_PER_MEMBER);
+      deleted += excessResult.count;
+    } catch (error) {
+      failures.push({
+        githubId: member.githubId,
+        blog: member.blog!,
+        step: 'cleanup',
+        error: errorMessage(error),
+      });
+    }
+
+    return { synced, deleted, failures };
+  }
 
   return {
     syncBlogs: async (
@@ -59,121 +182,13 @@ export function createBlogService(deps: { memberRepo: MemberRepository; blogPost
       emitProgress(total === 0 ? '수집 대상 없음' : 'RSS 수집 준비 중', total === 0 ? 100 : 0);
 
       for (const member of members) {
-        const cohorts = buildCohortList(member.memberCohorts);
-        const primaryCohort = cohorts[0]?.cohort ?? null;
-        const inferredTrack = computeDominantTrack(member.submissions);
-        const memberTrack = member.track ?? inferredTrack ?? null;
-
-        const result = await fetchRSSItems(member.blog!);
-
-        const latestDate = result.items
-          .map((item) => (item.pubDate ? new Date(item.pubDate) : null))
-          .filter((d): d is Date => d !== null && !isNaN(d.getTime()))
-          .sort((a, b) => b.getTime() - a.getTime())[0];
-
-        await memberRepo.patch(member.id, {
-          rssStatus: result.rssCheck.status,
-          rssUrl: result.rssCheck.rssUrl ?? null,
-          rssCheckedAt: new Date(),
-          rssError: result.rssCheck.error ?? null,
-          ...(latestDate && { lastPostedAt: latestDate }),
-        });
-
-        if (result.failure) {
-          failures.push({ githubId: member.githubId, ...result.failure });
-          processed += 1;
-          emitProgress(`${member.githubId} RSS 확인 완료`);
-          continue;
-        }
-
-        const previousRssUrl = member.rssUrl;
-        const currentRssUrl = result.rssCheck.rssUrl;
-        if (previousRssUrl && currentRssUrl && previousRssUrl !== currentRssUrl) {
-          await blogPostRepo.deleteByMember(member.id);
-        }
-
-        const feedUrls = result.items.map((item) => item.link).filter((url): url is string => !!url);
-        const feedDeleteResult = await blogPostRepo.deleteByMemberNotInUrls(member.id, feedUrls, cutoff);
-        deleted += feedDeleteResult.count;
-
-        for (const item of result.items) {
-          if (!item.link || !item.title || !item.pubDate) continue;
-          const publishedAt = new Date(item.pubDate);
-          if (isNaN(publishedAt.getTime()) || publishedAt < cutoff) continue;
-
-          try {
-            await blogPostRepo.upsert({
-              where: { url: item.link },
-              create: {
-                url: item.link,
-                title: item.title,
-                publishedAt,
-                memberId: member.id,
-                cohort: primaryCohort,
-                track: memberTrack,
-                workspaceId,
-              },
-              update: {
-                title: item.title,
-                publishedAt,
-                cohort: primaryCohort,
-                track: memberTrack,
-              },
-            });
-            synced++;
-          } catch (error) {
-            failures.push({
-              githubId: member.githubId,
-              blog: member.blog!,
-              rssUrl: item.link,
-              step: 'blog_post_upsert',
-              error: errorMessage(error),
-            });
-          }
-        }
-
+        const result = await doSyncMemberBlog(member, workspaceId);
+        synced += result.synced;
+        deleted += result.deleted;
+        failures.push(...result.failures);
         processed += 1;
         emitProgress(`${member.githubId} RSS 확인 완료`);
       }
-
-      emitProgress(
-        '멤버별 일일 저장 개수 정리 중',
-        total === 0 ? 100 : Math.max(Math.round((processed / total) * 100), 93),
-      );
-      const perDayResults = await Promise.all(
-        members.map(async (member) => {
-          try {
-            return await blogPostRepo.deleteExcessPerDayByMember(member.id, MAX_POSTS_PER_DAY);
-          } catch (error) {
-            failures.push({
-              githubId: member.githubId,
-              blog: member.blog!,
-              step: 'cleanup',
-              error: errorMessage(error),
-            });
-            return { count: 0 };
-          }
-        }),
-      );
-      deleted += perDayResults.reduce((sum, r) => sum + r.count, 0);
-
-      emitProgress('멤버별 저장 개수 정리 중', total === 0 ? 100 : Math.max(Math.round((processed / total) * 100), 94));
-      const excessResults = await Promise.all(
-        members.map(async (member) => {
-          try {
-            return await blogPostRepo.deleteExcessByMember(member.id, MAX_POSTS_PER_MEMBER);
-          } catch (error) {
-            failures.push({
-              githubId: member.githubId,
-              blog: member.blog!,
-              step: 'cleanup',
-              error: errorMessage(error),
-            });
-            return { count: 0 };
-          }
-        }),
-      );
-      deleted += excessResults.reduce((sum, r) => sum + r.count, 0);
 
       emitProgress('오래된 글 정리 중', total === 0 ? 100 : Math.max(Math.round((processed / total) * 100), 95));
       try {
@@ -185,6 +200,12 @@ export function createBlogService(deps: { memberRepo: MemberRepository; blogPost
 
       emitProgress('완료', 100);
       return { synced, deleted, failures };
+    },
+
+    syncMemberBlog: async (memberId: number, workspaceId: number) => {
+      const member = await memberRepo.findByIdWithRelations(memberId);
+      if (!member) throw new HttpError(404, 'member not found');
+      return doSyncMemberBlog(member, workspaceId);
     },
   };
 }

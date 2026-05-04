@@ -190,7 +190,11 @@ export function createBlogPostRepository(db: PrismaClient) {
       const idsToDelete: number[] = [];
 
       for (const post of posts) {
-        const day = post.publishedAt.toISOString().split('T')[0] ?? '';
+        const day =
+          post.publishedAt instanceof Date && !isNaN(post.publishedAt.getTime())
+            ? (post.publishedAt.toISOString().split('T')[0] ?? '')
+            : '';
+        if (!day) continue;
         const count = dayCount.get(day) ?? 0;
         if (count >= perDayLimit) {
           idsToDelete.push(post.id);
@@ -204,6 +208,22 @@ export function createBlogPostRepository(db: PrismaClient) {
       return db.blogPost.deleteMany({
         where: { id: { in: idsToDelete } },
       });
+    },
+
+    countPostsByDaySince: async (memberId: number, since: Date) => {
+      const posts = await db.blogPost.findMany({
+        where: { memberId, publishedAt: { gte: since } },
+        select: { publishedAt: true },
+      });
+
+      const counts = new Map<string, number>();
+      for (const post of posts) {
+        if (!(post.publishedAt instanceof Date) || isNaN(post.publishedAt.getTime())) continue;
+        const day = post.publishedAt.toISOString().split('T')[0] ?? '';
+        if (!day) continue;
+        counts.set(day, (counts.get(day) ?? 0) + 1);
+      }
+      return counts;
     },
   };
 }
