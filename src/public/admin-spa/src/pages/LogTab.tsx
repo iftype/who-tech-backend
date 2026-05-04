@@ -37,7 +37,7 @@ export default function LogTab() {
 
   const logColor = (type: string) => {
     if (type.includes('error')) return 'text-red-400';
-    if (type.includes('sync')) return 'text-blue-400';
+    if (type.includes('sync') && !type.includes('blog')) return 'text-blue-400';
     if (type.includes('blog')) return 'text-green-400';
     if (type.includes('refresh')) return 'text-purple-400';
     if (type.includes('rate_limit')) return 'text-yellow-400';
