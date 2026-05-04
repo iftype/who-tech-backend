@@ -66,7 +66,7 @@ export function createBlogAdminService(deps: {
 
     if (!workspace.blogSyncEnabled) {
       if (isAutomated) {
-        await activityLogService.addLog('info', `${sourceLabel} 블로그 Sync 스킵 — blogSyncEnabled=false`);
+        await activityLogService.addLog('blog_sync_info', `${sourceLabel} 블로그 Sync 스킵 — blogSyncEnabled=false`);
       }
       onProgress?.({ total: 0, processed: 0, synced: 0, percent: 100, phase: '스킵됨' });
       return { synced: 0, deleted: 0, failures: [], skipped: true };
@@ -75,19 +75,25 @@ export function createBlogAdminService(deps: {
     try {
       const result = await blogService.syncBlogs(workspace.id, onProgress);
 
-      const logLevel = result.failures.length > 0 ? 'err' : 'ok';
+      const logLevel = result.failures.length > 0 ? 'blog_sync_error' : 'blog_sync';
       const logMessage = `${isAutomated ? sourceLabel : '수동'} 블로그 Sync 완료 — 수집 ${result.synced}건, 삭제 ${result.deleted}건, 실패 ${result.failures.length}건`;
       await activityLogService.addLog(logLevel, logMessage);
 
       for (const failure of result.failures.slice(0, 10)) {
         const target = failure.rssUrl ?? failure.blog;
-        await activityLogService.addLog('err', `  └ ${failure.githubId} ${failure.step}: ${target} — ${failure.error}`);
+        await activityLogService.addLog(
+          'blog_sync_error',
+          `  └ ${failure.githubId} ${failure.step}: ${target} — ${failure.error}`,
+        );
       }
 
       return result;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      await activityLogService.addLog('err', `${isAutomated ? sourceLabel : '수동'} 블로그 Sync 실패: ${message}`);
+      await activityLogService.addLog(
+        'blog_sync_error',
+        `${isAutomated ? sourceLabel : '수동'} 블로그 Sync 실패: ${message}`,
+      );
       throw error;
     }
   };
