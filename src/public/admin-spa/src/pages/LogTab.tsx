@@ -4,7 +4,7 @@ import { apiFetch } from '../lib/api.js';
 import { showToast } from '../components/ui/Toast.js';
 import type { ActivityLog } from '../lib/types.js';
 
-type LogCategory = 'all' | 'repo' | 'blog';
+type LogCategory = 'all' | 'repo' | 'blog' | 'refresh';
 
 export default function LogTab() {
   const queryClient = useQueryClient();
@@ -28,6 +28,7 @@ export default function LogTab() {
   const filtered = logs.filter((l) => {
     if (category === 'repo') return l.type.includes('sync') || l.type.includes('repo');
     if (category === 'blog') return l.type.includes('blog');
+    if (category === 'refresh') return l.type.includes('refresh') || l.type.includes('rate_limit_member');
     return true;
   }).filter((l) => {
     if (!filter) return true;
@@ -38,6 +39,8 @@ export default function LogTab() {
     if (type.includes('error')) return 'text-red-400';
     if (type.includes('sync')) return 'text-blue-400';
     if (type.includes('blog')) return 'text-green-400';
+    if (type.includes('refresh')) return 'text-purple-400';
+    if (type.includes('rate_limit')) return 'text-yellow-400';
     return 'text-gray-300';
   };
 
@@ -59,6 +62,9 @@ export default function LogTab() {
             </button>
             <button onClick={() => setCategory('blog')} className={tabClass(category === 'blog')}>
               블로그 싱크
+            </button>
+            <button onClick={() => setCategory('refresh')} className={tabClass(category === 'refresh')}>
+              프로필 새로고침
             </button>
           </div>
           <input
