@@ -3,6 +3,7 @@ import type { BlogPostRepository } from '../../db/repositories/blog-post.reposit
 import { HttpError } from '../../shared/http.js';
 import { buildCohortList } from '../../shared/member-cohort.js';
 import { computeDominantTrack } from '../../shared/member-track.js';
+import { decodeHtml } from '../../shared/html.js';
 import { fetchRSSItems, errorMessage } from './blog.rss.js';
 
 export type { BlogSyncFailure, BlogSyncProgress, RssCheckResult } from './blog.rss.js';
@@ -81,11 +82,12 @@ export function createBlogService(deps: { memberRepo: MemberRepository; blogPost
       if (isNaN(publishedAt.getTime()) || publishedAt < cutoff) continue;
 
       try {
+        const decodedTitle = decodeHtml(item.title);
         await blogPostRepo.upsert({
           where: { url: item.link },
           create: {
             url: item.link,
-            title: item.title,
+            title: decodedTitle,
             publishedAt,
             memberId: member.id,
             cohort: primaryCohort,
@@ -93,7 +95,7 @@ export function createBlogService(deps: { memberRepo: MemberRepository; blogPost
             workspaceId,
           },
           update: {
-            title: item.title,
+            title: decodedTitle,
             publishedAt,
             cohort: primaryCohort,
             track: memberTrack,
