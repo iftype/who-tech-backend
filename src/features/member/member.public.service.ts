@@ -4,6 +4,7 @@ import type { CohortRepoRepository } from '../../db/repositories/cohort-repo.rep
 import type { BannedWordRepository } from '../../db/repositories/banned-word.repository.js';
 import type { WorkspaceService } from '../workspace/workspace.service.js';
 import type { ActivityLogService } from '../activity-log/activity-log.service.js';
+import type { BlogService } from '../blog/blog.service.js';
 import type { Octokit } from '@octokit/rest';
 import { resolveDisplayNickname } from '../../shared/nickname.js';
 import { buildCohortList } from '../../shared/member-cohort.js';
@@ -17,10 +18,19 @@ export function createMemberPublicService(deps: {
   bannedWordRepo: BannedWordRepository;
   workspaceService: WorkspaceService;
   activityLogService: ActivityLogService;
+  blogService: BlogService;
   octokit: Octokit;
 }) {
-  const { memberRepo, blogPostRepo, cohortRepoRepo, bannedWordRepo, workspaceService, activityLogService, octokit } =
-    deps;
+  const {
+    memberRepo,
+    blogPostRepo,
+    cohortRepoRepo,
+    bannedWordRepo,
+    workspaceService,
+    activityLogService,
+    blogService,
+    octokit,
+  } = deps;
 
   interface ArchiveRepo {
     name: string;
@@ -292,6 +302,7 @@ export function createMemberPublicService(deps: {
 
       try {
         await refreshMemberProfileById(member.id, bannedWords, true, memberRepo, octokit, cohortRules);
+        await blogService.syncMemberBlog(member.id, workspace.id);
         await activityLogService.addLog('refresh_member', `Profile refreshed: ${githubId}`, {
           source: 'client',
           memberGithubId: githubId,
