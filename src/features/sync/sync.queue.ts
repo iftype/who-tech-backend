@@ -215,6 +215,14 @@ export function createSyncQueue(deps: {
           } else if (job.type === 'blog') {
             const blogResult = await blogAdminService.executeWorkspaceBlogSync(
               (job.blogSource as 'manual' | 'github-actions' | 'scheduler') ?? 'manual',
+              (progress) => {
+                onProgress({
+                  repo: progress.phase,
+                  done: progress.processed,
+                  total: progress.total,
+                  synced: progress.synced,
+                });
+              },
             );
             result = { totalSynced: blogResult.synced, reposSynced: 1 };
           } else {

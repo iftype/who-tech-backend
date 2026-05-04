@@ -75,27 +75,19 @@ export function createBlogAdminService(deps: {
     try {
       const result = await blogService.syncBlogs(workspace.id, onProgress);
 
-      if (isAutomated) {
-        await activityLogService.addLog(
-          result.failures.length > 0 ? 'err' : 'ok',
-          `${sourceLabel} 블로그 Sync 완료 — 수집 ${result.synced}건, 삭제 ${result.deleted}건, 실패 ${result.failures.length}건`,
-        );
+      const logLevel = result.failures.length > 0 ? 'err' : 'ok';
+      const logMessage = `${isAutomated ? sourceLabel : '수동'} 블로그 Sync 완료 — 수집 ${result.synced}건, 삭제 ${result.deleted}건, 실패 ${result.failures.length}건`;
+      await activityLogService.addLog(logLevel, logMessage);
 
-        for (const failure of result.failures.slice(0, 10)) {
-          const target = failure.rssUrl ?? failure.blog;
-          await activityLogService.addLog(
-            'err',
-            `  └ ${failure.githubId} ${failure.step}: ${target} — ${failure.error}`,
-          );
-        }
+      for (const failure of result.failures.slice(0, 10)) {
+        const target = failure.rssUrl ?? failure.blog;
+        await activityLogService.addLog('err', `  └ ${failure.githubId} ${failure.step}: ${target} — ${failure.error}`);
       }
 
       return result;
     } catch (error) {
-      if (isAutomated) {
-        const message = error instanceof Error ? error.message : String(error);
-        await activityLogService.addLog('err', `${sourceLabel} 블로그 Sync 실패: ${message}`);
-      }
+      const message = error instanceof Error ? error.message : String(error);
+      await activityLogService.addLog('err', `${isAutomated ? sourceLabel : '수동'} 블로그 Sync 실패: ${message}`);
       throw error;
     }
   };
@@ -103,7 +95,10 @@ export function createBlogAdminService(deps: {
   return {
     syncWorkspaceBlogs: async (source: BlogSyncSource = 'manual') => runWorkspaceBlogSync(source),
 
-    executeWorkspaceBlogSync: async (source: BlogSyncSource = 'manual') => runWorkspaceBlogSync(source),
+    executeWorkspaceBlogSync: async (
+      source: BlogSyncSource = 'manual',
+      onProgress?: (progress: BlogSyncJob['progress']) => void,
+    ) => runWorkspaceBlogSync(source, onProgress),
 
     enqueueWorkspaceBlogSync: async (source: BlogSyncSource = 'manual') => {
       cleanupJobs();
