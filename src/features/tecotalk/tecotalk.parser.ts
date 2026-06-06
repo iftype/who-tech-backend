@@ -14,7 +14,8 @@ const ZONE_TERMINATOR = /의\s|[:：]/;
 /** 제목에서 대괄호 라벨을 제거하고 발표자 구역(닉네임 나열 부분)만 반환한다. */
 export function extractSpeakerZone(title: string): string {
   if (!title) return '';
-  const withoutBrackets = title.replace(BRACKET_SEGMENT, ' ');
+  const normalizedTitle = title.normalize('NFC');
+  const withoutBrackets = normalizedTitle.replace(BRACKET_SEGMENT, ' ');
   const zone = withoutBrackets.split(ZONE_TERMINATOR)[0] ?? '';
   return zone.trim();
 }
@@ -26,15 +27,17 @@ export function extractSpeakerZone(title: string): string {
  * 1글자 닉네임은 오탐이 커 매칭 대상에서 제외한다.
  */
 export function nicknameInZone(zone: string, nickname: string): boolean {
-  if (!zone || nickname.length < 2) return false;
+  const normalizedZone = zone.normalize('NFC');
+  const normalizedNickname = nickname.normalize('NFC');
+  if (!normalizedZone || normalizedNickname.length < 2) return false;
 
   let from = 0;
   for (;;) {
-    const idx = zone.indexOf(nickname, from);
+    const idx = normalizedZone.indexOf(normalizedNickname, from);
     if (idx === -1) return false;
 
-    const beforeOk = idx === 0 || /[^가-힣A-Za-z0-9]/.test(zone[idx - 1] ?? '');
-    const rest = zone.slice(idx + nickname.length);
+    const beforeOk = idx === 0 || /[^가-힣A-Za-z0-9]/.test(normalizedZone[idx - 1] ?? '');
+    const rest = normalizedZone.slice(idx + normalizedNickname.length);
     const afterOk = rest === '' || /^(의|와|과|랑)/.test(rest) || /^[^가-힣A-Za-z0-9]/.test(rest);
 
     if (beforeOk && afterOk) return true;

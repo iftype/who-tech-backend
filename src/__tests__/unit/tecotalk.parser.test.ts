@@ -15,6 +15,10 @@ describe('extractSpeakerZone', () => {
   it('빈 문자열은 빈 구역', () => {
     expect(extractSpeakerZone('')).toBe('');
   });
+
+  it('조합형 한글 제목도 완성형 발표자 구역으로 정규화한다', () => {
+    expect(extractSpeakerZone('[10분 테코톡] 클라우디의 세션과 JWT')).toBe('클라우디');
+  });
 });
 
 describe('nicknameInZone', () => {
@@ -38,6 +42,10 @@ describe('nicknameInZone', () => {
 
   it('구역에 없는 닉네임은 매칭 실패', () => {
     expect(nicknameInZone('클라우디', '피트')).toBe(false);
+  });
+
+  it('조합형 한글 구역을 기존 닉네임으로 매칭한다', () => {
+    expect(nicknameInZone('클라우디', '클라우디')).toBe(true);
   });
 });
 
