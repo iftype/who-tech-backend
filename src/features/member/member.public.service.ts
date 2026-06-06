@@ -140,7 +140,9 @@ export function createMemberPublicService(deps: {
 
       const nickname = resolveDisplayNickname(member.manualNickname, member.nicknameStats, member.nickname);
       const cohorts = buildCohortList(member.memberCohorts);
-      const tecoTalks = await tecoTalkRepo.findByMemberId(member.id);
+      const tecoTalks = (await tecoTalkRepo.findByMemberId(member.id)).map(
+        ({ viewCount: _viewCount, ...talk }) => talk,
+      );
 
       const submissionsByRepo = new Map<
         number,
@@ -313,7 +315,6 @@ export function createMemberPublicService(deps: {
           url: p.url,
           title: p.title,
           publishedAt: p.publishedAt,
-          viewCount: p.viewCount,
           member: {
             githubId: p.member.githubId,
             nickname: resolveDisplayNickname(p.member.manualNickname, p.member.nicknameStats, p.member.nickname),

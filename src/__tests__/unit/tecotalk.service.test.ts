@@ -62,6 +62,21 @@ describe('createTecoTalkService.syncTecoTalks', () => {
     expect(setSpeakers).toHaveBeenCalledWith(42, [10]);
   });
 
+  it('조합형 한글 제목도 기존 닉네임으로 matched 처리한다', async () => {
+    const { service, upsertByVideoId, setSpeakers } = setup(
+      [member(10, '클라우디')],
+      [makeVideo('[10분 테코톡] 클라우디의 세션과 JWT', 2024)],
+    );
+
+    const result = await service.syncTecoTalks();
+
+    expect(result.matched).toBe(1);
+    expect(upsertByVideoId).toHaveBeenCalledWith(
+      expect.objectContaining({ matchStatus: 'matched', speakerNickname: '클라우디' }),
+    );
+    expect(setSpeakers).toHaveBeenCalledWith(42, [10]);
+  });
+
   it('쉼표로 나열된 2인 공동 발표자를 모두 연결한다', async () => {
     const { service, setSpeakers } = setup(
       [member(10, '프리'), member(20, '말론'), member(30, '피트')],
