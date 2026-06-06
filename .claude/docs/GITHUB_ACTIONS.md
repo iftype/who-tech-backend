@@ -37,3 +37,10 @@
 
 - 트리거: 10분마다 cron
 - 실행: `POST /admin/sync/continuous` — syncMode=continuous 레포만 수집
+
+### tecotalk-sync.yml
+
+- 트리거: 매주 일요일 18:00 UTC cron (+ `workflow_dispatch`)
+- 실행: `POST /admin/tecotalk/sync` — 테코톡 재생목록 수집 + 멤버 매칭 + 조회수 갱신
+- 서버 환경변수 필요: `YOUTUBE_API_KEY` (재생목록 ID는 `TECOTALK_PLAYLIST_ID` 로 오버라이드 가능)
+- Secrets: `SYNC_URL`(미설정 시 `https://iftype.store` fallback), `ADMIN_SECRET`

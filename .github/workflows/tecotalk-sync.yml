@@ -1,0 +1,34 @@
+name: TecoTalk Sync
+
+on:
+  schedule:
+    - cron: '0 18 * * 0' # 매주 일요일 18:00 UTC (월요일 03:00 KST)
+  workflow_dispatch: # 수동 트리거
+
+jobs:
+  tecotalk-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger tecotalk sync
+        run: |
+          BASE_URL="${{ secrets.SYNC_URL }}"
+          if [ -z "$BASE_URL" ]; then
+            BASE_URL="https://iftype.store"
+          fi
+
+          response=$(curl -sf --max-time 300 \
+            -X POST "$BASE_URL/admin/tecotalk/sync" \
+            -H "Authorization: Bearer ${{ secrets.ADMIN_SECRET }}" \
+            -H "X-Sync-Source: github-actions")
+          echo "$response"
+
+          total=$(echo "$response" | jq -r '.total // empty')
+          if [ -z "$total" ]; then
+            echo "TecoTalk sync failed (no result)"
+            exit 1
+          fi
+
+          matched=$(echo "$response" | jq -r '.matched // 0')
+          ambiguous=$(echo "$response" | jq -r '.ambiguous // 0')
+          unmatched=$(echo "$response" | jq -r '.unmatched // 0')
+          echo "TecoTalk sync done: total=$total matched=$matched ambiguous=$ambiguous unmatched=$unmatched"

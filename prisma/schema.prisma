@@ -24,6 +24,7 @@ model Workspace {
   persons              Person[]
   bannedWords          NicknameBannedWord[]
   ignoredDomains       IgnoredDomain[]
+  tecoTalks            TecoTalk[]
 }
 
 model Person {
@@ -65,6 +66,7 @@ model Member {
   memberCohorts       MemberCohort[]
   submissions         Submission[]
   previousIds         PreviousGithubId[]
+  tecoTalkSpeakers    TecoTalkSpeaker[]
 
   @@unique([githubId, workspaceId])
   @@unique([githubUserId, workspaceId])
@@ -166,6 +168,7 @@ model BlogPost {
   cohort      Int?     // denormalized: primary cohort from member.memberCohorts
   track       String?  // denormalized: member.track
   workspaceId Int?     // denormalized: member.workspaceId
+  viewCount   Int      @default(0) // who-tech 내부 클릭(조회)수
   createdAt   DateTime @default(now())
   member      Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
@@ -211,4 +214,37 @@ model IgnoredDomain {
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@unique([domain, workspaceId])
+}
+
+model TecoTalk {
+  id              Int                @id @default(autoincrement())
+  videoId         String             @unique // YouTube video id
+  title           String
+  url             String
+  thumbnailUrl    String?
+  speakerNickname String?            // 제목의 발표자 구역 텍스트 (예: "프리, 말론") — 표시/미매칭 보관용
+  uploadedAt      DateTime           // YouTube 업로드 일시
+  viewCount       Int                @default(0) // YouTube 조회수 (statistics.viewCount)
+  cohort          Int?               // 업로드 연도 → cohortRules 로 매핑한 기수
+  matchStatus     String             @default("unmatched") // matched | ambiguous | unmatched
+  workspaceId     Int
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  workspace       Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  speakers        TecoTalkSpeaker[]  // 발표자(멤버) — 1영상에 여러 명 가능 (공동 발표)
+
+  @@index([workspaceId, uploadedAt])
+  @@index([cohort])
+  @@index([matchStatus])
+}
+
+model TecoTalkSpeaker {
+  id         Int      @id @default(autoincrement())
+  tecoTalkId Int
+  memberId   Int
+  tecoTalk   TecoTalk @relation(fields: [tecoTalkId], references: [id], onDelete: Cascade)
+  member     Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([tecoTalkId, memberId])
+  @@index([memberId])
 }

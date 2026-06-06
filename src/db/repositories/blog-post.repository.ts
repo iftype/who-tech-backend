@@ -6,6 +6,7 @@ const feedPostSelect = {
   url: true,
   title: true,
   publishedAt: true,
+  viewCount: true,
   member: {
     select: {
       githubId: true,
@@ -63,6 +64,20 @@ export function createBlogPostRepository(db: PrismaClient) {
   return {
     // [기본] 저장 및 업데이트 (30일치 데이터 관리용)
     upsert: (args: Prisma.BlogPostUpsertArgs) => db.blogPost.upsert(args),
+
+    // who-tech 내부 클릭(조회)수 +1 후 대상 URL 반환 (없으면 null)
+    incrementViewCount: async (id: number): Promise<{ url: string; viewCount: number } | null> => {
+      try {
+        const post = await db.blogPost.update({
+          where: { id },
+          data: { viewCount: { increment: 1 } },
+          select: { url: true, viewCount: true },
+        });
+        return post;
+      } catch {
+        return null;
+      }
+    },
 
     // [기본] 오래된 데이터 삭제 (30일 기준 청소용)
     deleteBefore: (date: Date) => db.blogPost.deleteMany({ where: { publishedAt: { lt: date } } }),

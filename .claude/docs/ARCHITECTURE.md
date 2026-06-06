@@ -25,7 +25,8 @@ MissionRepo (DB 등록) → fetchRepoPRs (GitHub API) → parsePRsToSubmissions 
 - `Person`: displayName?, note?, workspaceId — 같은 실제 인물인 여러 Member를 하나로 묶는 마스터 엔티티
 - `Member`: githubId, githubUserId?, previousGithubIds?, 닉네임 필드, avatarUrl, blog, rss\*, lastPostedAt, **personId?** 등 — **기수/역할은 `MemberCohort`로 정규화**
 - `Cohort` / `Role` / `MemberCohort`: 기수 번호, 역할 이름(crew|coach|reviewer), 멤버↔기수↔역할 연결 (`npm run seed`가 Role + Workspace까지 생성)
-- `Submission`, `BlogPost`, `BlogPostLatest`, `ActivityLog`: 기존과 동일
+- `Submission`, `BlogPost`, `BlogPostLatest`, `ActivityLog`: 기존과 동일 (`BlogPost.viewCount` = who-tech 내부 클릭수)
+- `TecoTalk`: videoId(unique), title, url, thumbnailUrl, speakerNickname, uploadedAt, viewCount(YouTube 조회수), cohort(업로드 연도→cohortRules 매핑), matchStatus(matched|ambiguous|unmatched), memberId? — 테코톡 재생목록 수집/멤버 매칭
 
 ## DI 구조
 
