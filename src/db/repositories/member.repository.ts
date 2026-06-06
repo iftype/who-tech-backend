@@ -71,15 +71,22 @@ type MemberFilters = {
 };
 
 function buildMemberWhere(workspaceId: number, filters?: MemberFilters): Prisma.MemberWhereInput {
+  // cohort/role/roleGroup은 동일한 memberCohort 레코드에 걸려야 하므로 하나의 some 절로 합친다.
+  // (각각 별도 some 절로 두면 객체 키 충돌로 cohort 필터가 덮어써져 무시된다)
+  const cohortCondition: Prisma.MemberCohortWhereInput = {};
+  if (filters?.cohort) cohortCondition.cohort = { number: filters.cohort };
+  if (filters?.role) {
+    cohortCondition.role = { name: { contains: filters.role } };
+  } else if (filters?.roleGroup === 'crew') {
+    cohortCondition.role = { name: 'crew' };
+  } else if (filters?.roleGroup === 'staff') {
+    cohortCondition.role = { name: { in: ['coach', 'reviewer'] } };
+  }
+  const hasCohortCondition = Object.keys(cohortCondition).length > 0;
+
   return {
     workspaceId,
-    ...(filters?.cohort ? { memberCohorts: { some: { cohort: { number: filters.cohort } } } } : {}),
-    ...(filters?.role ? { memberCohorts: { some: { role: { name: { contains: filters.role } } } } } : {}),
-    ...(filters?.roleGroup === 'crew'
-      ? { memberCohorts: { some: { role: { name: 'crew' } } } }
-      : filters?.roleGroup === 'staff'
-        ? { memberCohorts: { some: { role: { name: { in: ['coach', 'reviewer'] } } } } }
-        : {}),
+    ...(hasCohortCondition ? { memberCohorts: { some: cohortCondition } } : {}),
     ...(filters?.hasBlog === true ? { blog: { not: null } } : {}),
     ...(filters?.hasBlog === false ? { blog: null } : {}),
     ...(filters?.track ? { track: filters.track } : {}),
