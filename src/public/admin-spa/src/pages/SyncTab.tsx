@@ -3,7 +3,14 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createEventSource } from '../lib/sse.js';
 import { apiFetch } from '../lib/api.js';
 import { showToast } from '../components/ui/Toast.js';
-import type { AdminStatus, MissionRepo, Workspace, SyncQueueJob } from '../lib/types.js';
+import type {
+  AdminStatus,
+  GithubStatus,
+  MissionRepo,
+  TecoTalkAdminItem,
+  Workspace,
+  SyncQueueJob,
+} from '../lib/types.js';
 
 type JobType = 'sync' | 'continuous' | 'cohort-repos';
 
@@ -26,6 +33,10 @@ function formatStep(data: unknown): string {
     return JSON.stringify(data);
   }
   return String(data);
+}
+
+function formatDate(value: string | null | undefined): string {
+  return value ? new Date(value).toLocaleString('ko-KR') : '없음';
 }
 
 export default function SyncTab() {
@@ -76,12 +87,34 @@ export default function SyncTab() {
     staleTime: 300_000,
   });
 
+  const { data: githubStatus } = useQuery({
+    queryKey: ['github-status'],
+    queryFn: () => apiFetch<GithubStatus>('/admin/github-status'),
+    refetchInterval: 30_000,
+    staleTime: 30_000,
+  });
+
   const { data: repos = [] } = useQuery({
     queryKey: ['repos', 'sync-schedule'],
     queryFn: () => apiFetch<MissionRepo[]>('/admin/repos'),
   });
 
+  const { data: tecoTalks = [] } = useQuery({
+    queryKey: ['tecotalks', 'sync-status'],
+    queryFn: () => apiFetch<TecoTalkAdminItem[]>('/admin/tecotalk'),
+    staleTime: 30_000,
+  });
+
   const continuousRepos = repos.filter((r) => r.status === 'active' && r.syncMode === 'continuous');
+  const repoCount = status?.activeRepoCount ?? status?.repoCount;
+  const tecoTalkStatusCounts = tecoTalks.reduce(
+    (acc, talk) => {
+      acc[talk.matchStatus] += 1;
+      return acc;
+    },
+    { matched: 0, ambiguous: 0, unmatched: 0 },
+  );
+  const latestTecoTalk = tecoTalks[0];
 
   interface SyncJob {
     id: string;
@@ -120,20 +153,15 @@ export default function SyncTab() {
   );
 
   const allJobs = [...recentQueueJobs, ...repoJobs, ...blogJobs].sort((a, b) => {
-    const aDate = new Date(
-      (a as SyncQueueJob).completedAt ?? (a as typeof repoJobs[number]).startedAt ?? 0,
-    );
-    const bDate = new Date(
-      (b as SyncQueueJob).completedAt ?? (b as typeof repoJobs[number]).startedAt ?? 0,
-    );
+    const aDate = new Date((a as SyncQueueJob).completedAt ?? (a as (typeof repoJobs)[number]).startedAt ?? 0);
+    const bDate = new Date((b as SyncQueueJob).completedAt ?? (b as (typeof repoJobs)[number]).startedAt ?? 0);
     return bDate.getTime() - aDate.getTime();
   });
 
   const queryClient = useQueryClient();
 
   const blogSyncMutation = useMutation({
-    mutationFn: () =>
-      apiFetch<{ synced: number; newPosts: number }>('/admin/blog/sync', { method: 'POST' }),
+    mutationFn: () => apiFetch<{ synced: number; newPosts: number }>('/admin/blog/sync', { method: 'POST' }),
     onSuccess: (result) => {
       showToast(`블로그 싱크 완료 — ${result.synced}개 피드, 새 글 ${result.newPosts}개`);
     },
@@ -142,11 +170,28 @@ export default function SyncTab() {
 
   const profileRefreshMutation = useMutation({
     mutationFn: () =>
-      apiFetch<{ checked: number; refreshed: number; failed: number }>('/admin/members/refresh-profiles', { method: 'POST' }),
+      apiFetch<{ checked: number; refreshed: number; failed: number }>('/admin/members/refresh-profiles', {
+        method: 'POST',
+      }),
     onSuccess: (result) => {
       showToast(`프로필 새로고침 완료 — ${result.refreshed}/${result.checked}명, 실패 ${result.failed}명`);
     },
     onError: (e) => showToast(e instanceof Error ? e.message : '프로필 새로고침 실패', 'error'),
+  });
+
+  const tecoTalkSyncMutation = useMutation({
+    mutationFn: (mode: 'incremental' | 'full') =>
+      apiFetch<{ total: number; matched: number; ambiguous: number; unmatched: number }>(
+        `/admin/tecotalk/sync${mode === 'full' ? '?mode=full' : ''}`,
+        { method: 'POST' },
+      ),
+    onSuccess: (result) => {
+      void queryClient.invalidateQueries({ queryKey: ['tecotalks', 'sync-status'] });
+      showToast(
+        `테코톡 싱크 완료 — ${result.matched}/${result.total} 매칭, ambiguous ${result.ambiguous}, unmatched ${result.unmatched}`,
+      );
+    },
+    onError: (e) => showToast(e instanceof Error ? e.message : '테코톡 싱크 실패', 'error'),
   });
 
   const toggleBlogSyncMutation = useMutation({
@@ -227,8 +272,7 @@ export default function SyncTab() {
   });
 
   const cancelJobMutation = useMutation({
-    mutationFn: (jobId: string) =>
-      apiFetch<{ success: boolean }>(`/admin/sync/jobs/${jobId}`, { method: 'DELETE' }),
+    mutationFn: (jobId: string) => apiFetch<{ success: boolean }>(`/admin/sync/jobs/${jobId}`, { method: 'DELETE' }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['sync-queue-jobs'] });
       showToast('작업이 취소되었습니다');
@@ -272,21 +316,50 @@ export default function SyncTab() {
     <div className="space-y-4">
       {/* 상태 */}
       {status && (
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3 xl:grid-cols-5">
           <div className="bg-gray-50 border border-gray-200 rounded p-3">
             <p className="text-xs text-gray-500">멤버 수</p>
             <p className="text-xl font-semibold text-gray-900">{status.memberCount}</p>
           </div>
           <div className="bg-gray-50 border border-gray-200 rounded p-3">
             <p className="text-xs text-gray-500">활성 레포</p>
-            <p className="text-xl font-semibold text-gray-900">{status.activeRepoCount}</p>
+            <p className="text-xl font-semibold text-gray-900">{repoCount ?? '—'}</p>
           </div>
           <div className="bg-gray-50 border border-gray-200 rounded p-3">
             <p className="text-xs text-gray-500">마지막 싱크</p>
-            <p className="text-sm font-medium text-gray-700">
-              {status.lastSyncAt
-                ? new Date(status.lastSyncAt).toLocaleString('ko-KR')
-                : '없음'}
+            <p className="text-sm font-medium text-gray-700">{formatDate(status.lastSyncAt)}</p>
+          </div>
+          <div className="bg-gray-50 border border-gray-200 rounded p-3">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs text-gray-500">GitHub API</p>
+              <span
+                className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+                  !githubStatus
+                    ? 'bg-gray-100 text-gray-500'
+                    : githubStatus.ok
+                      ? githubStatus.remaining < 100
+                        ? 'bg-orange-100 text-orange-700'
+                        : 'bg-green-100 text-green-700'
+                      : 'bg-red-100 text-red-700'
+                }`}
+              >
+                {!githubStatus ? '확인 중' : githubStatus.ok ? '정상' : '오류'}
+              </span>
+            </div>
+            <p className="text-xl font-semibold text-gray-900">
+              {githubStatus?.ok ? `${githubStatus.remaining}/${githubStatus.limit}` : '—'}
+            </p>
+            {githubStatus?.resetAt && (
+              <p className="text-[10px] text-gray-400">reset {formatDate(githubStatus.resetAt)}</p>
+            )}
+          </div>
+          <div className="bg-gray-50 border border-gray-200 rounded p-3">
+            <p className="text-xs text-gray-500">테코톡 매칭</p>
+            <p className="text-xl font-semibold text-gray-900">
+              {tecoTalkStatusCounts.matched}/{tecoTalks.length}
+            </p>
+            <p className="text-[10px] text-gray-400">
+              ambiguous {tecoTalkStatusCounts.ambiguous} · unmatched {tecoTalkStatusCounts.unmatched}
             </p>
           </div>
         </div>
@@ -300,9 +373,7 @@ export default function SyncTab() {
               <span className="text-xs text-gray-500">블로그 RSS 자동 싱크</span>
               <span
                 className={`text-xs px-2 py-0.5 rounded font-medium ${
-                  workspace?.blogSyncEnabled
-                    ? 'bg-green-100 text-green-700'
-                    : 'bg-gray-100 text-gray-500'
+                  workspace?.blogSyncEnabled ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
                 }`}
               >
                 {workspace?.blogSyncEnabled ? '활성' : '비활성'}
@@ -317,9 +388,7 @@ export default function SyncTab() {
               <span className="text-xs text-gray-500">프로필 자동 새로고침</span>
               <span
                 className={`text-xs px-2 py-0.5 rounded font-medium ${
-                  workspace?.profileRefreshEnabled
-                    ? 'bg-green-100 text-green-700'
-                    : 'bg-gray-100 text-gray-500'
+                  workspace?.profileRefreshEnabled ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
                 }`}
               >
                 {workspace?.profileRefreshEnabled ? '활성' : '비활성'}
@@ -330,7 +399,13 @@ export default function SyncTab() {
             )}
             {status?.lastProfileRefreshAt && (
               <p className="text-[10px] text-gray-400 mt-1">
-                마지막: {new Date(status.lastProfileRefreshAt).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                마지막:{' '}
+                {new Date(status.lastProfileRefreshAt).toLocaleString('ko-KR', {
+                  month: '2-digit',
+                  day: '2-digit',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
               </p>
             )}
           </div>
@@ -411,6 +486,53 @@ export default function SyncTab() {
         </div>
       </div>
 
+      {/* 테코톡 */}
+      <div className="bg-white border border-gray-200 rounded p-4 space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h3 className="text-xs font-semibold text-gray-600">테코톡</h3>
+            <p className="text-[11px] text-gray-400 mt-1">
+              최신 업로드:{' '}
+              {latestTecoTalk ? `${latestTecoTalk.title} · ${formatDate(latestTecoTalk.uploadedAt)}` : '없음'}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => tecoTalkSyncMutation.mutate('incremental')}
+              disabled={tecoTalkSyncMutation.isPending}
+              className="bg-red-600 text-white text-sm rounded px-4 py-1.5 hover:bg-red-700 disabled:opacity-40"
+            >
+              {tecoTalkSyncMutation.isPending ? '싱크 중...' : '증분 싱크'}
+            </button>
+            <button
+              onClick={() => tecoTalkSyncMutation.mutate('full')}
+              disabled={tecoTalkSyncMutation.isPending}
+              className="bg-gray-700 text-white text-sm rounded px-4 py-1.5 hover:bg-gray-800 disabled:opacity-40"
+            >
+              {tecoTalkSyncMutation.isPending ? '싱크 중...' : '전체 재매칭'}
+            </button>
+          </div>
+        </div>
+        <div className="grid grid-cols-4 gap-2 text-xs">
+          <div className="rounded border border-gray-200 bg-gray-50 p-2">
+            <p className="text-gray-500">전체</p>
+            <p className="font-semibold text-gray-900">{tecoTalks.length}</p>
+          </div>
+          <div className="rounded border border-green-200 bg-green-50 p-2">
+            <p className="text-green-700">matched</p>
+            <p className="font-semibold text-green-900">{tecoTalkStatusCounts.matched}</p>
+          </div>
+          <div className="rounded border border-orange-200 bg-orange-50 p-2">
+            <p className="text-orange-700">ambiguous</p>
+            <p className="font-semibold text-orange-900">{tecoTalkStatusCounts.ambiguous}</p>
+          </div>
+          <div className="rounded border border-red-200 bg-red-50 p-2">
+            <p className="text-red-700">unmatched</p>
+            <p className="font-semibold text-red-900">{tecoTalkStatusCounts.unmatched}</p>
+          </div>
+        </div>
+      </div>
+
       {/* 컨트롤 */}
       <div className="bg-white border border-gray-200 rounded p-4 space-y-3">
         <h3 className="text-xs font-semibold text-gray-600">미션 싱크</h3>
@@ -450,10 +572,7 @@ export default function SyncTab() {
               {enqueueMutation.isPending ? '큐 추가 중...' : '기수 레포 업데이트'}
             </button>
             {running && (
-              <button
-                onClick={stop}
-                className="bg-red-500 text-white text-sm rounded px-4 py-1.5 hover:bg-red-600"
-              >
+              <button onClick={stop} className="bg-red-500 text-white text-sm rounded px-4 py-1.5 hover:bg-red-600">
                 중단
               </button>
             )}
@@ -480,7 +599,9 @@ export default function SyncTab() {
                 {activeQueueJobs.map((j) => (
                   <tr key={j.id} className="hover:bg-gray-50">
                     <td className="px-3 py-2 text-gray-500 whitespace-nowrap">
-                      {new Date(j.status === 'running' && j.startedAt ? j.startedAt : j.createdAt).toLocaleString('ko-KR')}
+                      {new Date(j.status === 'running' && j.startedAt ? j.startedAt : j.createdAt).toLocaleString(
+                        'ko-KR',
+                      )}
                     </td>
                     <td className="px-3 py-2">
                       <span className="text-xs px-1.5 py-0.5 rounded font-medium border bg-blue-50 text-blue-700 border-blue-200">
@@ -491,18 +612,14 @@ export default function SyncTab() {
                     <td className="px-3 py-2">
                       <span
                         className={`text-xs px-1.5 py-0.5 rounded font-medium ${
-                          j.status === 'queued'
-                            ? 'bg-gray-100 text-gray-600'
-                            : 'bg-blue-100 text-blue-700'
+                          j.status === 'queued' ? 'bg-gray-100 text-gray-600' : 'bg-blue-100 text-blue-700'
                         }`}
                       >
                         {j.status}
                       </span>
                     </td>
                     <td className="px-3 py-2 text-gray-700">
-                      {j.progress
-                        ? `${j.progress.repo} (${j.progress.done}/${j.progress.total})`
-                        : '—'}
+                      {j.progress ? `${j.progress.repo} (${j.progress.done}/${j.progress.total})` : '—'}
                     </td>
                     <td className="px-3 py-2 text-gray-700 truncate max-w-[200px]">—</td>
                     <td className="px-3 py-2">
@@ -527,9 +644,7 @@ export default function SyncTab() {
         <div className="bg-gray-900 rounded border border-gray-700 p-4 font-mono text-xs max-h-96 overflow-y-auto">
           {logs.map((entry, i) => (
             <div key={i} className={`${logColor(entry.type)} leading-5`}>
-              <span className="text-gray-600 mr-2">
-                {new Date(entry.ts).toLocaleTimeString('ko-KR')}
-              </span>
+              <span className="text-gray-600 mr-2">{new Date(entry.ts).toLocaleTimeString('ko-KR')}</span>
               {entry.message}
             </div>
           ))}
@@ -554,7 +669,7 @@ export default function SyncTab() {
                 {allJobs.map((j) => {
                   const isQueueJob = !('repoName' in j);
                   const queueJob = j as SyncQueueJob;
-                  const repoJob = j as typeof repoJobs[number];
+                  const repoJob = j as (typeof repoJobs)[number];
                   return (
                     <tr key={j.id} className="hover:bg-gray-50">
                       <td className="px-3 py-2 text-gray-500 whitespace-nowrap">
@@ -605,7 +720,7 @@ export default function SyncTab() {
                         {isQueueJob
                           ? typeof queueJob.result?.totalSynced === 'number'
                             ? `✓ ${queueJob.result.totalSynced}개`
-                            : queueJob.error ?? '—'
+                            : (queueJob.error ?? '—')
                           : `${repoJob.repoName ? `${repoJob.repoName} — ` : ''}${repoJob.message}`}
                       </td>
                     </tr>
