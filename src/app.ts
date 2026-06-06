@@ -19,6 +19,7 @@ import { createActivityLogRepository } from './db/repositories/activity-log.repo
 import { createPersonRepository } from './db/repositories/person.repository.js';
 import { createBannedWordRepository } from './db/repositories/banned-word.repository.js';
 import { createIgnoredDomainRepository } from './db/repositories/ignored-domain.repository.js';
+import { createTecoTalkRepository } from './db/repositories/tecotalk.repository.js';
 
 // Services
 import { createWorkspaceService } from './features/workspace/workspace.service.js';
@@ -47,6 +48,8 @@ import { createMemberPublicService } from './features/member/member.public.servi
 import { createMemberPublicRouter } from './features/member/member.public.route.js';
 import { createArchiveService } from './features/archive/archive.service.js';
 import { createArchiveRouter } from './features/archive/archive.route.js';
+import { createTecoTalkService } from './features/tecotalk/tecotalk.service.js';
+import { createTecoTalkRouter } from './features/tecotalk/tecotalk.route.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const publicDir = existsSync(join(__dirname, 'public'))
@@ -67,6 +70,7 @@ const activityLogRepo = createActivityLogRepository(db);
 const personRepo = createPersonRepository(db);
 const bannedWordRepo = createBannedWordRepository(db);
 const ignoredDomainRepo = createIgnoredDomainRepository(db);
+const tecoTalkRepo = createTecoTalkRepository(db);
 
 const workspaceService = createWorkspaceService({ workspaceRepo });
 const activityLogService = createActivityLogService({ activityLogRepo, workspaceService });
@@ -103,6 +107,7 @@ const blogAdminService = createBlogAdminService({
 const memberPublicService = createMemberPublicService({
   memberRepo,
   blogPostRepo,
+  tecoTalkRepo,
   cohortRepoRepo,
   bannedWordRepo,
   workspaceService,
@@ -111,6 +116,7 @@ const memberPublicService = createMemberPublicService({
   octokit,
 });
 const archiveService = createArchiveService({ memberRepo, cohortRepoRepo, workspaceService });
+const tecoTalkService = createTecoTalkService({ tecoTalkRepo, memberRepo, workspaceService });
 const syncAdminService = createSyncAdminService({
   cohortRepoRepo,
   memberRepo,
@@ -198,6 +204,7 @@ app.use('/admin', createPersonRouter({ personRepo, memberRepo, workspaceService 
 app.use('/admin/banned-words', createBannedWordRouter({ bannedWordRepo, workspaceService }));
 app.use('/admin/ignored-domains', createIgnoredDomainRouter({ ignoredDomainRepo, workspaceService }));
 app.use('/admin/archive', createArchiveRouter(archiveService));
+app.use('/admin/tecotalk', createTecoTalkRouter(tecoTalkService));
 
 app.use(errorHandler);
 

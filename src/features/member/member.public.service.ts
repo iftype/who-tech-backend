@@ -1,5 +1,6 @@
 import type { MemberRepository } from '../../db/repositories/member.repository.js';
 import type { BlogPostRepository } from '../../db/repositories/blog-post.repository.js';
+import type { TecoTalkRepository } from '../../db/repositories/tecotalk.repository.js';
 import type { CohortRepoRepository } from '../../db/repositories/cohort-repo.repository.js';
 import type { BannedWordRepository } from '../../db/repositories/banned-word.repository.js';
 import type { WorkspaceService } from '../workspace/workspace.service.js';
@@ -14,6 +15,7 @@ import { refreshMemberProfileById } from './member.profile-refresh.js';
 export function createMemberPublicService(deps: {
   memberRepo: MemberRepository;
   blogPostRepo: BlogPostRepository;
+  tecoTalkRepo: TecoTalkRepository;
   cohortRepoRepo: CohortRepoRepository;
   bannedWordRepo: BannedWordRepository;
   workspaceService: WorkspaceService;
@@ -24,6 +26,7 @@ export function createMemberPublicService(deps: {
   const {
     memberRepo,
     blogPostRepo,
+    tecoTalkRepo,
     cohortRepoRepo,
     bannedWordRepo,
     workspaceService,
@@ -93,6 +96,11 @@ export function createMemberPublicService(deps: {
   }
 
   const service = {
+    // 블로그 글 클릭(조회) 기록: viewCount +1 후 대상 URL 반환 (who-tech 내부 조회수)
+    visitBlogPost: async (postId: number): Promise<{ url: string; viewCount: number } | null> => {
+      return blogPostRepo.incrementViewCount(postId);
+    },
+
     searchMembers: async (filters?: SearchFilters) => {
       const workspace = await workspaceService.getOrThrow();
       const members = await memberRepo.findWithFiltersLight(workspace.id, filters);
@@ -132,6 +140,7 @@ export function createMemberPublicService(deps: {
 
       const nickname = resolveDisplayNickname(member.manualNickname, member.nicknameStats, member.nickname);
       const cohorts = buildCohortList(member.memberCohorts);
+      const tecoTalks = await tecoTalkRepo.findByMemberId(member.id);
 
       const submissionsByRepo = new Map<
         number,
@@ -259,6 +268,7 @@ export function createMemberPublicService(deps: {
         blog: member.blog,
         lastPostedAt: member.lastPostedAt,
         archive,
+        tecoTalks,
         person: member.person
           ? {
               id: member.person.id,
@@ -299,9 +309,11 @@ export function createMemberPublicService(deps: {
 
         const inferredTrack = computeDominantTrack(p.member.submissions);
         return {
+          id: p.id,
           url: p.url,
           title: p.title,
           publishedAt: p.publishedAt,
+          viewCount: p.viewCount,
           member: {
             githubId: p.member.githubId,
             nickname: resolveDisplayNickname(p.member.manualNickname, p.member.nicknameStats, p.member.nickname),

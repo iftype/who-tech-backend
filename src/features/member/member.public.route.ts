@@ -85,6 +85,24 @@ export function createMemberPublicRouter(service: MemberPublicService) {
     }),
   );
 
+  // GET /members/blog-posts/:id/visit — 클릭(조회)수 +1 후 블로그 글로 리다이렉트
+  router.get(
+    '/blog-posts/:id/visit',
+    asyncHandler(async (req, res) => {
+      const id = parseOptionalNumberQuery(req.params['id']);
+      if (id === undefined) {
+        res.status(400).json({ error: 'invalid post id' });
+        return;
+      }
+      const result = await service.visitBlogPost(id);
+      if (!result) {
+        res.status(404).json({ error: 'Blog post not found' });
+        return;
+      }
+      res.redirect(302, result.url);
+    }),
+  );
+
   // GET /members/:githubId
   router.get(
     '/:githubId',
