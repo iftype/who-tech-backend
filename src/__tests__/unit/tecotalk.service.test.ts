@@ -8,6 +8,15 @@ function member(id: number, nickname: string): MemberWithRelations {
   return { id, nickname, manualNickname: null, nicknameStats: null } as unknown as MemberWithRelations;
 }
 
+function memberWithStats(id: number, nickname: string, stats: Array<{ nickname: string; count: number }>) {
+  return {
+    id,
+    nickname,
+    manualNickname: null,
+    nicknameStats: JSON.stringify(stats.map((stat) => ({ ...stat, lastSeenAt: '2024-01-01T00:00:00.000Z' }))),
+  } as unknown as MemberWithRelations;
+}
+
 function makeVideo(title: string, year: number) {
   return {
     videoId: `vid-${title}`,
@@ -88,6 +97,24 @@ describe('createTecoTalkService.syncTecoTalks', () => {
     expect(result.matched).toBe(1);
     const [, ids] = setSpeakers.mock.calls[0] as [number, number[]];
     expect([...ids].sort((a, b) => a - b)).toEqual([10, 20]);
+  });
+
+  it('다른 멤버의 낮은 신뢰도 nicknameStats 때문에 ambiguous 처리하지 않는다', async () => {
+    const { service, setSpeakers } = setup(
+      [
+        member(10, '시지프'),
+        memberWithStats(20, '밧드', [
+          { nickname: '밧드', count: 21 },
+          { nickname: '시지프', count: 1 },
+        ]),
+      ],
+      [makeVideo('[10분 테코톡] 시지프의 타입스크립트 도약하기', 2024)],
+    );
+
+    const result = await service.syncTecoTalks();
+
+    expect(result).toEqual({ total: 1, matched: 1, ambiguous: 0, unmatched: 0 });
+    expect(setSpeakers).toHaveBeenCalledWith(42, [10]);
   });
 
   it('일치하는 멤버가 없으면 unmatched로 저장하고 발표자를 비운다', async () => {

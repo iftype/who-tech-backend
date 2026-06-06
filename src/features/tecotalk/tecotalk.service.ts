@@ -2,7 +2,7 @@ import type { MemberRepository, MemberWithRelations } from '../../db/repositorie
 import type { TecoTalkRepository } from '../../db/repositories/tecotalk.repository.js';
 import type { WorkspaceService } from '../workspace/workspace.service.js';
 import { detectCohort } from '../sync/github.service.js';
-import { normalizeNickname, parseNicknameStats, resolveDisplayNickname } from '../../shared/nickname.js';
+import { normalizeNickname, resolveDisplayNickname } from '../../shared/nickname.js';
 import { HttpError } from '../../shared/http.js';
 import { fetchPlaylistVideos, type YouTubeVideo } from './youtube.js';
 import { extractSpeakerZone, nicknameInZone } from './tecotalk.parser.js';
@@ -25,7 +25,7 @@ export type TecoTalkSyncResult = {
   unmatched: number;
 };
 
-/** 멤버가 가진 모든 닉네임 후보(정규화)를 모은다: manualNickname / nicknameStats / nickname */
+/** 멤버의 신뢰 가능한 닉네임 후보(정규화)를 모은다: manualNickname / nickname / 대표 노출 닉네임 */
 function memberNicknameSet(member: MemberWithRelations): Set<string> {
   const set = new Set<string>();
   const add = (value: string | null | undefined) => {
@@ -36,7 +36,6 @@ function memberNicknameSet(member: MemberWithRelations): Set<string> {
 
   add(member.manualNickname);
   add(member.nickname);
-  for (const stat of parseNicknameStats(member.nicknameStats)) add(stat.nickname);
   // resolveDisplayNickname 으로 노출되는 대표 닉네임도 포함
   add(resolveDisplayNickname(member.manualNickname, member.nicknameStats, member.nickname));
 
