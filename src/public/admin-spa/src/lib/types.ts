@@ -41,7 +41,8 @@ export interface NewBlogPost {
 export interface AdminStatus {
   ok: boolean;
   memberCount: number;
-  activeRepoCount: number;
+  repoCount?: number;
+  activeRepoCount?: number;
   lastSyncAt: string | null;
   profileRefreshEnabled: boolean;
   lastProfileRefreshAt: string | null;
@@ -52,6 +53,17 @@ export interface GithubStatus {
   remaining: number;
   limit: number;
   resetAt: string | null;
+}
+
+export interface TecoTalkAdminItem {
+  id: number;
+  videoId: string;
+  title: string;
+  url: string;
+  uploadedAt: string;
+  viewCount: number;
+  cohort: number | null;
+  matchStatus: 'matched' | 'ambiguous' | 'unmatched';
 }
 
 export interface MemberCohort {
