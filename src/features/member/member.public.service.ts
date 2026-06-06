@@ -39,44 +39,90 @@ export function createMemberPublicService(deps: {
     submissions: Array<{ prUrl: string; prNumber: number; title: string; status: string; submittedAt: Date }> | null;
   }
 
+  type SearchFilters = {
+    q?: string;
+    cohort?: number;
+    track?: string;
+    role?: string;
+    roleGroup?: 'crew' | 'staff';
+  };
+
+  type PublicMember = {
+    githubId: string;
+    nickname: string;
+    avatarUrl: string | null;
+    cohort: number | null;
+    roles: string[];
+    cohorts: { cohort: number; roles: string[] }[];
+    track: string | null;
+    tracks: string[];
+    blog: string | null;
+    lastPostedAt: Date | null;
+  };
+
+  function toPublicMember(
+    m: Awaited<ReturnType<MemberRepository['findWithFiltersLight']>>[number],
+    filters?: SearchFilters,
+  ) {
+    const cohorts = buildCohortList(m.memberCohorts);
+
+    const targetCohort = filters?.cohort ? cohorts.find((c) => c.cohort === filters.cohort) : cohorts[0];
+
+    const inferredTrack = computeDominantTrack(m.submissions);
+    return {
+      githubId: m.githubId,
+      nickname: resolveDisplayNickname(m.manualNickname, m.nicknameStats, m.nickname) ?? m.githubId,
+      avatarUrl: m.avatarUrl,
+      cohort: targetCohort?.cohort ?? null,
+      roles: targetCohort?.roles ?? ['crew'],
+      cohorts,
+      track: m.track ?? inferredTrack ?? null,
+      tracks: [
+        ...new Set([
+          ...(m.track ? [m.track] : []),
+          ...(inferredTrack ? [inferredTrack] : []),
+          ...m.submissions
+            .filter((s) => s.status !== 'closed')
+            .map((s) => s.missionRepo.track)
+            .filter((t): t is string => t !== null),
+        ]),
+      ],
+      blog: m.blog,
+      lastPostedAt: m.lastPostedAt,
+    } satisfies PublicMember;
+  }
+
   const service = {
-    searchMembers: async (filters?: {
-      q?: string;
-      cohort?: number;
-      track?: string;
-      role?: string;
-      roleGroup?: 'crew' | 'staff';
-    }) => {
+    searchMembers: async (filters?: SearchFilters) => {
       const workspace = await workspaceService.getOrThrow();
       const members = await memberRepo.findWithFiltersLight(workspace.id, filters);
-      return members.map((m) => {
-        const cohorts = buildCohortList(m.memberCohorts);
+      return members.map((m) => toPublicMember(m, filters));
+    },
 
-        const targetCohort = filters?.cohort ? cohorts.find((c) => c.cohort === filters.cohort) : cohorts[0];
+    searchMembersPage: async (
+      filters: SearchFilters | undefined,
+      pagination: { limit: number; offset: number },
+    ): Promise<{
+      members: PublicMember[];
+      totalCount: number;
+      counts: { crew: number; staff: number };
+      nextOffset: number | null;
+    }> => {
+      const workspace = await workspaceService.getOrThrow();
+      const [members, totalCount, crewCount, staffCount] = await Promise.all([
+        memberRepo.findWithFiltersLightPage(workspace.id, filters, pagination),
+        memberRepo.countWithFilters(workspace.id, filters),
+        memberRepo.countWithFilters(workspace.id, { ...filters, roleGroup: 'crew' }),
+        memberRepo.countWithFilters(workspace.id, { ...filters, roleGroup: 'staff' }),
+      ]);
+      const nextOffset = pagination.offset + members.length < totalCount ? pagination.offset + members.length : null;
 
-        const inferredTrack = computeDominantTrack(m.submissions);
-        return {
-          githubId: m.githubId,
-          nickname: resolveDisplayNickname(m.manualNickname, m.nicknameStats, m.nickname),
-          avatarUrl: m.avatarUrl,
-          cohort: targetCohort?.cohort ?? null,
-          roles: targetCohort?.roles ?? ['crew'],
-          cohorts,
-          track: m.track ?? inferredTrack ?? null,
-          tracks: [
-            ...new Set([
-              ...(m.track ? [m.track] : []),
-              ...(inferredTrack ? [inferredTrack] : []),
-              ...m.submissions
-                .filter((s) => s.status !== 'closed')
-                .map((s) => s.missionRepo.track)
-                .filter((t) => t !== null),
-            ]),
-          ],
-          blog: m.blog,
-          lastPostedAt: m.lastPostedAt,
-        };
-      });
+      return {
+        members: members.map((m) => toPublicMember(m, filters)),
+        totalCount,
+        counts: { crew: crewCount, staff: staffCount },
+        nextOffset,
+      };
     },
 
     getMemberDetail: async (githubId: string) => {

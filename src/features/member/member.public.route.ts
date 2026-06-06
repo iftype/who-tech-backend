@@ -6,6 +6,36 @@ import type { MemberPublicService } from './member.public.service.js';
 export function createMemberPublicRouter(service: MemberPublicService) {
   const router = Router();
 
+  // GET /members/search?q=&cohort=&track=&role=&limit=&offset=
+  router.get(
+    '/search',
+    asyncHandler(async (req, res) => {
+      const q = typeof req.query['q'] === 'string' ? req.query['q'] : undefined;
+      const cohort = parseOptionalNumberQuery(req.query['cohort']);
+      const track = typeof req.query['track'] === 'string' ? req.query['track'] : undefined;
+      const role = typeof req.query['role'] === 'string' ? req.query['role'] : undefined;
+      const roleGroup =
+        typeof req.query['roleGroup'] === 'string' ? (req.query['roleGroup'] as 'crew' | 'staff') : undefined;
+      const limitValue = parseOptionalNumberQuery(req.query['limit']);
+      const offsetValue = parseOptionalNumberQuery(req.query['offset']);
+      const limit = Math.min(Math.max(limitValue ?? 120, 1), 200);
+      const offset = Math.max(offsetValue ?? 0, 0);
+
+      res.json(
+        await service.searchMembersPage(
+          {
+            ...(q ? { q } : {}),
+            ...(cohort !== undefined ? { cohort } : {}),
+            ...(track ? { track } : {}),
+            ...(role ? { role } : {}),
+            ...(roleGroup ? { roleGroup } : {}),
+          },
+          { limit, offset },
+        ),
+      );
+    }),
+  );
+
   // GET /members?q=&cohort=&track=&role=
   router.get(
     '/',
