@@ -196,7 +196,7 @@ app.use('/admin', adminAuth);
 app.use('/admin/workspace', createWorkspaceRouter(workspaceService));
 app.use('/admin/repos', createRepoRouter(repoService, syncAdminService));
 app.use('/admin', createSyncRouter(syncAdminService));
-app.use('/admin', createBlogRouter(blogAdminService, syncAdminService));
+app.use('/admin', createBlogRouter(blogAdminService));
 app.use('/admin/members', createMemberRouter(memberService));
 app.use('/admin/cohort-repos', createCohortRepoRouter(cohortRepoService));
 app.use('/admin/logs', createActivityLogRouter(activityLogService));

@@ -65,6 +65,40 @@ describe('PUT /admin/workspace', () => {
   });
 });
 
+describe('블로그 싱크 job', () => {
+  beforeEach(async () => {
+    await prisma.workspace.update({
+      where: { name: 'woowacourse' },
+      data: { blogSyncEnabled: false },
+    });
+  });
+
+  afterEach(async () => {
+    await prisma.workspace.update({
+      where: { name: 'woowacourse' },
+      data: { blogSyncEnabled: true },
+    });
+  });
+
+  it('POST /admin/blog/sync에서 만든 job을 GET /admin/blog/sync-jobs/:id로 조회한다', async () => {
+    const created = await request(app)
+      .post('/admin/blog/sync')
+      .set('Authorization', `Bearer ${ADMIN_SECRET}`)
+      .set('X-Sync-Source', 'github-actions');
+
+    expect(created.status).toBe(202);
+    expect(created.body.id).toEqual(expect.any(String));
+
+    const found = await request(app)
+      .get(`/admin/blog/sync-jobs/${created.body.id}`)
+      .set('Authorization', `Bearer ${ADMIN_SECRET}`);
+
+    expect(found.status).toBe(200);
+    expect(found.body.id).toBe(created.body.id);
+    expect(found.body.source).toBe('github-actions');
+  });
+});
+
 describe('레포 관리 CRUD', () => {
   let repoId: number;
 
