@@ -1,9 +1,8 @@
 import { Router } from 'express';
 import { asyncHandler, badRequest } from '../../shared/http.js';
 import type { BlogAdminService } from './blog.admin.service.js';
-import type { SyncAdminService } from '../sync/sync.admin.service.js';
 
-export function createBlogRouter(service: BlogAdminService, syncAdminService: SyncAdminService) {
+export function createBlogRouter(service: BlogAdminService) {
   const router = Router();
 
   // 1. 블로그 동기화 (30일 저장 / 조회는 7일 필터링)
@@ -11,8 +10,7 @@ export function createBlogRouter(service: BlogAdminService, syncAdminService: Sy
     '/blog/sync',
     asyncHandler(async (_req, res) => {
       const source = _req.get('X-Sync-Source') === 'github-actions' ? 'github-actions' : 'manual';
-      const jobId = syncAdminService.createJob('blog', undefined, undefined, source);
-      const job = syncAdminService.getJob(jobId);
+      const job = await service.enqueueWorkspaceBlogSync(source);
       res.status(202).json(job);
     }),
   );
