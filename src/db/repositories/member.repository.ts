@@ -68,6 +68,9 @@ type MemberFilters = {
   track?: string;
   role?: string;
   roleGroup?: 'crew' | 'staff';
+  // 앱 레이어에서 nicknameStats 상위 토큰 매칭으로 미리 계산한 추가 매칭 대상 githubId.
+  // q 검색의 OR 절에 합류해 실명/부분 매칭을 더한다. (페이지네이션·카운트와 일관 유지)
+  nameMatchGithubIds?: string[];
 };
 
 function buildMemberWhere(workspaceId: number, filters?: MemberFilters): Prisma.MemberWhereInput {
@@ -97,6 +100,9 @@ function buildMemberWhere(workspaceId: number, filters?: MemberFilters): Prisma.
             { previousIds: { some: { githubId: { contains: filters.q } } } },
             { nickname: { contains: filters.q } },
             { manualNickname: { contains: filters.q } },
+            ...(filters.nameMatchGithubIds && filters.nameMatchGithubIds.length > 0
+              ? [{ githubId: { in: filters.nameMatchGithubIds } }]
+              : []),
           ] satisfies Prisma.MemberWhereInput[],
         }
       : {}),
@@ -135,6 +141,13 @@ export function createMemberRepository(db: PrismaClient) {
 
     countWithFilters: (workspaceId: number, filters?: MemberFilters): Promise<number> =>
       db.member.count({ where: buildMemberWhere(workspaceId, filters) }),
+
+    // 이름(실명/부분) 검색 매칭용 경량 소스: githubId + nicknameStats(JSON 문자열)
+    findNameSearchSource: (workspaceId: number): Promise<{ githubId: string; nicknameStats: string | null }[]> =>
+      db.member.findMany({
+        where: { workspaceId },
+        select: { githubId: true, nicknameStats: true },
+      }),
 
     // 기본 조회 메서드들
     findByGithubId: (githubId: string, workspaceId: number): Promise<MemberDetailWithRelations | null> =>

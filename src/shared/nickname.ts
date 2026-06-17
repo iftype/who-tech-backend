@@ -54,6 +54,29 @@ export function isValidNickname(nickname: string): boolean {
   return true;
 }
 
+/**
+ * query가 멤버의 nicknameStats 상위 빈도 토큰(top N) 중 하나에 부분일치하면
+ * 그 토큰의 빈도수(count)를, 매칭이 없으면 -1을 반환한다.
+ *
+ * 닉네임·실명은 PR 제목마다 반복돼 count가 높고, 미션 키워드("경주", "영화" 등)는
+ * 낮다. 상위 N개만 매칭 대상으로 삼아 미션 키워드 오탐을 막는다.
+ * 매칭은 단순 부분 문자열 포함("건형"→"조건형")이고, 빈도수가 곧 정렬 점수다.
+ * 호출 측에서 빈도수 상위 N명만 추려 짧은 검색어(예: "김")에도 결과가 쏟아지지 않게 한다.
+ */
+export function scoreTopNicknameMatch(nicknameStatsValue: string | null | undefined, query: string, topN = 3): number {
+  const q = query.trim();
+  if (q.length === 0) return -1;
+
+  const stats = parseNicknameStats(nicknameStatsValue);
+  if (stats.length === 0) return -1;
+
+  let best = -1;
+  for (const stat of [...stats].sort((a, b) => b.count - a.count).slice(0, topN)) {
+    if (stat.nickname.includes(q) && stat.count > best) best = stat.count;
+  }
+  return best;
+}
+
 export function mergeNicknameStat(
   existingValue: string | null | undefined,
   nickname: string,
