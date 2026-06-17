@@ -7,7 +7,7 @@ import type { WorkspaceService } from '../workspace/workspace.service.js';
 import type { ActivityLogService } from '../activity-log/activity-log.service.js';
 import type { BlogService } from '../blog/blog.service.js';
 import type { Octokit } from '@octokit/rest';
-import { resolveDisplayNickname } from '../../shared/nickname.js';
+import { resolveDisplayNickname, scoreTopNicknameMatch } from '../../shared/nickname.js';
 import { buildCohortList } from '../../shared/member-cohort.js';
 import { computeDominantTrack } from '../../shared/member-track.js';
 import { refreshMemberProfileById } from './member.profile-refresh.js';
@@ -95,6 +95,21 @@ export function createMemberPublicService(deps: {
     } satisfies PublicMember;
   }
 
+  // q가 nicknameStats 상위 토큰과 매칭되는 멤버의 githubId 목록.
+  // 점수순 상위 NAME_MATCH_LIMIT명만 반환해 "김" 같은 짧은 검색어에도 결과가 쏟아지지 않게 한다.
+  const NAME_MATCH_LIMIT = 10;
+  async function computeNameMatchGithubIds(workspaceId: number, filters?: SearchFilters): Promise<string[]> {
+    const q = filters?.q?.trim();
+    if (!q) return [];
+    const source = await memberRepo.findNameSearchSource(workspaceId);
+    return source
+      .map((m) => ({ githubId: m.githubId, score: scoreTopNicknameMatch(m.nicknameStats, q) }))
+      .filter((m) => m.score >= 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, NAME_MATCH_LIMIT)
+      .map((m) => m.githubId);
+  }
+
   const service = {
     // 블로그 글 클릭(조회) 기록: viewCount +1 후 대상 URL 반환 (who-tech 내부 조회수)
     visitBlogPost: async (postId: number): Promise<{ url: string; viewCount: number } | null> => {
@@ -103,7 +118,9 @@ export function createMemberPublicService(deps: {
 
     searchMembers: async (filters?: SearchFilters) => {
       const workspace = await workspaceService.getOrThrow();
-      const members = await memberRepo.findWithFiltersLight(workspace.id, filters);
+      const nameMatchGithubIds = await computeNameMatchGithubIds(workspace.id, filters);
+      const effectiveFilters = nameMatchGithubIds.length > 0 ? { ...filters, nameMatchGithubIds } : filters;
+      const members = await memberRepo.findWithFiltersLight(workspace.id, effectiveFilters);
       return members.map((m) => toPublicMember(m, filters));
     },
 
@@ -117,11 +134,13 @@ export function createMemberPublicService(deps: {
       nextOffset: number | null;
     }> => {
       const workspace = await workspaceService.getOrThrow();
+      const nameMatchGithubIds = await computeNameMatchGithubIds(workspace.id, filters);
+      const effectiveFilters = nameMatchGithubIds.length > 0 ? { ...filters, nameMatchGithubIds } : filters;
       const [members, totalCount, crewCount, staffCount] = await Promise.all([
-        memberRepo.findWithFiltersLightPage(workspace.id, filters, pagination),
-        memberRepo.countWithFilters(workspace.id, filters),
-        memberRepo.countWithFilters(workspace.id, { ...filters, roleGroup: 'crew' }),
-        memberRepo.countWithFilters(workspace.id, { ...filters, roleGroup: 'staff' }),
+        memberRepo.findWithFiltersLightPage(workspace.id, effectiveFilters, pagination),
+        memberRepo.countWithFilters(workspace.id, effectiveFilters),
+        memberRepo.countWithFilters(workspace.id, { ...effectiveFilters, roleGroup: 'crew' }),
+        memberRepo.countWithFilters(workspace.id, { ...effectiveFilters, roleGroup: 'staff' }),
       ]);
       const nextOffset = pagination.offset + members.length < totalCount ? pagination.offset + members.length : null;
 
