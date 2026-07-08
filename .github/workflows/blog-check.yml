@@ -2,7 +2,7 @@ name: Blog Check
 
 on:
   schedule:
-    - cron: '0 * * * *' # 매시간
+    - cron: '*/30 * * * *' # 30분마다
   workflow_dispatch: # 수동 트리거
 
 jobs:
@@ -65,7 +65,7 @@ jobs:
           fi
 
           curl -sf \
-            "$BASE_URL/admin/blog/new-posts?sinceMinutes=65" \
+            "$BASE_URL/admin/blog/new-posts?sinceMinutes=35" \
             -H "Authorization: Bearer ${{ secrets.ADMIN_SECRET }}" \
             -o /tmp/blog-new-posts.json || echo '[]' > /tmp/blog-new-posts.json
 

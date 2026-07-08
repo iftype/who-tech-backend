@@ -1,7 +1,8 @@
-=== 마지막 세션: 2026-04-21 ===
+=== 마지막 세션: 2026-07-09 ===
 
 ### 완료 작업
 
+✅ 블로그 글 싱크 GitHub Actions 스케줄 30분마다로 단축 (`blog-check.yml`)
 ✅ 개인 프로필 새로고침 fetchUserBlogCandidates + RSS 프로빙으로 변경 (blog 필드만 → bio/README/소셜 스캔)
 ✅ 개인 새로고침 GitHub API 실패 시 500 반환 (기존: 200 + profileRefreshError)
 ✅ .omc 디렉토리 git 추적 제거
@@ -129,3 +130,7 @@
 - pm2 env 업데이트: `set -a && . .env && set +a && pm2 restart backend --update-env`
 - blog 수집 24h 게이트: sync에서 profileFetchedAt 기준, 즉시 반영은 개인 새로고침 사용
 - admin-spa 로컬 개발: `cd src/public/admin-spa && npm install && npm run dev` (포트 5173, /admin 프록시→3000)
+
+=== 다음 작업 ===
+
+- [ ] 변경된 `blog-check.yml` 스케줄러(30분마다 작동) 및 `sinceMinutes=35` 파라미터가 프로덕션 GitHub Actions에 정상 반영되어 주기적으로 동작하는지 모니터링
