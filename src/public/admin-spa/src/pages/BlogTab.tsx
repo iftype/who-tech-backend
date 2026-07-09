@@ -15,9 +15,9 @@ export default function BlogTab() {
 
   const syncMutation = useMutation({
     mutationFn: () =>
-      apiFetch<{ synced: number; newPosts: number }>('/admin/blog/sync', { method: 'POST' }),
-    onSuccess: (result) => {
-      showToast(`RSS 싱크 완료 — ${result.synced}개 피드, 새 글 ${result.newPosts}개`);
+      apiFetch<{ id: string; status: string }>('/admin/blog/sync', { method: 'POST' }),
+    onSuccess: () => {
+      showToast('RSS 싱크 작업이 큐에 추가되었습니다. 진행 상황은 싱크 탭에서 확인할 수 있습니다.');
       void queryClient.invalidateQueries({ queryKey: ['blog-new-posts'] });
     },
     onError: (e) => showToast(e instanceof Error ? e.message : '싱크 실패', 'error'),

@@ -161,9 +161,10 @@ export default function SyncTab() {
   const queryClient = useQueryClient();
 
   const blogSyncMutation = useMutation({
-    mutationFn: () => apiFetch<{ synced: number; newPosts: number }>('/admin/blog/sync', { method: 'POST' }),
-    onSuccess: (result) => {
-      showToast(`블로그 싱크 완료 — ${result.synced}개 피드, 새 글 ${result.newPosts}개`);
+    mutationFn: () => apiFetch<{ id: string; status: string }>('/admin/blog/sync', { method: 'POST' }),
+    onSuccess: () => {
+      showToast('블로그 싱크 작업이 큐에 추가되었습니다');
+      void queryClient.invalidateQueries({ queryKey: ['blog-sync-jobs'] });
     },
     onError: (e) => showToast(e instanceof Error ? e.message : '블로그 싱크 실패', 'error'),
   });
