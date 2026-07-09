@@ -64,10 +64,8 @@ export function createBlogAdminService(deps: {
     const isAutomated = source === 'github-actions' || source === 'scheduler';
     const sourceLabel = source === 'scheduler' ? '스케줄러' : '자동';
 
-    if (!workspace.blogSyncEnabled) {
-      if (isAutomated) {
-        await activityLogService.addLog('blog_sync_info', `${sourceLabel} 블로그 Sync 스킵 — blogSyncEnabled=false`);
-      }
+    if (!workspace.blogSyncEnabled && isAutomated) {
+      await activityLogService.addLog('blog_sync_info', `${sourceLabel} 블로그 Sync 스킵 — blogSyncEnabled=false`);
       onProgress?.({ total: 0, processed: 0, synced: 0, percent: 100, phase: '스킵됨' });
       return { synced: 0, deleted: 0, failures: [], skipped: true };
     }
