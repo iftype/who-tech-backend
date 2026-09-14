@@ -17,5 +17,5 @@ jobs:
         env:
           ADMIN_SECRET: ${{ secrets.ADMIN_SECRET }}
         run: |
-          curl -sf -X POST https://iftype.store/admin/deploy \
+          curl -sf -X POST https://iftype.site/admin/deploy \
             -H "Authorization: Bearer $ADMIN_SECRET"

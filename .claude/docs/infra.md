@@ -50,7 +50,7 @@
 
 **Oracle Cloud AMD 서버 초기 세팅**
 
-- 도메인 `iftype.store`, SSH `ssh oracle`
+- 도메인 `iftype.site`, SSH `ssh oracle`
 - Node.js 20, PM2 (tsx), Nginx, Certbot HTTPS 자동갱신
 - fail2ban, Rate limiting 30req/min, 보안 헤더
 - 배포 방식(초기): rsync + `npm install --ignore-scripts` + `pm2 restart backend`
