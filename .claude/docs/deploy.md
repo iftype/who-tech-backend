@@ -5,7 +5,7 @@
 ### 자동 배포 흐름
 
 1. `main` 브랜치에 푸시
-2. GitHub Actions (`deploy.yml`)가 `POST https://iftype.store/admin/deploy` 호출 (Bearer 인증)
+2. GitHub Actions (`deploy.yml`)가 `POST https://iftype.site/admin/deploy` 호출 (Bearer 인증)
 3. 서버가 detached process로 아래 명령 실행:
    ```bash
    git pull origin main

@@ -6,7 +6,7 @@
 우아한테크코스 크루 검색 서비스의 백엔드. GitHub 조직(`woowacourse`)의 미션 레포 PR을 수집해 멤버 정보를 저장한다.
 
 - **레포**: https://github.com/iftype/who-tech-backend
-- **서버**: Oracle Cloud AMD, iftype.store, SSH: `ssh oracle`
+- **서버**: Oracle Cloud AMD, iftype.site, SSH: `ssh oracle`
 - **PM2 앱 이름**: `backend`
 
 ## 핵심 규칙 (AGENTS.md 참고)

@@ -3,7 +3,7 @@
 ## 스택
 
 - Node.js 20 + TypeScript strict / Express / Prisma / SQLite
-- Oracle Cloud AMD · iftype.store · PM2 · Nginx
+- Oracle Cloud AMD · iftype.site · PM2 · Nginx
 - PM2 앱 이름: `backend`
 
 ## 아키텍처
@@ -45,7 +45,7 @@ app.ts (composition root)
 ### 자동 배포 (GitHub Actions)
 
 1. `main` 브랜치 push → `deploy.yml`
-2. `POST https://iftype.store/admin/deploy` 웹훅 호출
+2. `POST https://iftype.site/admin/deploy` 웹훅 호출
 3. 서버에서 detached bash: `git pull origin main && npm install --ignore-scripts && npx prisma generate && npx prisma migrate deploy && npm run build && pm2 reload backend --update-env`
 
 ### 수동 배포
@@ -64,7 +64,7 @@ ssh oracle "cd ~/app/backend && git pull --ff-only origin main && rm -f prisma/d
 
 - `blog-check.yml`: 매시간 `POST /admin/blog/sync` → jobId polling → Slack 알림
 - `continuous-sync.yml`: 10분마다 `POST /admin/sync/continuous`
-- `SYNC_URL` 시크릿 미설정 시 `https://iftype.store` fallback 사용
+- `SYNC_URL` 시크릿 미설정 시 `https://iftype.site` fallback 사용
 
 ## 주요 명령어
 

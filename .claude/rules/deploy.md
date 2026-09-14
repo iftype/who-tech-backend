@@ -30,6 +30,6 @@ ssh oracle "cd ~/app/who-tech-backend && git pull origin main && npm install --i
 
 ## 주의
 
-- `SYNC_URL` 시크릿 미설정 시 `https://iftype.store` fallback
+- `SYNC_URL` 시크릿 미설정 시 `https://iftype.site` fallback
 - PM2 앱 이름: `backend`
 - 자세한 내용: `.claude/docs/deploy.md`, `.claude/docs/infra.md`

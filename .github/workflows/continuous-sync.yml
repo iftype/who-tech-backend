@@ -13,7 +13,7 @@ jobs:
         run: |
           BASE_URL="${{ secrets.SYNC_URL }}"
           if [ -z "$BASE_URL" ]; then
-            BASE_URL="https://iftype.store"
+          BASE_URL="https://iftype.site"
           fi
 
           response=$(curl -s -o /dev/null -w "%{http_code}" \

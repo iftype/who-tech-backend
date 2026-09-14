@@ -10,7 +10,7 @@
 ### deploy.yml
 
 - 트리거: main 브랜치 push
-- 실행: `POST https://iftype.store/admin/deploy` 웹훅 호출 (Bearer 인증)
+- 실행: `POST https://iftype.site/admin/deploy` 웹훅 호출 (Bearer 인증)
 - 서버가 detached process로 아래 명령 실행 (응답은 즉시 `{ ok: true }` 반환):
   ```bash
   git pull origin main
@@ -26,7 +26,7 @@
 ### sync.yml
 
 - 트리거: `workflow_dispatch` 수동 트리거 전용 (cron 없음)
-- Secrets 필요: `SYNC_URL` (서버 URL, 미설정 시 `https://iftype.store` fallback), `ADMIN_SECRET`
+- Secrets 필요: `SYNC_URL` (서버 URL, 미설정 시 `https://iftype.site` fallback), `ADMIN_SECRET`
 
 ### blog-check.yml
 
@@ -43,4 +43,4 @@
 - 트리거: 매주 일요일 18:00 UTC cron (+ `workflow_dispatch`)
 - 실행: `POST /admin/tecotalk/sync` — 테코톡 재생목록 수집 + 멤버 매칭 + 조회수 갱신
 - 서버 환경변수 필요: `YOUTUBE_API_KEY` (재생목록 ID는 `TECOTALK_PLAYLIST_ID` 로 오버라이드 가능)
-- Secrets: `SYNC_URL`(미설정 시 `https://iftype.store` fallback), `ADMIN_SECRET`
+- Secrets: `SYNC_URL`(미설정 시 `https://iftype.site` fallback), `ADMIN_SECRET`
