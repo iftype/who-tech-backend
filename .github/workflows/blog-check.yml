@@ -2,7 +2,8 @@ name: Blog Check
 
 on:
   schedule:
-    - cron: '*/30 * * * *' # 30분마다
+    # 정각 부하로 예약 실행이 누락되지 않도록 7분/37분에 실행
+    - cron: '7,37 * * * *' # 30분마다
   workflow_dispatch: # 수동 트리거
 
 jobs:
