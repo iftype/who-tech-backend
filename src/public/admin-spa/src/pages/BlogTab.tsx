@@ -2,11 +2,16 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '../lib/api.js';
 import { showToast } from '../components/ui/Toast.js';
-import type { NewBlogPost } from '../lib/types.js';
+import type { NewBlogPost, TeamBlogStatus } from '../lib/types.js';
 
 export default function BlogTab() {
   const [sinceMinutes, setSinceMinutes] = useState(65);
   const queryClient = useQueryClient();
+
+  const { data: teamBlog } = useQuery({
+    queryKey: ['team-blog-status'],
+    queryFn: () => apiFetch<TeamBlogStatus>('/admin/blog/team'),
+  });
 
   const { data: posts = [], isLoading } = useQuery({
     queryKey: ['blog-new-posts', sinceMinutes],
@@ -14,8 +19,7 @@ export default function BlogTab() {
   });
 
   const syncMutation = useMutation({
-    mutationFn: () =>
-      apiFetch<{ id: string; status: string }>('/admin/blog/sync', { method: 'POST' }),
+    mutationFn: () => apiFetch<{ id: string; status: string }>('/admin/blog/sync', { method: 'POST' }),
     onSuccess: () => {
       showToast('RSS 싱크 작업이 큐에 추가되었습니다. 진행 상황은 싱크 탭에서 확인할 수 있습니다.');
       void queryClient.invalidateQueries({ queryKey: ['blog-new-posts'] });
@@ -24,8 +28,7 @@ export default function BlogTab() {
   });
 
   const backfillMutation = useMutation({
-    mutationFn: () =>
-      apiFetch<{ updated: number }>('/admin/blog/backfill', { method: 'POST' }),
+    mutationFn: () => apiFetch<{ updated: number }>('/admin/blog/backfill', { method: 'POST' }),
     onSuccess: (result) => {
       showToast(`백필 완료 — ${result.updated}명 업데이트`);
     },
@@ -65,6 +68,45 @@ export default function BlogTab() {
         </div>
       </div>
 
+      <section className="border border-gray-200 rounded-lg p-4 bg-white">
+        <div className="flex items-start gap-3">
+          <img
+            src={teamBlog?.avatarUrl ?? '/rilog-avatar.png'}
+            alt="Rilog"
+            className="h-10 w-10 rounded-full object-cover border border-gray-200"
+          />
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <h2 className="font-semibold text-sm">{teamBlog?.name ?? 'Rilog'} 팀 블로그</h2>
+              <span
+                className={`rounded px-1.5 py-0.5 text-[10px] ${teamBlog?.rssStatus === 'available' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}
+              >
+                {teamBlog?.rssStatus === 'available'
+                  ? 'RSS 연결됨'
+                  : teamBlog?.rssStatus === 'not_synced'
+                    ? '아직 싱크 전'
+                    : (teamBlog?.rssStatus ?? '확인 중')}
+              </span>
+            </div>
+            <div className="mt-1 text-xs text-gray-500 break-all">RSS: {teamBlog?.rssUrl ?? '로딩 중...'}</div>
+            {teamBlog && (
+              <div className="mt-1 text-xs text-gray-400">
+                최근 수집 글 {teamBlog.posts.length}개 · 최근 발행{' '}
+                {teamBlog.lastPostedAt ? new Date(teamBlog.lastPostedAt).toLocaleString('ko-KR') : '없음'}
+              </div>
+            )}
+          </div>
+          <a
+            href={teamBlog?.blogUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-blue-600 hover:underline shrink-0"
+          >
+            블로그 열기
+          </a>
+        </div>
+      </section>
+
       {isLoading ? (
         <div className="py-12 text-center text-gray-400 text-sm">로딩 중...</div>
       ) : (
@@ -85,8 +127,7 @@ export default function BlogTab() {
                     {p.title}
                   </a>
                   <p className="text-xs text-gray-500 mt-0.5">
-                    {p.member.nickname ?? p.member.githubId} ·{' '}
-                    {new Date(p.publishedAt).toLocaleString('ko-KR')}
+                    {p.member.nickname ?? p.member.githubId} · {new Date(p.publishedAt).toLocaleString('ko-KR')}
                   </p>
                 </div>
               ))

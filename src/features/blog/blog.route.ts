@@ -43,6 +43,13 @@ export function createBlogRouter(service: BlogAdminService) {
     }),
   );
 
+  router.get(
+    '/blog/team',
+    asyncHandler(async (_req, res) => {
+      res.json(await service.getTeamBlogStatus());
+    }),
+  );
+
   // 3. 블로그 링크 백필 (RSS 후보 검사 및 자동 등록)
   router.post(
     '/blog/backfill',

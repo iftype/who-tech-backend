@@ -89,6 +89,7 @@ function buildMemberWhere(workspaceId: number, filters?: MemberFilters): Prisma.
 
   return {
     workspaceId,
+    isTeamBlog: false,
     ...(hasCohortCondition ? { memberCohorts: { some: cohortCondition } } : {}),
     ...(filters?.hasBlog === true ? { blog: { not: null } } : {}),
     ...(filters?.hasBlog === false ? { blog: null } : {}),

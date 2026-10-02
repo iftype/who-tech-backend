@@ -14,6 +14,8 @@ const feedPostSelect = {
       nicknameStats: true,
       nickname: true,
       avatarUrl: true,
+      blog: true,
+      isTeamBlog: true,
       track: true,
       memberCohorts: {
         select: {
