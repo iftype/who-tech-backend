@@ -14,6 +14,7 @@ import { createMemberRepository } from './db/repositories/member.repository.js';
 import { createMissionRepoRepository } from './db/repositories/mission-repo.repository.js';
 import { createSubmissionRepository } from './db/repositories/submission.repository.js';
 import { createBlogPostRepository } from './db/repositories/blog-post.repository.js';
+import { createTeamBlogRepository } from './db/repositories/team-blog.repository.js';
 import { createCohortRepoRepository } from './db/repositories/cohort-repo.repository.js';
 import { createActivityLogRepository } from './db/repositories/activity-log.repository.js';
 import { createPersonRepository } from './db/repositories/person.repository.js';
@@ -65,6 +66,7 @@ const memberRepo = createMemberRepository(db);
 const missionRepoRepo = createMissionRepoRepository(db);
 const submissionRepo = createSubmissionRepository(db);
 const blogPostRepo = createBlogPostRepository(db);
+const teamBlogRepo = createTeamBlogRepository(db);
 const cohortRepoRepo = createCohortRepoRepository(db);
 const activityLogRepo = createActivityLogRepository(db);
 const personRepo = createPersonRepository(db);
@@ -94,11 +96,12 @@ const memberService = createMemberService({
   syncService,
 });
 const repoService = createRepoService({ missionRepoRepo, workspaceService, syncService, octokit });
-const blogService = createBlogService({ memberRepo, blogPostRepo });
+const blogService = createBlogService({ memberRepo, blogPostRepo, teamBlogRepo });
 const cohortRepoService = createCohortRepoService({ cohortRepoRepo, missionRepoRepo, workspaceService });
 const blogAdminService = createBlogAdminService({
   memberRepo,
   blogPostRepo,
+  teamBlogRepo,
   workspaceService,
   blogService,
   activityLogService,

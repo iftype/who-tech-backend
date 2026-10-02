@@ -39,13 +39,18 @@ export interface NewBlogPost {
 }
 
 export interface TeamBlogStatus {
-  enabled: boolean;
+  id: number;
+  slug: string;
   name: string;
   blogUrl: string;
   rssUrl: string;
-  avatarUrl: string;
+  avatarUrl: string | null;
+  enabled: boolean;
+  memberId: number;
+  workspaceId: number;
   rssStatus: string;
-  lastCheckedAt: string | null;
+  rssCheckedAt: string | null;
+  rssError: string | null;
   lastPostedAt: string | null;
   posts: BlogPost[];
 }

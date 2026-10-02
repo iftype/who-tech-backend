@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '../lib/api.js';
 import { showToast } from '../components/ui/Toast.js';
@@ -8,9 +8,25 @@ export default function BlogTab() {
   const [sinceMinutes, setSinceMinutes] = useState(65);
   const queryClient = useQueryClient();
 
-  const { data: teamBlog } = useQuery({
+  const { data: teamBlogs = [] } = useQuery({
     queryKey: ['team-blog-status'],
-    queryFn: () => apiFetch<TeamBlogStatus>('/admin/blog/team'),
+    queryFn: () => apiFetch<TeamBlogStatus[]>('/admin/blog/team'),
+  });
+  const teamBlog = teamBlogs[0];
+  const [teamForm, setTeamForm] = useState({ name: '', blogUrl: '', rssUrl: '' });
+
+  useEffect(() => {
+    if (!teamBlog) return;
+    setTeamForm({ name: teamBlog.name, blogUrl: teamBlog.blogUrl, rssUrl: teamBlog.rssUrl });
+  }, [teamBlog]);
+
+  const updateTeamBlogMutation = useMutation({
+    mutationFn: () => apiFetch(`/admin/blog/team/${teamBlog?.id}`, { method: 'PATCH', body: JSON.stringify(teamForm) }),
+    onSuccess: () => {
+      showToast('팀 블로그 설정을 저장했습니다.');
+      void queryClient.invalidateQueries({ queryKey: ['team-blog-status'] });
+    },
+    onError: (e) => showToast(e instanceof Error ? e.message : '팀 블로그 설정 저장 실패', 'error'),
   });
 
   const { data: posts = [], isLoading } = useQuery({
@@ -106,6 +122,39 @@ export default function BlogTab() {
           </a>
         </div>
       </section>
+
+      {teamBlog && (
+        <section className="border border-gray-200 rounded-lg p-4 bg-white">
+          <h3 className="mb-3 text-xs font-semibold text-gray-600">팀 블로그 설정</h3>
+          <div className="grid gap-2 sm:grid-cols-3">
+            <input
+              value={teamForm.name}
+              onChange={(e) => setTeamForm((v) => ({ ...v, name: e.target.value }))}
+              className="border border-gray-300 rounded px-2 py-1.5 text-sm"
+              placeholder="팀 이름"
+            />
+            <input
+              value={teamForm.blogUrl}
+              onChange={(e) => setTeamForm((v) => ({ ...v, blogUrl: e.target.value }))}
+              className="border border-gray-300 rounded px-2 py-1.5 text-sm"
+              placeholder="블로그 URL"
+            />
+            <input
+              value={teamForm.rssUrl}
+              onChange={(e) => setTeamForm((v) => ({ ...v, rssUrl: e.target.value }))}
+              className="border border-gray-300 rounded px-2 py-1.5 text-sm"
+              placeholder="RSS URL"
+            />
+          </div>
+          <button
+            onClick={() => updateTeamBlogMutation.mutate()}
+            disabled={updateTeamBlogMutation.isPending}
+            className="mt-3 rounded bg-gray-800 px-3 py-1.5 text-xs text-white hover:bg-gray-700 disabled:opacity-40"
+          >
+            {updateTeamBlogMutation.isPending ? '저장 중...' : '설정 저장'}
+          </button>
+        </section>
+      )}
 
       {isLoading ? (
         <div className="py-12 text-center text-gray-400 text-sm">로딩 중...</div>
