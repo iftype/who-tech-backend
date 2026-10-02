@@ -35,7 +35,7 @@ export function createBlogService(deps: {
           nickname: 'Rilog',
           manualNickname: 'Rilog',
           avatarUrl: '/rilog-avatar.png',
-          blog: 'https://www.rilog.kr/@official',
+          blog: 'https://www.rilog.kr/feeds',
           isTeamBlog: true,
         })
       : await memberRepo.create({
@@ -43,7 +43,7 @@ export function createBlogService(deps: {
           nickname: 'Rilog',
           manualNickname: 'Rilog',
           avatarUrl: '/rilog-avatar.png',
-          blog: 'https://www.rilog.kr/@official',
+          blog: 'https://www.rilog.kr/feeds',
           rssStatus: 'unknown',
           isTeamBlog: true,
           workspaceId,
@@ -52,7 +52,7 @@ export function createBlogService(deps: {
     return repository.create({
       slug: 'rilog',
       name: 'Rilog',
-      blogUrl: 'https://www.rilog.kr/@official',
+      blogUrl: 'https://www.rilog.kr/feeds',
       rssUrl: DEFAULT_TEAM_BLOG_RSS_URL,
       avatarUrl: '/rilog-avatar.png',
       memberId: member.id,
@@ -262,6 +262,12 @@ export function createBlogService(deps: {
 
       emitProgress(total === 0 ? '수집 대상 없음' : 'RSS 수집 준비 중', total === 0 ? 100 : 0);
 
+      // 팀 피드는 멤버 블로그가 많아도 먼저 처리해, 전체 팀 글이 싱크 지연의 영향을 받지 않게 한다.
+      const teamResult = await syncTeamBlogs(workspaceId);
+      synced += teamResult.synced;
+      deleted += teamResult.deleted;
+      failures.push(...teamResult.failures);
+
       for (const member of members) {
         const result = await doSyncMemberBlog(member, workspaceId);
         synced += result.synced;
@@ -270,11 +276,6 @@ export function createBlogService(deps: {
         processed += 1;
         emitProgress(`${member.githubId} RSS 확인 완료`);
       }
-
-      const teamResult = await syncTeamBlogs(workspaceId);
-      synced += teamResult.synced;
-      deleted += teamResult.deleted;
-      failures.push(...teamResult.failures);
 
       emitProgress('오래된 글 정리 중', total === 0 ? 100 : Math.max(Math.round((processed / total) * 100), 95));
       try {
