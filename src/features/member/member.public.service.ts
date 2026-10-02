@@ -338,6 +338,7 @@ export function createMemberPublicService(deps: {
             githubId: p.member.githubId,
             nickname: resolveDisplayNickname(p.member.manualNickname, p.member.nicknameStats, p.member.nickname),
             avatarUrl: p.member.avatarUrl,
+            isTeamBlog: p.member.isTeamBlog,
             cohort: targetCohort?.cohort ?? null,
             roles: targetCohort?.roles ?? ['crew'],
             cohorts,

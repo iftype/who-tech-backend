@@ -9,6 +9,7 @@ import { buildCohortList } from '../../shared/member-cohort.js';
 import { HttpError } from '../../shared/http.js';
 import { randomUUID } from 'crypto';
 import { backfillMemberBlogLinks } from './blog.backfill.js';
+import { DEFAULT_TEAM_BLOG_RSS_URL } from './blog.service.js';
 // blog.admin.service.ts
 
 export function createBlogAdminService(deps: {
@@ -187,6 +188,23 @@ export function createBlogAdminService(deps: {
           },
         };
       });
+    },
+
+    getTeamBlogStatus: async () => {
+      const workspace = await workspaceService.getOrThrow();
+      const member = await memberRepo.findByGithubId('__team_rilog__', workspace.id);
+      const posts = member ? await blogPostRepo.findByMember(member.id, 1, 20) : null;
+      return {
+        enabled: process.env['TEAM_BLOG_RSS_ENABLED'] !== 'false',
+        name: 'Rilog',
+        blogUrl: 'https://www.rilog.kr/@official',
+        rssUrl: process.env['TEAM_BLOG_RSS_URL'] ?? DEFAULT_TEAM_BLOG_RSS_URL,
+        avatarUrl: '/rilog-avatar.png',
+        rssStatus: member?.rssStatus ?? 'not_synced',
+        lastCheckedAt: member?.rssCheckedAt ?? null,
+        lastPostedAt: member?.lastPostedAt ?? null,
+        posts: posts?.archive ?? [],
+      };
     },
   };
 }

@@ -5,6 +5,7 @@ import { buildCohortList } from '../../shared/member-cohort.js';
 import { computeDominantTrack } from '../../shared/member-track.js';
 import { decodeHtml } from '../../shared/html.js';
 import { fetchRSSItems, errorMessage } from './blog.rss.js';
+import type { BlogSyncFailure } from './blog.rss.js';
 
 export type { BlogSyncFailure, BlogSyncProgress, RssCheckResult } from './blog.rss.js';
 export { sanitizeXml, resolveRSSUrlsForBlog, probeRss } from './blog.rss.js';
@@ -12,9 +13,58 @@ export { sanitizeXml, resolveRSSUrlsForBlog, probeRss } from './blog.rss.js';
 const RETENTION_DAYS = 90;
 const MAX_POSTS_PER_MEMBER = 100;
 const MAX_POSTS_PER_DAY = 3;
+const TEAM_BLOG_GITHUB_ID = '__team_rilog__';
+const TEAM_BLOG_URL = 'https://www.rilog.kr/@official';
+export const DEFAULT_TEAM_BLOG_RSS_URL = 'https://www.rilog.kr/rss.xml';
+const TEAM_BLOG_AVATAR_URL = '/rilog-avatar.png';
+
+function teamBlogEnabled(): boolean {
+  return (
+    process.env['TEAM_BLOG_RSS_ENABLED'] !== 'false' &&
+    (Boolean(process.env['TEAM_BLOG_RSS_URL']) || process.env['NODE_ENV'] === 'production')
+  );
+}
 
 export function createBlogService(deps: { memberRepo: MemberRepository; blogPostRepo: BlogPostRepository }) {
   const { memberRepo, blogPostRepo } = deps;
+
+  async function getOrCreateTeamBlogMember(workspaceId: number): Promise<MemberDetailWithRelations> {
+    const existing = await memberRepo.findByGithubId(TEAM_BLOG_GITHUB_ID, workspaceId);
+    if (existing) {
+      await memberRepo.patch(existing.id, {
+        nickname: 'Rilog',
+        manualNickname: 'Rilog',
+        avatarUrl: TEAM_BLOG_AVATAR_URL,
+        blog: TEAM_BLOG_URL,
+        isTeamBlog: true,
+      });
+      return {
+        ...existing,
+        nickname: 'Rilog',
+        manualNickname: 'Rilog',
+        avatarUrl: TEAM_BLOG_AVATAR_URL,
+        blog: TEAM_BLOG_URL,
+        isTeamBlog: true,
+      };
+    }
+    return memberRepo.create({
+      githubId: TEAM_BLOG_GITHUB_ID,
+      nickname: 'Rilog',
+      manualNickname: 'Rilog',
+      avatarUrl: TEAM_BLOG_AVATAR_URL,
+      blog: TEAM_BLOG_URL,
+      rssStatus: 'unknown',
+      isTeamBlog: true,
+      workspaceId,
+    });
+  }
+
+  async function syncTeamBlog(workspaceId: number) {
+    const rssUrl = process.env['TEAM_BLOG_RSS_URL'] ?? DEFAULT_TEAM_BLOG_RSS_URL;
+    if (!teamBlogEnabled()) return { synced: 0, deleted: 0, failures: [] as BlogSyncFailure[] };
+    const member = await getOrCreateTeamBlogMember(workspaceId);
+    return doSyncMemberBlog({ ...member, blog: rssUrl }, workspaceId);
+  }
 
   async function doSyncMemberBlog(
     member: MemberDetailWithRelations,
@@ -191,6 +241,11 @@ export function createBlogService(deps: { memberRepo: MemberRepository; blogPost
         processed += 1;
         emitProgress(`${member.githubId} RSS 확인 완료`);
       }
+
+      const teamResult = await syncTeamBlog(workspaceId);
+      synced += teamResult.synced;
+      deleted += teamResult.deleted;
+      failures.push(...teamResult.failures);
 
       emitProgress('오래된 글 정리 중', total === 0 ? 100 : Math.max(Math.round((processed / total) * 100), 95));
       try {

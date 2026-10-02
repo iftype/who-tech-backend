@@ -54,6 +54,7 @@ model Member {
   rssCheckedAt        DateTime?
   rssError            String?
   lastPostedAt        DateTime?
+  isTeamBlog          Boolean            @default(false)
   track               String?
   cohortLocked        Boolean            @default(false)
   workspaceId         Int
