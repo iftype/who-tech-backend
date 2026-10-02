@@ -164,6 +164,7 @@ export function createBlogService(deps: {
           create: {
             url: item.link,
             title: decodedTitle,
+            ...(member.isTeamBlog ? { authorName: item.authorName ?? null } : {}),
             publishedAt,
             memberId: member.id,
             cohort: primaryCohort,
@@ -172,6 +173,7 @@ export function createBlogService(deps: {
           },
           update: {
             title: decodedTitle,
+            ...(member.isTeamBlog ? { authorName: item.authorName ?? null } : {}),
             publishedAt,
             cohort: primaryCohort,
             track: memberTrack,

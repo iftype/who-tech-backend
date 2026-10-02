@@ -134,7 +134,7 @@ async function fetchFeedText(rssUrl: string): Promise<string> {
 }
 
 export async function fetchRSSItems(blogUrl: string): Promise<{
-  items: { title?: string; link?: string; pubDate?: string }[];
+  items: { title?: string; link?: string; pubDate?: string; authorName?: string }[];
   failure?: Pick<BlogSyncFailure, 'blog' | 'rssUrl' | 'step' | 'error'>;
   rssCheck: RssCheckResult;
 }> {
@@ -153,13 +153,17 @@ export async function fetchRSSItems(blogUrl: string): Promise<{
           pubDate?: string;
           isoDate?: string;
           'dc:date'?: string;
+          'dc:creator'?: string;
+          creator?: string;
         };
+        const authorName = (source['dc:creator'] ?? source.creator)?.trim();
         return {
           ...(source.title !== undefined ? { title: source.title } : {}),
           ...(source.link !== undefined ? { link: source.link } : {}),
           ...((source.pubDate ?? source.isoDate ?? source['dc:date']) !== undefined
             ? { pubDate: source.pubDate ?? source.isoDate ?? source['dc:date'] }
             : {}),
+          ...(authorName ? { authorName } : {}),
         };
       });
       return { items, rssCheck: { status: 'available', rssUrl } };

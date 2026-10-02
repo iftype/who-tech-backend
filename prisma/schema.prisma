@@ -166,6 +166,7 @@ model BlogPost {
   id          Int      @id @default(autoincrement())
   url         String   @unique
   title       String
+  authorName  String?
   publishedAt DateTime
   memberId    Int
   cohort      Int?     // denormalized: primary cohort from member.memberCohorts

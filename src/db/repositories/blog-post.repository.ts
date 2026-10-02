@@ -5,6 +5,7 @@ const feedPostSelect = {
   id: true,
   url: true,
   title: true,
+  authorName: true,
   publishedAt: true,
   viewCount: true,
   member: {
