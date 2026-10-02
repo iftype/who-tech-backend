@@ -63,12 +63,17 @@ export function createBlogService(deps: { memberRepo: MemberRepository; blogPost
     const rssUrl = process.env['TEAM_BLOG_RSS_URL'] ?? DEFAULT_TEAM_BLOG_RSS_URL;
     if (!teamBlogEnabled()) return { synced: 0, deleted: 0, failures: [] as BlogSyncFailure[] };
     const member = await getOrCreateTeamBlogMember(workspaceId);
-    return doSyncMemberBlog({ ...member, blog: rssUrl }, workspaceId);
+    return doSyncMemberBlog(
+      { ...member, blog: rssUrl },
+      workspaceId,
+      (item) => item.link?.includes('/@official/posts/') ?? false,
+    );
   }
 
   async function doSyncMemberBlog(
     member: MemberDetailWithRelations,
     workspaceId: number,
+    itemFilter?: (item: { title?: string; link?: string; pubDate?: string }) => boolean,
   ): Promise<{
     synced: number;
     deleted: number;
@@ -97,6 +102,7 @@ export function createBlogService(deps: { memberRepo: MemberRepository; blogPost
     }[] = [];
 
     const result = await fetchRSSItems(member.blog!);
+    if (itemFilter) result.items = result.items.filter(itemFilter);
 
     const latestDate = result.items
       .map((item) => (item.pubDate ? new Date(item.pubDate) : null))
