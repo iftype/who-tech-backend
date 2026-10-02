@@ -101,6 +101,16 @@ export function createBlogAdminService(deps: {
   return {
     syncWorkspaceBlogs: async (source: BlogSyncSource = 'manual') => runWorkspaceBlogSync(source),
 
+    syncTeamBlogs: async () => {
+      const workspace = await workspaceService.getOrThrow();
+      const result = await blogService.syncTeamBlogs(workspace.id);
+      await activityLogService.addLog(
+        result.failures.length > 0 ? 'blog_sync_error' : 'blog_sync',
+        `팀 블로그 수동 Sync 완료 — 수집 ${result.synced}건, 삭제 ${result.deleted}건, 실패 ${result.failures.length}건`,
+      );
+      return result;
+    },
+
     executeWorkspaceBlogSync: async (
       source: BlogSyncSource = 'manual',
       onProgress?: (progress: BlogSyncJob['progress']) => void,

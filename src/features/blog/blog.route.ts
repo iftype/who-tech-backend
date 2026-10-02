@@ -50,6 +50,13 @@ export function createBlogRouter(service: BlogAdminService) {
     }),
   );
 
+  router.post(
+    '/blog/team/sync',
+    asyncHandler(async (_req, res) => {
+      res.json(await service.syncTeamBlogs());
+    }),
+  );
+
   router.patch(
     '/blog/team/:id',
     asyncHandler(async (req, res) => {
