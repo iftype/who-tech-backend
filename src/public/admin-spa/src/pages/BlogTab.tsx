@@ -29,6 +29,16 @@ export default function BlogTab() {
     onError: (e) => showToast(e instanceof Error ? e.message : '팀 블로그 설정 저장 실패', 'error'),
   });
 
+  const teamSyncMutation = useMutation({
+    mutationFn: () => apiFetch<{ synced: number; deleted: number; failures: unknown[] }>('/admin/blog/team/sync', { method: 'POST' }),
+    onSuccess: (result) => {
+      showToast(`팀 블로그 새로고침 완료 — ${result.synced}건 수집`);
+      void queryClient.invalidateQueries({ queryKey: ['team-blog-status'] });
+      void queryClient.invalidateQueries({ queryKey: ['blog-new-posts'] });
+    },
+    onError: (e) => showToast(e instanceof Error ? e.message : '팀 블로그 새로고침 실패', 'error'),
+  });
+
   const { data: posts = [], isLoading } = useQuery({
     queryKey: ['blog-new-posts', sinceMinutes],
     queryFn: () => apiFetch<NewBlogPost[]>(`/admin/blog/new-posts?sinceMinutes=${sinceMinutes}`),
@@ -60,6 +70,13 @@ export default function BlogTab() {
           className="bg-blue-600 text-white text-sm rounded px-4 py-1.5 hover:bg-blue-700 disabled:opacity-40"
         >
           {syncMutation.isPending ? 'RSS 싱크 중...' : 'RSS 전체 싱크'}
+        </button>
+        <button
+          onClick={() => teamSyncMutation.mutate()}
+          disabled={teamSyncMutation.isPending}
+          className="bg-emerald-600 text-white text-sm rounded px-4 py-1.5 hover:bg-emerald-700 disabled:opacity-40"
+        >
+          {teamSyncMutation.isPending ? '팀 블로그 수집 중...' : '팀 블로그 새로고침'}
         </button>
         <button
           onClick={() => backfillMutation.mutate()}

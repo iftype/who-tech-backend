@@ -220,6 +220,7 @@ export function createBlogService(deps: {
     ensureTeamBlogs: async (workspaceId: number) => {
       return ensureTeamBlogs(workspaceId);
     },
+    syncTeamBlogs: async (workspaceId: number) => syncTeamBlogs(workspaceId),
     syncBlogs: async (
       workspaceId: number,
       onProgress?: (progress: {
