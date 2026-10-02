@@ -1,6 +1,7 @@
 import type { Octokit } from '@octokit/rest';
 import type { MemberRepository } from '../../db/repositories/member.repository.js';
 import type { BlogPostRepository } from '../../db/repositories/blog-post.repository.js';
+import type { TeamBlogRepository } from '../../db/repositories/team-blog.repository.js';
 import type { WorkspaceService } from '../workspace/workspace.service.js';
 import type { BlogService, BlogSyncFailure } from './blog.service.js';
 import type { ActivityLogService } from '../activity-log/activity-log.service.js';
@@ -9,18 +10,18 @@ import { buildCohortList } from '../../shared/member-cohort.js';
 import { HttpError } from '../../shared/http.js';
 import { randomUUID } from 'crypto';
 import { backfillMemberBlogLinks } from './blog.backfill.js';
-import { DEFAULT_TEAM_BLOG_RSS_URL } from './blog.service.js';
 // blog.admin.service.ts
 
 export function createBlogAdminService(deps: {
   memberRepo: MemberRepository;
   blogPostRepo: BlogPostRepository;
+  teamBlogRepo: TeamBlogRepository;
   workspaceService: WorkspaceService;
   blogService: BlogService;
   activityLogService: ActivityLogService;
   octokit: Octokit;
 }) {
-  const { memberRepo, blogPostRepo, workspaceService, blogService, activityLogService, octokit } = deps;
+  const { memberRepo, blogPostRepo, teamBlogRepo, workspaceService, blogService, activityLogService, octokit } = deps;
   type BlogSyncSource = 'manual' | 'github-actions' | 'scheduler';
   type BlogSyncResult = { synced: number; deleted: number; failures: BlogSyncFailure[]; skipped?: boolean };
   type BlogSyncJob = {
@@ -192,19 +193,29 @@ export function createBlogAdminService(deps: {
 
     getTeamBlogStatus: async () => {
       const workspace = await workspaceService.getOrThrow();
-      const member = await memberRepo.findByGithubId('__team_rilog__', workspace.id);
-      const posts = member ? await blogPostRepo.findByMember(member.id, 1, 20) : null;
-      return {
-        enabled: process.env['TEAM_BLOG_RSS_ENABLED'] !== 'false',
-        name: 'Rilog',
-        blogUrl: 'https://www.rilog.kr/@official',
-        rssUrl: process.env['TEAM_BLOG_RSS_URL'] ?? DEFAULT_TEAM_BLOG_RSS_URL,
-        avatarUrl: '/rilog-avatar.png',
-        rssStatus: member?.rssStatus ?? 'not_synced',
-        lastCheckedAt: member?.rssCheckedAt ?? null,
-        lastPostedAt: member?.lastPostedAt ?? null,
-        posts: posts?.archive ?? [],
-      };
+      const teamBlogs = await blogService.ensureTeamBlogs(workspace.id);
+      return Promise.all(
+        teamBlogs.map(async (teamBlog) => {
+          const posts = await blogPostRepo.findByMember(teamBlog.memberId, 1, 20);
+          return { ...teamBlog, posts: posts.archive };
+        }),
+      );
+    },
+
+    updateTeamBlog: async (
+      id: number,
+      input: { name?: string; blogUrl?: string; rssUrl?: string; avatarUrl?: string | null; enabled?: boolean },
+    ) => {
+      const workspace = await workspaceService.getOrThrow();
+      const teamBlog = await teamBlogRepo.findAll(workspace.id).then((blogs) => blogs.find((blog) => blog.id === id));
+      if (!teamBlog) throw new HttpError(404, 'team blog not found');
+      return teamBlogRepo.update(id, {
+        ...(input.name !== undefined ? { name: input.name.trim() } : {}),
+        ...(input.blogUrl !== undefined ? { blogUrl: input.blogUrl.trim() } : {}),
+        ...(input.rssUrl !== undefined ? { rssUrl: input.rssUrl.trim() } : {}),
+        ...(input.avatarUrl !== undefined ? { avatarUrl: input.avatarUrl } : {}),
+        ...(input.enabled !== undefined ? { enabled: input.enabled } : {}),
+      });
     },
   };
 }

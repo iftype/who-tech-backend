@@ -50,6 +50,30 @@ export function createBlogRouter(service: BlogAdminService) {
     }),
   );
 
+  router.patch(
+    '/blog/team/:id',
+    asyncHandler(async (req, res) => {
+      const id = Number(req.params['id']);
+      if (!Number.isInteger(id) || id < 1) return badRequest('invalid team blog id');
+      const body = req.body as {
+        name?: unknown;
+        blogUrl?: unknown;
+        rssUrl?: unknown;
+        avatarUrl?: unknown;
+        enabled?: unknown;
+      };
+      res.json(
+        await service.updateTeamBlog(id, {
+          ...(typeof body.name === 'string' ? { name: body.name } : {}),
+          ...(typeof body.blogUrl === 'string' ? { blogUrl: body.blogUrl } : {}),
+          ...(typeof body.rssUrl === 'string' ? { rssUrl: body.rssUrl } : {}),
+          ...(body.avatarUrl === null || typeof body.avatarUrl === 'string' ? { avatarUrl: body.avatarUrl } : {}),
+          ...(typeof body.enabled === 'boolean' ? { enabled: body.enabled } : {}),
+        }),
+      );
+    }),
+  );
+
   // 3. 블로그 링크 백필 (RSS 후보 검사 및 자동 등록)
   router.post(
     '/blog/backfill',

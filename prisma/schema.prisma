@@ -25,6 +25,7 @@ model Workspace {
   bannedWords          NicknameBannedWord[]
   ignoredDomains       IgnoredDomain[]
   tecoTalks            TecoTalk[]
+  teamBlogs            TeamBlog[]
 }
 
 model Person {
@@ -68,6 +69,7 @@ model Member {
   submissions         Submission[]
   previousIds         PreviousGithubId[]
   tecoTalkSpeakers    TecoTalkSpeaker[]
+  teamBlog             TeamBlog?
 
   @@unique([githubId, workspaceId])
   @@unique([githubUserId, workspaceId])
@@ -178,6 +180,29 @@ model BlogPost {
   @@index([workspaceId, publishedAt])
   @@index([cohort, publishedAt])
   @@index([track, publishedAt])
+}
+
+model TeamBlog {
+  id            Int       @id @default(autoincrement())
+  slug          String
+  name          String
+  blogUrl       String
+  rssUrl        String
+  avatarUrl     String?
+  enabled       Boolean   @default(true)
+  rssStatus     String    @default("unknown")
+  rssCheckedAt  DateTime?
+  rssError      String?
+  lastPostedAt  DateTime?
+  memberId      Int       @unique
+  workspaceId   Int
+  member        Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([slug, workspaceId])
+  @@index([workspaceId, enabled])
 }
 
 model ActivityLog {

@@ -1,5 +1,6 @@
 import type { MemberRepository, MemberDetailWithRelations } from '../../db/repositories/member.repository.js';
 import type { BlogPostRepository } from '../../db/repositories/blog-post.repository.js';
+import type { TeamBlogRepository } from '../../db/repositories/team-blog.repository.js';
 import { HttpError } from '../../shared/http.js';
 import { buildCohortList } from '../../shared/member-cohort.js';
 import { computeDominantTrack } from '../../shared/member-track.js';
@@ -13,57 +14,82 @@ export { sanitizeXml, resolveRSSUrlsForBlog, probeRss } from './blog.rss.js';
 const RETENTION_DAYS = 90;
 const MAX_POSTS_PER_MEMBER = 100;
 const MAX_POSTS_PER_DAY = 3;
-const TEAM_BLOG_GITHUB_ID = '__team_rilog__';
-const TEAM_BLOG_URL = 'https://www.rilog.kr/@official';
 export const DEFAULT_TEAM_BLOG_RSS_URL = 'https://www.rilog.kr/rss.xml';
-const TEAM_BLOG_AVATAR_URL = '/rilog-avatar.png';
 
-function teamBlogEnabled(): boolean {
-  return (
-    process.env['TEAM_BLOG_RSS_ENABLED'] !== 'false' &&
-    (Boolean(process.env['TEAM_BLOG_RSS_URL']) || process.env['NODE_ENV'] === 'production')
-  );
-}
+export function createBlogService(deps: {
+  memberRepo: MemberRepository;
+  blogPostRepo: BlogPostRepository;
+  teamBlogRepo?: TeamBlogRepository;
+}) {
+  const { memberRepo, blogPostRepo, teamBlogRepo } = deps;
 
-export function createBlogService(deps: { memberRepo: MemberRepository; blogPostRepo: BlogPostRepository }) {
-  const { memberRepo, blogPostRepo } = deps;
+  async function ensureDefaultTeamBlog(workspaceId: number) {
+    const repository = teamBlogRepo;
+    if (!repository) throw new Error('team blog repository is not configured');
+    const existingTeamBlog = await repository.findBySlug(workspaceId, 'rilog');
+    if (existingTeamBlog) return existingTeamBlog;
 
-  async function getOrCreateTeamBlogMember(workspaceId: number): Promise<MemberDetailWithRelations> {
-    const existing = await memberRepo.findByGithubId(TEAM_BLOG_GITHUB_ID, workspaceId);
-    if (existing) {
-      await memberRepo.patch(existing.id, {
-        nickname: 'Rilog',
-        manualNickname: 'Rilog',
-        avatarUrl: TEAM_BLOG_AVATAR_URL,
-        blog: TEAM_BLOG_URL,
-        isTeamBlog: true,
-      });
-      return {
-        ...existing,
-        nickname: 'Rilog',
-        manualNickname: 'Rilog',
-        avatarUrl: TEAM_BLOG_AVATAR_URL,
-        blog: TEAM_BLOG_URL,
-        isTeamBlog: true,
-      };
-    }
-    return memberRepo.create({
-      githubId: TEAM_BLOG_GITHUB_ID,
-      nickname: 'Rilog',
-      manualNickname: 'Rilog',
-      avatarUrl: TEAM_BLOG_AVATAR_URL,
-      blog: TEAM_BLOG_URL,
-      rssStatus: 'unknown',
-      isTeamBlog: true,
+    const existing = await memberRepo.findByGithubId('__team_rilog__', workspaceId);
+    const member = existing
+      ? await memberRepo.patch(existing.id, {
+          nickname: 'Rilog',
+          manualNickname: 'Rilog',
+          avatarUrl: '/rilog-avatar.png',
+          blog: 'https://www.rilog.kr/@official',
+          isTeamBlog: true,
+        })
+      : await memberRepo.create({
+          githubId: '__team_rilog__',
+          nickname: 'Rilog',
+          manualNickname: 'Rilog',
+          avatarUrl: '/rilog-avatar.png',
+          blog: 'https://www.rilog.kr/@official',
+          rssStatus: 'unknown',
+          isTeamBlog: true,
+          workspaceId,
+        });
+
+    return repository.create({
+      slug: 'rilog',
+      name: 'Rilog',
+      blogUrl: 'https://www.rilog.kr/@official',
+      rssUrl: DEFAULT_TEAM_BLOG_RSS_URL,
+      avatarUrl: '/rilog-avatar.png',
+      memberId: member.id,
       workspaceId,
     });
   }
 
-  async function syncTeamBlog(workspaceId: number) {
-    const rssUrl = process.env['TEAM_BLOG_RSS_URL'] ?? DEFAULT_TEAM_BLOG_RSS_URL;
-    if (!teamBlogEnabled()) return { synced: 0, deleted: 0, failures: [] as BlogSyncFailure[] };
-    const member = await getOrCreateTeamBlogMember(workspaceId);
-    return doSyncMemberBlog({ ...member, blog: rssUrl }, workspaceId);
+  async function ensureTeamBlogs(workspaceId: number) {
+    const repository = teamBlogRepo;
+    if (!repository) return [];
+    const existing = await repository.findAll(workspaceId);
+    return existing.length > 0 ? existing : [await ensureDefaultTeamBlog(workspaceId)];
+  }
+
+  async function syncTeamBlogs(workspaceId: number) {
+    const repository = teamBlogRepo;
+    if (!repository) return { synced: 0, deleted: 0, failures: [] as BlogSyncFailure[] };
+    const teamBlogs = await ensureTeamBlogs(workspaceId);
+    let synced = 0;
+    let deleted = 0;
+    const failures: BlogSyncFailure[] = [];
+
+    for (const teamBlog of teamBlogs.filter((blog) => blog.enabled)) {
+      const member = await memberRepo.findByIdWithRelations(teamBlog.memberId);
+      if (!member) continue;
+      const result = await doSyncMemberBlog({ ...member, blog: teamBlog.rssUrl }, workspaceId);
+      synced += result.synced;
+      deleted += result.deleted;
+      failures.push(...result.failures);
+      await repository.update(teamBlog.id, {
+        rssStatus: result.failures.some((failure) => failure.step === 'rss_fetch') ? 'error' : 'available',
+        rssCheckedAt: new Date(),
+        rssError: result.failures.find((failure) => failure.step === 'rss_fetch')?.error ?? null,
+      });
+    }
+
+    return { synced, deleted, failures };
   }
 
   async function doSyncMemberBlog(
@@ -191,6 +217,9 @@ export function createBlogService(deps: { memberRepo: MemberRepository; blogPost
   }
 
   return {
+    ensureTeamBlogs: async (workspaceId: number) => {
+      return ensureTeamBlogs(workspaceId);
+    },
     syncBlogs: async (
       workspaceId: number,
       onProgress?: (progress: {
@@ -242,7 +271,7 @@ export function createBlogService(deps: { memberRepo: MemberRepository; blogPost
         emitProgress(`${member.githubId} RSS 확인 완료`);
       }
 
-      const teamResult = await syncTeamBlog(workspaceId);
+      const teamResult = await syncTeamBlogs(workspaceId);
       synced += teamResult.synced;
       deleted += teamResult.deleted;
       failures.push(...teamResult.failures);

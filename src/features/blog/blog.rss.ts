@@ -146,7 +146,23 @@ export async function fetchRSSItems(blogUrl: string): Promise<{
     try {
       const xml = await fetchFeedText(rssUrl);
       const feed = await parser.parseString(sanitizeXml(xml));
-      return { items: feed.items, rssCheck: { status: 'available', rssUrl } };
+      const items = feed.items.map((item) => {
+        const source = item as unknown as {
+          title?: string;
+          link?: string;
+          pubDate?: string;
+          isoDate?: string;
+          'dc:date'?: string;
+        };
+        return {
+          ...(source.title !== undefined ? { title: source.title } : {}),
+          ...(source.link !== undefined ? { link: source.link } : {}),
+          ...((source.pubDate ?? source.isoDate ?? source['dc:date']) !== undefined
+            ? { pubDate: source.pubDate ?? source.isoDate ?? source['dc:date'] }
+            : {}),
+        };
+      });
+      return { items, rssCheck: { status: 'available', rssUrl } };
     } catch (error) {
       lastError = { rssUrl, error: errorMessage(error) };
       continue;
