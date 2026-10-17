@@ -21,6 +21,15 @@ if ! git pull origin main; then
   git reset --hard origin/main
 fi
 
+echo "--- Selecting Node version (.nvmrc) ---"
+export NVM_DIR="$HOME/.nvm"
+. "$NVM_DIR/nvm.sh"
+nvm install
+nvm use
+# pm2 interpreter가 가리키는 고정 경로. 버전이 바뀌어도 reload만으로 새 Node가 적용된다
+ln -sfn "$(nvm which current)" "$HOME/.who-tech-backend-node"
+echo "Node $(node -v) / npm $(npm -v)"
+
 echo "--- Installing dependencies ---"
 npm install --ignore-scripts
 npm --prefix src/public/admin-spa install --ignore-scripts
