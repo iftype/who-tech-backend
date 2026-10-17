@@ -2,7 +2,7 @@ import express from 'express';
 import compression from 'compression';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { existsSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import { spawn, execSync } from 'child_process';
 import { PrismaClient } from '@prisma/client';
 import { adminAuth } from './shared/middleware/auth.js';
@@ -51,11 +51,25 @@ import { createArchiveService } from './features/archive/archive.service.js';
 import { createArchiveRouter } from './features/archive/archive.route.js';
 import { createTecoTalkService } from './features/tecotalk/tecotalk.service.js';
 import { createTecoTalkRouter } from './features/tecotalk/tecotalk.route.js';
+import { createHealthRouter } from './features/health/health.route.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const publicDir = existsSync(join(__dirname, 'public'))
   ? join(__dirname, 'public')
   : join(process.cwd(), 'src', 'public');
+
+// src/·dist/ 어디서 실행해도 한 단계 위가 레포 루트
+const repoRoot = join(__dirname, '..');
+const appVersion = (JSON.parse(readFileSync(join(repoRoot, 'package.json'), 'utf8')) as { version: string }).version;
+const appCommit = (() => {
+  try {
+    return execSync('git rev-parse HEAD', { cwd: repoRoot, stdio: ['ignore', 'pipe', 'ignore'] })
+      .toString()
+      .trim();
+  } catch {
+    return 'unknown';
+  }
+})();
 
 // --- Composition Root ---
 const db = new PrismaClient();
@@ -149,6 +163,17 @@ app.get('/', (_req, res) => {
 app.get('/guide', (_req, res) => {
   res.sendFile(join(publicDir, 'guide.html'));
 });
+
+app.use(
+  '/health',
+  createHealthRouter({
+    version: appVersion,
+    commit: appCommit,
+    pingDb: async () => {
+      await db.$queryRaw`SELECT 1`;
+    },
+  }),
+);
 
 app.use('/members', createMemberPublicRouter(memberPublicService));
 
