@@ -1,5 +1,7 @@
 import app from './app.js';
 
+throw new Error('deploy rehearsal: intentional startup crash');
+
 const PORT = process.env['PORT'] ?? 3000;
 
 app.listen(PORT, () => {
