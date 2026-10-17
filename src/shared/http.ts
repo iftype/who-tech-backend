@@ -21,3 +21,5 @@ export function asyncHandler(
     void handler(req, res, next).catch(next);
   };
 }
+
+export const protectionCheck: number = 'not-a-number';
