@@ -17,9 +17,9 @@ jobs:
       # prisma.config.ts가 요구. 테스트는 jest globalSetup이 임시 DB로 덮어씀
       DATABASE_URL: file:./prisma/ci.db
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
