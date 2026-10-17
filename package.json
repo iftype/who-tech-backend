@@ -23,11 +23,11 @@
     "seed:roles": "tsx src/scripts/seed-roles.ts"
   },
   "dependencies": {
-    "@octokit/plugin-throttling": "^11.0.3",
+    "@octokit/plugin-throttling": "^11.0.5",
     "@octokit/rest": "^22.0.1",
-    "@prisma/client": "^6.19.2",
-    "compression": "^1.8.1",
-    "express": "^5.2.1",
+    "@prisma/client": "^6.19.3",
+    "compression": "^1.8.2",
+    "express": "^5.3.0",
     "p-queue": "^9.1.2",
     "prisma": "^6.19.2",
     "rss-parser": "^3.13.0"
@@ -35,23 +35,23 @@
   "devDependencies": {
     "@commitlint/cli": "^19.6.1",
     "@commitlint/config-conventional": "^19.6.0",
-    "@swc/core": "^1.15.21",
+    "@swc/core": "^1.16.18",
     "@swc/jest": "^0.2.39",
     "@types/compression": "^1.8.1",
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.19.2",
-    "@types/supertest": "^7.2.0",
+    "@types/supertest": "^7.2.1",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
     "husky": "^9.1.7",
-    "jest": "^30.3.0",
+    "jest": "^30.5.2",
     "lint-staged": "^15.4.2",
-    "prettier": "^3.4.2",
-    "supertest": "^7.2.2",
-    "tsx": "^4.19.2",
+    "prettier": "^3.9.10",
+    "supertest": "^7.3.1",
+    "tsx": "^4.23.15",
     "typescript": "^5.7.3",
-    "typescript-eslint": "^8.21.0"
+    "typescript-eslint": "^8.71.2"
   },
   "engines": {
     "node": ">=24.0.0"
