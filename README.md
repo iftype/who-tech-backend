@@ -38,5 +38,3 @@ ADMIN_SECRET=...
 - `admin.md` — 어드민 API, UI
 - `sync.md` — PR 수집, 블로그 RSS
 - `infra.md` — 서버, CI/CD, 배포
-
-<!-- deploy rehearsal marker -->
