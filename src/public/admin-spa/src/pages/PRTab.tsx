@@ -79,7 +79,12 @@ export default function PRTab() {
                   >
                     <td className="px-3 py-2 text-xs font-medium text-gray-900">
                       {m.avatarUrl && (
-                        <img src={m.avatarUrl} className="w-5 h-5 rounded-full inline-block mr-1" alt="" loading="lazy" />
+                        <img
+                          src={m.avatarUrl}
+                          className="w-5 h-5 rounded-full inline-block mr-1"
+                          alt=""
+                          loading="lazy"
+                        />
                       )}
                       {m.nickname ?? m.githubId}
                     </td>
@@ -140,9 +145,7 @@ export default function PRTab() {
                     <tr key={s.id} className="hover:bg-gray-50">
                       <td className="px-3 py-2 text-xs text-gray-600">
                         {s.missionRepo.name}
-                        {s.missionRepo.track && (
-                          <span className="text-gray-400 ml-1">({s.missionRepo.track})</span>
-                        )}
+                        {s.missionRepo.track && <span className="text-gray-400 ml-1">({s.missionRepo.track})</span>}
                       </td>
                       <td className="px-3 py-2">
                         <a

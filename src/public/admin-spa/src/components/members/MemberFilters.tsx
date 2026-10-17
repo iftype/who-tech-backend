@@ -7,8 +7,7 @@ interface Props {
 }
 
 export default function MemberFiltersBar({ filters, onChange }: Props) {
-  const set = (key: keyof MemberFilters, value: unknown) =>
-    onChange({ ...filters, [key]: value || undefined });
+  const set = (key: keyof MemberFilters, value: unknown) => onChange({ ...filters, [key]: value || undefined });
 
   return (
     <div className="flex flex-wrap gap-2 mb-4">
@@ -53,10 +52,7 @@ export default function MemberFiltersBar({ filters, onChange }: Props) {
         <option value="true">있음</option>
         <option value="false">없음</option>
       </select>
-      <button
-        onClick={() => onChange({})}
-        className="text-xs text-gray-400 hover:text-gray-600 px-2"
-      >
+      <button onClick={() => onChange({})} className="text-xs text-gray-400 hover:text-gray-600 px-2">
         초기화
       </button>
     </div>

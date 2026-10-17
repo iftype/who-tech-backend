@@ -3,7 +3,9 @@ import { apiFetch } from '../../lib/api.js';
 import { showToast } from '../ui/Toast.js';
 import type { Member } from '../../lib/types.js';
 
-interface Props { onAdded: (m: Member) => void; }
+interface Props {
+  onAdded: (m: Member) => void;
+}
 
 export default function MemberAddForm({ onAdded }: Props) {
   const [open, setOpen] = useState(false);
@@ -23,7 +25,9 @@ export default function MemberAddForm({ onAdded }: Props) {
         }),
       });
       onAdded(member);
-      setGithubId(''); setCohort(''); setOpen(false);
+      setGithubId('');
+      setCohort('');
+      setOpen(false);
       showToast('멤버 추가 완료');
     } catch (e) {
       showToast(e instanceof Error ? e.message : '추가 실패', 'error');
@@ -44,7 +48,10 @@ export default function MemberAddForm({ onAdded }: Props) {
   }
 
   return (
-    <form onSubmit={submit} className="mb-4 flex gap-2 items-end flex-wrap bg-blue-50 p-3 rounded border border-blue-200">
+    <form
+      onSubmit={submit}
+      className="mb-4 flex gap-2 items-end flex-wrap bg-blue-50 p-3 rounded border border-blue-200"
+    >
       <div>
         <label className="text-xs text-gray-600 block mb-1">GitHub ID</label>
         <input
@@ -67,7 +74,7 @@ export default function MemberAddForm({ onAdded }: Props) {
       </div>
       <button
         type="submit"
-        disabled={loading || (!githubId.trim())}
+        disabled={loading || !githubId.trim()}
         className="bg-blue-600 text-white text-sm rounded px-3 py-1.5 hover:bg-blue-700 disabled:opacity-50"
       >
         {loading ? '추가 중...' : '추가'}

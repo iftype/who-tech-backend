@@ -56,9 +56,7 @@ export default function ArchiveTab() {
     queryFn: () => apiFetch<MissionRepo[]>('/admin/repos'),
   });
 
-  const filteredRepos = track
-    ? cohortRepos.filter((cr) => cr.missionRepo.track === track)
-    : cohortRepos;
+  const filteredRepos = track ? cohortRepos.filter((cr) => cr.missionRepo.track === track) : cohortRepos;
 
   const commonRepos = filteredRepos.filter((cr) => cr.missionRepo.tabCategory === 'common');
   const trackRepos = filteredRepos.filter((cr) => cr.missionRepo.tabCategory !== 'common');
@@ -302,9 +300,7 @@ export default function ArchiveTab() {
           {cr.missionRepo.name}
         </a>
       </td>
-      <td className="px-3 py-2 text-xs text-gray-600">
-        {cr.missionRepo.track ?? '—'}
-      </td>
+      <td className="px-3 py-2 text-xs text-gray-600">{cr.missionRepo.track ?? '—'}</td>
       <td className="px-3 py-2">
         {editingLevelId === cr.id ? (
           <input
@@ -380,8 +376,7 @@ export default function ArchiveTab() {
         <div className="bg-white border border-gray-200 rounded p-4 space-y-4">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <h3 className="text-sm font-semibold text-gray-700">
-              기수별 레포 순서{' '}
-              <span className="text-gray-400 font-normal">({filteredRepos.length}개)</span>
+              기수별 레포 순서 <span className="text-gray-400 font-normal">({filteredRepos.length}개)</span>
             </h3>
             <div className="flex items-center gap-2 flex-wrap">
               <button
@@ -447,9 +442,7 @@ export default function ArchiveTab() {
             <>
               {trackRepos.length > 0 && (
                 <div>
-                  {commonRepos.length > 0 && (
-                    <p className="text-xs font-medium text-gray-600 mb-1">트랙 미션</p>
-                  )}
+                  {commonRepos.length > 0 && <p className="text-xs font-medium text-gray-600 mb-1">트랙 미션</p>}
                   <div className="overflow-x-auto rounded border border-gray-200">
                     <table className="w-full text-sm">
                       <thead className="bg-gray-50 border-b border-gray-200">
@@ -461,9 +454,7 @@ export default function ArchiveTab() {
                           <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">작업</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-100">
-                        {trackRepos.map(renderRepoRow)}
-                      </tbody>
+                      <tbody className="divide-y divide-gray-100">{trackRepos.map(renderRepoRow)}</tbody>
                     </table>
                   </div>
                 </div>
@@ -482,9 +473,7 @@ export default function ArchiveTab() {
                           <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">작업</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-100">
-                        {commonRepos.map(renderRepoRow)}
-                      </tbody>
+                      <tbody className="divide-y divide-gray-100">{commonRepos.map(renderRepoRow)}</tbody>
                     </table>
                   </div>
                 </div>
@@ -515,9 +504,7 @@ export default function ArchiveTab() {
                               <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">작업</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-gray-100">
-                            {repos.map(renderRepoRow)}
-                          </tbody>
+                          <tbody className="divide-y divide-gray-100">{repos.map(renderRepoRow)}</tbody>
                         </table>
                       </div>
                     </div>
@@ -533,17 +520,13 @@ export default function ArchiveTab() {
         <div className="bg-gray-900 rounded border border-gray-700 p-4 font-mono text-xs max-h-48 overflow-y-auto">
           {logs.map((entry, i) => (
             <div key={i} className={`${logColor(entry.type)} leading-5`}>
-              <span className="text-gray-600 mr-2">
-                {new Date(entry.ts).toLocaleTimeString('ko-KR')}
-              </span>
+              <span className="text-gray-600 mr-2">{new Date(entry.ts).toLocaleTimeString('ko-KR')}</span>
               {entry.message}
             </div>
           ))}
           <div ref={logEndRef} />
         </div>
       )}
-
-
     </div>
   );
 }

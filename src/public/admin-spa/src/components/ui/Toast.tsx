@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react';
 
-interface Toast { id: number; message: string; type: 'success' | 'error'; }
+interface Toast {
+  id: number;
+  message: string;
+  type: 'success' | 'error';
+}
 
 let toastListeners: ((t: Toast) => void)[] = [];
 let nextId = 0;
@@ -19,7 +23,9 @@ export function ToastContainer() {
       setTimeout(() => setToasts((prev) => prev.filter((x) => x.id !== t.id)), 3000);
     };
     toastListeners.push(handler);
-    return () => { toastListeners = toastListeners.filter((fn) => fn !== handler); };
+    return () => {
+      toastListeners = toastListeners.filter((fn) => fn !== handler);
+    };
   }, []);
 
   return (
