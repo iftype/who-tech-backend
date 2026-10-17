@@ -5,8 +5,9 @@
 # - pull 이후 단계는 새로 받은 deploy-run.sh가 수행
 set -euo pipefail
 
-if [ -z "${WHO_TECH_DEPLOY_DETACHED:-}" ]; then
-  WHO_TECH_DEPLOY_DETACHED=1 setsid -f bash "$0" "$@" </dev/null >/dev/null 2>&1
+# 분리 여부는 인자로 판단한다. 환경변수는 pm2 reload --update-env로 앱 환경에 남아 다음 배포에 새어 들어간다
+if [ "${1:-}" != "--detached" ]; then
+  setsid -f bash "$0" --detached </dev/null >/dev/null 2>&1
   exit 0
 fi
 
