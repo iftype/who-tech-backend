@@ -63,9 +63,7 @@ export default function PersonTab() {
     onError: (e) => showToast(e instanceof Error ? e.message : '해제 실패', 'error'),
   });
 
-  const unlinkedMembers = members.filter(
-    (m) => !persons.some((p) => p.members.some((pm) => pm.id === m.id)),
-  );
+  const unlinkedMembers = members.filter((m) => !persons.some((p) => p.members.some((pm) => pm.id === m.id)));
 
   if (isLoading) {
     return <div className="py-12 text-center text-gray-400 text-sm">로딩 중...</div>;
@@ -124,9 +122,7 @@ export default function PersonTab() {
                     key={m.id}
                     className="inline-flex items-center gap-1 bg-blue-50 border border-blue-200 text-blue-700 text-xs rounded px-2 py-1"
                   >
-                    {m.avatarUrl && (
-                      <img src={m.avatarUrl} className="w-4 h-4 rounded-full" alt="" />
-                    )}
+                    {m.avatarUrl && <img src={m.avatarUrl} className="w-4 h-4 rounded-full" alt="" />}
                     {m.nickname ?? m.githubId}
                     <button
                       onClick={() => unlinkMutation.mutate({ personId: p.id, memberId: m.id })}
@@ -176,9 +172,7 @@ export default function PersonTab() {
               )}
             </div>
           ))}
-          {persons.length === 0 && (
-            <div className="py-8 text-center text-gray-400 text-sm">Person 없음</div>
-          )}
+          {persons.length === 0 && <div className="py-8 text-center text-gray-400 text-sm">Person 없음</div>}
         </div>
       </section>
     </div>

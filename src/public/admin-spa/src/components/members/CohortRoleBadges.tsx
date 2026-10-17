@@ -18,7 +18,7 @@ export default function CohortRoleBadges({ cohorts }: { cohorts: MemberCohort[] 
           >
             {c.cohort}기 {ROLE_LABELS[r] ?? r}
           </span>
-        ))
+        )),
       )}
     </div>
   );

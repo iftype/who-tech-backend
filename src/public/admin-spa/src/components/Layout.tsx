@@ -22,9 +22,7 @@ export default function Layout({ children }: { children: ReactNode }) {
     if (!githubStatus) return null;
     if (!githubStatus.ok) {
       return (
-        <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-600 font-medium">
-          GitHub API 오류
-        </span>
+        <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-600 font-medium">GitHub API 오류</span>
       );
     }
     if (githubStatus.remaining < 100) {

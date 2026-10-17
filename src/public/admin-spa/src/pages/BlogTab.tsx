@@ -30,7 +30,8 @@ export default function BlogTab() {
   });
 
   const teamSyncMutation = useMutation({
-    mutationFn: () => apiFetch<{ synced: number; deleted: number; failures: unknown[] }>('/admin/blog/team/sync', { method: 'POST' }),
+    mutationFn: () =>
+      apiFetch<{ synced: number; deleted: number; failures: unknown[] }>('/admin/blog/team/sync', { method: 'POST' }),
     onSuccess: (result) => {
       showToast(`팀 블로그 새로고침 완료 — ${result.synced}건 수집`);
       void queryClient.invalidateQueries({ queryKey: ['team-blog-status'] });

@@ -44,7 +44,7 @@ export default function MemberTab() {
         >
           전체
         </button>
-        {allCohorts.map(c => (
+        {allCohorts.map((c) => (
           <button
             key={c}
             onClick={() => setCohortFilter(c)}
@@ -60,9 +60,7 @@ export default function MemberTab() {
       </div>
 
       <MemberFiltersBar filters={filters} onChange={setFilters} />
-      {error && (
-        <div className="text-sm text-red-500 bg-red-50 border border-red-200 rounded p-3">{error}</div>
-      )}
+      {error && <div className="text-sm text-red-500 bg-red-50 border border-red-200 rounded p-3">{error}</div>}
       {loading ? (
         <div className="py-12 text-center text-gray-400 text-sm">로딩 중...</div>
       ) : (

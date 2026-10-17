@@ -68,8 +68,7 @@ export default function SettingsTab() {
   });
 
   const deleteBannedWordMutation = useMutation({
-    mutationFn: (id: number) =>
-      apiFetch(`/admin/banned-words/${id}`, { method: 'DELETE' }),
+    mutationFn: (id: number) => apiFetch(`/admin/banned-words/${id}`, { method: 'DELETE' }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['banned-words'] });
     },
@@ -90,8 +89,7 @@ export default function SettingsTab() {
   });
 
   const deleteIgnoredDomainMutation = useMutation({
-    mutationFn: (id: number) =>
-      apiFetch(`/admin/ignored-domains/${id}`, { method: 'DELETE' }),
+    mutationFn: (id: number) => apiFetch(`/admin/ignored-domains/${id}`, { method: 'DELETE' }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['ignored-domains'] });
     },
@@ -178,12 +176,12 @@ export default function SettingsTab() {
         </form>
         <div className="flex flex-wrap gap-1.5">
           {bannedWords.map((w) => (
-            <span key={w.id} className="inline-flex items-center gap-1 bg-red-50 border border-red-200 text-red-700 text-xs rounded px-2 py-1">
+            <span
+              key={w.id}
+              className="inline-flex items-center gap-1 bg-red-50 border border-red-200 text-red-700 text-xs rounded px-2 py-1"
+            >
               {w.word}
-              <button
-                onClick={() => deleteBannedWordMutation.mutate(w.id)}
-                className="hover:text-red-900 ml-0.5"
-              >
+              <button onClick={() => deleteBannedWordMutation.mutate(w.id)} className="hover:text-red-900 ml-0.5">
                 ✕
               </button>
             </span>
@@ -210,12 +208,12 @@ export default function SettingsTab() {
         </form>
         <div className="flex flex-wrap gap-1.5">
           {ignoredDomains.map((d) => (
-            <span key={d.id} className="inline-flex items-center gap-1 bg-gray-100 border border-gray-300 text-gray-700 text-xs rounded px-2 py-1">
+            <span
+              key={d.id}
+              className="inline-flex items-center gap-1 bg-gray-100 border border-gray-300 text-gray-700 text-xs rounded px-2 py-1"
+            >
               {d.domain}
-              <button
-                onClick={() => deleteIgnoredDomainMutation.mutate(d.id)}
-                className="hover:text-gray-900 ml-0.5"
-              >
+              <button onClick={() => deleteIgnoredDomainMutation.mutate(d.id)} className="hover:text-gray-900 ml-0.5">
                 ✕
               </button>
             </span>

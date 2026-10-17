@@ -104,10 +104,7 @@ export default function LogPanel() {
         </div>
       </div>
       {!collapsed && (
-        <div
-          ref={bodyRef}
-          className="max-h-40 overflow-y-auto py-1"
-        >
+        <div ref={bodyRef} className="max-h-40 overflow-y-auto py-1">
           {entries.length === 0 && (
             <div className="flex items-baseline gap-2.5 px-4 py-0.5">
               <span className="text-slate-700 shrink-0">--:--:--</span>
@@ -116,14 +113,9 @@ export default function LogPanel() {
             </div>
           )}
           {entries.map((e, i) => (
-            <div
-              key={i}
-              className="flex items-baseline gap-2.5 px-4 py-0.5 hover:bg-slate-800/50"
-            >
+            <div key={i} className="flex items-baseline gap-2.5 px-4 py-0.5 hover:bg-slate-800/50">
               <span className="text-slate-700 shrink-0">{formatTs(e.ts)}</span>
-              <span className={`font-bold shrink-0 ${tagColors[e.tag]}`}>
-                {tagLabels[e.tag]}
-              </span>
+              <span className={`font-bold shrink-0 ${tagColors[e.tag]}`}>{tagLabels[e.tag]}</span>
               <span className={msgColors[e.tag]}>{e.msg}</span>
             </div>
           ))}

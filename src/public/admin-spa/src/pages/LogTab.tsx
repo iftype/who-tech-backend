@@ -25,15 +25,17 @@ export default function LogTab() {
     onError: (e) => showToast(e instanceof Error ? e.message : '삭제 실패', 'error'),
   });
 
-  const filtered = logs.filter((l) => {
-    if (category === 'repo') return l.type.includes('sync') || l.type.includes('repo');
-    if (category === 'blog') return l.type.includes('blog');
-    if (category === 'refresh') return l.type.includes('refresh') || l.type.includes('rate_limit_member');
-    return true;
-  }).filter((l) => {
-    if (!filter) return true;
-    return l.type.includes(filter) || l.message.includes(filter);
-  });
+  const filtered = logs
+    .filter((l) => {
+      if (category === 'repo') return l.type.includes('sync') || l.type.includes('repo');
+      if (category === 'blog') return l.type.includes('blog');
+      if (category === 'refresh') return l.type.includes('refresh') || l.type.includes('rate_limit_member');
+      return true;
+    })
+    .filter((l) => {
+      if (!filter) return true;
+      return l.type.includes(filter) || l.message.includes(filter);
+    });
 
   const logColor = (type: string) => {
     if (type.includes('error')) return 'text-red-400';
@@ -94,9 +96,7 @@ export default function LogTab() {
           ) : (
             filtered.map((l) => (
               <div key={l.id} className={`${logColor(l.type)} leading-5`}>
-                <span className="text-gray-600 mr-2">
-                  {new Date(l.createdAt).toLocaleString('ko-KR')}
-                </span>
+                <span className="text-gray-600 mr-2">{new Date(l.createdAt).toLocaleString('ko-KR')}</span>
                 <span className="text-gray-500 mr-2">[{l.type}]</span>
                 {l.message}
               </div>
