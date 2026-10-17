@@ -1,50 +1,46 @@
 #!/bin/bash
+# 배포 진입점. /admin/deploy가 backend 프로세스의 자식으로 실행한다.
+# - pm2 reload가 backend 프로세스 트리를 정리할 때 같이 죽지 않도록 init 밑으로 분리해 다시 실행
+# - 전체를 main()으로 감싸 bash가 파일을 끝까지 읽은 뒤 실행 (git pull로 이 파일이 바뀌어도 안전)
+# - pull 이후 단계는 새로 받은 deploy-run.sh가 수행
 set -euo pipefail
 
-LOG_FILE="/tmp/who-tech-deploy-$(date +%s).log"
-exec > >(tee -a "$LOG_FILE") 2>&1
-
-echo "[$(date '+%Y-%m-%d %H:%M:%S')] Deploy started"
-
-cd ~/app/who-tech-backend
-
-echo "--- Stashing local changes ---"
-git stash || true
-
-echo "--- Checking out main ---"
-git checkout main
-
-echo "--- Pulling latest ---"
-if ! git pull origin main; then
-  echo "!!! git pull failed, resetting to origin/main !!!"
-  git fetch origin main
-  git reset --hard origin/main
+if [ -z "${WHO_TECH_DEPLOY_DETACHED:-}" ]; then
+  WHO_TECH_DEPLOY_DETACHED=1 setsid -f bash "$0" "$@" </dev/null >/dev/null 2>&1
+  exit 0
 fi
 
-echo "--- Selecting Node version (.nvmrc) ---"
-export NVM_DIR="$HOME/.nvm"
-. "$NVM_DIR/nvm.sh"
-nvm install
-nvm use
-# pm2 interpreter가 가리키는 고정 경로. 버전이 바뀌어도 reload만으로 새 Node가 적용된다
-ln -sfn "$(nvm which current)" "$HOME/.who-tech-backend-node"
-echo "Node $(node -v) / npm $(npm -v)"
+main() {
+  local deploy_dir="${DEPLOY_DIR:-$HOME/app/who-tech-backend}"
+  local branch="${DEPLOY_BRANCH:-main}"
+  local log_file
+  log_file="/tmp/who-tech-deploy-$(date +%s).log"
+  exec > >(tee -a "$log_file") 2>&1
 
-echo "--- Installing dependencies ---"
-npm install --ignore-scripts
-npm --prefix src/public/admin-spa install --ignore-scripts
+  # 배포가 겹치지 않도록 직렬화 (앞 배포가 끝날 때까지 대기)
+  exec 9>"/tmp/who-tech-deploy-$(basename "$deploy_dir").lock"
+  flock -w 900 9
 
-echo "--- Generating Prisma client ---"
-npx prisma generate
+  echo "[$(date '+%Y-%m-%d %H:%M:%S')] Deploy started"
+  cd "$deploy_dir"
 
-echo "--- Building ---"
-npm run build
+  local prev_sha
+  prev_sha="$(git rev-parse HEAD)"
 
-echo "--- Running migrations ---"
-npx prisma migrate deploy
+  echo "--- Stashing local changes ---"
+  git stash || true
 
-echo "--- Reloading PM2 ---"
-pm2 reload backend --update-env
+  echo "--- Checking out $branch ---"
+  git checkout "$branch"
 
-echo "[$(date '+%Y-%m-%d %H:%M:%S')] Deploy completed successfully"
-echo "Log saved to: $LOG_FILE"
+  echo "--- Pulling latest ---"
+  if ! git pull origin "$branch"; then
+    echo "!!! git pull failed, resetting to origin/$branch !!!"
+    git fetch origin "$branch"
+    git reset --hard "origin/$branch"
+  fi
+
+  exec bash scripts/deploy-run.sh "$prev_sha"
+}
+
+main "$@"
