@@ -14,7 +14,14 @@ export default defineConfig({
   retries: 0,
   reporter: process.env['CI'] ? [['list'], ['html', { open: 'never', outputFolder: 'playwright-report' }]] : 'list',
   expect: { toHaveScreenshot: { maxDiffPixels: 0 } },
-  use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 }, baseURL: `http://127.0.0.1:${PORT}` },
+  // 어드민은 절대 시각을 보여주므로 시간대·로케일을 고정한다 (CI는 UTC, 로컬은 KST)
+  use: {
+    ...devices['Desktop Chrome'],
+    viewport: { width: 1440, height: 900 },
+    timezoneId: 'Asia/Seoul',
+    locale: 'ko-KR',
+    baseURL: `http://127.0.0.1:${PORT}`,
+  },
   webServer: {
     command: 'npx tsx e2e/admin/server.ts',
     url: `http://127.0.0.1:${PORT}/health`,

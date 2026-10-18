@@ -3317,10 +3317,10 @@ exports[`API contract mutations (sequential) 60 GET /admin/members 1`] = `
 exports[`API contract public GET GET /health 1`] = `
 {
   "body": {
-    "commit": "048bb91ff93707d9393e2f8246aec6c681b61356",
+    "commit": "<commit>",
     "status": "ok",
     "uptime": "<uptime>",
-    "version": "1.2.1",
+    "version": "<version>",
   },
   "location": undefined,
   "status": 200,

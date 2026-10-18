@@ -15,12 +15,15 @@ const auth = { Authorization: `Bearer ${ADMIN_SECRET}` };
 const DAY = 24 * 60 * 60 * 1000;
 const ISO = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/;
 
+// /health의 실행 환경 값(가동 시간, 커밋, 릴리즈마다 오르는 버전)은 형태만 비교한다
+const ENVIRONMENT_KEYS = new Set(['uptime', 'commit', 'version']);
+
 // 테스트 실행 시각에 생기는 값(@updatedAt, 요청 중 기록)만 자리표시자로 바꾼다. 시드의 고정 날짜는 그대로 비교된다
 function normalize(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(normalize);
   if (value && typeof value === 'object') {
     return Object.fromEntries(
-      Object.entries(value).map(([key, v]) => [key, key === 'uptime' ? '<uptime>' : normalize(v)]),
+      Object.entries(value).map(([key, v]) => [key, ENVIRONMENT_KEYS.has(key) ? `<${key}>` : normalize(v)]),
     );
   }
   if (typeof value === 'string' && ISO.test(value) && Math.abs(Date.parse(value) - Date.now()) < 2 * DAY) {
