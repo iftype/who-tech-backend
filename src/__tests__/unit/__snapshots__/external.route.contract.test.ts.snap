@@ -1,0 +1,462 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`external-service routes contract GET /admin/blog/sync-jobs/job-1 null 1`] = `
+{
+  "body": {
+    "from": "blog.getBlogSyncJob",
+  },
+  "calls": {
+    "blog.getBlogSyncJob": [
+      [
+        "job-1",
+      ],
+    ],
+  },
+  "status": 200,
+}
+`;
+
+exports[`external-service routes contract GET /admin/github-status null 1`] = `
+{
+  "body": {
+    "from": "sync.getGithubStatus",
+  },
+  "calls": {
+    "sync.getGithubStatus": [
+      [],
+    ],
+  },
+  "status": 200,
+}
+`;
+
+exports[`external-service routes contract GET /admin/repos/sync-jobs/job-1 null 1`] = `
+{
+  "body": {
+    "from": "repo.getRepoSyncJob",
+  },
+  "calls": {
+    "repo.getRepoSyncJob": [
+      [
+        "job-1",
+      ],
+    ],
+  },
+  "status": 200,
+}
+`;
+
+exports[`external-service routes contract POST /admin/blog/backfill {} 1`] = `
+{
+  "body": {
+    "from": "blog.backfillWorkspaceBlogLinks",
+  },
+  "calls": {
+    "blog.backfillWorkspaceBlogLinks": [
+      [
+        30,
+        undefined,
+      ],
+    ],
+  },
+  "status": 200,
+}
+`;
+
+exports[`external-service routes contract POST /admin/blog/sync {} 1`] = `
+{
+  "body": {
+    "from": "blog.enqueueWorkspaceBlogSync",
+  },
+  "calls": {
+    "blog.enqueueWorkspaceBlogSync": [
+      [
+        "manual",
+      ],
+    ],
+  },
+  "status": 202,
+}
+`;
+
+exports[`external-service routes contract POST /admin/blog/team/sync null 1`] = `
+{
+  "body": {
+    "from": "blog.syncTeamBlogs",
+  },
+  "calls": {
+    "blog.syncTeamBlogs": [
+      [],
+    ],
+  },
+  "status": 200,
+}
+`;
+
+exports[`external-service routes contract POST /admin/members {"githubId":"new-crew","cohort":8,"roles":["crew"],"track":"frontend"} 1`] = `
+{
+  "body": {
+    "from": "member.createMember",
+  },
+  "calls": {
+    "member.createMember": [
+      [
+        {
+          "cohort": 8,
+          "githubId": "new-crew",
+          "roles": [
+            "crew",
+          ],
+          "track": "frontend",
+        },
+      ],
+    ],
+  },
+  "status": 201,
+}
+`;
+
+exports[`external-service routes contract POST /admin/members {"nickname":"no-id"} 1`] = `
+{
+  "body": {
+    "error": "githubId or githubUserId required",
+  },
+  "calls": {},
+  "status": 400,
+}
+`;
+
+exports[`external-service routes contract POST /admin/members/1/refresh-profile null 1`] = `
+{
+  "body": {
+    "from": "member.refreshMemberProfile",
+  },
+  "calls": {
+    "member.refreshMemberProfile": [
+      [
+        1,
+      ],
+    ],
+  },
+  "status": 200,
+}
+`;
+
+exports[`external-service routes contract POST /admin/members/1/resync-submissions null 1`] = `
+{
+  "body": {
+    "from": "member.resyncMemberPRs",
+  },
+  "calls": {
+    "member.resyncMemberPRs": [
+      [
+        1,
+      ],
+    ],
+  },
+  "status": 200,
+}
+`;
+
+exports[`external-service routes contract POST /admin/members/refresh-profiles {} 1`] = `
+{
+  "body": {
+    "from": "member.refreshWorkspaceProfiles",
+  },
+  "calls": {
+    "member.refreshWorkspaceProfiles": [
+      [
+        {
+          "limit": 30,
+        },
+      ],
+    ],
+  },
+  "status": 200,
+}
+`;
+
+exports[`external-service routes contract POST /admin/repos/1/sync {} 1`] = `
+{
+  "body": {},
+  "calls": {
+    "sync.createJob": [
+      [
+        "repo",
+        undefined,
+        1,
+      ],
+    ],
+    "sync.getJob": [
+      [
+        Promise {},
+      ],
+    ],
+  },
+  "status": 202,
+}
+`;
+
+exports[`external-service routes contract POST /admin/repos/abc/sync {} 1`] = `
+{
+  "body": {
+    "message": "invalid id",
+  },
+  "calls": {},
+  "status": 400,
+}
+`;
+
+exports[`external-service routes contract POST /admin/repos/discover null 1`] = `
+{
+  "body": {
+    "from": "repo.refreshRepoCandidates",
+  },
+  "calls": {
+    "repo.refreshRepoCandidates": [
+      [],
+    ],
+  },
+  "status": 200,
+}
+`;
+
+exports[`external-service routes contract POST /admin/sync {"cohort":8} 1`] = `
+{
+  "body": {
+    "from": "sync.syncWorkspace",
+  },
+  "calls": {
+    "sync.syncWorkspace": [
+      [
+        undefined,
+        8,
+      ],
+    ],
+  },
+  "status": 200,
+}
+`;
+
+exports[`external-service routes contract POST /admin/sync {} 1`] = `
+{
+  "body": {
+    "from": "sync.syncWorkspace",
+  },
+  "calls": {
+    "sync.syncWorkspace": [
+      [
+        undefined,
+        undefined,
+      ],
+    ],
+  },
+  "status": 200,
+}
+`;
+
+exports[`external-service routes contract POST /admin/sync/cohort-repos {"cohort":8} 1`] = `
+{
+  "body": {
+    "from": "sync.syncCohortRepoList",
+  },
+  "calls": {
+    "sync.syncCohortRepoList": [
+      [
+        8,
+      ],
+    ],
+  },
+  "status": 200,
+}
+`;
+
+exports[`external-service routes contract POST /admin/sync/cohort-repos {} 1`] = `
+{
+  "body": {
+    "error": "cohort required",
+  },
+  "calls": {},
+  "status": 400,
+}
+`;
+
+exports[`external-service routes contract POST /admin/sync/continuous {} 1`] = `
+{
+  "body": {
+    "from": "sync.syncContinuous",
+  },
+  "calls": {
+    "sync.syncContinuous": [
+      [],
+    ],
+  },
+  "status": 200,
+}
+`;
+
+exports[`external-service routes contract POST /admin/sync/jobs {"cohort":8} 1`] = `
+{
+  "body": {
+    "error": "type must be workspace, continuous, cohort-repos, repo, or blog",
+  },
+  "calls": {},
+  "status": 400,
+}
+`;
+
+exports[`external-service routes contract POST /admin/sync/jobs {"type":"repo","repoId":1} 1`] = `
+{
+  "body": {},
+  "calls": {
+    "sync.createJob": [
+      [
+        "repo",
+        undefined,
+        1,
+        undefined,
+      ],
+    ],
+    "sync.getJob": [
+      [
+        Promise {},
+      ],
+    ],
+  },
+  "status": 201,
+}
+`;
+
+exports[`external-service routes contract POST /admin/sync/jobs {"type":"workspace"} 1`] = `
+{
+  "body": {},
+  "calls": {
+    "sync.createJob": [
+      [
+        "workspace",
+        undefined,
+        undefined,
+        undefined,
+      ],
+    ],
+    "sync.getJob": [
+      [
+        Promise {},
+      ],
+    ],
+  },
+  "status": 201,
+}
+`;
+
+exports[`external-service routes contract POST /admin/sync/jobs {} 1`] = `
+{
+  "body": {
+    "error": "type must be workspace, continuous, cohort-repos, repo, or blog",
+  },
+  "calls": {},
+  "status": 400,
+}
+`;
+
+exports[`external-service routes contract POST /admin/tecotalk/sync {"mode":"full"} 1`] = `
+{
+  "body": {
+    "from": "tecotalk.syncTecoTalks",
+  },
+  "calls": {
+    "tecotalk.syncTecoTalks": [
+      [
+        {
+          "full": false,
+        },
+      ],
+    ],
+  },
+  "status": 200,
+}
+`;
+
+exports[`external-service routes contract POST /admin/tecotalk/sync {} 1`] = `
+{
+  "body": {
+    "from": "tecotalk.syncTecoTalks",
+  },
+  "calls": {
+    "tecotalk.syncTecoTalks": [
+      [
+        {
+          "full": false,
+        },
+      ],
+    ],
+  },
+  "status": 200,
+}
+`;
+
+exports[`external-service routes contract POST /members/fe-crew/refresh null 1`] = `
+{
+  "body": {
+    "githubId": "fe-crew",
+  },
+  "calls": {
+    "memberPublic.refreshMemberProfile": [
+      [
+        "fe-crew",
+      ],
+    ],
+  },
+  "status": 200,
+}
+`;
+
+exports[`external-service routes contract POST /members/fe-crew/refresh null 2`] = `
+{
+  "body": {
+    "error": "Rate limited",
+    "message": "42초 후에 다시 시도해주세요",
+    "remainingSeconds": 42,
+  },
+  "calls": {
+    "memberPublic.refreshMemberProfile": [
+      [
+        "fe-crew",
+      ],
+    ],
+  },
+  "status": 429,
+}
+`;
+
+exports[`external-service routes contract POST /members/fe-crew/refresh null 3`] = `
+{
+  "body": {
+    "error": "GitHub down",
+  },
+  "calls": {
+    "memberPublic.refreshMemberProfile": [
+      [
+        "fe-crew",
+      ],
+    ],
+  },
+  "status": 500,
+}
+`;
+
+exports[`external-service routes contract POST /members/ghost/refresh null 1`] = `
+{
+  "body": {
+    "error": "Member not found",
+  },
+  "calls": {
+    "memberPublic.refreshMemberProfile": [
+      [
+        "ghost",
+      ],
+    ],
+  },
+  "status": 404,
+}
+`;

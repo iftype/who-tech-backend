@@ -5,8 +5,13 @@ on:
     branches: [main]
   push:
     branches: [main]
-  # release-please 릴리즈 PR에서 CI를 수동 실행하기 위함
+  # release-please 릴리즈 PR에서 CI를 수동 실행하기 위함. update_snapshots=true면 어드민 스크린샷 기준 이미지를 새로 만들어 아티팩트로 올린다
   workflow_dispatch:
+    inputs:
+      update_snapshots:
+        description: '어드민 스크린샷 기준 이미지 재생성 (결과는 admin-visual-baseline 아티팩트)'
+        type: boolean
+        default: false
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -51,5 +56,78 @@ jobs:
       - name: Test admin-spa
         run: npm --prefix src/public/admin-spa test
 
+      - name: Dependency rules report
+        # 보고 모드: 위반은 경고로만 출력한다 (ARCHITECTURE_PLAN C-3·D-3에서 실패 처리로 전환)
+        run: npm run deps:check
+
       - name: Build (server + admin-spa)
         run: npm run build
+
+  admin-visual:
+    # 구조 리팩토링이 어드민 화면을 바꾸지 않았는지 확인한다 (ARCHITECTURE_PLAN A-2). 기준 이미지는 이 Linux 환경에서 만든 것만 쓴다
+    name: Admin visual regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DATABASE_URL: file:./prisma/ci.db
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            src/public/admin-spa/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          npm ci --ignore-scripts
+          npm --prefix src/public/admin-spa ci --ignore-scripts
+
+      - run: npx prisma generate
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
+
+      - name: Install Playwright browser
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: Install Playwright system dependencies
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+
+      - name: Build admin-spa (fixed version label)
+        run: npm run build:admin-visual
+
+      - name: Compare screenshots
+        if: ${{ !inputs.update_snapshots }}
+        run: npm run test:admin-visual
+
+      - name: Regenerate baseline screenshots
+        if: ${{ inputs.update_snapshots }}
+        run: npm run test:admin-visual -- --update-snapshots
+
+      - name: Upload baseline screenshots
+        if: ${{ inputs.update_snapshots }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: admin-visual-baseline
+          path: e2e/admin/__screenshots__
+          retention-days: 7
+
+      - name: Upload diff report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: admin-visual-diff
+          path: |
+            test-results
+            playwright-report
+          retention-days: 7
