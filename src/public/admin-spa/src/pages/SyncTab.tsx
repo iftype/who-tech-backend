@@ -11,14 +11,15 @@ import type {
   Workspace,
   SyncQueueJob,
 } from '../lib/types.js';
-import { formatDate, formatStep, type JobType, type LogEntry, type RecentSyncJob } from './sync/sync-format.js';
+import { formatDate, type JobType, type RecentSyncJob } from './sync/sync-format.js';
+import { formatStep, logColor, type StreamLogEntry } from '../lib/stream-log.js';
 import { SyncScheduleStatus } from './sync/SyncScheduleStatus.js';
 import { RecentJobsTable } from './sync/RecentJobsTable.js';
 
 export default function SyncTab() {
   const [cohortInput, setCohortInput] = useState('');
   const [running, setRunning] = useState<JobType | null>(null);
-  const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [logs, setLogs] = useState<StreamLogEntry[]>([]);
   const esRef = useRef<EventSource | null>(null);
   const logEndRef = useRef<HTMLDivElement>(null);
   const [remainingTime, setRemainingTime] = useState('');
@@ -247,7 +248,7 @@ export default function SyncTab() {
     onError: (e) => showToast(e instanceof Error ? e.message : '취소 실패', 'error'),
   });
 
-  const addLog = useCallback((type: LogEntry['type'], message: string) => {
+  const addLog = useCallback((type: StreamLogEntry['type'], message: string) => {
     setLogs((prev) => [...prev, { ts: Date.now(), type, message }]);
     setTimeout(() => logEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
   }, []);
@@ -270,13 +271,6 @@ export default function SyncTab() {
   const runCohortRepos = () => {
     if (!cohortInput) return;
     enqueueMutation.mutate({ type: 'cohort-repos', cohort: Number(cohortInput) });
-  };
-
-  const logColor = (type: LogEntry['type']) => {
-    if (type === 'done') return 'text-green-400';
-    if (type === 'error') return 'text-red-400';
-    if (type === 'info') return 'text-blue-400';
-    return 'text-gray-300';
   };
 
   return (

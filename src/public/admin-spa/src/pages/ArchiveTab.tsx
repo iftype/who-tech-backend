@@ -4,27 +4,7 @@ import { apiFetch } from '../lib/api.js';
 import { showToast } from '../components/ui/Toast.js';
 import { createEventSource } from '../lib/sse.js';
 import type { CohortRepo, MissionRepo } from '../lib/types.js';
-
-interface LogEntry {
-  ts: number;
-  type: 'progress' | 'done' | 'error' | 'info';
-  message: string;
-}
-
-function formatStep(data: unknown): string {
-  if (typeof data === 'string') return data;
-  if (typeof data === 'object' && data !== null) {
-    const d = data as Record<string, unknown>;
-    const parts: string[] = [];
-    if (d['repo']) parts.push(String(d['repo']));
-    if (d['message']) parts.push(String(d['message']));
-    if (d['count'] !== undefined) parts.push(`${d['count']}건`);
-    if (d['percent'] !== undefined) parts.push(`${d['percent']}%`);
-    if (parts.length) return parts.join(' · ');
-    return JSON.stringify(data);
-  }
-  return String(data);
-}
+import { formatStep, logColor, type StreamLogEntry } from '../lib/stream-log.js';
 
 export default function ArchiveTab() {
   const queryClient = useQueryClient();
@@ -32,7 +12,7 @@ export default function ArchiveTab() {
   const [track, setTrack] = useState('');
   const [selectedRepoId, setSelectedRepoId] = useState('');
   const [syncRunning, setSyncRunning] = useState(false);
-  const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [logs, setLogs] = useState<StreamLogEntry[]>([]);
   const logEndRef = useRef<HTMLDivElement>(null);
   const esRef = useRef<EventSource | null>(null);
   const [editingOrderId, setEditingOrderId] = useState<number | null>(null);
@@ -76,7 +56,7 @@ export default function ArchiveTab() {
     return sortedLevels.map((level) => ({ level, repos: map.get(level)! }));
   }, [filteredRepos]);
 
-  const addLog = useCallback((type: LogEntry['type'], message: string) => {
+  const addLog = useCallback((type: StreamLogEntry['type'], message: string) => {
     setLogs((prev) => [...prev, { ts: Date.now(), type, message }]);
     setTimeout(() => logEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
   }, []);
@@ -254,13 +234,6 @@ export default function ArchiveTab() {
       }
       return true;
     });
-
-  const logColor = (type: LogEntry['type']) => {
-    if (type === 'done') return 'text-green-400';
-    if (type === 'error') return 'text-red-400';
-    if (type === 'info') return 'text-blue-400';
-    return 'text-gray-300';
-  };
 
   const renderRepoRow = (cr: CohortRepo) => (
     <tr key={cr.id} className="hover:bg-gray-50">
