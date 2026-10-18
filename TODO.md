@@ -155,7 +155,8 @@
 - [ ] 런타임 major: p-queue 10 / 개발 도구 major: eslint 10, @commitlint 21, admin-spa typescript 7·vite 7+·plugin-react 6, jest-dom 7
 - [ ] Expo SDK 업그레이드 (image-size 취약점 해소)
 - [ ] DB 백업 외부 저장소 복제 (현재 서버 디스크에만 있음)
-- [x] 모바일 `WebSkeleton.tsx` 탭별 파일 분리 (frontend #82, 코드 변경 없는 이동)
+- [x] 모바일 `WebSkeleton.tsx` 탭별 파일 분리 (frontend #82, 원본 기준 스냅샷 테스트 #84)
 - [ ] 피드 커서 정렬에 `id` 동률 기준 명시 (현재 SQLite 기본 순서에 의존, 회귀 테스트로 고정)
-- [ ] 잘못된 JSON 요청이 500 대신 400을 반환하도록
+- [x] 잘못된 JSON 요청이 500 대신 400을 반환하도록 (#177)
+- [ ] 무중단 배포: pm2 fork 모드 reload는 재시작 사이 1~3초 nginx 502 발생 (2026-10-18 로그 확인) → cluster 모드(메모리 956MB 고려) 또는 nginx `proxy_next_upstream` 재시도 검토
 - [ ] 시스템 Node 20(EOL)은 `/usr/bin/pm2` CLI용으로만 남음 → 필요 시 제거
