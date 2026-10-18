@@ -20,7 +20,8 @@
     "test:watch": "NODE_OPTIONS=--experimental-vm-modules jest --watch",
     "test:coverage": "NODE_OPTIONS=--experimental-vm-modules jest --coverage",
     "seed": "tsx src/db/seed.ts",
-    "seed:roles": "tsx src/scripts/seed-roles.ts"
+    "seed:roles": "tsx src/scripts/seed-roles.ts",
+    "test:mutation": "stryker run"
   },
   "dependencies": {
     "@octokit/plugin-throttling": "^11.0.5",
@@ -35,6 +36,9 @@
   "devDependencies": {
     "@commitlint/cli": "^19.6.1",
     "@commitlint/config-conventional": "^19.6.0",
+    "@stryker-mutator/core": "^10.0.0",
+    "@stryker-mutator/jest-runner": "^10.0.0",
+    "@stryker-mutator/typescript-checker": "^10.0.0",
     "@swc/core": "^1.16.18",
     "@swc/jest": "^0.2.39",
     "@types/compression": "^1.8.1",
