@@ -1,0 +1,4268 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`API contract admin GET GET /admin/archive?cohort=8 1`] = `
+{
+  "body": {
+    "markdown": "# 8기 아카이브
+
+## 레벨 1
+
+| 닉네임 | javascript-lotto |
+|--------|:---:|
+| 구름 | - |
+| 별 | - |
+| 하루 | [#12](https://github.com/woowacourse/javascript-lotto/pull/12) |
+",
+  },
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract admin GET GET /admin/archive?cohort=8&track=frontend&format=markdown 1`] = `
+{
+  "body": {
+    "markdown": "# 8기 아카이브 (frontend)
+
+## 레벨 1
+
+| 닉네임 | javascript-lotto |
+|--------|:---:|
+| 하루 | [#12](https://github.com/woowacourse/javascript-lotto/pull/12) |
+",
+  },
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract admin GET GET /admin/banned-words 1`] = `
+{
+  "body": [
+    {
+      "createdAt": "2026-02-01T00:00:00.000Z",
+      "id": 1,
+      "word": "금지어",
+      "workspaceId": 1,
+    },
+  ],
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract admin GET GET /admin/blog/new-posts?sinceMinutes=999999 1`] = `
+{
+  "body": [
+    {
+      "member": {
+        "cohort": 8,
+        "githubId": "fe-crew",
+        "nickname": "하루",
+      },
+      "publishedAt": "2026-09-29T12:00:00.000Z",
+      "title": "로또 미션 회고",
+      "url": "https://haru.example.com/posts/1",
+    },
+    {
+      "member": {
+        "cohort": null,
+        "githubId": "team-blog-a",
+        "nickname": "우리팀",
+      },
+      "publishedAt": "2026-09-28T08:00:00.000Z",
+      "title": "팀 회고",
+      "url": "https://team.example.com/posts/1",
+    },
+    {
+      "member": {
+        "cohort": 7,
+        "githubId": "be-crew",
+        "nickname": "바다",
+      },
+      "publishedAt": "2026-09-20T09:00:00.000Z",
+      "title": "JPA &amp; 트랜잭션",
+      "url": "https://bada.example.com/posts/1",
+    },
+    {
+      "member": {
+        "cohort": 8,
+        "githubId": "fe-crew",
+        "nickname": "하루",
+      },
+      "publishedAt": "2026-05-01T00:00:00.000Z",
+      "title": "오래된 글",
+      "url": "https://haru.example.com/posts/old",
+    },
+  ],
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract admin GET GET /admin/blog/sync-jobs 1`] = `
+{
+  "body": [],
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract admin GET GET /admin/blog/team 1`] = `
+{
+  "body": [
+    {
+      "avatarUrl": null,
+      "blogUrl": "https://team.example.com",
+      "createdAt": "2026-02-01T00:00:00.000Z",
+      "enabled": true,
+      "id": 1,
+      "lastPostedAt": "2026-09-28T08:00:00.000Z",
+      "memberId": 6,
+      "name": "우리팀 블로그",
+      "posts": [
+        {
+          "publishedAt": "2026-09-28T08:00:00.000Z",
+          "title": "팀 회고",
+          "url": "https://team.example.com/posts/1",
+        },
+      ],
+      "rssCheckedAt": "2026-09-30T04:00:00.000Z",
+      "rssError": null,
+      "rssStatus": "available",
+      "rssUrl": "https://team.example.com/rss",
+      "slug": "team-a",
+      "updatedAt": "2026-09-30T04:00:00.000Z",
+      "workspaceId": 1,
+    },
+  ],
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract admin GET GET /admin/cohort-repos/cohorts 1`] = `
+{
+  "body": [
+    8,
+    7,
+  ],
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract admin GET GET /admin/cohort-repos?cohort=8 1`] = `
+{
+  "body": [
+    {
+      "cohort": 8,
+      "id": 1,
+      "level": 1,
+      "missionRepo": {
+        "id": 1,
+        "name": "javascript-lotto",
+        "repoUrl": "https://github.com/woowacourse/javascript-lotto",
+        "tabCategory": "base",
+        "track": "frontend",
+      },
+      "missionRepoId": 1,
+      "order": 1,
+      "workspaceId": 1,
+    },
+  ],
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract admin GET GET /admin/ignored-domains 1`] = `
+{
+  "body": [
+    {
+      "createdAt": "2026-02-01T00:00:00.000Z",
+      "domain": "ignored.example.com",
+      "id": 1,
+      "workspaceId": 1,
+    },
+  ],
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract admin GET GET /admin/logs 1`] = `
+{
+  "body": [
+    {
+      "createdAt": "2026-09-30T06:00:00.000Z",
+      "id": 2,
+      "memberGithubId": "fe-crew",
+      "message": "fe-crew 프로필 새로고침",
+      "metadata": "{"remainingSeconds":0,"requestCount":1}",
+      "source": "client",
+      "type": "profile_refresh",
+    },
+    {
+      "createdAt": "2026-09-30T05:00:00.000Z",
+      "id": 1,
+      "memberGithubId": null,
+      "message": "레포 동기화 완료",
+      "metadata": null,
+      "source": "system",
+      "type": "sync",
+    },
+  ],
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract admin GET GET /admin/members 1`] = `
+{
+  "body": [
+    {
+      "_count": {
+        "submissions": 0,
+      },
+      "avatarUrl": null,
+      "blog": null,
+      "blogPosts": [],
+      "cohort": 8,
+      "cohortLocked": false,
+      "cohorts": [
+        {
+          "cohort": 8,
+          "roles": [
+            "coach",
+          ],
+        },
+        {
+          "cohort": 7,
+          "roles": [
+            "coach",
+          ],
+        },
+      ],
+      "githubId": "coach-a",
+      "githubUserId": 1004,
+      "id": 4,
+      "lastPostedAt": null,
+      "manualNickname": null,
+      "nickname": "구름",
+      "nicknameStats": [],
+      "profileFetchedAt": "2026-09-30T03:00:00.000Z",
+      "profileRefreshError": null,
+      "roles": [
+        "coach",
+      ],
+      "rssCheckedAt": null,
+      "rssError": null,
+      "rssStatus": "unknown",
+      "rssUrl": null,
+      "submissions": [],
+      "track": null,
+      "tracks": [],
+    },
+    {
+      "_count": {
+        "submissions": 0,
+      },
+      "avatarUrl": null,
+      "blog": null,
+      "blogPosts": [],
+      "cohort": 8,
+      "cohortLocked": false,
+      "cohorts": [
+        {
+          "cohort": 8,
+          "roles": [
+            "reviewer",
+          ],
+        },
+      ],
+      "githubId": "reviewer-a",
+      "githubUserId": 1005,
+      "id": 5,
+      "lastPostedAt": null,
+      "manualNickname": null,
+      "nickname": "별",
+      "nicknameStats": [],
+      "profileFetchedAt": "2026-09-30T03:00:00.000Z",
+      "profileRefreshError": null,
+      "roles": [
+        "reviewer",
+      ],
+      "rssCheckedAt": null,
+      "rssError": null,
+      "rssStatus": "unknown",
+      "rssUrl": null,
+      "submissions": [],
+      "track": null,
+      "tracks": [],
+    },
+    {
+      "_count": {
+        "submissions": 1,
+      },
+      "avatarUrl": "https://avatars.githubusercontent.com/u/1002?v=4",
+      "blog": "https://bada.example.com",
+      "blogPosts": [
+        {
+          "authorName": null,
+          "cohort": 7,
+          "createdAt": "2026-09-20T10:00:00.000Z",
+          "id": 2,
+          "memberId": 2,
+          "publishedAt": "2026-09-20T09:00:00.000Z",
+          "title": "JPA &amp; 트랜잭션",
+          "track": "backend",
+          "url": "https://bada.example.com/posts/1",
+          "viewCount": 0,
+          "workspaceId": 1,
+        },
+      ],
+      "cohort": 7,
+      "cohortLocked": true,
+      "cohorts": [
+        {
+          "cohort": 7,
+          "roles": [
+            "crew",
+          ],
+        },
+      ],
+      "githubId": "be-crew",
+      "githubUserId": 1002,
+      "id": 2,
+      "lastPostedAt": null,
+      "manualNickname": "바다",
+      "nickname": "바다",
+      "nicknameStats": [],
+      "profileFetchedAt": "2026-09-30T03:00:00.000Z",
+      "profileRefreshError": null,
+      "roles": [
+        "crew",
+      ],
+      "rssCheckedAt": "2026-09-30T04:00:00.000Z",
+      "rssError": "timeout",
+      "rssStatus": "error",
+      "rssUrl": null,
+      "submissions": [
+        {
+          "id": 3,
+          "memberId": 2,
+          "missionRepo": {
+            "id": 2,
+            "name": "java-racingcar",
+            "tabCategory": "base",
+            "track": "backend",
+          },
+          "missionRepoId": 2,
+          "prNumber": 21,
+          "prUrl": "https://github.com/woowacourse/java-racingcar/pull/21",
+          "status": "merged",
+          "submittedAt": "2025-02-20T10:00:00.000Z",
+          "title": "[1단계 - 자동차 경주] 바다 미션 제출합니다.",
+        },
+      ],
+      "track": "backend",
+      "tracks": [
+        "backend",
+      ],
+    },
+    {
+      "_count": {
+        "submissions": 2,
+      },
+      "avatarUrl": "https://avatars.githubusercontent.com/u/1001?v=4",
+      "blog": "https://haru.example.com",
+      "blogPosts": [
+        {
+          "authorName": null,
+          "cohort": 8,
+          "createdAt": "2026-09-29T13:00:00.000Z",
+          "id": 1,
+          "memberId": 1,
+          "publishedAt": "2026-09-29T12:00:00.000Z",
+          "title": "로또 미션 회고",
+          "track": "frontend",
+          "url": "https://haru.example.com/posts/1",
+          "viewCount": 3,
+          "workspaceId": 1,
+        },
+        {
+          "authorName": null,
+          "cohort": 8,
+          "createdAt": "2026-05-01T01:00:00.000Z",
+          "id": 4,
+          "memberId": 1,
+          "publishedAt": "2026-05-01T00:00:00.000Z",
+          "title": "오래된 글",
+          "track": "frontend",
+          "url": "https://haru.example.com/posts/old",
+          "viewCount": 0,
+          "workspaceId": 1,
+        },
+      ],
+      "cohort": 8,
+      "cohortLocked": false,
+      "cohorts": [
+        {
+          "cohort": 8,
+          "roles": [
+            "crew",
+          ],
+        },
+      ],
+      "githubId": "fe-crew",
+      "githubUserId": 1001,
+      "id": 1,
+      "lastPostedAt": "2026-09-29T12:00:00.000Z",
+      "manualNickname": null,
+      "nickname": "하루",
+      "nicknameStats": [
+        {
+          "count": 3,
+          "lastSeenAt": "2026-03-12T10:00:00.000Z",
+          "nickname": "하루",
+        },
+        {
+          "count": 2,
+          "lastSeenAt": "2026-03-12T10:00:00.000Z",
+          "nickname": "로또",
+        },
+      ],
+      "profileFetchedAt": "2026-09-30T03:00:00.000Z",
+      "profileRefreshError": null,
+      "roles": [
+        "crew",
+      ],
+      "rssCheckedAt": "2026-09-30T04:00:00.000Z",
+      "rssError": null,
+      "rssStatus": "available",
+      "rssUrl": "https://haru.example.com/rss",
+      "submissions": [
+        {
+          "id": 2,
+          "memberId": 1,
+          "missionRepo": {
+            "id": 1,
+            "name": "javascript-lotto",
+            "tabCategory": "base",
+            "track": "frontend",
+          },
+          "missionRepoId": 1,
+          "prNumber": 12,
+          "prUrl": "https://github.com/woowacourse/javascript-lotto/pull/12",
+          "status": "open",
+          "submittedAt": "2026-03-12T10:00:00.000Z",
+          "title": "[2단계 - 로또] 하루 미션 제출합니다.",
+        },
+        {
+          "id": 1,
+          "memberId": 1,
+          "missionRepo": {
+            "id": 1,
+            "name": "javascript-lotto",
+            "tabCategory": "base",
+            "track": "frontend",
+          },
+          "missionRepoId": 1,
+          "prNumber": 11,
+          "prUrl": "https://github.com/woowacourse/javascript-lotto/pull/11",
+          "status": "merged",
+          "submittedAt": "2026-03-05T10:00:00.000Z",
+          "title": "[1단계 - 로또] 하루 미션 제출합니다.",
+        },
+      ],
+      "track": "frontend",
+      "tracks": [
+        "frontend",
+      ],
+    },
+    {
+      "_count": {
+        "submissions": 0,
+      },
+      "avatarUrl": null,
+      "blog": null,
+      "blogPosts": [],
+      "cohort": 6,
+      "cohortLocked": false,
+      "cohorts": [
+        {
+          "cohort": 6,
+          "roles": [
+            "crew",
+          ],
+        },
+      ],
+      "githubId": "android-crew",
+      "githubUserId": 1003,
+      "id": 3,
+      "lastPostedAt": null,
+      "manualNickname": null,
+      "nickname": "하루",
+      "nicknameStats": [],
+      "profileFetchedAt": "2026-09-30T03:00:00.000Z",
+      "profileRefreshError": null,
+      "roles": [
+        "crew",
+      ],
+      "rssCheckedAt": null,
+      "rssError": null,
+      "rssStatus": "unavailable",
+      "rssUrl": null,
+      "submissions": [],
+      "track": "android",
+      "tracks": [
+        "android",
+      ],
+    },
+  ],
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract admin GET GET /admin/members/1 1`] = `
+{
+  "body": {
+    "_count": {
+      "submissions": 2,
+    },
+    "avatarUrl": "https://avatars.githubusercontent.com/u/1001?v=4",
+    "blog": "https://haru.example.com",
+    "blogPosts": [
+      {
+        "authorName": null,
+        "cohort": 8,
+        "createdAt": "2026-09-29T13:00:00.000Z",
+        "id": 1,
+        "memberId": 1,
+        "publishedAt": "2026-09-29T12:00:00.000Z",
+        "title": "로또 미션 회고",
+        "track": "frontend",
+        "url": "https://haru.example.com/posts/1",
+        "viewCount": 3,
+        "workspaceId": 1,
+      },
+      {
+        "authorName": null,
+        "cohort": 8,
+        "createdAt": "2026-05-01T01:00:00.000Z",
+        "id": 4,
+        "memberId": 1,
+        "publishedAt": "2026-05-01T00:00:00.000Z",
+        "title": "오래된 글",
+        "track": "frontend",
+        "url": "https://haru.example.com/posts/old",
+        "viewCount": 0,
+        "workspaceId": 1,
+      },
+    ],
+    "cohort": 8,
+    "cohortLocked": false,
+    "cohorts": [
+      {
+        "cohort": 8,
+        "roles": [
+          "crew",
+        ],
+      },
+    ],
+    "githubId": "fe-crew",
+    "githubUserId": 1001,
+    "id": 1,
+    "lastPostedAt": "2026-09-29T12:00:00.000Z",
+    "manualNickname": null,
+    "nickname": "하루",
+    "nicknameStats": [
+      {
+        "count": 3,
+        "lastSeenAt": "2026-03-12T10:00:00.000Z",
+        "nickname": "하루",
+      },
+      {
+        "count": 2,
+        "lastSeenAt": "2026-03-12T10:00:00.000Z",
+        "nickname": "로또",
+      },
+    ],
+    "profileFetchedAt": "2026-09-30T03:00:00.000Z",
+    "profileRefreshError": null,
+    "roles": [
+      "crew",
+    ],
+    "rssCheckedAt": "2026-09-30T04:00:00.000Z",
+    "rssError": null,
+    "rssStatus": "available",
+    "rssUrl": "https://haru.example.com/rss",
+    "submissions": [
+      {
+        "id": 2,
+        "memberId": 1,
+        "missionRepo": {
+          "id": 1,
+          "name": "javascript-lotto",
+          "tabCategory": "base",
+          "track": "frontend",
+        },
+        "missionRepoId": 1,
+        "prNumber": 12,
+        "prUrl": "https://github.com/woowacourse/javascript-lotto/pull/12",
+        "status": "open",
+        "submittedAt": "2026-03-12T10:00:00.000Z",
+        "title": "[2단계 - 로또] 하루 미션 제출합니다.",
+      },
+      {
+        "id": 1,
+        "memberId": 1,
+        "missionRepo": {
+          "id": 1,
+          "name": "javascript-lotto",
+          "tabCategory": "base",
+          "track": "frontend",
+        },
+        "missionRepoId": 1,
+        "prNumber": 11,
+        "prUrl": "https://github.com/woowacourse/javascript-lotto/pull/11",
+        "status": "merged",
+        "submittedAt": "2026-03-05T10:00:00.000Z",
+        "title": "[1단계 - 로또] 하루 미션 제출합니다.",
+      },
+    ],
+    "track": "frontend",
+    "tracks": [
+      "frontend",
+    ],
+  },
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract admin GET GET /admin/members/1/blog-posts 1`] = `
+{
+  "body": {
+    "archive": [
+      {
+        "publishedAt": "2026-09-29T12:00:00.000Z",
+        "title": "로또 미션 회고",
+        "url": "https://haru.example.com/posts/1",
+      },
+      {
+        "publishedAt": "2026-05-01T00:00:00.000Z",
+        "title": "오래된 글",
+        "url": "https://haru.example.com/posts/old",
+      },
+    ],
+    "latest": [],
+    "page": 1,
+    "totalPages": 1,
+  },
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract admin GET GET /admin/members/999 1`] = `
+{
+  "body": {
+    "error": "member not found",
+  },
+  "location": undefined,
+  "status": 404,
+}
+`;
+
+exports[`API contract admin GET GET /admin/members/cohorts 1`] = `
+{
+  "body": [
+    8,
+    7,
+    6,
+  ],
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract admin GET GET /admin/members?cohort=8&role=crew 1`] = `
+{
+  "body": [
+    {
+      "_count": {
+        "submissions": 2,
+      },
+      "avatarUrl": "https://avatars.githubusercontent.com/u/1001?v=4",
+      "blog": "https://haru.example.com",
+      "blogPosts": [
+        {
+          "authorName": null,
+          "cohort": 8,
+          "createdAt": "2026-09-29T13:00:00.000Z",
+          "id": 1,
+          "memberId": 1,
+          "publishedAt": "2026-09-29T12:00:00.000Z",
+          "title": "로또 미션 회고",
+          "track": "frontend",
+          "url": "https://haru.example.com/posts/1",
+          "viewCount": 3,
+          "workspaceId": 1,
+        },
+        {
+          "authorName": null,
+          "cohort": 8,
+          "createdAt": "2026-05-01T01:00:00.000Z",
+          "id": 4,
+          "memberId": 1,
+          "publishedAt": "2026-05-01T00:00:00.000Z",
+          "title": "오래된 글",
+          "track": "frontend",
+          "url": "https://haru.example.com/posts/old",
+          "viewCount": 0,
+          "workspaceId": 1,
+        },
+      ],
+      "cohort": 8,
+      "cohortLocked": false,
+      "cohorts": [
+        {
+          "cohort": 8,
+          "roles": [
+            "crew",
+          ],
+        },
+      ],
+      "githubId": "fe-crew",
+      "githubUserId": 1001,
+      "id": 1,
+      "lastPostedAt": "2026-09-29T12:00:00.000Z",
+      "manualNickname": null,
+      "nickname": "하루",
+      "nicknameStats": [
+        {
+          "count": 3,
+          "lastSeenAt": "2026-03-12T10:00:00.000Z",
+          "nickname": "하루",
+        },
+        {
+          "count": 2,
+          "lastSeenAt": "2026-03-12T10:00:00.000Z",
+          "nickname": "로또",
+        },
+      ],
+      "profileFetchedAt": "2026-09-30T03:00:00.000Z",
+      "profileRefreshError": null,
+      "roles": [
+        "crew",
+      ],
+      "rssCheckedAt": "2026-09-30T04:00:00.000Z",
+      "rssError": null,
+      "rssStatus": "available",
+      "rssUrl": "https://haru.example.com/rss",
+      "submissions": [
+        {
+          "id": 2,
+          "memberId": 1,
+          "missionRepo": {
+            "id": 1,
+            "name": "javascript-lotto",
+            "tabCategory": "base",
+            "track": "frontend",
+          },
+          "missionRepoId": 1,
+          "prNumber": 12,
+          "prUrl": "https://github.com/woowacourse/javascript-lotto/pull/12",
+          "status": "open",
+          "submittedAt": "2026-03-12T10:00:00.000Z",
+          "title": "[2단계 - 로또] 하루 미션 제출합니다.",
+        },
+        {
+          "id": 1,
+          "memberId": 1,
+          "missionRepo": {
+            "id": 1,
+            "name": "javascript-lotto",
+            "tabCategory": "base",
+            "track": "frontend",
+          },
+          "missionRepoId": 1,
+          "prNumber": 11,
+          "prUrl": "https://github.com/woowacourse/javascript-lotto/pull/11",
+          "status": "merged",
+          "submittedAt": "2026-03-05T10:00:00.000Z",
+          "title": "[1단계 - 로또] 하루 미션 제출합니다.",
+        },
+      ],
+      "track": "frontend",
+      "tracks": [
+        "frontend",
+      ],
+    },
+  ],
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract admin GET GET /admin/members?q=하루&hasBlog=true 1`] = `
+{
+  "body": [
+    {
+      "_count": {
+        "submissions": 2,
+      },
+      "avatarUrl": "https://avatars.githubusercontent.com/u/1001?v=4",
+      "blog": "https://haru.example.com",
+      "blogPosts": [
+        {
+          "authorName": null,
+          "cohort": 8,
+          "createdAt": "2026-09-29T13:00:00.000Z",
+          "id": 1,
+          "memberId": 1,
+          "publishedAt": "2026-09-29T12:00:00.000Z",
+          "title": "로또 미션 회고",
+          "track": "frontend",
+          "url": "https://haru.example.com/posts/1",
+          "viewCount": 3,
+          "workspaceId": 1,
+        },
+        {
+          "authorName": null,
+          "cohort": 8,
+          "createdAt": "2026-05-01T01:00:00.000Z",
+          "id": 4,
+          "memberId": 1,
+          "publishedAt": "2026-05-01T00:00:00.000Z",
+          "title": "오래된 글",
+          "track": "frontend",
+          "url": "https://haru.example.com/posts/old",
+          "viewCount": 0,
+          "workspaceId": 1,
+        },
+      ],
+      "cohort": 8,
+      "cohortLocked": false,
+      "cohorts": [
+        {
+          "cohort": 8,
+          "roles": [
+            "crew",
+          ],
+        },
+      ],
+      "githubId": "fe-crew",
+      "githubUserId": 1001,
+      "id": 1,
+      "lastPostedAt": "2026-09-29T12:00:00.000Z",
+      "manualNickname": null,
+      "nickname": "하루",
+      "nicknameStats": [
+        {
+          "count": 3,
+          "lastSeenAt": "2026-03-12T10:00:00.000Z",
+          "nickname": "하루",
+        },
+        {
+          "count": 2,
+          "lastSeenAt": "2026-03-12T10:00:00.000Z",
+          "nickname": "로또",
+        },
+      ],
+      "profileFetchedAt": "2026-09-30T03:00:00.000Z",
+      "profileRefreshError": null,
+      "roles": [
+        "crew",
+      ],
+      "rssCheckedAt": "2026-09-30T04:00:00.000Z",
+      "rssError": null,
+      "rssStatus": "available",
+      "rssUrl": "https://haru.example.com/rss",
+      "submissions": [
+        {
+          "id": 2,
+          "memberId": 1,
+          "missionRepo": {
+            "id": 1,
+            "name": "javascript-lotto",
+            "tabCategory": "base",
+            "track": "frontend",
+          },
+          "missionRepoId": 1,
+          "prNumber": 12,
+          "prUrl": "https://github.com/woowacourse/javascript-lotto/pull/12",
+          "status": "open",
+          "submittedAt": "2026-03-12T10:00:00.000Z",
+          "title": "[2단계 - 로또] 하루 미션 제출합니다.",
+        },
+        {
+          "id": 1,
+          "memberId": 1,
+          "missionRepo": {
+            "id": 1,
+            "name": "javascript-lotto",
+            "tabCategory": "base",
+            "track": "frontend",
+          },
+          "missionRepoId": 1,
+          "prNumber": 11,
+          "prUrl": "https://github.com/woowacourse/javascript-lotto/pull/11",
+          "status": "merged",
+          "submittedAt": "2026-03-05T10:00:00.000Z",
+          "title": "[1단계 - 로또] 하루 미션 제출합니다.",
+        },
+      ],
+      "track": "frontend",
+      "tracks": [
+        "frontend",
+      ],
+    },
+  ],
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract admin GET GET /admin/members?track=backend&page=1&limit=1 1`] = `
+{
+  "body": [
+    {
+      "_count": {
+        "submissions": 1,
+      },
+      "avatarUrl": "https://avatars.githubusercontent.com/u/1002?v=4",
+      "blog": "https://bada.example.com",
+      "blogPosts": [
+        {
+          "authorName": null,
+          "cohort": 7,
+          "createdAt": "2026-09-20T10:00:00.000Z",
+          "id": 2,
+          "memberId": 2,
+          "publishedAt": "2026-09-20T09:00:00.000Z",
+          "title": "JPA &amp; 트랜잭션",
+          "track": "backend",
+          "url": "https://bada.example.com/posts/1",
+          "viewCount": 0,
+          "workspaceId": 1,
+        },
+      ],
+      "cohort": 7,
+      "cohortLocked": true,
+      "cohorts": [
+        {
+          "cohort": 7,
+          "roles": [
+            "crew",
+          ],
+        },
+      ],
+      "githubId": "be-crew",
+      "githubUserId": 1002,
+      "id": 2,
+      "lastPostedAt": null,
+      "manualNickname": "바다",
+      "nickname": "바다",
+      "nicknameStats": [],
+      "profileFetchedAt": "2026-09-30T03:00:00.000Z",
+      "profileRefreshError": null,
+      "roles": [
+        "crew",
+      ],
+      "rssCheckedAt": "2026-09-30T04:00:00.000Z",
+      "rssError": "timeout",
+      "rssStatus": "error",
+      "rssUrl": null,
+      "submissions": [
+        {
+          "id": 3,
+          "memberId": 2,
+          "missionRepo": {
+            "id": 2,
+            "name": "java-racingcar",
+            "tabCategory": "base",
+            "track": "backend",
+          },
+          "missionRepoId": 2,
+          "prNumber": 21,
+          "prUrl": "https://github.com/woowacourse/java-racingcar/pull/21",
+          "status": "merged",
+          "submittedAt": "2025-02-20T10:00:00.000Z",
+          "title": "[1단계 - 자동차 경주] 바다 미션 제출합니다.",
+        },
+      ],
+      "track": "backend",
+      "tracks": [
+        "backend",
+      ],
+    },
+  ],
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract admin GET GET /admin/persons 1`] = `
+{
+  "body": [
+    {
+      "createdAt": "2026-02-01T00:00:00.000Z",
+      "displayName": "동일인",
+      "id": 1,
+      "members": [
+        {
+          "avatarUrl": "https://avatars.githubusercontent.com/u/1001?v=4",
+          "githubId": "fe-crew",
+          "id": 1,
+          "manualNickname": null,
+          "memberCohorts": [
+            {
+              "cohort": {
+                "description": "8기",
+                "id": 3,
+                "number": 8,
+              },
+              "cohortId": 3,
+              "id": 1,
+              "memberId": 1,
+              "role": {
+                "id": 1,
+                "name": "crew",
+              },
+              "roleId": 1,
+            },
+          ],
+          "nickname": "하루",
+        },
+        {
+          "avatarUrl": null,
+          "githubId": "android-crew",
+          "id": 3,
+          "manualNickname": null,
+          "memberCohorts": [
+            {
+              "cohort": {
+                "description": "6기",
+                "id": 1,
+                "number": 6,
+              },
+              "cohortId": 1,
+              "id": 3,
+              "memberId": 3,
+              "role": {
+                "id": 1,
+                "name": "crew",
+              },
+              "roleId": 1,
+            },
+          ],
+          "nickname": "하루",
+        },
+      ],
+      "note": "계정 두 개",
+      "workspaceId": 1,
+    },
+  ],
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract admin GET GET /admin/repos 1`] = `
+{
+  "body": [
+    {
+      "_count": {
+        "submissions": 1,
+      },
+      "candidateReason": null,
+      "cohorts": [
+        7,
+        8,
+      ],
+      "description": null,
+      "githubRepoId": 502,
+      "id": 2,
+      "lastSyncAt": "2026-09-30T05:00:00.000Z",
+      "name": "java-racingcar",
+      "repoUrl": "https://github.com/woowacourse/java-racingcar",
+      "status": "active",
+      "syncMode": "once",
+      "tabCategory": "base",
+      "track": "backend",
+      "type": "individual",
+      "workspaceId": 1,
+    },
+    {
+      "_count": {
+        "submissions": 2,
+      },
+      "candidateReason": null,
+      "cohorts": [],
+      "description": "로또",
+      "githubRepoId": 501,
+      "id": 1,
+      "lastSyncAt": "2026-09-30T05:00:00.000Z",
+      "name": "javascript-lotto",
+      "repoUrl": "https://github.com/woowacourse/javascript-lotto",
+      "status": "active",
+      "syncMode": "continuous",
+      "tabCategory": "base",
+      "track": "frontend",
+      "type": "individual",
+      "workspaceId": 1,
+    },
+    {
+      "_count": {
+        "submissions": 0,
+      },
+      "candidateReason": "이름 패턴 일치",
+      "cohorts": [],
+      "description": null,
+      "githubRepoId": 503,
+      "id": 3,
+      "lastSyncAt": null,
+      "name": "woowa-precourse",
+      "repoUrl": "https://github.com/woowacourse/woowa-precourse",
+      "status": "candidate",
+      "syncMode": "continuous",
+      "tabCategory": "precourse",
+      "track": null,
+      "type": "individual",
+      "workspaceId": 1,
+    },
+  ],
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract admin GET GET /admin/repos/sync-jobs 1`] = `
+{
+  "body": [],
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract admin GET GET /admin/repos?status=candidate 1`] = `
+{
+  "body": [
+    {
+      "_count": {
+        "submissions": 0,
+      },
+      "candidateReason": "이름 패턴 일치",
+      "cohorts": [],
+      "description": null,
+      "githubRepoId": 503,
+      "id": 3,
+      "lastSyncAt": null,
+      "name": "woowa-precourse",
+      "repoUrl": "https://github.com/woowacourse/woowa-precourse",
+      "status": "candidate",
+      "syncMode": "continuous",
+      "tabCategory": "precourse",
+      "track": null,
+      "type": "individual",
+      "workspaceId": 1,
+    },
+  ],
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract admin GET GET /admin/status 1`] = `
+{
+  "body": {
+    "lastProfileRefreshAt": "2026-09-30T03:00:00.000Z",
+    "lastSyncAt": "2026-09-30T03:00:00.000Z",
+    "memberCount": 6,
+    "profileRefreshEnabled": true,
+    "repoCount": 3,
+  },
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract admin GET GET /admin/status without token is 401 1`] = `
+{
+  "body": {
+    "error": "Unauthorized",
+  },
+  "status": 401,
+}
+`;
+
+exports[`API contract admin GET GET /admin/sync/jobs 1`] = `
+{
+  "body": [],
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract admin GET GET /admin/tecotalk 1`] = `
+{
+  "body": [
+    {
+      "cohort": 8,
+      "id": 1,
+      "matchStatus": "matched",
+      "speakerNickname": "하루",
+      "speakers": [
+        {
+          "member": {
+            "avatarUrl": "https://avatars.githubusercontent.com/u/1001?v=4",
+            "githubId": "fe-crew",
+            "manualNickname": null,
+            "nickname": "하루",
+          },
+        },
+      ],
+      "thumbnailUrl": "https://i.ytimg.com/vi/video-matched/hqdefault.jpg",
+      "title": "[테코톡] 하루의 렌더링",
+      "uploadedAt": "2026-06-01T10:00:00.000Z",
+      "url": "https://www.youtube.com/watch?v=video-matched",
+      "videoId": "video-matched",
+      "viewCount": 120,
+    },
+    {
+      "cohort": 7,
+      "id": 2,
+      "matchStatus": "unmatched",
+      "speakerNickname": "모름",
+      "speakers": [],
+      "thumbnailUrl": null,
+      "title": "[테코톡] 누군가의 발표",
+      "uploadedAt": "2025-06-01T10:00:00.000Z",
+      "url": "https://www.youtube.com/watch?v=video-unmatched",
+      "videoId": "video-unmatched",
+      "viewCount": 40,
+    },
+  ],
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract admin GET GET /admin/tecotalk?cohort=8&matchStatus=matched 1`] = `
+{
+  "body": [
+    {
+      "cohort": 8,
+      "id": 1,
+      "matchStatus": "matched",
+      "speakerNickname": "하루",
+      "speakers": [
+        {
+          "member": {
+            "avatarUrl": "https://avatars.githubusercontent.com/u/1001?v=4",
+            "githubId": "fe-crew",
+            "manualNickname": null,
+            "nickname": "하루",
+          },
+        },
+      ],
+      "thumbnailUrl": "https://i.ytimg.com/vi/video-matched/hqdefault.jpg",
+      "title": "[테코톡] 하루의 렌더링",
+      "uploadedAt": "2026-06-01T10:00:00.000Z",
+      "url": "https://www.youtube.com/watch?v=video-matched",
+      "videoId": "video-matched",
+      "viewCount": 120,
+    },
+  ],
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract admin GET GET /admin/workspace 1`] = `
+{
+  "body": {
+    "blogSyncEnabled": true,
+    "cohortRules": [
+      {
+        "cohort": 8,
+        "year": 2026,
+      },
+      {
+        "cohort": 7,
+        "year": 2025,
+      },
+      {
+        "cohort": 6,
+        "year": 2024,
+      },
+    ],
+    "profileRefreshEnabled": true,
+  },
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract mutations (sequential) 01 PUT /admin/workspace 1`] = `
+{
+  "body": {
+    "blogSyncEnabled": false,
+    "cohortRules": [
+      {
+        "cohort": 8,
+        "year": 2026,
+      },
+      {
+        "cohort": 7,
+        "year": 2025,
+      },
+      {
+        "cohort": 6,
+        "year": 2024,
+      },
+    ],
+    "profileRefreshEnabled": true,
+  },
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract mutations (sequential) 02 PUT /admin/workspace 1`] = `
+{
+  "body": {
+    "message": "invalid cohortRules",
+  },
+  "location": undefined,
+  "status": 400,
+}
+`;
+
+exports[`API contract mutations (sequential) 03 GET /admin/workspace 1`] = `
+{
+  "body": {
+    "blogSyncEnabled": false,
+    "cohortRules": [
+      {
+        "cohort": 8,
+        "year": 2026,
+      },
+      {
+        "cohort": 7,
+        "year": 2025,
+      },
+      {
+        "cohort": 6,
+        "year": 2024,
+      },
+    ],
+    "profileRefreshEnabled": true,
+  },
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract mutations (sequential) 04 POST /admin/banned-words 1`] = `
+{
+  "body": {
+    "createdAt": "<now>",
+    "id": 2,
+    "word": "새금지어",
+    "workspaceId": 1,
+  },
+  "location": undefined,
+  "status": 201,
+}
+`;
+
+exports[`API contract mutations (sequential) 05 POST /admin/banned-words 1`] = `
+{
+  "body": {
+    "error": "word already exists",
+  },
+  "location": undefined,
+  "status": 409,
+}
+`;
+
+exports[`API contract mutations (sequential) 06 POST /admin/banned-words 1`] = `
+{
+  "body": {
+    "error": "word required",
+  },
+  "location": undefined,
+  "status": 400,
+}
+`;
+
+exports[`API contract mutations (sequential) 07 DELETE /admin/banned-words/1 1`] = `
+{
+  "body": {},
+  "location": undefined,
+  "status": 204,
+}
+`;
+
+exports[`API contract mutations (sequential) 08 GET /admin/banned-words 1`] = `
+{
+  "body": [
+    {
+      "createdAt": "<now>",
+      "id": 2,
+      "word": "새금지어",
+      "workspaceId": 1,
+    },
+  ],
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract mutations (sequential) 09 POST /admin/ignored-domains 1`] = `
+{
+  "body": {
+    "createdAt": "<now>",
+    "domain": "x.example.com",
+    "id": 2,
+    "workspaceId": 1,
+  },
+  "location": undefined,
+  "status": 201,
+}
+`;
+
+exports[`API contract mutations (sequential) 10 POST /admin/ignored-domains 1`] = `
+{
+  "body": {
+    "error": "domain required",
+  },
+  "location": undefined,
+  "status": 400,
+}
+`;
+
+exports[`API contract mutations (sequential) 11 DELETE /admin/ignored-domains/1 1`] = `
+{
+  "body": {},
+  "location": undefined,
+  "status": 204,
+}
+`;
+
+exports[`API contract mutations (sequential) 12 GET /admin/ignored-domains 1`] = `
+{
+  "body": [
+    {
+      "createdAt": "<now>",
+      "domain": "x.example.com",
+      "id": 2,
+      "workspaceId": 1,
+    },
+  ],
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract mutations (sequential) 13 POST /admin/persons 1`] = `
+{
+  "body": {
+    "createdAt": "<now>",
+    "displayName": "새사람",
+    "id": 2,
+    "members": [
+      {
+        "avatarUrl": "https://avatars.githubusercontent.com/u/1002?v=4",
+        "githubId": "be-crew",
+        "id": 2,
+        "manualNickname": "바다",
+        "memberCohorts": [
+          {
+            "cohort": {
+              "description": "7기",
+              "id": 2,
+              "number": 7,
+            },
+            "cohortId": 2,
+            "id": 2,
+            "memberId": 2,
+            "role": {
+              "id": 1,
+              "name": "crew",
+            },
+            "roleId": 1,
+          },
+        ],
+        "nickname": "자동닉",
+      },
+    ],
+    "note": "메모",
+    "workspaceId": 1,
+  },
+  "location": undefined,
+  "status": 201,
+}
+`;
+
+exports[`API contract mutations (sequential) 14 PATCH /admin/persons/2 1`] = `
+{
+  "body": {
+    "createdAt": "<now>",
+    "displayName": "새사람",
+    "id": 2,
+    "members": [
+      {
+        "avatarUrl": "https://avatars.githubusercontent.com/u/1002?v=4",
+        "githubId": "be-crew",
+        "id": 2,
+        "manualNickname": "바다",
+        "memberCohorts": [
+          {
+            "cohort": {
+              "description": "7기",
+              "id": 2,
+              "number": 7,
+            },
+            "cohortId": 2,
+            "id": 2,
+            "memberId": 2,
+            "role": {
+              "id": 1,
+              "name": "crew",
+            },
+            "roleId": 1,
+          },
+        ],
+        "nickname": "자동닉",
+      },
+    ],
+    "note": "수정한 메모",
+    "workspaceId": 1,
+  },
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract mutations (sequential) 15 POST /admin/persons/2/members/4 1`] = `
+{
+  "body": {
+    "createdAt": "<now>",
+    "displayName": "새사람",
+    "id": 2,
+    "members": [
+      {
+        "avatarUrl": "https://avatars.githubusercontent.com/u/1002?v=4",
+        "githubId": "be-crew",
+        "id": 2,
+        "manualNickname": "바다",
+        "memberCohorts": [
+          {
+            "cohort": {
+              "description": "7기",
+              "id": 2,
+              "number": 7,
+            },
+            "cohortId": 2,
+            "id": 2,
+            "memberId": 2,
+            "role": {
+              "id": 1,
+              "name": "crew",
+            },
+            "roleId": 1,
+          },
+        ],
+        "nickname": "자동닉",
+      },
+      {
+        "avatarUrl": null,
+        "githubId": "coach-a",
+        "id": 4,
+        "manualNickname": null,
+        "memberCohorts": [
+          {
+            "cohort": {
+              "description": "7기",
+              "id": 2,
+              "number": 7,
+            },
+            "cohortId": 2,
+            "id": 4,
+            "memberId": 4,
+            "role": {
+              "id": 2,
+              "name": "coach",
+            },
+            "roleId": 2,
+          },
+          {
+            "cohort": {
+              "description": "8기",
+              "id": 3,
+              "number": 8,
+            },
+            "cohortId": 3,
+            "id": 5,
+            "memberId": 4,
+            "role": {
+              "id": 2,
+              "name": "coach",
+            },
+            "roleId": 2,
+          },
+        ],
+        "nickname": "구름",
+      },
+    ],
+    "note": "수정한 메모",
+    "workspaceId": 1,
+  },
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract mutations (sequential) 16 DELETE /admin/persons/2/members/4 1`] = `
+{
+  "body": {
+    "createdAt": "<now>",
+    "displayName": "새사람",
+    "id": 2,
+    "members": [
+      {
+        "avatarUrl": "https://avatars.githubusercontent.com/u/1002?v=4",
+        "githubId": "be-crew",
+        "id": 2,
+        "manualNickname": "바다",
+        "memberCohorts": [
+          {
+            "cohort": {
+              "description": "7기",
+              "id": 2,
+              "number": 7,
+            },
+            "cohortId": 2,
+            "id": 2,
+            "memberId": 2,
+            "role": {
+              "id": 1,
+              "name": "crew",
+            },
+            "roleId": 1,
+          },
+        ],
+        "nickname": "자동닉",
+      },
+    ],
+    "note": "수정한 메모",
+    "workspaceId": 1,
+  },
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract mutations (sequential) 17 DELETE /admin/persons/2 1`] = `
+{
+  "body": {
+    "ok": true,
+  },
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract mutations (sequential) 18 GET /admin/persons 1`] = `
+{
+  "body": [
+    {
+      "createdAt": "2026-02-01T00:00:00.000Z",
+      "displayName": "동일인",
+      "id": 1,
+      "members": [
+        {
+          "avatarUrl": "https://avatars.githubusercontent.com/u/1001?v=4",
+          "githubId": "fe-crew",
+          "id": 1,
+          "manualNickname": null,
+          "memberCohorts": [
+            {
+              "cohort": {
+                "description": "8기",
+                "id": 3,
+                "number": 8,
+              },
+              "cohortId": 3,
+              "id": 1,
+              "memberId": 1,
+              "role": {
+                "id": 1,
+                "name": "crew",
+              },
+              "roleId": 1,
+            },
+          ],
+          "nickname": "하루",
+        },
+        {
+          "avatarUrl": null,
+          "githubId": "android-crew",
+          "id": 3,
+          "manualNickname": null,
+          "memberCohorts": [
+            {
+              "cohort": {
+                "description": "6기",
+                "id": 1,
+                "number": 6,
+              },
+              "cohortId": 1,
+              "id": 3,
+              "memberId": 3,
+              "role": {
+                "id": 1,
+                "name": "crew",
+              },
+              "roleId": 1,
+            },
+          ],
+          "nickname": "하루",
+        },
+      ],
+      "note": "계정 두 개",
+      "workspaceId": 1,
+    },
+  ],
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract mutations (sequential) 19 POST /admin/cohort-repos 1`] = `
+{
+  "body": {
+    "cohort": 8,
+    "id": 3,
+    "level": 2,
+    "missionRepo": {
+      "id": 2,
+      "name": "java-racingcar",
+      "repoUrl": "https://github.com/woowacourse/java-racingcar",
+      "tabCategory": "base",
+      "track": "backend",
+    },
+    "missionRepoId": 2,
+    "order": 2,
+    "workspaceId": 1,
+  },
+  "location": undefined,
+  "status": 201,
+}
+`;
+
+exports[`API contract mutations (sequential) 20 POST /admin/cohort-repos 1`] = `
+{
+  "body": {
+    "error": "cohort and missionRepoId required",
+  },
+  "location": undefined,
+  "status": 400,
+}
+`;
+
+exports[`API contract mutations (sequential) 21 PATCH /admin/cohort-repos/3 1`] = `
+{
+  "body": {
+    "cohort": 8,
+    "id": 3,
+    "level": null,
+    "missionRepo": {
+      "id": 2,
+      "name": "java-racingcar",
+      "repoUrl": "https://github.com/woowacourse/java-racingcar",
+      "tabCategory": "base",
+      "track": "backend",
+    },
+    "missionRepoId": 2,
+    "order": 5,
+    "workspaceId": 1,
+  },
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract mutations (sequential) 22 GET /admin/cohort-repos?cohort=8 1`] = `
+{
+  "body": [
+    {
+      "cohort": 8,
+      "id": 1,
+      "level": 1,
+      "missionRepo": {
+        "id": 1,
+        "name": "javascript-lotto",
+        "repoUrl": "https://github.com/woowacourse/javascript-lotto",
+        "tabCategory": "base",
+        "track": "frontend",
+      },
+      "missionRepoId": 1,
+      "order": 1,
+      "workspaceId": 1,
+    },
+    {
+      "cohort": 8,
+      "id": 3,
+      "level": null,
+      "missionRepo": {
+        "id": 2,
+        "name": "java-racingcar",
+        "repoUrl": "https://github.com/woowacourse/java-racingcar",
+        "tabCategory": "base",
+        "track": "backend",
+      },
+      "missionRepoId": 2,
+      "order": 5,
+      "workspaceId": 1,
+    },
+  ],
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract mutations (sequential) 23 DELETE /admin/cohort-repos/3 1`] = `
+{
+  "body": {},
+  "location": undefined,
+  "status": 204,
+}
+`;
+
+exports[`API contract mutations (sequential) 24 GET /admin/cohort-repos?cohort=8 1`] = `
+{
+  "body": [
+    {
+      "cohort": 8,
+      "id": 1,
+      "level": 1,
+      "missionRepo": {
+        "id": 1,
+        "name": "javascript-lotto",
+        "repoUrl": "https://github.com/woowacourse/javascript-lotto",
+        "tabCategory": "base",
+        "track": "frontend",
+      },
+      "missionRepoId": 1,
+      "order": 1,
+      "workspaceId": 1,
+    },
+  ],
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract mutations (sequential) 25 POST /admin/cohort-repos/auto-fill 1`] = `
+{
+  "body": {
+    "added": 1,
+  },
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract mutations (sequential) 26 POST /admin/cohort-repos/auto-fill 1`] = `
+{
+  "body": {
+    "added": 0,
+  },
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract mutations (sequential) 27 POST /admin/cohort-repos/auto-fill 1`] = `
+{
+  "body": {
+    "error": "cohort required",
+  },
+  "location": undefined,
+  "status": 400,
+}
+`;
+
+exports[`API contract mutations (sequential) 28 GET /admin/cohort-repos?cohort=8 1`] = `
+{
+  "body": [
+    {
+      "cohort": 8,
+      "id": 1,
+      "level": 1,
+      "missionRepo": {
+        "id": 1,
+        "name": "javascript-lotto",
+        "repoUrl": "https://github.com/woowacourse/javascript-lotto",
+        "tabCategory": "base",
+        "track": "frontend",
+      },
+      "missionRepoId": 1,
+      "order": 1,
+      "workspaceId": 1,
+    },
+    {
+      "cohort": 8,
+      "id": 4,
+      "level": null,
+      "missionRepo": {
+        "id": 2,
+        "name": "java-racingcar",
+        "repoUrl": "https://github.com/woowacourse/java-racingcar",
+        "tabCategory": "base",
+        "track": "backend",
+      },
+      "missionRepoId": 2,
+      "order": 2,
+      "workspaceId": 1,
+    },
+  ],
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract mutations (sequential) 29 PATCH /admin/members/2 1`] = `
+{
+  "body": {
+    "_count": {
+      "submissions": 1,
+    },
+    "avatarUrl": "https://avatars.githubusercontent.com/u/1002?v=4",
+    "blog": "https://bada.example.com",
+    "blogPosts": [
+      {
+        "authorName": null,
+        "cohort": 7,
+        "createdAt": "2026-09-20T10:00:00.000Z",
+        "id": 2,
+        "memberId": 2,
+        "publishedAt": "2026-09-20T09:00:00.000Z",
+        "title": "JPA &amp; 트랜잭션",
+        "track": "backend",
+        "url": "https://bada.example.com/posts/1",
+        "viewCount": 0,
+        "workspaceId": 1,
+      },
+    ],
+    "cohort": 7,
+    "cohortLocked": true,
+    "cohorts": [
+      {
+        "cohort": 7,
+        "roles": [
+          "crew",
+        ],
+      },
+    ],
+    "githubId": "be-crew",
+    "githubUserId": 1002,
+    "id": 2,
+    "lastPostedAt": null,
+    "manualNickname": "파도",
+    "nickname": "파도",
+    "nicknameStats": [],
+    "profileFetchedAt": "2026-09-30T03:00:00.000Z",
+    "profileRefreshError": null,
+    "roles": [
+      "crew",
+    ],
+    "rssCheckedAt": "2026-09-30T04:00:00.000Z",
+    "rssError": "timeout",
+    "rssStatus": "error",
+    "rssUrl": null,
+    "submissions": [
+      {
+        "id": 3,
+        "memberId": 2,
+        "missionRepo": {
+          "id": 2,
+          "name": "java-racingcar",
+          "tabCategory": "base",
+          "track": "backend",
+        },
+        "missionRepoId": 2,
+        "prNumber": 21,
+        "prUrl": "https://github.com/woowacourse/java-racingcar/pull/21",
+        "status": "merged",
+        "submittedAt": "2025-02-20T10:00:00.000Z",
+        "title": "[1단계 - 자동차 경주] 바다 미션 제출합니다.",
+      },
+    ],
+    "track": "backend",
+    "tracks": [
+      "backend",
+    ],
+  },
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract mutations (sequential) 30 GET /admin/members/2 1`] = `
+{
+  "body": {
+    "_count": {
+      "submissions": 1,
+    },
+    "avatarUrl": "https://avatars.githubusercontent.com/u/1002?v=4",
+    "blog": "https://bada.example.com",
+    "blogPosts": [
+      {
+        "authorName": null,
+        "cohort": 7,
+        "createdAt": "2026-09-20T10:00:00.000Z",
+        "id": 2,
+        "memberId": 2,
+        "publishedAt": "2026-09-20T09:00:00.000Z",
+        "title": "JPA &amp; 트랜잭션",
+        "track": "backend",
+        "url": "https://bada.example.com/posts/1",
+        "viewCount": 0,
+        "workspaceId": 1,
+      },
+    ],
+    "cohort": 7,
+    "cohortLocked": true,
+    "cohorts": [
+      {
+        "cohort": 7,
+        "roles": [
+          "crew",
+        ],
+      },
+    ],
+    "githubId": "be-crew",
+    "githubUserId": 1002,
+    "id": 2,
+    "lastPostedAt": null,
+    "manualNickname": "파도",
+    "nickname": "파도",
+    "nicknameStats": [],
+    "profileFetchedAt": "2026-09-30T03:00:00.000Z",
+    "profileRefreshError": null,
+    "roles": [
+      "crew",
+    ],
+    "rssCheckedAt": "2026-09-30T04:00:00.000Z",
+    "rssError": "timeout",
+    "rssStatus": "error",
+    "rssUrl": null,
+    "submissions": [
+      {
+        "id": 3,
+        "memberId": 2,
+        "missionRepo": {
+          "id": 2,
+          "name": "java-racingcar",
+          "tabCategory": "base",
+          "track": "backend",
+        },
+        "missionRepoId": 2,
+        "prNumber": 21,
+        "prUrl": "https://github.com/woowacourse/java-racingcar/pull/21",
+        "status": "merged",
+        "submittedAt": "2025-02-20T10:00:00.000Z",
+        "title": "[1단계 - 자동차 경주] 바다 미션 제출합니다.",
+      },
+    ],
+    "track": "backend",
+    "tracks": [
+      "backend",
+    ],
+  },
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract mutations (sequential) 31 PATCH /admin/members/1/cohorts/8 1`] = `
+{
+  "body": {
+    "error": "newCohort required",
+  },
+  "location": undefined,
+  "status": 400,
+}
+`;
+
+exports[`API contract mutations (sequential) 32 PATCH /admin/members/1/cohorts/8 1`] = `
+{
+  "body": {
+    "_count": {
+      "submissions": 2,
+    },
+    "avatarUrl": "https://avatars.githubusercontent.com/u/1001?v=4",
+    "blog": "https://haru.example.com",
+    "blogPosts": [
+      {
+        "authorName": null,
+        "cohort": 8,
+        "createdAt": "2026-09-29T13:00:00.000Z",
+        "id": 1,
+        "memberId": 1,
+        "publishedAt": "2026-09-29T12:00:00.000Z",
+        "title": "로또 미션 회고",
+        "track": "frontend",
+        "url": "https://haru.example.com/posts/1",
+        "viewCount": 3,
+        "workspaceId": 1,
+      },
+      {
+        "authorName": null,
+        "cohort": 8,
+        "createdAt": "2026-05-01T01:00:00.000Z",
+        "id": 4,
+        "memberId": 1,
+        "publishedAt": "2026-05-01T00:00:00.000Z",
+        "title": "오래된 글",
+        "track": "frontend",
+        "url": "https://haru.example.com/posts/old",
+        "viewCount": 0,
+        "workspaceId": 1,
+      },
+    ],
+    "cohort": 7,
+    "cohortLocked": false,
+    "cohorts": [
+      {
+        "cohort": 7,
+        "roles": [
+          "crew",
+        ],
+      },
+    ],
+    "githubId": "fe-crew",
+    "githubUserId": 1001,
+    "id": 1,
+    "lastPostedAt": "2026-09-29T12:00:00.000Z",
+    "manualNickname": null,
+    "nickname": "하루",
+    "nicknameStats": [
+      {
+        "count": 3,
+        "lastSeenAt": "2026-03-12T10:00:00.000Z",
+        "nickname": "하루",
+      },
+      {
+        "count": 2,
+        "lastSeenAt": "2026-03-12T10:00:00.000Z",
+        "nickname": "로또",
+      },
+    ],
+    "profileFetchedAt": "2026-09-30T03:00:00.000Z",
+    "profileRefreshError": null,
+    "roles": [
+      "crew",
+    ],
+    "rssCheckedAt": "2026-09-30T04:00:00.000Z",
+    "rssError": null,
+    "rssStatus": "available",
+    "rssUrl": "https://haru.example.com/rss",
+    "submissions": [
+      {
+        "id": 2,
+        "memberId": 1,
+        "missionRepo": {
+          "id": 1,
+          "name": "javascript-lotto",
+          "tabCategory": "base",
+          "track": "frontend",
+        },
+        "missionRepoId": 1,
+        "prNumber": 12,
+        "prUrl": "https://github.com/woowacourse/javascript-lotto/pull/12",
+        "status": "open",
+        "submittedAt": "2026-03-12T10:00:00.000Z",
+        "title": "[2단계 - 로또] 하루 미션 제출합니다.",
+      },
+      {
+        "id": 1,
+        "memberId": 1,
+        "missionRepo": {
+          "id": 1,
+          "name": "javascript-lotto",
+          "tabCategory": "base",
+          "track": "frontend",
+        },
+        "missionRepoId": 1,
+        "prNumber": 11,
+        "prUrl": "https://github.com/woowacourse/javascript-lotto/pull/11",
+        "status": "merged",
+        "submittedAt": "2026-03-05T10:00:00.000Z",
+        "title": "[1단계 - 로또] 하루 미션 제출합니다.",
+      },
+    ],
+    "track": "frontend",
+    "tracks": [
+      "frontend",
+    ],
+  },
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract mutations (sequential) 33 GET /members/fe-crew 1`] = `
+{
+  "body": {
+    "archive": [
+      {
+        "cohort": 7,
+        "levels": [
+          {
+            "level": 1,
+            "repos": [
+              {
+                "name": "java-racingcar",
+                "submissions": null,
+                "tabCategory": "base",
+                "track": "backend",
+              },
+            ],
+          },
+        ],
+      },
+      {
+        "cohort": 0,
+        "levels": [
+          {
+            "level": null,
+            "repos": [
+              {
+                "name": "javascript-lotto",
+                "submissions": [
+                  {
+                    "prNumber": 11,
+                    "prUrl": "https://github.com/woowacourse/javascript-lotto/pull/11",
+                    "status": "merged",
+                    "submittedAt": "2026-03-05T10:00:00.000Z",
+                    "title": "[1단계 - 로또] 하루 미션 제출합니다.",
+                  },
+                  {
+                    "prNumber": 12,
+                    "prUrl": "https://github.com/woowacourse/javascript-lotto/pull/12",
+                    "status": "open",
+                    "submittedAt": "2026-03-12T10:00:00.000Z",
+                    "title": "[2단계 - 로또] 하루 미션 제출합니다.",
+                  },
+                ],
+                "tabCategory": "base",
+                "track": "frontend",
+              },
+            ],
+          },
+        ],
+      },
+    ],
+    "avatarUrl": "https://avatars.githubusercontent.com/u/1001?v=4",
+    "blog": "https://haru.example.com",
+    "cohorts": [
+      {
+        "cohort": 7,
+        "roles": [
+          "crew",
+        ],
+      },
+    ],
+    "githubId": "fe-crew",
+    "lastPostedAt": "2026-09-29T12:00:00.000Z",
+    "nickname": "하루",
+    "person": {
+      "displayName": "동일인",
+      "id": 1,
+      "members": [
+        {
+          "avatarUrl": null,
+          "githubId": "android-crew",
+          "id": 3,
+          "manualNickname": null,
+          "nickname": "하루",
+        },
+      ],
+    },
+    "tecoTalks": [
+      {
+        "cohort": 8,
+        "id": 1,
+        "thumbnailUrl": "https://i.ytimg.com/vi/video-matched/hqdefault.jpg",
+        "title": "[테코톡] 하루의 렌더링",
+        "uploadedAt": "2026-06-01T10:00:00.000Z",
+        "url": "https://www.youtube.com/watch?v=video-matched",
+        "videoId": "video-matched",
+      },
+    ],
+    "track": "frontend",
+    "tracks": [
+      "frontend",
+    ],
+  },
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract mutations (sequential) 34 DELETE /admin/members/4/cohorts/7 1`] = `
+{
+  "body": {
+    "_count": {
+      "submissions": 0,
+    },
+    "avatarUrl": null,
+    "blog": null,
+    "blogPosts": [],
+    "cohort": 8,
+    "cohortLocked": false,
+    "cohorts": [
+      {
+        "cohort": 8,
+        "roles": [
+          "coach",
+        ],
+      },
+    ],
+    "githubId": "coach-a",
+    "githubUserId": 1004,
+    "id": 4,
+    "lastPostedAt": null,
+    "manualNickname": null,
+    "nickname": "구름",
+    "nicknameStats": [],
+    "profileFetchedAt": "2026-09-30T03:00:00.000Z",
+    "profileRefreshError": null,
+    "roles": [
+      "coach",
+    ],
+    "rssCheckedAt": null,
+    "rssError": null,
+    "rssStatus": "unknown",
+    "rssUrl": null,
+    "submissions": [],
+    "track": null,
+    "tracks": [],
+  },
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract mutations (sequential) 35 GET /admin/members/4 1`] = `
+{
+  "body": {
+    "_count": {
+      "submissions": 0,
+    },
+    "avatarUrl": null,
+    "blog": null,
+    "blogPosts": [],
+    "cohort": 8,
+    "cohortLocked": false,
+    "cohorts": [
+      {
+        "cohort": 8,
+        "roles": [
+          "coach",
+        ],
+      },
+    ],
+    "githubId": "coach-a",
+    "githubUserId": 1004,
+    "id": 4,
+    "lastPostedAt": null,
+    "manualNickname": null,
+    "nickname": "구름",
+    "nicknameStats": [],
+    "profileFetchedAt": "2026-09-30T03:00:00.000Z",
+    "profileRefreshError": null,
+    "roles": [
+      "coach",
+    ],
+    "rssCheckedAt": null,
+    "rssError": null,
+    "rssStatus": "unknown",
+    "rssUrl": null,
+    "submissions": [],
+    "track": null,
+    "tracks": [],
+  },
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract mutations (sequential) 36 POST /admin/members/1/recalculate-cohorts 1`] = `
+{
+  "body": {
+    "_count": {
+      "submissions": 2,
+    },
+    "avatarUrl": "https://avatars.githubusercontent.com/u/1001?v=4",
+    "blog": "https://haru.example.com",
+    "blogPosts": [
+      {
+        "authorName": null,
+        "cohort": 8,
+        "createdAt": "2026-09-29T13:00:00.000Z",
+        "id": 1,
+        "memberId": 1,
+        "publishedAt": "2026-09-29T12:00:00.000Z",
+        "title": "로또 미션 회고",
+        "track": "frontend",
+        "url": "https://haru.example.com/posts/1",
+        "viewCount": 3,
+        "workspaceId": 1,
+      },
+      {
+        "authorName": null,
+        "cohort": 8,
+        "createdAt": "2026-05-01T01:00:00.000Z",
+        "id": 4,
+        "memberId": 1,
+        "publishedAt": "2026-05-01T00:00:00.000Z",
+        "title": "오래된 글",
+        "track": "frontend",
+        "url": "https://haru.example.com/posts/old",
+        "viewCount": 0,
+        "workspaceId": 1,
+      },
+    ],
+    "cohort": 7,
+    "cohortLocked": false,
+    "cohorts": [
+      {
+        "cohort": 7,
+        "roles": [
+          "crew",
+        ],
+      },
+    ],
+    "githubId": "fe-crew",
+    "githubUserId": 1001,
+    "id": 1,
+    "lastPostedAt": "2026-09-29T12:00:00.000Z",
+    "manualNickname": null,
+    "nickname": "하루",
+    "nicknameStats": [
+      {
+        "count": 3,
+        "lastSeenAt": "2026-03-12T10:00:00.000Z",
+        "nickname": "하루",
+      },
+      {
+        "count": 2,
+        "lastSeenAt": "2026-03-12T10:00:00.000Z",
+        "nickname": "로또",
+      },
+    ],
+    "profileFetchedAt": "2026-09-30T03:00:00.000Z",
+    "profileRefreshError": null,
+    "roles": [
+      "crew",
+    ],
+    "rssCheckedAt": "2026-09-30T04:00:00.000Z",
+    "rssError": null,
+    "rssStatus": "available",
+    "rssUrl": "https://haru.example.com/rss",
+    "submissions": [
+      {
+        "id": 2,
+        "memberId": 1,
+        "missionRepo": {
+          "id": 1,
+          "name": "javascript-lotto",
+          "tabCategory": "base",
+          "track": "frontend",
+        },
+        "missionRepoId": 1,
+        "prNumber": 12,
+        "prUrl": "https://github.com/woowacourse/javascript-lotto/pull/12",
+        "status": "open",
+        "submittedAt": "2026-03-12T10:00:00.000Z",
+        "title": "[2단계 - 로또] 하루 미션 제출합니다.",
+      },
+      {
+        "id": 1,
+        "memberId": 1,
+        "missionRepo": {
+          "id": 1,
+          "name": "javascript-lotto",
+          "tabCategory": "base",
+          "track": "frontend",
+        },
+        "missionRepoId": 1,
+        "prNumber": 11,
+        "prUrl": "https://github.com/woowacourse/javascript-lotto/pull/11",
+        "status": "merged",
+        "submittedAt": "2026-03-05T10:00:00.000Z",
+        "title": "[1단계 - 로또] 하루 미션 제출합니다.",
+      },
+    ],
+    "track": "frontend",
+    "tracks": [
+      "frontend",
+    ],
+  },
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract mutations (sequential) 37 DELETE /admin/members/1/submissions/2 1`] = `
+{
+  "body": {},
+  "location": undefined,
+  "status": 204,
+}
+`;
+
+exports[`API contract mutations (sequential) 38 GET /members/fe-crew 1`] = `
+{
+  "body": {
+    "archive": [
+      {
+        "cohort": 7,
+        "levels": [
+          {
+            "level": 1,
+            "repos": [
+              {
+                "name": "java-racingcar",
+                "submissions": null,
+                "tabCategory": "base",
+                "track": "backend",
+              },
+            ],
+          },
+        ],
+      },
+      {
+        "cohort": 0,
+        "levels": [
+          {
+            "level": null,
+            "repos": [
+              {
+                "name": "javascript-lotto",
+                "submissions": [
+                  {
+                    "prNumber": 11,
+                    "prUrl": "https://github.com/woowacourse/javascript-lotto/pull/11",
+                    "status": "merged",
+                    "submittedAt": "2026-03-05T10:00:00.000Z",
+                    "title": "[1단계 - 로또] 하루 미션 제출합니다.",
+                  },
+                ],
+                "tabCategory": "base",
+                "track": "frontend",
+              },
+            ],
+          },
+        ],
+      },
+    ],
+    "avatarUrl": "https://avatars.githubusercontent.com/u/1001?v=4",
+    "blog": "https://haru.example.com",
+    "cohorts": [
+      {
+        "cohort": 7,
+        "roles": [
+          "crew",
+        ],
+      },
+    ],
+    "githubId": "fe-crew",
+    "lastPostedAt": "2026-09-29T12:00:00.000Z",
+    "nickname": "하루",
+    "person": {
+      "displayName": "동일인",
+      "id": 1,
+      "members": [
+        {
+          "avatarUrl": null,
+          "githubId": "android-crew",
+          "id": 3,
+          "manualNickname": null,
+          "nickname": "하루",
+        },
+      ],
+    },
+    "tecoTalks": [
+      {
+        "cohort": 8,
+        "id": 1,
+        "thumbnailUrl": "https://i.ytimg.com/vi/video-matched/hqdefault.jpg",
+        "title": "[테코톡] 하루의 렌더링",
+        "uploadedAt": "2026-06-01T10:00:00.000Z",
+        "url": "https://www.youtube.com/watch?v=video-matched",
+        "videoId": "video-matched",
+      },
+    ],
+    "track": "frontend",
+    "tracks": [
+      "frontend",
+    ],
+  },
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract mutations (sequential) 39 POST /admin/repos 1`] = `
+{
+  "body": {
+    "candidateReason": null,
+    "cohorts": [],
+    "description": null,
+    "githubRepoId": null,
+    "id": 4,
+    "lastSyncAt": null,
+    "name": "new-repo",
+    "repoUrl": "https://github.com/woowacourse/new-repo",
+    "status": "active",
+    "syncMode": "continuous",
+    "tabCategory": "base",
+    "track": "frontend",
+    "type": "individual",
+    "workspaceId": 1,
+  },
+  "location": undefined,
+  "status": 201,
+}
+`;
+
+exports[`API contract mutations (sequential) 40 POST /admin/repos 1`] = `
+{
+  "body": {
+    "message": "invalid repo payload",
+  },
+  "location": undefined,
+  "status": 400,
+}
+`;
+
+exports[`API contract mutations (sequential) 41 PATCH /admin/repos/4 1`] = `
+{
+  "body": {
+    "candidateReason": null,
+    "cohorts": [],
+    "description": null,
+    "githubRepoId": null,
+    "id": 4,
+    "lastSyncAt": null,
+    "name": "new-repo",
+    "repoUrl": "https://github.com/woowacourse/new-repo",
+    "status": "active",
+    "syncMode": "continuous",
+    "tabCategory": "common",
+    "track": "frontend",
+    "type": "individual",
+    "workspaceId": 1,
+  },
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract mutations (sequential) 42 POST /admin/repos/4/reset-sync 1`] = `
+{
+  "body": {},
+  "location": undefined,
+  "status": 204,
+}
+`;
+
+exports[`API contract mutations (sequential) 43 GET /admin/repos 1`] = `
+{
+  "body": [
+    {
+      "_count": {
+        "submissions": 1,
+      },
+      "candidateReason": null,
+      "cohorts": [
+        7,
+        8,
+      ],
+      "description": null,
+      "githubRepoId": 502,
+      "id": 2,
+      "lastSyncAt": "2026-09-30T05:00:00.000Z",
+      "name": "java-racingcar",
+      "repoUrl": "https://github.com/woowacourse/java-racingcar",
+      "status": "active",
+      "syncMode": "once",
+      "tabCategory": "base",
+      "track": "backend",
+      "type": "individual",
+      "workspaceId": 1,
+    },
+    {
+      "_count": {
+        "submissions": 1,
+      },
+      "candidateReason": null,
+      "cohorts": [],
+      "description": "로또",
+      "githubRepoId": 501,
+      "id": 1,
+      "lastSyncAt": "2026-09-30T05:00:00.000Z",
+      "name": "javascript-lotto",
+      "repoUrl": "https://github.com/woowacourse/javascript-lotto",
+      "status": "active",
+      "syncMode": "continuous",
+      "tabCategory": "base",
+      "track": "frontend",
+      "type": "individual",
+      "workspaceId": 1,
+    },
+    {
+      "_count": {
+        "submissions": 0,
+      },
+      "candidateReason": null,
+      "cohorts": [],
+      "description": null,
+      "githubRepoId": null,
+      "id": 4,
+      "lastSyncAt": null,
+      "name": "new-repo",
+      "repoUrl": "https://github.com/woowacourse/new-repo",
+      "status": "active",
+      "syncMode": "continuous",
+      "tabCategory": "common",
+      "track": "frontend",
+      "type": "individual",
+      "workspaceId": 1,
+    },
+    {
+      "_count": {
+        "submissions": 0,
+      },
+      "candidateReason": "이름 패턴 일치",
+      "cohorts": [],
+      "description": null,
+      "githubRepoId": 503,
+      "id": 3,
+      "lastSyncAt": null,
+      "name": "woowa-precourse",
+      "repoUrl": "https://github.com/woowacourse/woowa-precourse",
+      "status": "candidate",
+      "syncMode": "continuous",
+      "tabCategory": "precourse",
+      "track": null,
+      "type": "individual",
+      "workspaceId": 1,
+    },
+  ],
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract mutations (sequential) 44 DELETE /admin/repos/4 1`] = `
+{
+  "body": {},
+  "location": undefined,
+  "status": 204,
+}
+`;
+
+exports[`API contract mutations (sequential) 45 GET /admin/repos 1`] = `
+{
+  "body": [
+    {
+      "_count": {
+        "submissions": 1,
+      },
+      "candidateReason": null,
+      "cohorts": [
+        7,
+        8,
+      ],
+      "description": null,
+      "githubRepoId": 502,
+      "id": 2,
+      "lastSyncAt": "2026-09-30T05:00:00.000Z",
+      "name": "java-racingcar",
+      "repoUrl": "https://github.com/woowacourse/java-racingcar",
+      "status": "active",
+      "syncMode": "once",
+      "tabCategory": "base",
+      "track": "backend",
+      "type": "individual",
+      "workspaceId": 1,
+    },
+    {
+      "_count": {
+        "submissions": 1,
+      },
+      "candidateReason": null,
+      "cohorts": [],
+      "description": "로또",
+      "githubRepoId": 501,
+      "id": 1,
+      "lastSyncAt": "2026-09-30T05:00:00.000Z",
+      "name": "javascript-lotto",
+      "repoUrl": "https://github.com/woowacourse/javascript-lotto",
+      "status": "active",
+      "syncMode": "continuous",
+      "tabCategory": "base",
+      "track": "frontend",
+      "type": "individual",
+      "workspaceId": 1,
+    },
+    {
+      "_count": {
+        "submissions": 0,
+      },
+      "candidateReason": "이름 패턴 일치",
+      "cohorts": [],
+      "description": null,
+      "githubRepoId": 503,
+      "id": 3,
+      "lastSyncAt": null,
+      "name": "woowa-precourse",
+      "repoUrl": "https://github.com/woowacourse/woowa-precourse",
+      "status": "candidate",
+      "syncMode": "continuous",
+      "tabCategory": "precourse",
+      "track": null,
+      "type": "individual",
+      "workspaceId": 1,
+    },
+  ],
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract mutations (sequential) 46 PATCH /admin/blog/team/1 1`] = `
+{
+  "body": {
+    "avatarUrl": null,
+    "blogUrl": "https://team.example.com",
+    "createdAt": "2026-02-01T00:00:00.000Z",
+    "enabled": false,
+    "id": 1,
+    "lastPostedAt": "2026-09-28T08:00:00.000Z",
+    "memberId": 6,
+    "name": "새 이름",
+    "rssCheckedAt": "2026-09-30T04:00:00.000Z",
+    "rssError": null,
+    "rssStatus": "available",
+    "rssUrl": "https://team.example.com/rss",
+    "slug": "team-a",
+    "updatedAt": "<now>",
+    "workspaceId": 1,
+  },
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract mutations (sequential) 47 PATCH /admin/blog/team/abc 1`] = `
+{
+  "body": {
+    "message": "invalid team blog id",
+  },
+  "location": undefined,
+  "status": 400,
+}
+`;
+
+exports[`API contract mutations (sequential) 48 GET /admin/blog/team 1`] = `
+{
+  "body": [
+    {
+      "avatarUrl": null,
+      "blogUrl": "https://team.example.com",
+      "createdAt": "2026-02-01T00:00:00.000Z",
+      "enabled": false,
+      "id": 1,
+      "lastPostedAt": "2026-09-28T08:00:00.000Z",
+      "memberId": 6,
+      "name": "새 이름",
+      "posts": [
+        {
+          "publishedAt": "2026-09-28T08:00:00.000Z",
+          "title": "팀 회고",
+          "url": "https://team.example.com/posts/1",
+        },
+      ],
+      "rssCheckedAt": "2026-09-30T04:00:00.000Z",
+      "rssError": null,
+      "rssStatus": "available",
+      "rssUrl": "https://team.example.com/rss",
+      "slug": "team-a",
+      "updatedAt": "<now>",
+      "workspaceId": 1,
+    },
+  ],
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract mutations (sequential) 49 POST /admin/logs 1`] = `
+{
+  "body": {
+    "createdAt": "<now>",
+    "id": 3,
+    "memberGithubId": null,
+    "message": "수동 기록",
+    "metadata": null,
+    "source": null,
+    "type": "note",
+    "workspaceId": 1,
+  },
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract mutations (sequential) 50 GET /admin/logs 1`] = `
+{
+  "body": [
+    {
+      "createdAt": "<now>",
+      "id": 3,
+      "memberGithubId": null,
+      "message": "수동 기록",
+      "metadata": null,
+      "source": null,
+      "type": "note",
+    },
+    {
+      "createdAt": "2026-09-30T06:00:00.000Z",
+      "id": 2,
+      "memberGithubId": "fe-crew",
+      "message": "fe-crew 프로필 새로고침",
+      "metadata": "{"remainingSeconds":0,"requestCount":1}",
+      "source": "client",
+      "type": "profile_refresh",
+    },
+    {
+      "createdAt": "2026-09-30T05:00:00.000Z",
+      "id": 1,
+      "memberGithubId": null,
+      "message": "레포 동기화 완료",
+      "metadata": null,
+      "source": "system",
+      "type": "sync",
+    },
+  ],
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract mutations (sequential) 51 DELETE /admin/logs 1`] = `
+{
+  "body": {},
+  "location": undefined,
+  "status": 204,
+}
+`;
+
+exports[`API contract mutations (sequential) 52 GET /admin/logs 1`] = `
+{
+  "body": [],
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract mutations (sequential) 53 GET /members/blog-posts/1/visit 1`] = `
+{
+  "body": {},
+  "location": "https://haru.example.com/posts/1",
+  "status": 302,
+}
+`;
+
+exports[`API contract mutations (sequential) 54 GET /members/blog-posts/999/visit 1`] = `
+{
+  "body": {
+    "error": "Blog post not found",
+  },
+  "location": undefined,
+  "status": 404,
+}
+`;
+
+exports[`API contract mutations (sequential) 55 GET /members/fe-crew/blog-posts 1`] = `
+{
+  "body": {
+    "archive": [
+      {
+        "publishedAt": "2026-09-29T12:00:00.000Z",
+        "title": "로또 미션 회고",
+        "url": "https://haru.example.com/posts/1",
+      },
+      {
+        "publishedAt": "2026-05-01T00:00:00.000Z",
+        "title": "오래된 글",
+        "url": "https://haru.example.com/posts/old",
+      },
+    ],
+    "latest": [],
+    "page": 1,
+    "totalPages": 1,
+  },
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract mutations (sequential) 56 DELETE /admin/sync/jobs/no-such-job 1`] = `
+{
+  "body": {
+    "error": "job not found or already completed",
+  },
+  "location": undefined,
+  "status": 404,
+}
+`;
+
+exports[`API contract mutations (sequential) 57 DELETE /admin/members/5 1`] = `
+{
+  "body": {},
+  "location": undefined,
+  "status": 204,
+}
+`;
+
+exports[`API contract mutations (sequential) 58 GET /admin/members 1`] = `
+{
+  "body": [
+    {
+      "_count": {
+        "submissions": 0,
+      },
+      "avatarUrl": null,
+      "blog": null,
+      "blogPosts": [],
+      "cohort": 8,
+      "cohortLocked": false,
+      "cohorts": [
+        {
+          "cohort": 8,
+          "roles": [
+            "coach",
+          ],
+        },
+      ],
+      "githubId": "coach-a",
+      "githubUserId": 1004,
+      "id": 4,
+      "lastPostedAt": null,
+      "manualNickname": null,
+      "nickname": "구름",
+      "nicknameStats": [],
+      "profileFetchedAt": "2026-09-30T03:00:00.000Z",
+      "profileRefreshError": null,
+      "roles": [
+        "coach",
+      ],
+      "rssCheckedAt": null,
+      "rssError": null,
+      "rssStatus": "unknown",
+      "rssUrl": null,
+      "submissions": [],
+      "track": null,
+      "tracks": [],
+    },
+    {
+      "_count": {
+        "submissions": 1,
+      },
+      "avatarUrl": "https://avatars.githubusercontent.com/u/1002?v=4",
+      "blog": "https://bada.example.com",
+      "blogPosts": [
+        {
+          "authorName": null,
+          "cohort": 7,
+          "createdAt": "2026-09-20T10:00:00.000Z",
+          "id": 2,
+          "memberId": 2,
+          "publishedAt": "2026-09-20T09:00:00.000Z",
+          "title": "JPA &amp; 트랜잭션",
+          "track": "backend",
+          "url": "https://bada.example.com/posts/1",
+          "viewCount": 0,
+          "workspaceId": 1,
+        },
+      ],
+      "cohort": 7,
+      "cohortLocked": true,
+      "cohorts": [
+        {
+          "cohort": 7,
+          "roles": [
+            "crew",
+          ],
+        },
+      ],
+      "githubId": "be-crew",
+      "githubUserId": 1002,
+      "id": 2,
+      "lastPostedAt": null,
+      "manualNickname": "파도",
+      "nickname": "파도",
+      "nicknameStats": [],
+      "profileFetchedAt": "2026-09-30T03:00:00.000Z",
+      "profileRefreshError": null,
+      "roles": [
+        "crew",
+      ],
+      "rssCheckedAt": "2026-09-30T04:00:00.000Z",
+      "rssError": "timeout",
+      "rssStatus": "error",
+      "rssUrl": null,
+      "submissions": [
+        {
+          "id": 3,
+          "memberId": 2,
+          "missionRepo": {
+            "id": 2,
+            "name": "java-racingcar",
+            "tabCategory": "base",
+            "track": "backend",
+          },
+          "missionRepoId": 2,
+          "prNumber": 21,
+          "prUrl": "https://github.com/woowacourse/java-racingcar/pull/21",
+          "status": "merged",
+          "submittedAt": "2025-02-20T10:00:00.000Z",
+          "title": "[1단계 - 자동차 경주] 바다 미션 제출합니다.",
+        },
+      ],
+      "track": "backend",
+      "tracks": [
+        "backend",
+      ],
+    },
+    {
+      "_count": {
+        "submissions": 1,
+      },
+      "avatarUrl": "https://avatars.githubusercontent.com/u/1001?v=4",
+      "blog": "https://haru.example.com",
+      "blogPosts": [
+        {
+          "authorName": null,
+          "cohort": 8,
+          "createdAt": "2026-09-29T13:00:00.000Z",
+          "id": 1,
+          "memberId": 1,
+          "publishedAt": "2026-09-29T12:00:00.000Z",
+          "title": "로또 미션 회고",
+          "track": "frontend",
+          "url": "https://haru.example.com/posts/1",
+          "viewCount": 4,
+          "workspaceId": 1,
+        },
+        {
+          "authorName": null,
+          "cohort": 8,
+          "createdAt": "2026-05-01T01:00:00.000Z",
+          "id": 4,
+          "memberId": 1,
+          "publishedAt": "2026-05-01T00:00:00.000Z",
+          "title": "오래된 글",
+          "track": "frontend",
+          "url": "https://haru.example.com/posts/old",
+          "viewCount": 0,
+          "workspaceId": 1,
+        },
+      ],
+      "cohort": 7,
+      "cohortLocked": false,
+      "cohorts": [
+        {
+          "cohort": 7,
+          "roles": [
+            "crew",
+          ],
+        },
+      ],
+      "githubId": "fe-crew",
+      "githubUserId": 1001,
+      "id": 1,
+      "lastPostedAt": "2026-09-29T12:00:00.000Z",
+      "manualNickname": null,
+      "nickname": "하루",
+      "nicknameStats": [
+        {
+          "count": 3,
+          "lastSeenAt": "2026-03-12T10:00:00.000Z",
+          "nickname": "하루",
+        },
+        {
+          "count": 2,
+          "lastSeenAt": "2026-03-12T10:00:00.000Z",
+          "nickname": "로또",
+        },
+      ],
+      "profileFetchedAt": "2026-09-30T03:00:00.000Z",
+      "profileRefreshError": null,
+      "roles": [
+        "crew",
+      ],
+      "rssCheckedAt": "2026-09-30T04:00:00.000Z",
+      "rssError": null,
+      "rssStatus": "available",
+      "rssUrl": "https://haru.example.com/rss",
+      "submissions": [
+        {
+          "id": 1,
+          "memberId": 1,
+          "missionRepo": {
+            "id": 1,
+            "name": "javascript-lotto",
+            "tabCategory": "base",
+            "track": "frontend",
+          },
+          "missionRepoId": 1,
+          "prNumber": 11,
+          "prUrl": "https://github.com/woowacourse/javascript-lotto/pull/11",
+          "status": "merged",
+          "submittedAt": "2026-03-05T10:00:00.000Z",
+          "title": "[1단계 - 로또] 하루 미션 제출합니다.",
+        },
+      ],
+      "track": "frontend",
+      "tracks": [
+        "frontend",
+      ],
+    },
+    {
+      "_count": {
+        "submissions": 0,
+      },
+      "avatarUrl": null,
+      "blog": null,
+      "blogPosts": [],
+      "cohort": 6,
+      "cohortLocked": false,
+      "cohorts": [
+        {
+          "cohort": 6,
+          "roles": [
+            "crew",
+          ],
+        },
+      ],
+      "githubId": "android-crew",
+      "githubUserId": 1003,
+      "id": 3,
+      "lastPostedAt": null,
+      "manualNickname": null,
+      "nickname": "하루",
+      "nicknameStats": [],
+      "profileFetchedAt": "2026-09-30T03:00:00.000Z",
+      "profileRefreshError": null,
+      "roles": [
+        "crew",
+      ],
+      "rssCheckedAt": null,
+      "rssError": null,
+      "rssStatus": "unavailable",
+      "rssUrl": null,
+      "submissions": [],
+      "track": "android",
+      "tracks": [
+        "android",
+      ],
+    },
+  ],
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract mutations (sequential) 59 DELETE /admin/members 1`] = `
+{
+  "body": {},
+  "location": undefined,
+  "status": 204,
+}
+`;
+
+exports[`API contract mutations (sequential) 60 GET /admin/members 1`] = `
+{
+  "body": [],
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract public GET GET /health 1`] = `
+{
+  "body": {
+    "commit": "048bb91ff93707d9393e2f8246aec6c681b61356",
+    "status": "ok",
+    "uptime": "<uptime>",
+    "version": "1.2.1",
+  },
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract public GET GET /members/be-crew 1`] = `
+{
+  "body": {
+    "archive": [
+      {
+        "cohort": 7,
+        "levels": [
+          {
+            "level": 1,
+            "repos": [
+              {
+                "name": "java-racingcar",
+                "submissions": [
+                  {
+                    "prNumber": 21,
+                    "prUrl": "https://github.com/woowacourse/java-racingcar/pull/21",
+                    "status": "merged",
+                    "submittedAt": "2025-02-20T10:00:00.000Z",
+                    "title": "[1단계 - 자동차 경주] 바다 미션 제출합니다.",
+                  },
+                ],
+                "tabCategory": "base",
+                "track": "backend",
+              },
+            ],
+          },
+        ],
+      },
+    ],
+    "avatarUrl": "https://avatars.githubusercontent.com/u/1002?v=4",
+    "blog": "https://bada.example.com",
+    "cohorts": [
+      {
+        "cohort": 7,
+        "roles": [
+          "crew",
+        ],
+      },
+    ],
+    "githubId": "be-crew",
+    "lastPostedAt": null,
+    "nickname": "바다",
+    "person": null,
+    "tecoTalks": [],
+    "track": "backend",
+    "tracks": [
+      "backend",
+    ],
+  },
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract public GET GET /members/cohorts 1`] = `
+{
+  "body": [
+    8,
+    7,
+    6,
+  ],
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract public GET GET /members/fe-crew 1`] = `
+{
+  "body": {
+    "archive": [
+      {
+        "cohort": 8,
+        "levels": [
+          {
+            "level": 1,
+            "repos": [
+              {
+                "name": "javascript-lotto",
+                "submissions": [
+                  {
+                    "prNumber": 11,
+                    "prUrl": "https://github.com/woowacourse/javascript-lotto/pull/11",
+                    "status": "merged",
+                    "submittedAt": "2026-03-05T10:00:00.000Z",
+                    "title": "[1단계 - 로또] 하루 미션 제출합니다.",
+                  },
+                  {
+                    "prNumber": 12,
+                    "prUrl": "https://github.com/woowacourse/javascript-lotto/pull/12",
+                    "status": "open",
+                    "submittedAt": "2026-03-12T10:00:00.000Z",
+                    "title": "[2단계 - 로또] 하루 미션 제출합니다.",
+                  },
+                ],
+                "tabCategory": "base",
+                "track": "frontend",
+              },
+            ],
+          },
+        ],
+      },
+    ],
+    "avatarUrl": "https://avatars.githubusercontent.com/u/1001?v=4",
+    "blog": "https://haru.example.com",
+    "cohorts": [
+      {
+        "cohort": 8,
+        "roles": [
+          "crew",
+        ],
+      },
+    ],
+    "githubId": "fe-crew",
+    "lastPostedAt": "2026-09-29T12:00:00.000Z",
+    "nickname": "하루",
+    "person": {
+      "displayName": "동일인",
+      "id": 1,
+      "members": [
+        {
+          "avatarUrl": null,
+          "githubId": "android-crew",
+          "id": 3,
+          "manualNickname": null,
+          "nickname": "하루",
+        },
+      ],
+    },
+    "tecoTalks": [
+      {
+        "cohort": 8,
+        "id": 1,
+        "thumbnailUrl": "https://i.ytimg.com/vi/video-matched/hqdefault.jpg",
+        "title": "[테코톡] 하루의 렌더링",
+        "uploadedAt": "2026-06-01T10:00:00.000Z",
+        "url": "https://www.youtube.com/watch?v=video-matched",
+        "videoId": "video-matched",
+      },
+    ],
+    "track": "frontend",
+    "tracks": [
+      "frontend",
+    ],
+  },
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract public GET GET /members/fe-crew/blog-posts 1`] = `
+{
+  "body": {
+    "archive": [
+      {
+        "publishedAt": "2026-09-29T12:00:00.000Z",
+        "title": "로또 미션 회고",
+        "url": "https://haru.example.com/posts/1",
+      },
+      {
+        "publishedAt": "2026-05-01T00:00:00.000Z",
+        "title": "오래된 글",
+        "url": "https://haru.example.com/posts/old",
+      },
+    ],
+    "latest": [],
+    "page": 1,
+    "totalPages": 1,
+  },
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract public GET GET /members/fe-crew-old 1`] = `
+{
+  "body": {
+    "error": "Member not found",
+  },
+  "location": undefined,
+  "status": 404,
+}
+`;
+
+exports[`API contract public GET GET /members/feed?cohort=8&track=frontend 1`] = `
+{
+  "body": {
+    "nextCursor": "2026-05-01T00:00:00.000Z|4",
+    "posts": [
+      {
+        "id": 1,
+        "member": {
+          "avatarUrl": "https://avatars.githubusercontent.com/u/1001?v=4",
+          "cohort": 8,
+          "cohorts": [
+            {
+              "cohort": 8,
+              "roles": [
+                "crew",
+              ],
+            },
+          ],
+          "githubId": "fe-crew",
+          "isTeamBlog": false,
+          "nickname": "하루",
+          "roles": [
+            "crew",
+          ],
+          "track": "frontend",
+          "tracks": [
+            "frontend",
+          ],
+        },
+        "publishedAt": "2026-09-29T12:00:00.000Z",
+        "title": "로또 미션 회고",
+        "url": "https://haru.example.com/posts/1",
+      },
+      {
+        "id": 4,
+        "member": {
+          "avatarUrl": "https://avatars.githubusercontent.com/u/1001?v=4",
+          "cohort": 8,
+          "cohorts": [
+            {
+              "cohort": 8,
+              "roles": [
+                "crew",
+              ],
+            },
+          ],
+          "githubId": "fe-crew",
+          "isTeamBlog": false,
+          "nickname": "하루",
+          "roles": [
+            "crew",
+          ],
+          "track": "frontend",
+          "tracks": [
+            "frontend",
+          ],
+        },
+        "publishedAt": "2026-05-01T00:00:00.000Z",
+        "title": "오래된 글",
+        "url": "https://haru.example.com/posts/old",
+      },
+    ],
+    "totalCount": 2,
+  },
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract public GET GET /members/feed?days=30&limit=50 1`] = `
+{
+  "body": {
+    "nextCursor": "2026-09-20T09:00:00.000Z|2",
+    "posts": [
+      {
+        "id": 1,
+        "member": {
+          "avatarUrl": "https://avatars.githubusercontent.com/u/1001?v=4",
+          "cohort": 8,
+          "cohorts": [
+            {
+              "cohort": 8,
+              "roles": [
+                "crew",
+              ],
+            },
+          ],
+          "githubId": "fe-crew",
+          "isTeamBlog": false,
+          "nickname": "하루",
+          "roles": [
+            "crew",
+          ],
+          "track": "frontend",
+          "tracks": [
+            "frontend",
+          ],
+        },
+        "publishedAt": "2026-09-29T12:00:00.000Z",
+        "title": "로또 미션 회고",
+        "url": "https://haru.example.com/posts/1",
+      },
+      {
+        "id": 3,
+        "member": {
+          "avatarUrl": null,
+          "cohort": null,
+          "cohorts": [],
+          "githubId": "team-blog-a",
+          "isTeamBlog": true,
+          "nickname": "하루",
+          "roles": [
+            "crew",
+          ],
+          "track": null,
+          "tracks": [],
+        },
+        "publishedAt": "2026-09-28T08:00:00.000Z",
+        "title": "팀 회고",
+        "url": "https://team.example.com/posts/1",
+      },
+      {
+        "id": 2,
+        "member": {
+          "avatarUrl": "https://avatars.githubusercontent.com/u/1002?v=4",
+          "cohort": 7,
+          "cohorts": [
+            {
+              "cohort": 7,
+              "roles": [
+                "crew",
+              ],
+            },
+          ],
+          "githubId": "be-crew",
+          "isTeamBlog": false,
+          "nickname": "바다",
+          "roles": [
+            "crew",
+          ],
+          "track": "backend",
+          "tracks": [
+            "backend",
+          ],
+        },
+        "publishedAt": "2026-09-20T09:00:00.000Z",
+        "title": "JPA &amp; 트랜잭션",
+        "url": "https://bada.example.com/posts/1",
+      },
+    ],
+    "totalCount": 3,
+  },
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract public GET GET /members/feed?limit=2 1`] = `
+{
+  "body": {
+    "nextCursor": "2026-05-01T00:00:00.000Z|4",
+    "posts": [
+      {
+        "id": 1,
+        "member": {
+          "avatarUrl": "https://avatars.githubusercontent.com/u/1001?v=4",
+          "cohort": 8,
+          "cohorts": [
+            {
+              "cohort": 8,
+              "roles": [
+                "crew",
+              ],
+            },
+          ],
+          "githubId": "fe-crew",
+          "isTeamBlog": false,
+          "nickname": "하루",
+          "roles": [
+            "crew",
+          ],
+          "track": "frontend",
+          "tracks": [
+            "frontend",
+          ],
+        },
+        "publishedAt": "2026-09-29T12:00:00.000Z",
+        "title": "로또 미션 회고",
+        "url": "https://haru.example.com/posts/1",
+      },
+      {
+        "id": 3,
+        "member": {
+          "avatarUrl": null,
+          "cohort": null,
+          "cohorts": [],
+          "githubId": "team-blog-a",
+          "isTeamBlog": true,
+          "nickname": "하루",
+          "roles": [
+            "crew",
+          ],
+          "track": null,
+          "tracks": [],
+        },
+        "publishedAt": "2026-09-28T08:00:00.000Z",
+        "title": "팀 회고",
+        "url": "https://team.example.com/posts/1",
+      },
+      {
+        "id": 2,
+        "member": {
+          "avatarUrl": "https://avatars.githubusercontent.com/u/1002?v=4",
+          "cohort": 7,
+          "cohorts": [
+            {
+              "cohort": 7,
+              "roles": [
+                "crew",
+              ],
+            },
+          ],
+          "githubId": "be-crew",
+          "isTeamBlog": false,
+          "nickname": "바다",
+          "roles": [
+            "crew",
+          ],
+          "track": "backend",
+          "tracks": [
+            "backend",
+          ],
+        },
+        "publishedAt": "2026-09-20T09:00:00.000Z",
+        "title": "JPA &amp; 트랜잭션",
+        "url": "https://bada.example.com/posts/1",
+      },
+      {
+        "id": 4,
+        "member": {
+          "avatarUrl": "https://avatars.githubusercontent.com/u/1001?v=4",
+          "cohort": 8,
+          "cohorts": [
+            {
+              "cohort": 8,
+              "roles": [
+                "crew",
+              ],
+            },
+          ],
+          "githubId": "fe-crew",
+          "isTeamBlog": false,
+          "nickname": "하루",
+          "roles": [
+            "crew",
+          ],
+          "track": "frontend",
+          "tracks": [
+            "frontend",
+          ],
+        },
+        "publishedAt": "2026-05-01T00:00:00.000Z",
+        "title": "오래된 글",
+        "url": "https://haru.example.com/posts/old",
+      },
+    ],
+    "totalCount": 4,
+  },
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract public GET GET /members/no-such-member 1`] = `
+{
+  "body": {
+    "error": "Member not found",
+  },
+  "location": undefined,
+  "status": 404,
+}
+`;
+
+exports[`API contract public GET GET /members/no-such-member/blog-posts 1`] = `
+{
+  "body": {
+    "error": "Member not found",
+  },
+  "location": undefined,
+  "status": 404,
+}
+`;
+
+exports[`API contract public GET GET /members/search?cohort=8&roleGroup=staff&limit=120&offset=0 1`] = `
+{
+  "body": {
+    "counts": {
+      "crew": 1,
+      "staff": 2,
+    },
+    "members": [
+      {
+        "avatarUrl": null,
+        "blog": null,
+        "cohort": 8,
+        "cohorts": [
+          {
+            "cohort": 8,
+            "roles": [
+              "coach",
+            ],
+          },
+          {
+            "cohort": 7,
+            "roles": [
+              "coach",
+            ],
+          },
+        ],
+        "githubId": "coach-a",
+        "lastPostedAt": null,
+        "nickname": "구름",
+        "roles": [
+          "coach",
+        ],
+        "track": null,
+        "tracks": [],
+      },
+      {
+        "avatarUrl": null,
+        "blog": null,
+        "cohort": 8,
+        "cohorts": [
+          {
+            "cohort": 8,
+            "roles": [
+              "reviewer",
+            ],
+          },
+        ],
+        "githubId": "reviewer-a",
+        "lastPostedAt": null,
+        "nickname": "별",
+        "roles": [
+          "reviewer",
+        ],
+        "track": null,
+        "tracks": [],
+      },
+    ],
+    "nextOffset": null,
+    "totalCount": 2,
+  },
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract public GET GET /members/search?limit=abc 1`] = `
+{
+  "body": {
+    "counts": {
+      "crew": 3,
+      "staff": 2,
+    },
+    "members": [
+      {
+        "avatarUrl": null,
+        "blog": null,
+        "cohort": 8,
+        "cohorts": [
+          {
+            "cohort": 8,
+            "roles": [
+              "coach",
+            ],
+          },
+          {
+            "cohort": 7,
+            "roles": [
+              "coach",
+            ],
+          },
+        ],
+        "githubId": "coach-a",
+        "lastPostedAt": null,
+        "nickname": "구름",
+        "roles": [
+          "coach",
+        ],
+        "track": null,
+        "tracks": [],
+      },
+      {
+        "avatarUrl": null,
+        "blog": null,
+        "cohort": 8,
+        "cohorts": [
+          {
+            "cohort": 8,
+            "roles": [
+              "reviewer",
+            ],
+          },
+        ],
+        "githubId": "reviewer-a",
+        "lastPostedAt": null,
+        "nickname": "별",
+        "roles": [
+          "reviewer",
+        ],
+        "track": null,
+        "tracks": [],
+      },
+      {
+        "avatarUrl": "https://avatars.githubusercontent.com/u/1002?v=4",
+        "blog": "https://bada.example.com",
+        "cohort": 7,
+        "cohorts": [
+          {
+            "cohort": 7,
+            "roles": [
+              "crew",
+            ],
+          },
+        ],
+        "githubId": "be-crew",
+        "lastPostedAt": null,
+        "nickname": "바다",
+        "roles": [
+          "crew",
+        ],
+        "track": "backend",
+        "tracks": [
+          "backend",
+        ],
+      },
+      {
+        "avatarUrl": "https://avatars.githubusercontent.com/u/1001?v=4",
+        "blog": "https://haru.example.com",
+        "cohort": 8,
+        "cohorts": [
+          {
+            "cohort": 8,
+            "roles": [
+              "crew",
+            ],
+          },
+        ],
+        "githubId": "fe-crew",
+        "lastPostedAt": "2026-09-29T12:00:00.000Z",
+        "nickname": "하루",
+        "roles": [
+          "crew",
+        ],
+        "track": "frontend",
+        "tracks": [
+          "frontend",
+        ],
+      },
+      {
+        "avatarUrl": null,
+        "blog": null,
+        "cohort": 6,
+        "cohorts": [
+          {
+            "cohort": 6,
+            "roles": [
+              "crew",
+            ],
+          },
+        ],
+        "githubId": "android-crew",
+        "lastPostedAt": null,
+        "nickname": "하루",
+        "roles": [
+          "crew",
+        ],
+        "track": "android",
+        "tracks": [
+          "android",
+        ],
+      },
+    ],
+    "nextOffset": null,
+    "totalCount": 5,
+  },
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract public GET GET /members/search?q=바다&limit=10 1`] = `
+{
+  "body": {
+    "counts": {
+      "crew": 1,
+      "staff": 0,
+    },
+    "members": [
+      {
+        "avatarUrl": "https://avatars.githubusercontent.com/u/1002?v=4",
+        "blog": "https://bada.example.com",
+        "cohort": 7,
+        "cohorts": [
+          {
+            "cohort": 7,
+            "roles": [
+              "crew",
+            ],
+          },
+        ],
+        "githubId": "be-crew",
+        "lastPostedAt": null,
+        "nickname": "바다",
+        "roles": [
+          "crew",
+        ],
+        "track": "backend",
+        "tracks": [
+          "backend",
+        ],
+      },
+    ],
+    "nextOffset": null,
+    "totalCount": 1,
+  },
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract public GET GET /members/search?roleGroup=crew&limit=120 1`] = `
+{
+  "body": {
+    "counts": {
+      "crew": 3,
+      "staff": 2,
+    },
+    "members": [
+      {
+        "avatarUrl": "https://avatars.githubusercontent.com/u/1002?v=4",
+        "blog": "https://bada.example.com",
+        "cohort": 7,
+        "cohorts": [
+          {
+            "cohort": 7,
+            "roles": [
+              "crew",
+            ],
+          },
+        ],
+        "githubId": "be-crew",
+        "lastPostedAt": null,
+        "nickname": "바다",
+        "roles": [
+          "crew",
+        ],
+        "track": "backend",
+        "tracks": [
+          "backend",
+        ],
+      },
+      {
+        "avatarUrl": "https://avatars.githubusercontent.com/u/1001?v=4",
+        "blog": "https://haru.example.com",
+        "cohort": 8,
+        "cohorts": [
+          {
+            "cohort": 8,
+            "roles": [
+              "crew",
+            ],
+          },
+        ],
+        "githubId": "fe-crew",
+        "lastPostedAt": "2026-09-29T12:00:00.000Z",
+        "nickname": "하루",
+        "roles": [
+          "crew",
+        ],
+        "track": "frontend",
+        "tracks": [
+          "frontend",
+        ],
+      },
+      {
+        "avatarUrl": null,
+        "blog": null,
+        "cohort": 6,
+        "cohorts": [
+          {
+            "cohort": 6,
+            "roles": [
+              "crew",
+            ],
+          },
+        ],
+        "githubId": "android-crew",
+        "lastPostedAt": null,
+        "nickname": "하루",
+        "roles": [
+          "crew",
+        ],
+        "track": "android",
+        "tracks": [
+          "android",
+        ],
+      },
+    ],
+    "nextOffset": null,
+    "totalCount": 3,
+  },
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract public GET GET /members/team-blog-a 1`] = `
+{
+  "body": {
+    "archive": [],
+    "avatarUrl": null,
+    "blog": "https://team.example.com",
+    "cohorts": [],
+    "githubId": "team-blog-a",
+    "lastPostedAt": "2026-09-28T08:00:00.000Z",
+    "nickname": "우리팀",
+    "person": null,
+    "tecoTalks": [],
+    "track": null,
+    "tracks": [],
+  },
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract public GET GET /members?cohort=8&track=frontend&role=crew 1`] = `
+{
+  "body": [
+    {
+      "avatarUrl": "https://avatars.githubusercontent.com/u/1001?v=4",
+      "blog": "https://haru.example.com",
+      "cohort": 8,
+      "cohorts": [
+        {
+          "cohort": 8,
+          "roles": [
+            "crew",
+          ],
+        },
+      ],
+      "githubId": "fe-crew",
+      "lastPostedAt": "2026-09-29T12:00:00.000Z",
+      "nickname": "하루",
+      "roles": [
+        "crew",
+      ],
+      "track": "frontend",
+      "tracks": [
+        "frontend",
+      ],
+    },
+  ],
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract public GET GET /members?q=fe-crew-old 1`] = `
+{
+  "body": [
+    {
+      "avatarUrl": "https://avatars.githubusercontent.com/u/1001?v=4",
+      "blog": "https://haru.example.com",
+      "cohort": 8,
+      "cohorts": [
+        {
+          "cohort": 8,
+          "roles": [
+            "crew",
+          ],
+        },
+      ],
+      "githubId": "fe-crew",
+      "lastPostedAt": "2026-09-29T12:00:00.000Z",
+      "nickname": "하루",
+      "roles": [
+        "crew",
+      ],
+      "track": "frontend",
+      "tracks": [
+        "frontend",
+      ],
+    },
+  ],
+  "location": undefined,
+  "status": 200,
+}
+`;
+
+exports[`API contract public GET GET /members?q=하루 1`] = `
+{
+  "body": [
+    {
+      "avatarUrl": "https://avatars.githubusercontent.com/u/1001?v=4",
+      "blog": "https://haru.example.com",
+      "cohort": 8,
+      "cohorts": [
+        {
+          "cohort": 8,
+          "roles": [
+            "crew",
+          ],
+        },
+      ],
+      "githubId": "fe-crew",
+      "lastPostedAt": "2026-09-29T12:00:00.000Z",
+      "nickname": "하루",
+      "roles": [
+        "crew",
+      ],
+      "track": "frontend",
+      "tracks": [
+        "frontend",
+      ],
+    },
+    {
+      "avatarUrl": null,
+      "blog": null,
+      "cohort": 6,
+      "cohorts": [
+        {
+          "cohort": 6,
+          "roles": [
+            "crew",
+          ],
+        },
+      ],
+      "githubId": "android-crew",
+      "lastPostedAt": null,
+      "nickname": "하루",
+      "roles": [
+        "crew",
+      ],
+      "track": "android",
+      "tracks": [
+        "android",
+      ],
+    },
+  ],
+  "location": undefined,
+  "status": 200,
+}
+`;
