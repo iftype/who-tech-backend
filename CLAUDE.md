@@ -41,4 +41,5 @@
 - [어드민](.claude/docs/admin.md)
 - [배포](.claude/docs/deploy.md)
 - [DB 백업·복구](.claude/docs/backup.md)
+- [DB 구조 변경 절차 (확장→이전→축소, 리허설)](.claude/docs/db-changes.md)
 - [인프라](.claude/docs/infra.md)

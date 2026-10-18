@@ -23,6 +23,11 @@ const PUBLIC_PATHS = [
   '/members/iftype',
   '/members/iftype/blog-posts',
   '/members/no-such-member',
+  // 이전 GitHub ID로 검색 (F-1: JSON 컬럼과 테이블 불일치 확인용)
+  '/members?q=EveryPine',
+  '/members?q=egaeng09',
+  '/members?q=YuyoungRhee',
+  '/members?q=iamjooon2',
 ];
 
 const ADMIN_PATHS = [
