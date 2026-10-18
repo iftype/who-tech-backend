@@ -38,7 +38,8 @@ function makeMember(overrides: Record<string, unknown> = {}) {
     id: 10,
     githubId: 'crew1',
     githubUserId: 1001,
-    previousGithubIds: null as string | null,
+    // 테스트용: PreviousGithubId 테이블에 들어 있는 이전 ID
+    previousIds: [] as string[],
     nickname: null,
     manualNickname: null as string | null,
     nicknameStats: null,
@@ -71,10 +72,7 @@ function makeRepo(member: ReturnType<typeof makeMember> | null) {
       return state;
     }),
     replacePreviousGithubIds: jest.fn<(...args: unknown[]) => Promise<unknown>>().mockResolvedValue(undefined),
-    // 이전 ID는 테이블에서 읽는다 (테스트에서는 멤버의 previousGithubIds를 테이블 값으로 본다)
-    findPreviousGithubIds: jest.fn<(...args: unknown[]) => Promise<string[]>>(async () =>
-      member?.previousGithubIds ? (JSON.parse(member.previousGithubIds) as string[]) : [],
-    ),
+    findPreviousGithubIds: jest.fn<(...args: unknown[]) => Promise<string[]>>(async () => member?.previousIds ?? []),
     deleteParticipationsByCohort: jest.fn<(...args: unknown[]) => Promise<unknown>>().mockResolvedValue(undefined),
     upsertParticipation: jest.fn<(...args: unknown[]) => Promise<unknown>>().mockResolvedValue(undefined),
   };
@@ -132,7 +130,7 @@ describe('refreshMemberProfileById', () => {
 
   describe('GitHub profile', () => {
     it('should use the first candidate with an available RSS feed and track renames', async () => {
-      const { repo, memberRepo } = makeRepo(makeMember({ previousGithubIds: JSON.stringify(['ancient']) }));
+      const { repo, memberRepo } = makeRepo(makeMember({ previousIds: ['ancient'] }));
       mockFetchUserBlogCandidates.mockResolvedValue({
         profile: { githubId: 'crew1-new', githubUserId: 1001, avatarUrl: 'https://a/new.png' },
         candidates: ['https://no-rss.example.com', 'https://rss.example.com', 'https://third.example.com'],
@@ -191,7 +189,7 @@ describe('refreshMemberProfileById', () => {
     });
 
     it('should keep existing profile fields and record the error when GitHub fails', async () => {
-      const { repo, memberRepo } = makeRepo(makeMember({ previousGithubIds: '["old"]' }));
+      const { repo, memberRepo } = makeRepo(makeMember({ previousIds: ['old'] }));
       mockFetchUserBlogCandidates.mockRejectedValue(new Error('Not Found'));
 
       await refreshMemberProfileById(10, NO_BANNED, true, memberRepo, octokit);
