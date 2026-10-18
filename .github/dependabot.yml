@@ -15,6 +15,9 @@ updates:
       minor-and-patch:
         update-types: [minor, patch]
     ignore:
+      # major는 취약점과 무관한 한 백로그로 계획해서 수동으로 올린다 (IMPROVEMENT_PLAN 3-3)
+      - dependency-name: '*'
+        update-types: ['version-update:semver-major']
       # 런타임 프레임워크 major는 수동으로 검증 후 올린다
       - dependency-name: 'express'
         update-types: ['version-update:semver-major']
@@ -40,6 +43,9 @@ updates:
       admin-minor-and-patch:
         update-types: [minor, patch]
     ignore:
+      # major는 취약점과 무관한 한 백로그로 계획해서 수동으로 올린다 (IMPROVEMENT_PLAN 3-3)
+      - dependency-name: '*'
+        update-types: ['version-update:semver-major']
       - dependency-name: 'react'
         update-types: ['version-update:semver-major']
       - dependency-name: 'react-dom'
