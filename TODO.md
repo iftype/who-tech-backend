@@ -155,7 +155,7 @@
 - [ ] 런타임 major: p-queue 10 / 개발 도구 major: eslint 10, @commitlint 21, admin-spa typescript 7·vite 7+·plugin-react 6, jest-dom 7
 - [ ] Expo SDK 업그레이드 (image-size 취약점 해소)
 - [ ] DB 백업 외부 저장소 복제 (현재 서버 디스크에만 있음)
-- [ ] 모바일 테스트 환경 구성 후 `WebSkeleton.tsx` 정리
+- [x] 모바일 `WebSkeleton.tsx` 탭별 파일 분리 (frontend #82, 코드 변경 없는 이동)
 - [ ] 피드 커서 정렬에 `id` 동률 기준 명시 (현재 SQLite 기본 순서에 의존, 회귀 테스트로 고정)
 - [ ] 잘못된 JSON 요청이 500 대신 400을 반환하도록
 - [ ] 시스템 Node 20(EOL)은 `/usr/bin/pm2` CLI용으로만 남음 → 필요 시 제거
