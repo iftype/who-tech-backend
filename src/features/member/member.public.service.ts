@@ -9,7 +9,8 @@ import type { BlogService } from '../blog/blog.service.js';
 import type { Octokit } from '@octokit/rest';
 import { resolveDisplayNickname, scoreTopNicknameMatch } from '../../shared/nickname.js';
 import { buildCohortList } from '../../shared/member-cohort.js';
-import { computeDominantTrack } from '../../shared/member-track.js';
+import { summarizeTracks } from '../../shared/member-track.js';
+import { buildMemberArchive } from './member.archive.js';
 import { refreshMemberProfileById } from './member.profile-refresh.js';
 
 export function createMemberPublicService(deps: {
@@ -34,13 +35,6 @@ export function createMemberPublicService(deps: {
     blogService,
     octokit,
   } = deps;
-
-  interface ArchiveRepo {
-    name: string;
-    track: string | null;
-    tabCategory: string;
-    submissions: Array<{ prUrl: string; prNumber: number; title: string; status: string; submittedAt: Date }> | null;
-  }
 
   type SearchFilters = {
     q?: string;
@@ -71,7 +65,7 @@ export function createMemberPublicService(deps: {
 
     const targetCohort = filters?.cohort ? cohorts.find((c) => c.cohort === filters.cohort) : cohorts[0];
 
-    const inferredTrack = computeDominantTrack(m.submissions);
+    const { track, tracks } = summarizeTracks(m.track, m.submissions);
     return {
       githubId: m.githubId,
       nickname: resolveDisplayNickname(m.manualNickname, m.nicknameStats, m.nickname) ?? m.githubId,
@@ -79,17 +73,8 @@ export function createMemberPublicService(deps: {
       cohort: targetCohort?.cohort ?? null,
       roles: targetCohort?.roles ?? ['crew'],
       cohorts,
-      track: m.track ?? inferredTrack ?? null,
-      tracks: [
-        ...new Set([
-          ...(m.track ? [m.track] : []),
-          ...(inferredTrack ? [inferredTrack] : []),
-          ...m.submissions
-            .filter((s) => s.status !== 'closed')
-            .map((s) => s.missionRepo.track)
-            .filter((t): t is string => t !== null),
-        ]),
-      ],
+      track,
+      tracks,
       blog: m.blog,
       lastPostedAt: m.lastPostedAt,
     } satisfies PublicMember;
@@ -163,129 +148,20 @@ export function createMemberPublicService(deps: {
         ({ viewCount: _viewCount, ...talk }) => talk,
       );
 
-      const submissionsByRepo = new Map<
-        number,
-        Array<{ prUrl: string; prNumber: number; title: string; status: string; submittedAt: Date }>
-      >();
-      for (const s of [...member.submissions].reverse()) {
-        if (!submissionsByRepo.has(s.missionRepoId)) submissionsByRepo.set(s.missionRepoId, []);
-        submissionsByRepo.get(s.missionRepoId)!.push({
-          prUrl: s.prUrl,
-          prNumber: s.prNumber,
-          title: s.title,
-          status: s.status,
-          submittedAt: s.submittedAt,
-        });
-      }
+      const archive = await buildMemberArchive({
+        cohorts,
+        submissions: member.submissions,
+        loadCohortRepos: (cohort) => cohortRepoRepo.findByCohort(workspace.id, cohort),
+      });
 
-      const archive: {
-        cohort: number;
-        levels: {
-          level: number | null;
-          repos: ArchiveRepo[];
-        }[];
-      }[] = [];
-
-      const processedRepoIds = new Set<number>();
-
-      const crewOnlyCohorts = cohorts.filter(
-        (c) => c.roles.includes('crew') && !c.roles.some((r) => r === 'coach' || r === 'reviewer'),
-      );
-
-      for (const { cohort } of crewOnlyCohorts) {
-        const cohortRepos = await cohortRepoRepo.findByCohort(workspace.id, cohort);
-        if (cohortRepos.length === 0) continue;
-
-        const levelMap = new Map<number | null, ArchiveRepo[]>();
-        for (const cr of cohortRepos) {
-          processedRepoIds.add(cr.missionRepoId);
-          const level = cr.level;
-          if (!levelMap.has(level)) levelMap.set(level, []);
-          // Precourse check first (highest priority)
-          let tabCategory: string;
-          if (cr.missionRepo.name.toLowerCase().includes('precourse')) {
-            tabCategory = 'precourse';
-          } else if (cr.missionRepo.tabCategory === 'precourse') {
-            tabCategory = 'precourse';
-          } else {
-            tabCategory = cr.missionRepo.tabCategory;
-          }
-          levelMap.get(level)!.push({
-            name: cr.missionRepo.name,
-            track: cr.missionRepo.track,
-            tabCategory,
-            submissions: submissionsByRepo.get(cr.missionRepoId) ?? null,
-          });
-        }
-
-        const sortedLevels = [...levelMap.keys()].sort((a, b) => {
-          if (a === null) return 1;
-          if (b === null) return -1;
-          return a - b;
-        });
-
-        const cohortArchive = {
-          cohort,
-          levels: sortedLevels.map((level) => ({
-            level,
-            repos: levelMap.get(level)!,
-          })),
-        };
-        archive.push(cohortArchive);
-      }
-
-      // Collect any submissions that belong to repos not explicitly assigned to the member's cohorts
-      const unregisteredReposMap = new Map<number, ArchiveRepo>();
-      for (const s of member.submissions) {
-        if (!processedRepoIds.has(s.missionRepoId)) {
-          if (!unregisteredReposMap.has(s.missionRepoId)) {
-            let tabCategory: string;
-            if (s.missionRepo.name.toLowerCase().includes('precourse')) {
-              tabCategory = 'precourse';
-            } else if (s.missionRepo.tabCategory === 'precourse') {
-              tabCategory = 'precourse';
-            } else {
-              tabCategory = s.missionRepo.tabCategory;
-            }
-            unregisteredReposMap.set(s.missionRepoId, {
-              name: s.missionRepo.name,
-              track: s.missionRepo.track,
-              tabCategory,
-              submissions: submissionsByRepo.get(s.missionRepoId) ?? null,
-            });
-          }
-        }
-      }
-
-      if (unregisteredReposMap.size > 0) {
-        archive.push({
-          cohort: 0,
-          levels: [
-            {
-              level: null,
-              repos: Array.from(unregisteredReposMap.values()),
-            },
-          ],
-        });
-      }
-
-      const inferredTrack = computeDominantTrack(member.submissions);
+      const { track, tracks } = summarizeTracks(member.track, member.submissions);
       return {
         githubId: member.githubId,
         nickname,
         avatarUrl: member.avatarUrl,
         cohorts,
-        track: member.track ?? inferredTrack ?? null,
-        tracks: [
-          ...new Set([
-            ...(member.track ? [member.track] : []),
-            ...(inferredTrack ? [inferredTrack] : []),
-            ...member.submissions
-              .filter((s) => s.status !== 'closed')
-              .map((s) => s.missionRepo.track)
-              .filter((t) => t !== null),
-          ]),
-        ],
+        track,
+        tracks,
         blog: member.blog,
         lastPostedAt: member.lastPostedAt,
         archive,
@@ -328,7 +204,7 @@ export function createMemberPublicService(deps: {
 
         const targetCohort = filters?.cohort ? cohorts.find((c) => c.cohort === filters.cohort) : cohorts[0];
 
-        const inferredTrack = computeDominantTrack(p.member.submissions);
+        const { track, tracks } = summarizeTracks(p.member.track, p.member.submissions);
         return {
           id: p.id,
           url: p.url,
@@ -345,17 +221,8 @@ export function createMemberPublicService(deps: {
             cohort: targetCohort?.cohort ?? null,
             roles: targetCohort?.roles ?? ['crew'],
             cohorts,
-            track: p.member.track ?? inferredTrack ?? null,
-            tracks: [
-              ...new Set([
-                ...(p.member.track ? [p.member.track] : []),
-                ...(inferredTrack ? [inferredTrack] : []),
-                ...p.member.submissions
-                  .filter((s) => s.status !== 'closed')
-                  .map((s) => s.missionRepo.track)
-                  .filter((t) => t !== null),
-              ]),
-            ],
+            track,
+            tracks,
           },
         };
       });

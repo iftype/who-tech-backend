@@ -1,12 +1,12 @@
 import type { MemberDetailWithRelations } from '../../db/repositories/member.repository.js';
 import { buildCohortList } from '../../shared/member-cohort.js';
 import { resolveDisplayNickname, parseNicknameStats } from '../../shared/nickname.js';
-import { computeDominantTrack } from '../../shared/member-track.js';
+import { summarizeTracks } from '../../shared/member-track.js';
 
 export function toMemberResponse(member: MemberDetailWithRelations) {
   const cohorts = buildCohortList(member.memberCohorts);
   const primaryCohort = cohorts[0];
-  const inferredTrack = computeDominantTrack(member.submissions);
+  const { track, tracks } = summarizeTracks(member.track, member.submissions);
 
   return {
     id: member.id,
@@ -28,17 +28,8 @@ export function toMemberResponse(member: MemberDetailWithRelations) {
     cohort: primaryCohort?.cohort ?? null,
     roles: primaryCohort?.roles ?? ['crew'],
     cohortLocked: member.cohortLocked,
-    track: member.track ?? inferredTrack ?? null,
-    tracks: [
-      ...new Set([
-        ...(member.track ? [member.track] : []),
-        ...(inferredTrack ? [inferredTrack] : []),
-        ...member.submissions
-          .filter((s) => s.status !== 'closed')
-          .map((s) => s.missionRepo.track)
-          .filter((t) => t !== null),
-      ]),
-    ],
+    track,
+    tracks,
     blogPosts: member.blogPosts,
     submissions: member.submissions,
     _count: member._count,
