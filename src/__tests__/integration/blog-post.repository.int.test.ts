@@ -71,7 +71,7 @@ describe('BlogPostRepository (SQLite)', () => {
   });
 
   describe('deletion helpers', () => {
-    it('should delete posts before a date, by member, and those missing from the feed', async () => {
+    it('should delete posts by member and recent posts missing from the feed, keeping older posts', async () => {
       const a = await addMember('a');
       const b = await addMember('b');
       const old = await addPost(a.id, '2025-01-01');
@@ -79,16 +79,15 @@ describe('BlogPostRepository (SQLite)', () => {
       const gone = await addPost(a.id, daysAgo(2));
       await addPost(b.id, daysAgo(1));
 
-      await repo.deleteBefore(new Date('2025-06-01'));
-      expect(await prisma.blogPost.findUnique({ where: { id: old.id } })).toBeNull();
-
+      // 피드 비교 기간(30일) 밖의 오래된 글은 피드에 없어도 남는다
       await repo.deleteByMemberNotInUrls(a.id, [kept.url], new Date(daysAgo(30)));
       expect(await prisma.blogPost.findUnique({ where: { id: gone.id } })).toBeNull();
       expect(await prisma.blogPost.findUnique({ where: { id: kept.id } })).not.toBeNull();
+      expect(await prisma.blogPost.findUnique({ where: { id: old.id } })).not.toBeNull();
 
       await repo.deleteByMember(b.id);
       expect(await prisma.blogPost.count({ where: { memberId: b.id } })).toBe(0);
-      expect(await prisma.blogPost.count()).toBe(1);
+      expect(await prisma.blogPost.count()).toBe(2);
     });
 
     it('should keep only the newest posts per member', async () => {
