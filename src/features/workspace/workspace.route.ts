@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { asyncHandler } from '../../shared/http.js';
-import { parseWorkspaceUpdateInput } from '../../shared/validation.js';
+import { parseWorkspaceUpdateInput } from './workspace.validation.js';
 import type { WorkspaceService } from './workspace.service.js';
 
 export function createWorkspaceRouter(service: WorkspaceService) {
