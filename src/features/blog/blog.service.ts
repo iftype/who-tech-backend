@@ -5,13 +5,14 @@ import { HttpError } from '../../shared/http.js';
 import { buildCohortList } from '../../shared/member-cohort.js';
 import { computeDominantTrack } from '../../shared/member-track.js';
 import { decodeHtml } from '../../shared/html.js';
-import { fetchRSSItems, errorMessage } from './blog.rss.js';
+import { fetchRSSItems, errorMessage, isNonPostPageUrl } from './blog.rss.js';
 import type { BlogSyncFailure } from './blog.rss.js';
 
 export type { BlogSyncFailure, BlogSyncProgress, RssCheckResult } from './blog.rss.js';
-export { sanitizeXml, resolveRSSUrlsForBlog, probeRss } from './blog.rss.js';
+export { sanitizeXml, resolveRSSUrlsForBlog, probeRss, isNonPostPageUrl } from './blog.rss.js';
 
-const RETENTION_DAYS = 90;
+// 기간이 지난 글은 지우지 않는다. 이 기간 안의 글만 "RSS에서 빠졌으면 삭제" 대상이다
+const FEED_REMOVAL_WINDOW_DAYS = 90;
 const MAX_POSTS_PER_MEMBER = 100;
 const MAX_POSTS_PER_DAY = 3;
 export const DEFAULT_TEAM_BLOG_RSS_URL = 'https://www.rilog.kr/rss.xml';
@@ -106,7 +107,7 @@ export function createBlogService(deps: {
       error: string;
     }[];
   }> {
-    const cutoff = new Date(Date.now() - RETENTION_DAYS * 24 * 60 * 60 * 1000);
+    const cutoff = new Date(Date.now() - FEED_REMOVAL_WINDOW_DAYS * 24 * 60 * 60 * 1000);
     const cohorts = buildCohortList(member.memberCohorts);
     const primaryCohort = cohorts[0]?.cohort ?? null;
     const inferredTrack = computeDominantTrack(member.submissions);
@@ -154,8 +155,10 @@ export function createBlogService(deps: {
 
     for (const item of result.items) {
       if (!item.link || !item.title || !item.pubDate) continue;
+      if (isNonPostPageUrl(item.link)) continue;
       const publishedAt = new Date(item.pubDate);
-      if (isNaN(publishedAt.getTime()) || publishedAt < cutoff) continue;
+      // RSS에 남아 있는 글은 오래됐어도 수집해 보존한다
+      if (isNaN(publishedAt.getTime())) continue;
 
       try {
         const decodedTitle = decodeHtml(item.title);
@@ -243,7 +246,6 @@ export function createBlogService(deps: {
         error: string;
       }[];
     }> => {
-      const cutoff = new Date(Date.now() - RETENTION_DAYS * 24 * 60 * 60 * 1000);
       const members = await memberRepo.findWithFilters(workspaceId, { hasBlog: true });
 
       let synced = 0;
@@ -278,14 +280,6 @@ export function createBlogService(deps: {
         failures.push(...result.failures);
         processed += 1;
         emitProgress(`${member.githubId} RSS 확인 완료`);
-      }
-
-      emitProgress('오래된 글 정리 중', total === 0 ? 100 : Math.max(Math.round((processed / total) * 100), 95));
-      try {
-        const cleanupResult = await blogPostRepo.deleteBefore(cutoff);
-        deleted += cleanupResult.count;
-      } catch (error) {
-        throw new HttpError(500, `blog sync cleanup failed: ${errorMessage(error)}`);
       }
 
       emitProgress('완료', 100);
