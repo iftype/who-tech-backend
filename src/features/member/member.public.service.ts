@@ -12,6 +12,7 @@ import { buildCohortList } from '../../shared/member-cohort.js';
 import { summarizeTracks } from '../../shared/member-track.js';
 import { buildMemberArchive } from './member.archive.js';
 import { refreshMemberProfileById } from './member.profile-refresh.js';
+import { parseCohortRules } from '../../shared/cohort-rules.js';
 
 export function createMemberPublicService(deps: {
   memberRepo: MemberRepository;
@@ -247,7 +248,7 @@ export function createMemberPublicService(deps: {
 
       const bannedWordRows = await bannedWordRepo.findAll(workspace.id);
       const bannedWords = new Set(bannedWordRows.map((r) => r.word));
-      const cohortRules = JSON.parse(workspace.cohortRules) as { year: number; cohort: number }[];
+      const cohortRules = parseCohortRules(workspace.cohortRules);
 
       try {
         await refreshMemberProfileById(member.id, bannedWords, true, memberRepo, octokit, cohortRules);

@@ -1,4 +1,5 @@
 import type { CohortRule } from '../../shared/types/index.js';
+import { isCohortRules } from '../../shared/cohort-rules.js';
 import { badRequest } from '../../shared/http.js';
 import { isRecord } from '../../shared/validation.js';
 
@@ -31,11 +32,4 @@ export function parseWorkspaceUpdateInput(body: unknown): {
     ...(blogSyncEnabled !== undefined ? { blogSyncEnabled } : {}),
     ...(profileRefreshEnabled !== undefined ? { profileRefreshEnabled } : {}),
   };
-}
-
-function isCohortRules(value: unknown): value is CohortRule[] {
-  return (
-    Array.isArray(value) &&
-    value.every((rule) => isRecord(rule) && typeof rule['year'] === 'number' && typeof rule['cohort'] === 'number')
-  );
 }
