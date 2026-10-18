@@ -1,5 +1,5 @@
 import type { ActivityLogRepository } from '../../db/repositories/activity-log.repository.js';
-import type { WorkspaceService } from '../workspace/workspace.service.js';
+import type { WorkspaceService } from '../workspace/index.js';
 
 export function createActivityLogService(deps: {
   activityLogRepo: ActivityLogRepository;

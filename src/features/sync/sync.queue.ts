@@ -1,10 +1,9 @@
 import { randomUUID } from 'crypto';
 import type { Octokit } from '@octokit/rest';
 import type { SyncService } from './sync.service.js';
-import type { ActivityLogService } from '../activity-log/activity-log.service.js';
-import type { WorkspaceService } from '../workspace/workspace.service.js';
-import type { RepoService } from '../repo/repo.service.js';
-import type { BlogAdminService } from '../blog/blog.admin.service.js';
+import type { ActivityLogService } from '../activity-log/index.js';
+import type { WorkspaceService } from '../workspace/index.js';
+import type { RepoSyncRunner, WorkspaceBlogSyncRunner } from './sync.ports.js';
 
 export type SyncJobType = 'workspace' | 'continuous' | 'cohort-repos' | 'repo' | 'blog';
 
@@ -46,8 +45,8 @@ export function createSyncQueue(deps: {
   activityLogService: ActivityLogService;
   workspaceService: WorkspaceService;
   octokit: Octokit;
-  repoService: RepoService;
-  blogAdminService: BlogAdminService;
+  repoService: RepoSyncRunner;
+  blogAdminService: WorkspaceBlogSyncRunner;
 }) {
   const { syncService, activityLogService, workspaceService, octokit, repoService, blogAdminService } = deps;
 

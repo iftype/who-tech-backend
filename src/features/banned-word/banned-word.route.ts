@@ -3,7 +3,7 @@ import { asyncHandler } from '../../shared/http.js';
 import { parseId } from '../../shared/validation.js';
 import { isUniqueConstraintError } from '../../shared/prisma-error.js';
 import type { BannedWordRepository } from '../../db/repositories/banned-word.repository.js';
-import type { WorkspaceService } from '../workspace/workspace.service.js';
+import type { WorkspaceService } from '../workspace/index.js';
 
 export function createBannedWordRouter(deps: {
   bannedWordRepo: BannedWordRepository;

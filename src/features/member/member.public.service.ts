@@ -3,9 +3,9 @@ import type { BlogPostRepository } from '../../db/repositories/blog-post.reposit
 import type { TecoTalkRepository } from '../../db/repositories/tecotalk.repository.js';
 import type { CohortRepoRepository } from '../../db/repositories/cohort-repo.repository.js';
 import type { BannedWordRepository } from '../../db/repositories/banned-word.repository.js';
-import type { WorkspaceService } from '../workspace/workspace.service.js';
-import type { ActivityLogService } from '../activity-log/activity-log.service.js';
-import type { BlogService } from '../blog/blog.service.js';
+import type { WorkspaceService } from '../workspace/index.js';
+import type { ActivityLogService } from '../activity-log/index.js';
+import type { BlogService } from '../blog/index.js';
 import type { Octokit } from '@octokit/rest';
 import { resolveDisplayNickname, scoreTopNicknameMatch } from '../../shared/nickname.js';
 import { buildCohortList } from '../../shared/member-cohort.js';

@@ -1,6 +1,6 @@
 import type { MemberRepository } from '../../db/repositories/member.repository.js';
 import type { CohortRepoRepository } from '../../db/repositories/cohort-repo.repository.js';
-import type { WorkspaceService } from '../workspace/workspace.service.js';
+import type { WorkspaceService } from '../workspace/index.js';
 import { resolveDisplayNickname } from '../../shared/nickname.js';
 
 export function createArchiveService(deps: {

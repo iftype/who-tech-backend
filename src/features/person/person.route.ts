@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { asyncHandler, badRequest } from '../../shared/http.js';
 import type { PersonRepository } from '../../db/repositories/person.repository.js';
 import type { MemberRepository } from '../../db/repositories/member.repository.js';
-import type { WorkspaceService } from '../workspace/workspace.service.js';
+import type { WorkspaceService } from '../workspace/index.js';
 
 export function createPersonRouter(deps: {
   personRepo: PersonRepository;
