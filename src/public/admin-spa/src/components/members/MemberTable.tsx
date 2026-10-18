@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '../../lib/api.js';
 import { showToast } from '../ui/Toast.js';
 import Modal from '../ui/Modal.js';
+import { useRefreshCooldowns } from '../../hooks/useRefreshCooldowns.js';
 import type { Member, BlogPost, MemberCohort, Submission } from '../../lib/types.js';
 
 type SortKey = 'nickname' | 'cohort' | 'githubId' | '_count.submissions' | '_count.blogPosts';
@@ -16,25 +17,6 @@ const TRACK_OPTIONS = ['', 'frontend', 'backend', 'android'] as const;
 const ROLE_OPTIONS = ['crew', 'coach', 'reviewer'] as const;
 const ROLE_LABELS: Record<string, string> = { crew: '크루', coach: '코치', reviewer: '리뷰어' };
 
-const COOLDOWN_MS = 60_000;
-const COOLDOWN_KEY = (id: number) => `profile-refresh-cooldown-${id}`;
-
-function loadCooldowns(): Record<number, number> {
-  const now = Date.now();
-  const result: Record<number, number> = {};
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    if (key?.startsWith('profile-refresh-cooldown-')) {
-      const id = Number(key.replace('profile-refresh-cooldown-', ''));
-      const ts = Number(localStorage.getItem(key));
-      const remaining = Math.ceil((ts + COOLDOWN_MS - now) / 1000);
-      if (remaining > 0) result[id] = remaining;
-      else localStorage.removeItem(key);
-    }
-  }
-  return result;
-}
-
 export default function MemberTable({ members, onRefresh }: Props) {
   const queryClient = useQueryClient();
   const [sortKey, setSortKey] = useState<SortKey>('cohort');
@@ -47,7 +29,7 @@ export default function MemberTable({ members, onRefresh }: Props) {
   const [deleting] = useState<number | null>(null);
   const [recalculating, setRecalculating] = useState<number | null>(null);
   const [resyncing, setResyncing] = useState<number | null>(null);
-  const [cooldowns, setCooldowns] = useState<Record<number, number>>(loadCooldowns);
+  const { cooldowns, startCooldown } = useRefreshCooldowns();
 
   const [editCell, setEditCell] = useState<{ memberId: number; field: 'manualNickname' | 'blog' | 'track' } | null>(
     null,
@@ -116,25 +98,6 @@ export default function MemberTable({ members, onRefresh }: Props) {
     } else if (editCell?.field === 'track') editSelectRef.current?.focus();
   }, [editCell]);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const now = Date.now();
-      setCooldowns((prev) => {
-        const next: Record<number, number> = {};
-        for (const [idStr] of Object.entries(prev)) {
-          const id = Number(idStr);
-          const key = COOLDOWN_KEY(id);
-          const ts = Number(localStorage.getItem(key) ?? 0);
-          const remaining = Math.ceil((ts + COOLDOWN_MS - now) / 1000);
-          if (remaining > 0) next[id] = remaining;
-          else localStorage.removeItem(key);
-        }
-        return next;
-      });
-    }, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -177,15 +140,13 @@ export default function MemberTable({ members, onRefresh }: Props) {
     setRefreshing(member.id);
     try {
       await apiFetch(`/admin/members/${member.id}/refresh-profile`, { method: 'POST' });
-      localStorage.setItem(COOLDOWN_KEY(member.id), String(Date.now()));
-      setCooldowns((prev) => ({ ...prev, [member.id]: Math.ceil(COOLDOWN_MS / 1000) }));
+      startCooldown(member.id);
       showToast(`${member.githubId} 새로고침 완료`);
       onRefresh();
     } catch (e) {
       const err = e as Error & { remainingSeconds?: number };
       if (err.remainingSeconds && err.remainingSeconds > 0) {
-        localStorage.setItem(COOLDOWN_KEY(member.id), String(Date.now()));
-        setCooldowns((prev) => ({ ...prev, [member.id]: err.remainingSeconds! }));
+        startCooldown(member.id, err.remainingSeconds);
         showToast(`${err.remainingSeconds}초 후에 다시 시도해주세요`, 'error');
       } else {
         showToast(err.message || '새로고침 실패', 'error');
