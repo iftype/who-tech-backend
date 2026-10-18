@@ -23,11 +23,11 @@ module.exports = {
     '!src/db/seed.ts',
     '!src/db/cleanup-nickname-stats.ts',
   ],
-  // 래칫: 현재 실측값을 하한으로 CI에서 강제하고, 테스트를 추가할 때마다 올린다 (목표 lines/functions 60)
+  // 래칫: 실측값을 하한으로 CI에서 강제한다. 목표(lines/functions 60) 달성 후에도 내려가지 않게 유지하고, 오르면 같이 올린다
   coverageThreshold: {
     global: {
-      lines: 59,
-      functions: 51,
+      lines: 64,
+      functions: 60,
     },
   },
   testTimeout: 15000,
