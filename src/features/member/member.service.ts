@@ -99,7 +99,6 @@ export function createMemberService(deps: {
         const created = await memberRepo.create({
           githubId: resolvedGithubId,
           githubUserId: resolvedGithubUserId,
-          previousGithubIds: null,
           avatarUrl: resolvedAvatarUrl,
           profileFetchedAt: resolvedAvatarUrl ? new Date() : null,
           ...(input.nickname ? { nickname: input.nickname, manualNickname: input.nickname } : {}),

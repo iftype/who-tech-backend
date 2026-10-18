@@ -95,7 +95,7 @@ describe('MemberRepository (SQLite)', () => {
 
     it('should search by GitHub id, nickname, manual nickname, previous id, and name matches', async () => {
       const gamma = await repo.findByGithubId('gamma', workspaceId);
-      await repo.syncPreviousGithubIds(gamma!.id, JSON.stringify(['old-gamma']));
+      await repo.replacePreviousGithubIds(gamma!.id, ['old-gamma']);
       const ids = async (q: string, nameMatchGithubIds?: string[]) =>
         (
           await repo.findWithFiltersLight(workspaceId, {
@@ -184,67 +184,34 @@ describe('MemberRepository (SQLite)', () => {
   });
 
   describe('previous GitHub ids', () => {
-    it('should add new ids and remove ids that are no longer listed', async () => {
-      const { id } = await addMember('crew1');
-      const ids = async () =>
-        (await prisma.previousGithubId.findMany({ where: { memberId: id }, orderBy: { githubId: 'asc' } })).map(
-          (r) => r.githubId,
-        );
-
-      await repo.syncPreviousGithubIds(id, JSON.stringify(['a', 'b']));
-      expect(await ids()).toEqual(['a', 'b']);
-
-      await repo.syncPreviousGithubIds(id, JSON.stringify(['b', 'c']));
-      expect(await ids()).toEqual(['b', 'c']);
-
-      await repo.syncPreviousGithubIds(id, null);
-      expect(await ids()).toEqual([]);
-    });
-
-    // 검색은 테이블을 읽으므로, previousGithubIds를 쓰는 모든 경로가 테이블도 함께 맞춰야 한다 (ARCHITECTURE_PLAN F-1)
+    // 이전 ID는 PreviousGithubId 테이블이 기준이고, replacePreviousGithubIds가 유일한 쓰기 경로다 (ARCHITECTURE_PLAN F-1)
     const tableIds = async (memberId: number) =>
       (await prisma.previousGithubId.findMany({ where: { memberId }, orderBy: { githubId: 'asc' } })).map(
         (r) => r.githubId,
       );
 
-    it('should keep the table in sync when upsert writes previousGithubIds', async () => {
-      const created = await repo.upsert(workspaceId, 501, {
-        githubId: 'renamed',
-        githubUserId: 501,
-        previousGithubIds: JSON.stringify(['old-name']),
-        workspaceId,
-      });
-      expect(await tableIds(created.id)).toEqual(['old-name']);
+    it('should replace the list: add new ids and remove ids that are no longer listed', async () => {
+      const { id } = await addMember('crew1');
 
-      await repo.upsert(workspaceId, 501, {
-        githubId: 'renamed-again',
-        githubUserId: 501,
-        previousGithubIds: JSON.stringify(['old-name', 'renamed']),
-        workspaceId,
-      });
-      expect(await tableIds(created.id)).toEqual(['old-name', 'renamed']);
+      await repo.replacePreviousGithubIds(id, ['a', 'b']);
+      expect(await tableIds(id)).toEqual(['a', 'b']);
+      expect(await repo.findPreviousGithubIds(id)).toEqual(['a', 'b']);
+
+      await repo.replacePreviousGithubIds(id, ['b', 'c']);
+      expect(await tableIds(id)).toEqual(['b', 'c']);
+
+      await repo.replacePreviousGithubIds(id, []);
+      expect(await repo.findPreviousGithubIds(id)).toEqual([]);
     });
 
-    it('should keep the table in sync when patch or update writes previousGithubIds', async () => {
-      const { id } = await addMember('crew2');
+    it('should not touch previous ids from upsert, patch, or update', async () => {
+      const created = await repo.upsert(workspaceId, 501, { githubId: 'renamed', githubUserId: 501, workspaceId });
+      await repo.replacePreviousGithubIds(created.id, ['keep']);
 
-      await repo.patch(id, { previousGithubIds: JSON.stringify(['p1']) });
-      expect(await tableIds(id)).toEqual(['p1']);
-
-      await repo.update(id, { previousGithubIds: JSON.stringify(['p1', 'p2']) });
-      expect(await tableIds(id)).toEqual(['p1', 'p2']);
-
-      await repo.patch(id, { previousGithubIds: null });
-      expect(await tableIds(id)).toEqual([]);
-    });
-
-    it('should leave the table alone when previousGithubIds is not written', async () => {
-      const { id } = await addMember('crew3');
-      await repo.syncPreviousGithubIds(id, JSON.stringify(['keep']));
-
-      await repo.patch(id, { nickname: '새닉' });
-      await repo.update(id, { track: 'backend' });
-      expect(await tableIds(id)).toEqual(['keep']);
+      await repo.upsert(workspaceId, 501, { githubId: 'renamed-again', githubUserId: 501, workspaceId });
+      await repo.patch(created.id, { nickname: '새닉' });
+      await repo.update(created.id, { track: 'backend' });
+      expect(await tableIds(created.id)).toEqual(['keep']);
     });
   });
 

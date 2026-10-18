@@ -27,21 +27,7 @@ const jsonArray = (name: string, table: string, column: string, nullable: boolea
 });
 
 export const CONSISTENCY_CHECKS: { name: string; sql: string }[] = [
-  // 이전 GitHub ID: JSON 컬럼과 PreviousGithubId 테이블이 같아야 한다 (F-1)
-  {
-    name: 'previous_id_missing_in_table',
-    sql: `SELECT COUNT(*) AS n FROM "Member" m, json_each(m."previousGithubIds") j
-          WHERE m."previousGithubIds" IS NOT NULL AND json_valid(m."previousGithubIds")
-            AND NOT EXISTS (SELECT 1 FROM "PreviousGithubId" p WHERE p."memberId" = m."id" AND p."githubId" = j.value)`,
-  },
-  {
-    name: 'previous_id_missing_in_json',
-    sql: `SELECT COUNT(*) AS n FROM "PreviousGithubId" p JOIN "Member" m ON m."id" = p."memberId"
-          WHERE m."previousGithubIds" IS NULL OR NOT json_valid(m."previousGithubIds")
-             OR NOT EXISTS (SELECT 1 FROM json_each(m."previousGithubIds") j WHERE j.value = p."githubId")`,
-  },
   // JSON 문자열 컬럼 형식 (F-4)
-  jsonArray('invalid_json_previousGithubIds', 'Member', 'previousGithubIds', true),
   jsonArray('invalid_json_nicknameStats', 'Member', 'nicknameStats', true),
   jsonArray('invalid_json_cohortRules', 'Workspace', 'cohortRules', false),
   jsonArray('invalid_json_missionRepo_cohorts', 'MissionRepo', 'cohorts', true),

@@ -36,7 +36,6 @@ type ExistingMember = {
   profileRefreshError?: string | null;
   githubUserId?: number | null;
   githubId?: string;
-  previousGithubIds?: string | null;
   manualNickname?: string | null;
   nickname?: string | null;
   nicknameStats?: string | null;
@@ -161,7 +160,6 @@ export function createRepoSyncer(deps: {
     const member = await memberRepo.upsert(workspaceId, githubUserId, {
       githubId,
       githubUserId,
-      previousGithubIds: previousGithubIds ?? null,
       nickname: displayNickname,
       avatarUrl: avatarUrl ?? null,
       nicknameStats: statsValue,
@@ -170,6 +168,8 @@ export function createRepoSyncer(deps: {
       blog: blog ?? null,
       workspaceId,
     });
+
+    await memberRepo.replacePreviousGithubIds(member.id, previousGithubIds);
 
     if (s.cohort) await memberRepo.upsertParticipation(member.id, s.cohort, 'crew');
 

@@ -45,14 +45,14 @@ export async function backfillMemberBlogLinks(
         }
       }
 
+      const previousGithubIds = mergePreviousGithubIds(
+        await memberRepo.findPreviousGithubIds(member.id),
+        member.githubId,
+        profile.githubId,
+      );
       const baseFields = {
         githubId: profile.githubId,
         githubUserId: profile.githubUserId,
-        previousGithubIds: mergePreviousGithubIds(
-          await memberRepo.findPreviousGithubIds(member.id),
-          member.githubId,
-          profile.githubId,
-        ),
         avatarUrl: profile.avatarUrl,
         profileFetchedAt: new Date(),
         profileRefreshError: null,
@@ -82,6 +82,7 @@ export async function backfillMemberBlogLinks(
         await memberRepo.patch(member.id, { ...baseFields });
         missing++;
       }
+      await memberRepo.replacePreviousGithubIds(member.id, previousGithubIds);
     } catch (error: unknown) {
       let reason = 'github_api_error';
       if (typeof error === 'object' && error !== null && 'status' in error) {

@@ -38,10 +38,11 @@ export async function refreshMemberProfileById(
     updated = await memberRepo.update(id, { nicknameStats: statsValue, nickname: resolvedNickname });
   } else {
     const previousIds = await memberRepo.findPreviousGithubIds(id);
+    // GitHub에서 새 프로필을 받았을 때만 이전 ID가 바뀐다
+    let nextPreviousIds: string[] | null = null;
     let profileFields: {
       githubId: string;
       githubUserId: number | null;
-      previousGithubIds: string | null;
       avatarUrl: string | null;
       blog?: string | null;
     };
@@ -60,10 +61,10 @@ export async function refreshMemberProfileById(
         }
       }
       const resolvedBlog = validBlog ?? candidates[0] ?? null;
+      nextPreviousIds = mergePreviousGithubIds(previousIds, member.githubId, profile.githubId);
       profileFields = {
         githubId: profile.githubId,
         githubUserId: profile.githubUserId,
-        previousGithubIds: mergePreviousGithubIds(previousIds, member.githubId, profile.githubId),
         avatarUrl: profile.avatarUrl ?? member.avatarUrl ?? null,
         blog: resolvedBlog ?? member.blog ?? null,
       };
@@ -71,7 +72,6 @@ export async function refreshMemberProfileById(
       profileFields = {
         githubId: member.githubId,
         githubUserId: member.githubUserId ?? null,
-        previousGithubIds: previousIds.length > 0 ? JSON.stringify(previousIds) : null,
         avatarUrl: member.avatarUrl ?? null,
       };
       profileRefreshError = error instanceof Error ? error.message : String(error);
@@ -84,6 +84,7 @@ export async function refreshMemberProfileById(
       profileFetchedAt: new Date(),
       profileRefreshError,
     });
+    if (nextPreviousIds) await memberRepo.replacePreviousGithubIds(id, nextPreviousIds);
   }
 
   const dominantTrack = computeDominantTrack(updated.submissions);

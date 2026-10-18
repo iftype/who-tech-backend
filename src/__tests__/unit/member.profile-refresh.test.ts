@@ -70,7 +70,7 @@ function makeRepo(member: ReturnType<typeof makeMember> | null) {
       state = { ...state!, ...data };
       return state;
     }),
-    syncPreviousGithubIds: jest.fn<(...args: unknown[]) => Promise<unknown>>().mockResolvedValue(undefined),
+    replacePreviousGithubIds: jest.fn<(...args: unknown[]) => Promise<unknown>>().mockResolvedValue(undefined),
     // 이전 ID는 테이블에서 읽는다 (테스트에서는 멤버의 previousGithubIds를 테이블 값으로 본다)
     findPreviousGithubIds: jest.fn<(...args: unknown[]) => Promise<string[]>>(async () =>
       member?.previousGithubIds ? (JSON.parse(member.previousGithubIds) as string[]) : [],
@@ -110,7 +110,7 @@ describe('refreshMemberProfileById', () => {
       expect(data['nickname']).toBe('가람');
       expect(result.nickname).toBe('가람');
       expect(mockFetchUserBlogCandidates).not.toHaveBeenCalled();
-      expect(repo.syncPreviousGithubIds).not.toHaveBeenCalled();
+      expect(repo.replacePreviousGithubIds).not.toHaveBeenCalled();
     });
 
     it('should keep the manual nickname as the display nickname', async () => {
@@ -152,14 +152,14 @@ describe('refreshMemberProfileById', () => {
       expect(data).toMatchObject({
         githubId: 'crew1-new',
         githubUserId: 1001,
-        previousGithubIds: JSON.stringify(['ancient', 'crew1']),
         avatarUrl: 'https://a/new.png',
         blog: 'https://rss.example.com',
         profileRefreshError: null,
       });
       expect(data['profileFetchedAt']).toEqual(expect.any(Date));
-      // 이전 ID 테이블은 memberRepo.update가 맞춘다 (따로 동기화하지 않음, member.repository.int.test)
-      expect(repo.syncPreviousGithubIds).not.toHaveBeenCalled();
+      expect(data).not.toHaveProperty('previousGithubIds');
+      // 이름이 바뀌면 이전 ID 목록(테이블)에 옛 ID를 더한다
+      expect(repo.replacePreviousGithubIds).toHaveBeenCalledWith(10, ['ancient', 'crew1']);
     });
 
     it('should fall back to the first candidate when no RSS is available', async () => {
@@ -175,7 +175,6 @@ describe('refreshMemberProfileById', () => {
       expect(repo.update.mock.calls[0]![1]).toMatchObject({
         blog: 'https://first.example.com',
         avatarUrl: 'https://a/old.png',
-        previousGithubIds: null,
       });
     });
 
@@ -201,12 +200,12 @@ describe('refreshMemberProfileById', () => {
       expect(data).toMatchObject({
         githubId: 'crew1',
         githubUserId: 1001,
-        previousGithubIds: '["old"]',
         avatarUrl: 'https://a/old.png',
         profileRefreshError: 'Not Found',
       });
       expect(data).not.toHaveProperty('blog');
-      expect(repo.syncPreviousGithubIds).not.toHaveBeenCalled();
+      // GitHub 조회가 실패하면 이전 ID는 그대로 둔다
+      expect(repo.replacePreviousGithubIds).not.toHaveBeenCalled();
     });
 
     it('should stringify non-Error failures', async () => {
