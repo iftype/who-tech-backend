@@ -44,7 +44,8 @@ backup_db() {
   mkdir -p "$backup_dir" || return 1
   local out
   out="$backup_dir/dev-$(date +%Y%m%d-%H%M%S)-${target_sha:0:7}.db"
-  sqlite3 "$db_path" ".backup '$out'" || return 1
+  # 앱이 쓰는 중이면 잠금이 풀릴 때까지 최대 30초 대기 (없으면 "database is locked"로 즉시 실패)
+  sqlite3 -cmd ".timeout 30000" "$db_path" ".backup '$out'" || return 1
   echo "DB backup: $out"
   # 최근 10개만 보관
   find "$backup_dir" -maxdepth 1 -name '*.db' -printf '%T@ %p\n' | sort -rn | tail -n +11 | cut -d' ' -f2- |

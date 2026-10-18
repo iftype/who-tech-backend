@@ -18,7 +18,8 @@ fi
 
 mkdir -p "$backup_dir"
 out="$backup_dir/dev-$(date +%Y%m%d-%H%M%S).db"
-sqlite3 "$db_path" ".backup '$out'"
+# 앱이 쓰는 중이면 잠금이 풀릴 때까지 최대 30초 대기
+sqlite3 -cmd ".timeout 30000" "$db_path" ".backup '$out'"
 
 result="$(sqlite3 "$out" 'PRAGMA integrity_check;')"
 if [ "$result" != "ok" ]; then
