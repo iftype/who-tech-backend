@@ -154,7 +154,8 @@ describe('refreshMemberProfileById', () => {
         profileRefreshError: null,
       });
       expect(data['profileFetchedAt']).toEqual(expect.any(Date));
-      expect(repo.syncPreviousGithubIds).toHaveBeenCalledWith(10, JSON.stringify(['ancient', 'crew1']));
+      // 이전 ID 테이블은 memberRepo.update가 맞춘다 (따로 동기화하지 않음, member.repository.int.test)
+      expect(repo.syncPreviousGithubIds).not.toHaveBeenCalled();
     });
 
     it('should fall back to the first candidate when no RSS is available', async () => {
@@ -201,7 +202,7 @@ describe('refreshMemberProfileById', () => {
         profileRefreshError: 'Not Found',
       });
       expect(data).not.toHaveProperty('blog');
-      expect(repo.syncPreviousGithubIds).toHaveBeenCalledWith(10, '["old"]');
+      expect(repo.syncPreviousGithubIds).not.toHaveBeenCalled();
     });
 
     it('should stringify non-Error failures', async () => {

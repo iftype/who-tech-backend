@@ -200,6 +200,52 @@ describe('MemberRepository (SQLite)', () => {
       await repo.syncPreviousGithubIds(id, null);
       expect(await ids()).toEqual([]);
     });
+
+    // 검색은 테이블을 읽으므로, previousGithubIds를 쓰는 모든 경로가 테이블도 함께 맞춰야 한다 (ARCHITECTURE_PLAN F-1)
+    const tableIds = async (memberId: number) =>
+      (await prisma.previousGithubId.findMany({ where: { memberId }, orderBy: { githubId: 'asc' } })).map(
+        (r) => r.githubId,
+      );
+
+    it('should keep the table in sync when upsert writes previousGithubIds', async () => {
+      const created = await repo.upsert(workspaceId, 501, {
+        githubId: 'renamed',
+        githubUserId: 501,
+        previousGithubIds: JSON.stringify(['old-name']),
+        workspaceId,
+      });
+      expect(await tableIds(created.id)).toEqual(['old-name']);
+
+      await repo.upsert(workspaceId, 501, {
+        githubId: 'renamed-again',
+        githubUserId: 501,
+        previousGithubIds: JSON.stringify(['old-name', 'renamed']),
+        workspaceId,
+      });
+      expect(await tableIds(created.id)).toEqual(['old-name', 'renamed']);
+    });
+
+    it('should keep the table in sync when patch or update writes previousGithubIds', async () => {
+      const { id } = await addMember('crew2');
+
+      await repo.patch(id, { previousGithubIds: JSON.stringify(['p1']) });
+      expect(await tableIds(id)).toEqual(['p1']);
+
+      await repo.update(id, { previousGithubIds: JSON.stringify(['p1', 'p2']) });
+      expect(await tableIds(id)).toEqual(['p1', 'p2']);
+
+      await repo.patch(id, { previousGithubIds: null });
+      expect(await tableIds(id)).toEqual([]);
+    });
+
+    it('should leave the table alone when previousGithubIds is not written', async () => {
+      const { id } = await addMember('crew3');
+      await repo.syncPreviousGithubIds(id, JSON.stringify(['keep']));
+
+      await repo.patch(id, { nickname: '새닉' });
+      await repo.update(id, { track: 'backend' });
+      expect(await tableIds(id)).toEqual(['keep']);
+    });
   });
 
   describe('deletion', () => {
