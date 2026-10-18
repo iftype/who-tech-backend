@@ -7,6 +7,7 @@ on:
       - CI
       - Deploy to Server
       - Uptime Check
+      - Mutation Test
       - Blog Check
       - Continuous Sync
       - Member Profile Refresh

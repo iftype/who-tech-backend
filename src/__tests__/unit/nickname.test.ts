@@ -6,6 +6,7 @@ import {
   mergeNicknameStat,
   normalizeNickname,
   resolveDisplayNickname,
+  stringifyNicknameStats,
 } from '../../shared/nickname.js';
 
 describe('extractNicknameTokens', () => {
@@ -156,5 +157,78 @@ describe('scoreTopNicknameMatch', () => {
     ]);
     expect(scoreTopNicknameMatch(unsorted, '오영택')).toBeGreaterThanOrEqual(0);
     expect(scoreTopNicknameMatch(unsorted, '체스')).toBe(-1);
+  });
+});
+
+// 뮤테이션 테스트(Stryker)에서 살아남은 변형을 잡기 위한 경계 사례
+describe('normalizeNickname 정제 규칙', () => {
+  it.each([
+    ['  헤일리  ', '헤일리'],
+    ['빌리(정환희)', '빌리'],
+    ['가 (메모) 나', '가 나'],
+    [' ,-[(헤일리', '헤일리'],
+    ['헤일리)] ,-', '헤일리'],
+    ['헤일리!!!.,', '헤일리'],
+    ['헤일리 !', '헤일리'],
+    ['헤일리🙂', '헤일리'],
+    ['김 헤일리', '김 헤일리'],
+    ['-, 헤일리 ,-', '헤일리'],
+  ])('%s → %s', (input, expected) => {
+    expect(normalizeNickname(input)).toBe(expected);
+  });
+});
+
+describe('nickname stats 직렬화·병합', () => {
+  const at = (iso: string) => new Date(iso);
+
+  it('빈 통계는 null로, 나머지는 JSON으로 저장한다', () => {
+    expect(stringifyNicknameStats([])).toBeNull();
+    const stats = [{ nickname: '가람', count: 1, lastSeenAt: '2026-01-01T00:00:00.000Z' }];
+    expect(stringifyNicknameStats(stats)).toBe(JSON.stringify(stats));
+  });
+
+  it('같은 닉네임만 횟수와 마지막 등장 시각을 올린다', () => {
+    const existing = JSON.stringify([
+      { nickname: '가람', count: 2, lastSeenAt: '2026-01-01T00:00:00.000Z' },
+      { nickname: '미션', count: 1, lastSeenAt: '2026-01-01T00:00:00.000Z' },
+    ]);
+
+    const merged = mergeNicknameStat(existing, '가람', at('2026-02-01T00:00:00Z'));
+
+    expect(merged).toEqual([
+      { nickname: '가람', count: 3, lastSeenAt: '2026-02-01T00:00:00.000Z' },
+      { nickname: '미션', count: 1, lastSeenAt: '2026-01-01T00:00:00.000Z' },
+    ]);
+  });
+
+  it('횟수가 많은 순, 같으면 최근에 나온 순으로 정렬한다', () => {
+    const existing = JSON.stringify([
+      { nickname: '옛닉', count: 5, lastSeenAt: '2025-01-01T00:00:00.000Z' },
+      { nickname: '새닉', count: 1, lastSeenAt: '2026-01-01T00:00:00.000Z' },
+    ]);
+
+    const merged = mergeNicknameStat(existing, '최근', at('2026-03-01T00:00:00Z'));
+
+    expect(merged.map((s) => s.nickname)).toEqual(['옛닉', '최근', '새닉']);
+  });
+});
+
+describe('resolveDisplayNickname 우선순위', () => {
+  it('수동 닉네임은 앞뒤 공백을 제거해 쓰고, 공백뿐이면 무시한다', () => {
+    const stats = JSON.stringify([{ nickname: '통계닉', count: 1, lastSeenAt: '2026-01-01T00:00:00.000Z' }]);
+    expect(resolveDisplayNickname('  수동  ', stats, null)).toBe('수동');
+    expect(resolveDisplayNickname('   ', stats, null)).toBe('통계닉');
+  });
+
+  it('통계가 없으면 기본 닉네임을 정제해 쓰고, 그것도 없으면 null', () => {
+    expect(resolveDisplayNickname(null, null, '빌리(정환희)')).toBe('빌리');
+    expect(resolveDisplayNickname(null, null, null)).toBeNull();
+  });
+});
+
+describe('scoreTopNicknameMatch 검색어 정제', () => {
+  it('검색어 앞뒤 공백은 무시한다', () => {
+    const stats = JSON.stringify([{ nickname: '조건형', count: 4, lastSeenAt: '2026-01-01T00:00:00.000Z' }]);
+    expect(scoreTopNicknameMatch(stats, ' 건형 ')).toBe(4);
   });
 });

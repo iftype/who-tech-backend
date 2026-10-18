@@ -17,3 +17,7 @@ dist/
 src/public/admin-spa/node_modules/
 src/public/admin-spa/dist/
 coverage/
+
+# stryker
+.stryker-tmp/
+reports/
