@@ -21,7 +21,7 @@ diff /tmp/before/fingerprint.txt /tmp/after/fingerprint.txt            # 공개�
 cat /tmp/after/checks.txt                                              # 일관성 검사 (모두 0이어야 함)
 ```
 
-- `rehearse.sh`는 복사본에 마이그레이션을 적용하고(외부 요청 차단) 백엔드를 띄워 `scripts/api-fingerprint.mjs`로 응답 지문을, `checks.sql`로 일관성 검사를 남긴다
+- `rehearse.sh`는 복사본에 마이그레이션을 적용하고(외부 요청 차단) 백엔드를 띄워 `scripts/api-fingerprint.mjs`로 응답 지문을, `src/db/consistency.ts`로 일관성 검사를 남긴다
 - 지문 차이는 의도한 것만 있어야 한다 (PR 설명에 근거와 함께 적는다)
 
 ## 운영 반영
@@ -31,7 +31,7 @@ ssh oracle
 cd ~/app/who-tech-backend
 sqlite3 prisma/prisma/dev.db ".timeout 30000" ".backup /home/ubuntu/backups/who-tech/dev-$(date +%Y%m%d-%H%M%S)-pre-<작업>.db"
 node --env-file=.env dist/scripts/<백필>.js
-sqlite3 -readonly prisma/prisma/dev.db < scripts/db-rehearsal/checks.sql
+node --env-file=.env dist/scripts/check-db-consistency.js   # 일관성 검사 (위반 시 종료 코드 1)
 ```
 
 ## 진행 기록

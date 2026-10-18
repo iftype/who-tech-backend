@@ -10,6 +10,7 @@ import { parseCohorts } from '../../shared/cohort-regex.js';
 import { createRepoSyncer } from './sync.repo-sync.js';
 import type { CohortRule } from '../../shared/types/index.js';
 import type { ActivityLogService } from '../activity-log/index.js';
+import { parseCohortRules } from '../../shared/cohort-rules.js';
 export { parsePRsToSubmissions } from './sync.pr-parser.js';
 
 export function createSyncService(deps: {
@@ -83,7 +84,7 @@ export function createSyncService(deps: {
     signal?: AbortSignal,
   ) => {
     const workspace = await workspaceRepo.findByIdOrThrow(workspaceId);
-    const cohortRules: CohortRule[] = JSON.parse(workspace.cohortRules);
+    const cohortRules: CohortRule[] = parseCohortRules(workspace.cohortRules);
     const repos = await missionRepoRepo.findMany({ workspaceId });
     const activeRepos = repos.filter((r) => {
       if (r.status !== 'active') return false;
@@ -111,7 +112,7 @@ export function createSyncService(deps: {
     signal?: AbortSignal,
   ) => {
     const workspace = await workspaceRepo.findByIdOrThrow(workspaceId);
-    const cohortRules: CohortRule[] = JSON.parse(workspace.cohortRules);
+    const cohortRules: CohortRule[] = parseCohortRules(workspace.cohortRules);
     const repos = await missionRepoRepo.findMany({ workspaceId });
     const continuousRepos = repos.filter((r) => r.status === 'active' && r.syncMode === 'continuous');
     return runRepos(
@@ -134,7 +135,7 @@ export function createSyncService(deps: {
     signal?: AbortSignal,
   ) => {
     const workspace = await workspaceRepo.findByIdOrThrow(workspaceId);
-    const cohortRules: CohortRule[] = JSON.parse(workspace.cohortRules);
+    const cohortRules: CohortRule[] = parseCohortRules(workspace.cohortRules);
     const cohortRepos = await cohortRepoRepo.findByCohort(workspaceId, cohort);
 
     let totalSynced = 0;
@@ -179,7 +180,7 @@ export function createSyncService(deps: {
     signal?: AbortSignal,
   ) => {
     const workspace = await workspaceRepo.findByIdOrThrow(workspaceId);
-    const cohortRules: CohortRule[] = JSON.parse(workspace.cohortRules);
+    const cohortRules: CohortRule[] = parseCohortRules(workspace.cohortRules);
     const repos = await missionRepoRepo.findMany({ workspaceId });
     const activeRepos = repos.filter((r) => r.status === 'active');
 

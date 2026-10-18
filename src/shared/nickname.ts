@@ -33,12 +33,24 @@ export function normalizeNickname(nickname: string): string {
   return s.trim();
 }
 
+function isNicknameStat(value: unknown): value is NicknameStat {
+  if (typeof value !== 'object' || value === null) return false;
+  const stat = value as Record<string, unknown>;
+  return typeof stat['nickname'] === 'string' && typeof stat['count'] === 'number';
+}
+
+// Member.nicknameStats(JSON)를 읽는다. 형식이 틀린 값은 통계 없음으로 본다 — 검색 API 전체가 500이 되지 않도록 (ARCHITECTURE_PLAN F-4)
 export function parseNicknameStats(value: string | null | undefined): NicknameStat[] {
   if (!value) {
     return [];
   }
 
-  return JSON.parse(value) as NicknameStat[];
+  try {
+    const parsed: unknown = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed.filter(isNicknameStat) : [];
+  } catch {
+    return [];
+  }
 }
 
 export function stringifyNicknameStats(stats: NicknameStat[]): string | null {

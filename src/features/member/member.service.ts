@@ -14,6 +14,7 @@ import { applyDominantCohort } from './member.cohort-recalc.js';
 
 import type { SubmissionRepository } from '../../db/repositories/submission.repository.js';
 import type { SyncService } from '../sync/index.js';
+import { parseCohortRules } from '../../shared/cohort-rules.js';
 
 export function createMemberService(deps: {
   memberRepo: MemberRepository;
@@ -196,7 +197,7 @@ export function createMemberService(deps: {
       const bannedWordRows = await bannedWordRepo.findAll(workspace.id);
       const bannedWords = new Set(bannedWordRows.map((r) => r.word));
       const cohortRulesRaw = workspace.cohortRules ?? '[]';
-      const cohortRules = JSON.parse(cohortRulesRaw) as { year: number; cohort: number }[];
+      const cohortRules = parseCohortRules(cohortRulesRaw);
       return refreshMemberProfileById(id, bannedWords, true, memberRepo, octokit, cohortRules);
     },
 
@@ -212,7 +213,7 @@ export function createMemberService(deps: {
       const bannedWords = new Set(bannedWordRows.map((r) => r.word));
       const staleHours = input?.staleHours ?? 24;
       const cohortRulesRaw = workspace.cohortRules ?? '[]';
-      const cohortRules = JSON.parse(cohortRulesRaw) as { year: number; cohort: number }[];
+      const cohortRules = parseCohortRules(cohortRulesRaw);
 
       const allMembers = await memberRepo.findWithFilters(workspace.id, {
         ...(input?.cohort !== undefined ? { cohort: input.cohort } : {}),
@@ -312,7 +313,7 @@ export function createMemberService(deps: {
 
       const workspace = await workspaceService.getOrThrow();
       const cohortRulesRaw = workspace.cohortRules ?? '[]';
-      const cohortRules = JSON.parse(cohortRulesRaw) as { year: number; cohort: number }[];
+      const cohortRules = parseCohortRules(cohortRulesRaw);
 
       await applyDominantCohort({
         memberId: id,

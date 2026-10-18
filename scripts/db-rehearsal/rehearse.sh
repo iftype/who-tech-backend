@@ -32,5 +32,6 @@ for _ in $(seq 1 60); do
 done
 
 API_BASE="http://127.0.0.1:$PORT" ADMIN_SECRET="$SECRET" node scripts/api-fingerprint.mjs >"$OUT/fingerprint.txt"
-sqlite3 "$DB" <scripts/db-rehearsal/checks.sql >"$OUT/checks.txt"
+# 일관성 검사 (src/db/consistency.ts). 위반이 있어도 결과를 남기고 계속한다
+npx tsx src/scripts/check-db-consistency.ts >"$OUT/checks.txt" || true
 echo "[rehearsal] 지문 $(wc -l <"$OUT/fingerprint.txt" | tr -d ' ')개 → $OUT/fingerprint.txt, 일관성 검사 → $OUT/checks.txt"

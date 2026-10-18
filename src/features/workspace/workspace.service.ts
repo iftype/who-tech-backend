@@ -1,5 +1,6 @@
 import type { WorkspaceRepository } from '../../db/repositories/workspace.repository.js';
 import type { CohortRule } from '../../shared/types/index.js';
+import { parseCohortRules } from '../../shared/cohort-rules.js';
 
 export function createWorkspaceService(deps: { workspaceRepo: WorkspaceRepository }) {
   const { workspaceRepo } = deps;
@@ -14,7 +15,7 @@ export function createWorkspaceService(deps: { workspaceRepo: WorkspaceRepositor
     }> => {
       const workspace = await workspaceRepo.findOrThrow();
       return {
-        cohortRules: JSON.parse(workspace.cohortRules) as CohortRule[],
+        cohortRules: parseCohortRules(workspace.cohortRules),
         blogSyncEnabled: workspace.blogSyncEnabled,
         profileRefreshEnabled: workspace.profileRefreshEnabled,
       };
@@ -32,7 +33,7 @@ export function createWorkspaceService(deps: { workspaceRepo: WorkspaceRepositor
         ...(input.profileRefreshEnabled !== undefined ? { profileRefreshEnabled: input.profileRefreshEnabled } : {}),
       });
       return {
-        cohortRules: JSON.parse(updated.cohortRules) as CohortRule[],
+        cohortRules: parseCohortRules(updated.cohortRules),
         blogSyncEnabled: updated.blogSyncEnabled,
         profileRefreshEnabled: updated.profileRefreshEnabled,
       };
@@ -52,7 +53,7 @@ export function createWorkspaceService(deps: { workspaceRepo: WorkspaceRepositor
       return {
         id: workspace.id,
         githubOrg: workspace.githubOrg,
-        cohortRules: JSON.parse(workspace.cohortRules) as CohortRule[],
+        cohortRules: parseCohortRules(workspace.cohortRules),
       };
     },
   };

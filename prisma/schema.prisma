@@ -160,6 +160,8 @@ model Submission {
   member        Member      @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
   @@unique([prNumber, missionRepoId])
+  // 멤버별 제출 조회(상세·목록)가 21k행 전체 스캔이던 것을 인덱스 탐색으로 (운영 복사본 1.67ms → 0.006ms)
+  @@index([memberId])
 }
 
 model BlogPost {
