@@ -26,8 +26,8 @@ module.exports = {
   // 래칫: 현재 실측값을 하한으로 CI에서 강제하고, 테스트를 추가할 때마다 올린다 (목표 lines/functions 60)
   coverageThreshold: {
     global: {
-      lines: 36,
-      functions: 30,
+      lines: 45,
+      functions: 38,
     },
   },
   testTimeout: 15000,
