@@ -13,6 +13,6 @@ export default tseslint.config(
     },
   },
   {
-    ignores: ['dist/', 'node_modules/', '.stryker-tmp/', 'reports/'],
+    ignores: ['dist/', 'node_modules/', '.stryker-tmp/', 'reports/', 'coverage/'],
   },
 );

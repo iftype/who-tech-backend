@@ -50,8 +50,8 @@ describe('SSE .catch() handler — res 이미 종료된 경우', () => {
 
   it('서비스 실패 시 error 이벤트를 전송하고 res.end()를 호출한다', async () => {
     const send = makeSendHelper(res);
-    const mockService: any = {
-      syncWorkspace: jest.fn().mockRejectedValue(new Error('github timeout') as never),
+    const mockService = {
+      syncWorkspace: jest.fn<() => Promise<void>>().mockRejectedValue(new Error('github timeout')),
     };
 
     await mockService
@@ -73,8 +73,8 @@ describe('SSE .catch() handler — res 이미 종료된 경우', () => {
   it('에러 도달 전 res가 이미 종료됐으면 write와 end를 호출하지 않는다', async () => {
     const endedRes = makeSse(true);
     const send = makeSendHelper(endedRes);
-    const mockService: any = {
-      syncWorkspace: jest.fn().mockRejectedValue(new Error('client gone') as never),
+    const mockService = {
+      syncWorkspace: jest.fn<() => Promise<void>>().mockRejectedValue(new Error('client gone')),
     };
 
     await mockService.syncWorkspace().catch((err: unknown) => {
