@@ -47,9 +47,9 @@ backup_db() {
   # 앱이 쓰는 중이면 잠금이 풀릴 때까지 최대 30초 대기 (없으면 "database is locked"로 즉시 실패)
   sqlite3 -cmd ".timeout 30000" "$db_path" ".backup '$out'" || return 1
   echo "DB backup: $out"
-  # 최근 10개만 보관
+  # 최근 10개만 보관. 정리 실패는 배포를 막지 않는다 (unlink는 인자 1개만 받으므로 -n 1)
   find "$backup_dir" -maxdepth 1 -name '*.db' -printf '%T@ %p\n' | sort -rn | tail -n +11 | cut -d' ' -f2- |
-    xargs -r -d '\n' unlink
+    xargs -r -d '\n' -n 1 unlink || echo "::warning:: 오래된 백업 정리 실패 (배포는 계속)"
 }
 
 reload() {
