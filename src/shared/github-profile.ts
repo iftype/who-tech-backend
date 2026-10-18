@@ -14,13 +14,13 @@ export function mergePreviousGithubIds(
   existing: readonly string[],
   currentGithubId: string | null | undefined,
   nextGithubId: string,
-): string | null {
+): string[] {
   const merged = new Set(existing);
   if (currentGithubId && currentGithubId !== nextGithubId) {
     merged.add(currentGithubId);
   }
   merged.delete(nextGithubId);
-  return merged.size > 0 ? JSON.stringify([...merged]) : null;
+  return [...merged];
 }
 
 export function shouldRefreshProfile(profileFetchedAt: Date | null | undefined, staleHours = 24): boolean {

@@ -18,11 +18,11 @@ describe('DB consistency checks', () => {
     expect(failed).toEqual([]);
   });
 
-  it('should catch an out-of-range status, a broken JSON column, and a previous-id mismatch', async () => {
+  it('should catch an out-of-range status and a broken JSON column', async () => {
     const member = await prisma.member.findFirstOrThrow({ where: { githubId: 'be-crew' } });
     await prisma.member.update({
       where: { id: member.id },
-      data: { rssStatus: 'broken', nicknameStats: '{"a":1}', previousGithubIds: '["only-in-json"]' },
+      data: { rssStatus: 'broken', nicknameStats: '{"a":1}' },
     });
 
     const failed = Object.fromEntries(
@@ -31,7 +31,6 @@ describe('DB consistency checks', () => {
     expect(failed).toEqual({
       invalid_member_rssStatus: 1,
       invalid_json_nicknameStats: 1,
-      previous_id_missing_in_table: 1,
     });
   });
 });
