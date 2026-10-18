@@ -61,6 +61,15 @@ export const CONSISTENCY_CHECKS: { name: string; sql: string }[] = [
   allowedValue('invalid_teamBlog_rssStatus', 'TeamBlog', 'rssStatus', RSS_STATUSES, false),
   allowedValue('invalid_tecoTalk_matchStatus', 'TecoTalk', 'matchStatus', TECOTALK_MATCH_STATUSES, false),
   allowedValue('invalid_activityLog_source', 'ActivityLog', 'source', ACTIVITY_SOURCES, true),
+  // 기수 번호 참조: FK 대신 감시한다 (SQLite 테이블 재생성 위험 대비 이득이 작아서, F-6 결정)
+  ...[
+    ['cohortRepo_unknown_cohort', 'CohortRepo'],
+    ['blogPost_unknown_cohort', 'BlogPost'],
+    ['tecoTalk_unknown_cohort', 'TecoTalk'],
+  ].map(([name, table]) => ({
+    name: name!,
+    sql: `SELECT COUNT(*) AS n FROM "${table}" WHERE "cohort" IS NOT NULL AND "cohort" NOT IN (SELECT "number" FROM "Cohort")`,
+  })),
   // 비정규화: 블로그 글의 작성자 정보 사본이 작성자와 같아야 한다
   {
     name: 'blogpost_track_mismatch',

@@ -71,6 +71,10 @@ function makeRepo(member: ReturnType<typeof makeMember> | null) {
       return state;
     }),
     syncPreviousGithubIds: jest.fn<(...args: unknown[]) => Promise<unknown>>().mockResolvedValue(undefined),
+    // 이전 ID는 테이블에서 읽는다 (테스트에서는 멤버의 previousGithubIds를 테이블 값으로 본다)
+    findPreviousGithubIds: jest.fn<(...args: unknown[]) => Promise<string[]>>(async () =>
+      member?.previousGithubIds ? (JSON.parse(member.previousGithubIds) as string[]) : [],
+    ),
     deleteParticipationsByCohort: jest.fn<(...args: unknown[]) => Promise<unknown>>().mockResolvedValue(undefined),
     upsertParticipation: jest.fn<(...args: unknown[]) => Promise<unknown>>().mockResolvedValue(undefined),
   };

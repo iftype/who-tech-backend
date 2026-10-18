@@ -285,6 +285,10 @@ export function createMemberRepository(db: PrismaClient) {
       });
     },
 
+    // 이전 GitHub ID 목록. PreviousGithubId 테이블이 기준이다 (ARCHITECTURE_PLAN F-1)
+    findPreviousGithubIds: async (memberId: number): Promise<string[]> =>
+      (await db.previousGithubId.findMany({ where: { memberId }, orderBy: { id: 'asc' } })).map((r) => r.githubId),
+
     // 이전 GitHub ID 동기화 (previousGithubIds JSON + PreviousGithubId 테이블)
     syncPreviousGithubIds,
 
