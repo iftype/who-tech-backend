@@ -7,9 +7,10 @@ import PQueue from 'p-queue';
 import { normalizeBlogUrl } from '../../shared/blog.js';
 import { buildCohortList } from '../../shared/member-cohort.js';
 import { shouldRefreshProfile } from '../../shared/github-profile.js';
-import { fetchUserProfile, detectCohort } from '../sync/github.service.js';
+import { fetchUserProfile } from '../sync/github.service.js';
 import { toMemberResponse } from './member.response.js';
 import { refreshMemberProfileById } from './member.profile-refresh.js';
+import { applyDominantCohort } from './member.cohort-recalc.js';
 
 import type { SubmissionRepository } from '../../db/repositories/submission.repository.js';
 import type { SyncService } from '../sync/sync.service.js';
@@ -313,58 +314,13 @@ export function createMemberService(deps: {
       const cohortRulesRaw = workspace.cohortRules ?? '[]';
       const cohortRules = JSON.parse(cohortRulesRaw) as { year: number; cohort: number }[];
 
-      const mergedSubmissions = member.submissions.filter((s) => s.status === 'merged');
-      if (mergedSubmissions.length < 3) {
-        const updated = await memberRepo.findByIdWithRelations(id);
-        return updated ? toMemberResponse(updated) : null;
-      }
-
-      const cohortFreq = new Map<number, number>();
-      for (const sub of mergedSubmissions) {
-        const cohort = detectCohort(new Date(sub.submittedAt), cohortRules);
-        if (cohort != null) {
-          cohortFreq.set(cohort, (cohortFreq.get(cohort) ?? 0) + 1);
-        }
-      }
-
-      const totalWithCohort = [...cohortFreq.values()].reduce((sum, c) => sum + c, 0);
-      if (totalWithCohort < 3) {
-        const updated = await memberRepo.findByIdWithRelations(id);
-        return updated ? toMemberResponse(updated) : null;
-      }
-
-      const sorted = [...cohortFreq.entries()].sort((a, b) => b[1] - a[1]);
-      const [dominantCohort, dominantCount] = sorted[0]!;
-      const dominanceRatio = dominantCount / totalWithCohort;
-
-      if (dominanceRatio < 0.5) {
-        const updated = await memberRepo.findByIdWithRelations(id);
-        return updated ? toMemberResponse(updated) : null;
-      }
-
-      const currentCohorts = buildCohortList(member.memberCohorts);
-
-      for (const current of currentCohorts) {
-        const isStaff = current.roles.some((r) => r === 'coach' || r === 'reviewer');
-        if (isStaff) continue;
-        if (!cohortFreq.has(current.cohort)) {
-          await memberRepo.deleteParticipationsByCohort(id, current.cohort);
-        }
-      }
-
-      const remainingCrewCohorts = currentCohorts.filter(
-        (c) => !c.roles.some((r) => r === 'coach' || r === 'reviewer'),
-      );
-
-      for (const c of remainingCrewCohorts) {
-        if (c.cohort !== dominantCohort) {
-          await memberRepo.deleteParticipationsByCohort(id, c.cohort);
-        }
-      }
-
-      if (!remainingCrewCohorts.some((c) => c.cohort === dominantCohort)) {
-        await memberRepo.upsertParticipation(id, dominantCohort, 'crew');
-      }
+      await applyDominantCohort({
+        memberId: id,
+        memberCohorts: member.memberCohorts,
+        submissions: member.submissions,
+        cohortRules,
+        memberRepo,
+      });
 
       const updated = await memberRepo.findByIdWithRelations(id);
       return updated ? toMemberResponse(updated) : null;

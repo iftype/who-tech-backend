@@ -16,6 +16,7 @@ export default {
     'src/features/sync/sync.pr-parser.ts',
     'src/features/tecotalk/tecotalk.parser.ts',
     'src/features/member/member.profile-refresh.ts',
+    'src/features/member/member.cohort-recalc.ts',
   ],
   coverageAnalysis: 'perTest',
   thresholds: { high: 80, low: 70, break: 70 },
