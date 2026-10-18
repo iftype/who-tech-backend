@@ -45,8 +45,8 @@ jobs:
       - name: Typecheck
         run: npx tsc --noEmit
 
-      - name: Test (unit + integration)
-        run: npm test
+      - name: Test (unit + integration, coverage threshold)
+        run: npm run test:coverage
 
       - name: Build (server + admin-spa)
         run: npm run build
