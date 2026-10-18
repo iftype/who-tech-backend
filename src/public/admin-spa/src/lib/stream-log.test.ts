@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { formatDate, formatStep } from './sync-format';
+import { formatStep, logColor } from './stream-log';
+import { formatDate } from '../pages/sync/sync-format';
 
 describe('formatStep', () => {
   it('should keep strings and stringify primitives', () => {
@@ -29,5 +30,14 @@ describe('formatDate', () => {
 
   it('should format dates in Korean locale', () => {
     expect(formatDate('2026-10-18T03:00:00Z')).toBe(new Date('2026-10-18T03:00:00Z').toLocaleString('ko-KR'));
+  });
+});
+
+describe('logColor', () => {
+  it('should color by log type', () => {
+    expect(logColor('done')).toBe('text-green-400');
+    expect(logColor('error')).toBe('text-red-400');
+    expect(logColor('info')).toBe('text-blue-400');
+    expect(logColor('progress')).toBe('text-gray-300');
   });
 });
