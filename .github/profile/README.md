@@ -23,8 +23,7 @@
 ## Branch Strategy
 
 ```
-main      ← 배포 브랜치 (PR only)
-develop   ← 통합 브랜치
+main      ← 배포 브랜치 (PR only, squash)
 feat/#이슈번호-설명
 fix/#이슈번호-설명
 chore/설명

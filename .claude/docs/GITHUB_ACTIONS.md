@@ -2,26 +2,24 @@
 
 ## Workflows
 
-### test.yml
+### ci.yml
 
-- 트리거: PR (develop/main 대상)
-- 실행: `npm run test:unit` (유닛 테스트만)
+- 트리거: PR(main), main push, `workflow_dispatch`(release-please 릴리즈 PR용)
+- 실행: `lint` → `format:check` → `tsc --noEmit` → `npm test`(unit + integration, 임시 SQLite) → `build`(admin-spa 포함)
+- job 이름 `ci`가 main 브랜치 보호의 **필수 상태 체크**
 
 ### deploy.yml
 
-- 트리거: main 브랜치 push
-- 실행: `POST https://iftype.site/admin/deploy` 웹훅 호출 (Bearer 인증)
-- 서버가 detached process로 아래 명령 실행 (응답은 즉시 `{ ok: true }` 반환):
-  ```bash
-  git pull origin main
-  npm install --ignore-scripts
-  npx prisma generate
-  npm run build
-  npx prisma migrate deploy
-  pm2 reload ecosystem.config.cjs --update-env
-  ```
+- 트리거: `workflow_run` — main의 CI가 **성공**한 push 커밋만. 비상용 `workflow_dispatch`
+- 실행: `POST https://iftype.site/admin/deploy` → 서버 `scripts/deploy.sh` → `scripts/deploy-run.sh` (`.claude/docs/deploy.md`)
+- 배포 후 `/health`의 `commit`이 대상 SHA가 될 때까지 최대 10분 확인, 아니면 실패 (서버는 실패 시 자동 롤백)
 - Secrets 필요: `ADMIN_SECRET`
 - 이 방식을 선택한 이유: Oracle Cloud VCN Security List가 GitHub Actions IP의 port 22 인바운드를 차단 → SSH 방식 불가
+
+### release-please.yml
+
+- 트리거: main push
+- 실행: 릴리즈 PR(버전·CHANGELOG) 생성/갱신, 머지 시 태그·GitHub Release. 릴리즈 PR에 CI를 dispatch하고 승인 대기 실행을 승인 (GITHUB_TOKEN PR 제약 우회)
 
 ### sync.yml
 
