@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { computeDominantTrack } from '../../shared/member-track.js';
+import { computeDominantTrack, summarizeTracks } from '../../shared/member-track.js';
 
 const sub = (track: string | null, status = 'merged') => ({ status, missionRepo: { track } });
 
@@ -27,5 +27,27 @@ describe('computeDominantTrack', () => {
         sub('backend'),
       ]),
     ).toBe('backend');
+  });
+});
+
+describe('summarizeTracks', () => {
+  it('should prefer the explicit track and merge explicit, inferred, and submitted tracks', () => {
+    expect(
+      summarizeTracks('frontend', [sub('backend'), sub('backend'), sub('android'), sub('ios', 'closed'), sub(null)]),
+    ).toEqual({
+      track: 'frontend',
+      tracks: ['frontend', 'backend', 'android'],
+    });
+  });
+
+  it('should fall back to the inferred track', () => {
+    expect(summarizeTracks(null, [sub('backend'), sub('android'), sub('backend')])).toEqual({
+      track: 'backend',
+      tracks: ['backend', 'android'],
+    });
+  });
+
+  it('should return no tracks without data', () => {
+    expect(summarizeTracks(null, [])).toEqual({ track: null, tracks: [] });
   });
 });
