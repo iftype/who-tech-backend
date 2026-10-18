@@ -1,0 +1,28 @@
+name: Uptime Check
+
+# 15분마다 운영 /health 확인. 실패하면 alerts.yml이 이슈로 알린다
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+    inputs:
+      url:
+        description: '확인할 URL (알림 테스트용)'
+        required: false
+        default: 'https://iftype.site/health'
+
+permissions:
+  contents: read
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check /health
+        env:
+          URL: ${{ inputs.url || 'https://iftype.site/health' }}
+        run: |
+          body="$(curl -fsS --max-time 10 --retry 3 --retry-delay 20 --retry-all-errors "$URL")"
+          echo "$body"
+          echo "$body" | grep -q '"status":"ok"'
