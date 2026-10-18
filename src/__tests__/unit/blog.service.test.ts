@@ -1,6 +1,11 @@
 import { describe, expect, it, jest, beforeEach } from '@jest/globals';
 import type { Mock } from '@jest/globals';
-import { resolveRSSUrlsForBlog, sanitizeXml, createBlogService } from '../../features/blog/blog.service.js';
+import {
+  resolveRSSUrlsForBlog,
+  sanitizeXml,
+  createBlogService,
+  isNonPostPageUrl,
+} from '../../features/blog/blog.service.js';
 import type { MemberWithRelations } from '../../db/repositories/member.repository.js';
 
 describe('resolveRSSUrlsForBlog', () => {
@@ -25,6 +30,30 @@ describe('resolveRSSUrlsForBlog', () => {
       'https://lns13301.github.io/github-blog/atom.xml',
       'https://lns13301.github.io/github-blog/index.xml',
     ]);
+  });
+});
+
+describe('isNonPostPageUrl', () => {
+  it.each([
+    'https://uechann.github.io/page/guestbook/',
+    'https://uechann.github.io/page/about/',
+    'https://meatsby.github.io/tags/cs',
+    'https://myblog.tistory.com/tag/java',
+    'https://myblog.com/categories/dev/',
+    'https://myblog.com/about',
+    'https://myblog.com/guestbook/',
+  ])('%s 는 글이 아닌 페이지다', (url) => {
+    expect(isNonPostPageUrl(url)).toBe(true);
+  });
+
+  it.each([
+    'https://junroot.github.io/blog/posts/%ED%95%B4%EB%8B%B9',
+    'https://velog.io/@someone/about-react-hooks',
+    'https://myblog.tistory.com/46',
+    'https://myblog.com/2024/01/page-object-pattern',
+    'not a url',
+  ])('%s 는 글로 본다', (url) => {
+    expect(isNonPostPageUrl(url)).toBe(false);
   });
 });
 
@@ -196,6 +225,23 @@ describe('createBlogService - syncBlogs', () => {
 
     expect(upsert).toHaveBeenCalledTimes(1);
     expect(result.synced).toBe(1);
+    fetchSpy.mockRestore();
+  });
+
+  it('RSS의 정적 페이지 항목(about·태그 등)은 수집하지 않는다', async () => {
+    const pageRssXml = validRssXml.replace('https://testblog.com/post/1', 'https://testblog.com/page/about/');
+    const fetchSpy = jest.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: async () => pageRssXml,
+    } as Response);
+    const upsert = (jest.fn() as Mock<() => Promise<void>>).mockResolvedValue(undefined);
+    const deps = makeMockDeps({ upsert });
+    (deps.memberRepo.findWithFilters as Mock<() => Promise<MemberWithRelations[]>>).mockResolvedValue([mockMember]);
+
+    await createBlogService(deps).syncBlogs(1);
+
+    expect(upsert).not.toHaveBeenCalled();
     fetchSpy.mockRestore();
   });
 

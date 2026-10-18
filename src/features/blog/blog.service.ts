@@ -5,11 +5,11 @@ import { HttpError } from '../../shared/http.js';
 import { buildCohortList } from '../../shared/member-cohort.js';
 import { computeDominantTrack } from '../../shared/member-track.js';
 import { decodeHtml } from '../../shared/html.js';
-import { fetchRSSItems, errorMessage } from './blog.rss.js';
+import { fetchRSSItems, errorMessage, isNonPostPageUrl } from './blog.rss.js';
 import type { BlogSyncFailure } from './blog.rss.js';
 
 export type { BlogSyncFailure, BlogSyncProgress, RssCheckResult } from './blog.rss.js';
-export { sanitizeXml, resolveRSSUrlsForBlog, probeRss } from './blog.rss.js';
+export { sanitizeXml, resolveRSSUrlsForBlog, probeRss, isNonPostPageUrl } from './blog.rss.js';
 
 // 기간이 지난 글은 지우지 않는다. 이 기간 안의 글만 "RSS에서 빠졌으면 삭제" 대상이다
 const FEED_REMOVAL_WINDOW_DAYS = 90;
@@ -155,6 +155,7 @@ export function createBlogService(deps: {
 
     for (const item of result.items) {
       if (!item.link || !item.title || !item.pubDate) continue;
+      if (isNonPostPageUrl(item.link)) continue;
       const publishedAt = new Date(item.pubDate);
       // RSS에 남아 있는 글은 오래됐어도 수집해 보존한다
       if (isNaN(publishedAt.getTime())) continue;
