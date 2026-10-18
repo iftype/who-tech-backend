@@ -2,7 +2,7 @@
 
 ## 스택
 
-- Node.js 20 + TypeScript strict / Express / Prisma / SQLite
+- Node.js 24 (`.nvmrc`) + TypeScript strict / Express / Prisma / SQLite
 - Oracle Cloud AMD · iftype.site · PM2 · Nginx
 - PM2 앱 이름: `backend`
 
@@ -89,7 +89,6 @@ npx prisma migrate dev  # 마이그레이션 생성+적용
 ## 브랜치 전략
 
 ```
-main     ← 배포 브랜치 (PR + 리뷰 1명)
-develop  ← 기능 통합
-feat/#이슈번호-설명
+main     ← 배포 브랜치 (PR only, squash, 필수 체크 ci, 머지 = 운영 배포)
+<type>/<topic>  예: feat/health-endpoint, fix/#12-설명
 ```

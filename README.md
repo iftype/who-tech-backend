@@ -1,10 +1,11 @@
 # backend
 
-우아한테크코스 크루 검색 서비스 백엔드. Node.js 20 / Express / Prisma / SQLite.
+우아한테크코스 크루 검색 서비스 백엔드. Node.js 24 (`.nvmrc`, `nvm use`) / Express / Prisma / SQLite.
 
 ## 빠른 시작
 
 ```bash
+nvm use            # .nvmrc (Node 24)
 npm install
 npx prisma generate
 npm run seed        # Role + Workspace 초기화

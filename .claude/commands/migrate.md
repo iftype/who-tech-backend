@@ -3,7 +3,7 @@ Safe Prisma migration workflow.
 Step 1 — Show current migration state:
 
 ```bash
-cd /Users/iftype/Projects/Side/who-tech-course/backend && npx prisma migrate status
+npx prisma migrate status   # 레포 루트에서 실행
 ```
 
 Step 2 — Ask the user for a migration name (snake_case, e.g. `add_person_table`).

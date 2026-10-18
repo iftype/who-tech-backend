@@ -2,6 +2,18 @@
 
 ---
 
+## 2026-10-18
+
+IMPROVEMENT_PLAN Phase 1~4 (루트 `who-tech/IMPROVEMENT_PLAN.md`)
+
+- Node 20 → **24.22.0** (nvm, `.nvmrc`). 서버 backend와 pm2 7 데몬 모두 Node 24, systemd 유닛 재생성. 시스템 Node 20은 `/usr/bin/pm2` CLI용으로만 남김
+- `slack-emoji` pm2 앱 삭제 (백업 `~/backups/slack-emoji-20261017-213100.tgz`)
+- CI(`ci.yml`) 필수 체크 + CI 성공 후에만 배포, `/health` 추가, 배포 스크립트 분리 실행·DB 백업·자동 롤백
+- 일일 DB 백업 crontab (`.claude/docs/backup.md`), `MissionRepo.workspaceId` FK 마이그레이션
+- release-please(v1.1.0~), Dependabot
+
+---
+
 ## 2026-04-07
 
 자동 배포 deploy.yml이 Node 버전/빌드 단계 정상화 상태 유지.
