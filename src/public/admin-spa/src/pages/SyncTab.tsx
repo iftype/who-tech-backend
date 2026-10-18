@@ -11,33 +11,9 @@ import type {
   Workspace,
   SyncQueueJob,
 } from '../lib/types.js';
-
-type JobType = 'sync' | 'continuous' | 'cohort-repos';
-
-interface LogEntry {
-  ts: number;
-  type: 'progress' | 'done' | 'error' | 'info';
-  message: string;
-}
-
-function formatStep(data: unknown): string {
-  if (typeof data === 'string') return data;
-  if (typeof data === 'object' && data !== null) {
-    const d = data as Record<string, unknown>;
-    const parts: string[] = [];
-    if (d['repo']) parts.push(String(d['repo']));
-    if (d['message']) parts.push(String(d['message']));
-    if (d['count'] !== undefined) parts.push(`${d['count']}건`);
-    if (d['percent'] !== undefined) parts.push(`${d['percent']}%`);
-    if (parts.length) return parts.join(' · ');
-    return JSON.stringify(data);
-  }
-  return String(data);
-}
-
-function formatDate(value: string | null | undefined): string {
-  return value ? new Date(value).toLocaleString('ko-KR') : '없음';
-}
+import { formatDate, formatStep, type JobType, type LogEntry, type RecentSyncJob } from './sync/sync-format.js';
+import { SyncScheduleStatus } from './sync/SyncScheduleStatus.js';
+import { RecentJobsTable } from './sync/RecentJobsTable.js';
 
 export default function SyncTab() {
   const [cohortInput, setCohortInput] = useState('');
@@ -116,26 +92,16 @@ export default function SyncTab() {
   );
   const latestTecoTalk = tecoTalks[0];
 
-  interface SyncJob {
-    id: string;
-    status: string;
-    message: string;
-    startedAt: string;
-    finishedAt: string | null;
-    repoName?: string;
-    source?: string;
-  }
-
   const { data: repoJobs = [] } = useQuery({
     queryKey: ['repo-sync-jobs'],
-    queryFn: () => apiFetch<SyncJob[]>('/admin/repos/sync-jobs'),
+    queryFn: () => apiFetch<RecentSyncJob[]>('/admin/repos/sync-jobs'),
     staleTime: 10_000,
     refetchInterval: running ? 2000 : 10_000,
   });
 
   const { data: blogJobs = [] } = useQuery({
     queryKey: ['blog-sync-jobs'],
-    queryFn: () => apiFetch<SyncJob[]>('/admin/blog/sync-jobs'),
+    queryFn: () => apiFetch<RecentSyncJob[]>('/admin/blog/sync-jobs'),
     staleTime: 10_000,
     refetchInterval: running ? 2000 : 10_000,
   });
@@ -153,8 +119,8 @@ export default function SyncTab() {
   );
 
   const allJobs = [...recentQueueJobs, ...repoJobs, ...blogJobs].sort((a, b) => {
-    const aDate = new Date((a as SyncQueueJob).completedAt ?? (a as (typeof repoJobs)[number]).startedAt ?? 0);
-    const bDate = new Date((b as SyncQueueJob).completedAt ?? (b as (typeof repoJobs)[number]).startedAt ?? 0);
+    const aDate = new Date((a as SyncQueueJob).completedAt ?? (a as RecentSyncJob).startedAt ?? 0);
+    const bDate = new Date((b as SyncQueueJob).completedAt ?? (b as RecentSyncJob).startedAt ?? 0);
     return bDate.getTime() - aDate.getTime();
   });
 
@@ -366,78 +332,12 @@ export default function SyncTab() {
         </div>
       )}
 
-      <div className="bg-white border border-gray-200 rounded p-4 space-y-3">
-        <h3 className="text-xs font-semibold text-gray-600">싱크 스케줄 상태</h3>
-        <div className="grid grid-cols-3 gap-3">
-          <div className="bg-gray-50 border border-gray-200 rounded p-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-gray-500">블로그 RSS 자동 싱크</span>
-              <span
-                className={`text-xs px-2 py-0.5 rounded font-medium ${
-                  workspace?.blogSyncEnabled ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
-                }`}
-              >
-                {workspace?.blogSyncEnabled ? '활성' : '비활성'}
-              </span>
-            </div>
-            {workspace?.blogSyncEnabled && (
-              <p className="text-[10px] text-gray-400 mt-1">다음 싱크까지 {remainingTime}</p>
-            )}
-          </div>
-          <div className="bg-gray-50 border border-gray-200 rounded p-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-gray-500">프로필 자동 새로고침</span>
-              <span
-                className={`text-xs px-2 py-0.5 rounded font-medium ${
-                  workspace?.profileRefreshEnabled ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
-                }`}
-              >
-                {workspace?.profileRefreshEnabled ? '활성' : '비활성'}
-              </span>
-            </div>
-            {workspace?.profileRefreshEnabled && (
-              <p className="text-[10px] text-gray-400 mt-1">다음 새로고침까지 {remainingTime}</p>
-            )}
-            {status?.lastProfileRefreshAt && (
-              <p className="text-[10px] text-gray-400 mt-1">
-                마지막:{' '}
-                {new Date(status.lastProfileRefreshAt).toLocaleString('ko-KR', {
-                  month: '2-digit',
-                  day: '2-digit',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
-              </p>
-            )}
-          </div>
-          <div className="bg-gray-50 border border-gray-200 rounded p-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-gray-500">연속 싱크 대상 레포</span>
-              <span className="text-xs font-semibold text-gray-900">{continuousRepos.length}개</span>
-            </div>
-          </div>
-        </div>
-        {continuousRepos.length > 0 && (
-          <div className="max-h-40 overflow-y-auto rounded border border-gray-200">
-            <table className="w-full text-xs">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="text-left font-medium text-gray-500 px-2 py-1">레포</th>
-                  <th className="text-left font-medium text-gray-500 px-2 py-1">트랙</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {continuousRepos.map((r) => (
-                  <tr key={r.id} className="hover:bg-gray-50">
-                    <td className="px-2 py-1 font-medium text-gray-700 truncate max-w-[200px]">{r.name}</td>
-                    <td className="px-2 py-1 text-gray-500">{r.track ?? '—'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      <SyncScheduleStatus
+        workspace={workspace}
+        status={status}
+        remainingTime={remainingTime}
+        continuousRepos={continuousRepos}
+      />
 
       {/* 블로그 싱크 */}
       <div className="bg-white border border-gray-200 rounded p-4">
@@ -653,85 +553,7 @@ export default function SyncTab() {
         </div>
       )}
 
-      {allJobs.length > 0 && (
-        <div className="bg-white border border-gray-200 rounded p-4">
-          <h3 className="text-xs font-semibold text-gray-600 mb-3">최근 싱크 작업 ({allJobs.length})</h3>
-          <div className="max-h-64 overflow-y-auto rounded border border-gray-200">
-            <table className="w-full text-xs">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="text-left font-medium text-gray-500 px-3 py-2">시작</th>
-                  <th className="text-left font-medium text-gray-500 px-3 py-2">종류</th>
-                  <th className="text-left font-medium text-gray-500 px-3 py-2">상태</th>
-                  <th className="text-left font-medium text-gray-500 px-3 py-2">메시지</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {allJobs.map((j) => {
-                  const isQueueJob = !('repoName' in j);
-                  const queueJob = j as SyncQueueJob;
-                  const repoJob = j as (typeof repoJobs)[number];
-                  return (
-                    <tr key={j.id} className="hover:bg-gray-50">
-                      <td className="px-3 py-2 text-gray-500 whitespace-nowrap">
-                        {isQueueJob
-                          ? new Date(queueJob.completedAt ?? queueJob.createdAt).toLocaleString('ko-KR')
-                          : repoJob.startedAt
-                            ? new Date(repoJob.startedAt).toLocaleString('ko-KR')
-                            : '—'}
-                      </td>
-                      <td className="px-3 py-2">
-                        {isQueueJob ? (
-                          <span className="text-xs px-1.5 py-0.5 rounded font-medium border bg-purple-50 text-purple-700 border-purple-200">
-                            {queueJob.type === 'workspace'
-                              ? '전체'
-                              : queueJob.type === 'continuous'
-                                ? '연속'
-                                : '기수레포'}
-                            {queueJob.cohort != null ? ` (${queueJob.cohort}기)` : ''}
-                          </span>
-                        ) : (
-                          <span
-                            className={`text-xs px-1.5 py-0.5 rounded font-medium border ${
-                              repoJob.repoName
-                                ? 'bg-blue-50 text-blue-700 border-blue-200'
-                                : 'bg-green-50 text-green-700 border-green-200'
-                            }`}
-                          >
-                            {repoJob.repoName ? '레포' : '블로그'}
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-3 py-2">
-                        <span
-                          className={`text-xs px-1.5 py-0.5 rounded font-medium border ${
-                            (isQueueJob ? queueJob.status : repoJob.status) === 'completed'
-                              ? 'bg-green-100 text-green-700 border-green-200'
-                              : (isQueueJob ? queueJob.status : repoJob.status) === 'failed'
-                                ? 'bg-red-100 text-red-700 border-red-200'
-                                : (isQueueJob ? queueJob.status : repoJob.status) === 'running'
-                                  ? 'bg-blue-100 text-blue-700 border-blue-200'
-                                  : 'bg-gray-100 text-gray-500 border-gray-200'
-                          }`}
-                        >
-                          {isQueueJob ? queueJob.status : repoJob.status}
-                        </span>
-                      </td>
-                      <td className="px-3 py-2 text-gray-700 truncate max-w-[300px]">
-                        {isQueueJob
-                          ? typeof queueJob.result?.totalSynced === 'number'
-                            ? `✓ ${queueJob.result.totalSynced}개`
-                            : (queueJob.error ?? '—')
-                          : `${repoJob.repoName ? `${repoJob.repoName} — ` : ''}${repoJob.message}`}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+      {allJobs.length > 0 && <RecentJobsTable jobs={allJobs} />}
     </div>
   );
 }
