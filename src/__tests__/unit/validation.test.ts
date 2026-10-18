@@ -161,6 +161,12 @@ describe('validation', () => {
       ['candidateReason', 1],
       ['cohorts', [7, '8']],
       ['level', '1'],
+      // 허용 목록 밖의 문자열 (shared/domain.ts, ARCHITECTURE_PLAN F-3)
+      ['track', 'ios'],
+      ['type', 'team'],
+      ['tabCategory', 'misc'],
+      ['status', 'archived'],
+      ['syncMode', 'hourly'],
     ])('should reject invalid %s', (field, value) => {
       expectBadRequest(() => parseRepoCreateInput({ ...base, [field]: value }), `invalid ${field}`);
     });
@@ -207,6 +213,11 @@ describe('validation', () => {
       ['candidateReason', 1],
       ['cohorts', 'x'],
       ['level', '1'],
+      ['track', 'ios'],
+      ['type', 'team'],
+      ['tabCategory', 'misc'],
+      ['status', 'archived'],
+      ['syncMode', 'hourly'],
     ])('should reject invalid %s', (field, value) => {
       expectBadRequest(() => parseRepoUpdateInput({ [field]: value }), `invalid ${field}`);
     });

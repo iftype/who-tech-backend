@@ -1,3 +1,11 @@
+import {
+  isOneOf,
+  MISSION_REPO_STATUSES,
+  MISSION_REPO_TYPES,
+  SYNC_MODES,
+  TAB_CATEGORIES,
+  TRACKS,
+} from '../../shared/domain.js';
 import { badRequest } from '../../shared/http.js';
 import { isNumberArray, isRecord } from '../../shared/validation.js';
 
@@ -43,7 +51,7 @@ export function parseRepoCreateInput(body: unknown): {
     badRequest('invalid repo payload');
   }
 
-  if (track !== undefined && track !== null && typeof track !== 'string') {
+  if (track !== undefined && track !== null && !isOneOf(TRACKS, track)) {
     badRequest('invalid track');
   }
 
@@ -51,19 +59,19 @@ export function parseRepoCreateInput(body: unknown): {
     badRequest('invalid description');
   }
 
-  if (type !== undefined && typeof type !== 'string') {
+  if (type !== undefined && !isOneOf(MISSION_REPO_TYPES, type)) {
     badRequest('invalid type');
   }
 
-  if (tabCategory !== undefined && typeof tabCategory !== 'string') {
+  if (tabCategory !== undefined && !isOneOf(TAB_CATEGORIES, tabCategory)) {
     badRequest('invalid tabCategory');
   }
 
-  if (status !== undefined && typeof status !== 'string') {
+  if (status !== undefined && !isOneOf(MISSION_REPO_STATUSES, status)) {
     badRequest('invalid status');
   }
 
-  if (syncMode !== undefined && typeof syncMode !== 'string') {
+  if (syncMode !== undefined && !isOneOf(SYNC_MODES, syncMode)) {
     badRequest('invalid syncMode');
   }
 
@@ -116,23 +124,23 @@ export function parseRepoUpdateInput(body: unknown): {
     badRequest('invalid description');
   }
 
-  if (track !== undefined && track !== null && typeof track !== 'string') {
+  if (track !== undefined && track !== null && !isOneOf(TRACKS, track)) {
     badRequest('invalid track');
   }
 
-  if (type !== undefined && typeof type !== 'string') {
+  if (type !== undefined && !isOneOf(MISSION_REPO_TYPES, type)) {
     badRequest('invalid type');
   }
 
-  if (tabCategory !== undefined && typeof tabCategory !== 'string') {
+  if (tabCategory !== undefined && !isOneOf(TAB_CATEGORIES, tabCategory)) {
     badRequest('invalid tabCategory');
   }
 
-  if (status !== undefined && typeof status !== 'string') {
+  if (status !== undefined && !isOneOf(MISSION_REPO_STATUSES, status)) {
     badRequest('invalid status');
   }
 
-  if (syncMode !== undefined && typeof syncMode !== 'string') {
+  if (syncMode !== undefined && !isOneOf(SYNC_MODES, syncMode)) {
     badRequest('invalid syncMode');
   }
 
