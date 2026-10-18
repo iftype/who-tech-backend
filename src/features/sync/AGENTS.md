@@ -28,7 +28,8 @@ src/features/sync/
 ├── sync.repo-sync.ts      # Per-repository sync: fetch, parse, profile resolve, upsert
 ├── sync.pr-parser.ts      # PR to Submission parsing with cohort detection
 ├── sync.queue.ts          # In-memory job queue with SSE progress
-├── github.service.ts      # GitHub API client and helpers
+├── sync.ports.ts          # Ports other features implement (RepoSyncRunner, WorkspaceBlogSyncRunner)
+├── index.ts               # Public entry point for other features
 └── sync.route.ts          # HTTP routes for admin sync endpoints
 ```
 
