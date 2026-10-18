@@ -8,7 +8,7 @@
 | ----------------------- | ---- | ------------------------------------------------------------------------- |
 | `blog.service.ts`       | 147  | RSS 기반 블로그 동기화 핵심 로직. 90일 저장/100개 롤오버/멤버별 병렬 정리 |
 | `blog.admin.service.ts` | 192  | job 큐잉, 자동/수동 sync 조율, 활동 로그 기록                             |
-| `blog.rss.ts`           | 177  | RSS fetch, URL 후보 생성, velog/tistory/medium 특화 처리                  |
+| `infra/rss/rss.ts`      | 177  | RSS fetch, URL 후보 생성, velog/tistory/medium 특화 처리                  |
 | `blog.backfill.ts`      | 91   | GitHub 프로필에서 블로그 후보를 추출해 RSS 검증 후 자동 등록              |
 | `blog.route.ts`         | 71   | sync, backfill, new-posts 엔드포인트                                      |
 

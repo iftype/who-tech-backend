@@ -32,7 +32,7 @@ import { createBlogService } from './features/blog/blog.service.js';
 import { createBlogAdminService } from './features/blog/blog.admin.service.js';
 import { createCohortRepoService } from './features/cohort-repo/cohort-repo.service.js';
 import { createActivityLogService } from './features/activity-log/activity-log.service.js';
-import { createOctokit } from './features/sync/github.service.js';
+import { createOctokit } from './infra/github/github.client.js';
 
 // Routers
 import { createWorkspaceRouter } from './features/workspace/workspace.route.js';

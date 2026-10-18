@@ -1,7 +1,7 @@
 import type { MemberRepository } from '../../db/repositories/member.repository.js';
 import { buildCohortList } from '../../shared/member-cohort.js';
 import type { CohortRule } from '../../shared/types/index.js';
-import { detectCohort } from '../sync/github.service.js';
+import { detectCohort } from '../../infra/github/github.client.js';
 
 // merged PR 기준으로 기수를 판별할 때의 최소 건수와 지배 비율
 export const MIN_SUBMISSIONS = 3;

@@ -5,7 +5,7 @@ import type { Octokit } from '@octokit/rest';
 const mockFetchUserProfile = jest.fn<(...args: unknown[]) => Promise<unknown>>();
 const mockRefreshMemberProfileById = jest.fn<(...args: unknown[]) => Promise<unknown>>();
 
-jest.unstable_mockModule('../../features/sync/github.service.js', () => ({
+jest.unstable_mockModule('../../infra/github/github.client.js', () => ({
   fetchUserProfile: mockFetchUserProfile,
   // detectCohort는 순수 함수라 실제 구현과 같게 둔다
   detectCohort: (date: Date, rules: { year: number; cohort: number }[]) =>

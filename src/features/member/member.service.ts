@@ -7,7 +7,7 @@ import PQueue from 'p-queue';
 import { normalizeBlogUrl } from '../../shared/blog.js';
 import { buildCohortList } from '../../shared/member-cohort.js';
 import { shouldRefreshProfile } from '../../shared/github-profile.js';
-import { fetchUserProfile } from '../sync/github.service.js';
+import { fetchUserProfile } from '../../infra/github/github.client.js';
 import { toMemberResponse } from './member.response.js';
 import { refreshMemberProfileById } from './member.profile-refresh.js';
 import { applyDominantCohort } from './member.cohort-recalc.js';

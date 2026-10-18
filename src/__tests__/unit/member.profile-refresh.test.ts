@@ -5,13 +5,13 @@ import type { Octokit } from '@octokit/rest';
 const mockFetchUserBlogCandidates = jest.fn<(...args: unknown[]) => Promise<unknown>>();
 const mockProbeRss = jest.fn<(url: string) => Promise<{ status: string }>>();
 
-jest.unstable_mockModule('../../features/sync/github.service.js', () => ({
+jest.unstable_mockModule('../../infra/github/github.client.js', () => ({
   fetchUserBlogCandidates: mockFetchUserBlogCandidates,
   detectCohort: (date: Date, rules: { year: number; cohort: number }[]) =>
     rules.find((r) => r.year === date.getFullYear())?.cohort ?? null,
 }));
 
-jest.unstable_mockModule('../../features/blog/blog.rss.js', () => ({
+jest.unstable_mockModule('../../infra/rss/rss.js', () => ({
   probeRss: mockProbeRss,
 }));
 

@@ -7,8 +7,8 @@ import type { IgnoredDomainRepository } from '../../db/repositories/ignored-doma
 import { mergePreviousGithubIds, shouldRefreshProfile } from '../../shared/github-profile.js';
 import { HttpError } from '../../shared/http.js';
 import { mergeNicknameStat, resolveDisplayNickname } from '../../shared/nickname.js';
-import { fetchRepoPRs, fetchUserBlogCandidates } from './github.service.js';
-import { probeRss } from '../blog/blog.rss.js';
+import { fetchRepoPRs, fetchUserBlogCandidates } from '../../infra/github/github.client.js';
+import { probeRss } from '../../infra/rss/rss.js';
 import { parsePRsToSubmissions } from './sync.pr-parser.js';
 import type { CohortRule } from '../../shared/types/index.js';
 
