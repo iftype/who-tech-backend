@@ -48,5 +48,8 @@ jobs:
       - name: Test (unit + integration, coverage threshold)
         run: npm run test:coverage
 
+      - name: Test admin-spa
+        run: npm --prefix src/public/admin-spa test
+
       - name: Build (server + admin-spa)
         run: npm run build
