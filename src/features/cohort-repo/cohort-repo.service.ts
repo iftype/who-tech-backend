@@ -2,7 +2,7 @@ import type { CohortRepoRepository } from '../../db/repositories/cohort-repo.rep
 import type { MissionRepoRepository } from '../../db/repositories/mission-repo.repository.js';
 import { HttpError } from '../../shared/http.js';
 import { isUniqueConstraintError } from '../../shared/prisma-error.js';
-import type { WorkspaceService } from '../workspace/workspace.service.js';
+import type { WorkspaceService } from '../workspace/index.js';
 import { parseCohorts } from '../../shared/cohort-regex.js';
 
 export function createCohortRepoService(deps: {

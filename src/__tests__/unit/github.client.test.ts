@@ -1,5 +1,5 @@
 import { describe, it, expect } from '@jest/globals';
-import { detectCohort } from '../../features/sync/github.service.js';
+import { detectCohort } from '../../infra/github/github.client.js';
 
 describe('detectCohort', () => {
   const cohortRules = [

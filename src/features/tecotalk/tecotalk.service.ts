@@ -1,7 +1,7 @@
 import type { MemberRepository, MemberWithRelations } from '../../db/repositories/member.repository.js';
 import type { TecoTalkRepository } from '../../db/repositories/tecotalk.repository.js';
-import type { WorkspaceService } from '../workspace/workspace.service.js';
-import { detectCohort } from '../sync/github.service.js';
+import type { WorkspaceService } from '../workspace/index.js';
+import { detectCohort } from '../../infra/github/github.client.js';
 import { normalizeNickname, resolveDisplayNickname } from '../../shared/nickname.js';
 import { HttpError } from '../../shared/http.js';
 import { fetchPlaylistVideos, type YouTubeVideo } from './youtube.js';

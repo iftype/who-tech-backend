@@ -5,7 +5,7 @@ const mockFetchRepoPRs = jest.fn();
 const mockFetchUserBlogCandidates = jest.fn();
 const mockProbeRss = jest.fn();
 
-jest.unstable_mockModule('../../features/sync/github.service.js', () => ({
+jest.unstable_mockModule('../../infra/github/github.client.js', () => ({
   fetchRepoPRs: mockFetchRepoPRs,
   fetchUserBlogCandidates: mockFetchUserBlogCandidates,
   // detectCohort는 순수 함수라 실제 구현 위임

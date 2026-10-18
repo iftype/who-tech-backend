@@ -1,13 +1,7 @@
 import { describe, it, expect } from '@jest/globals';
-import {
-  parseId,
-  parseNullableString,
-  parseNumberQuery,
-  parseOptionalNumberQuery,
-  parseRepoCreateInput,
-  parseRepoUpdateInput,
-  parseWorkspaceUpdateInput,
-} from '../../shared/validation.js';
+import { parseId, parseNullableString, parseNumberQuery, parseOptionalNumberQuery } from '../../shared/validation.js';
+import { parseRepoCreateInput, parseRepoUpdateInput } from '../../features/repo/repo.validation.js';
+import { parseWorkspaceUpdateInput } from '../../features/workspace/workspace.validation.js';
 import { HttpError } from '../../shared/http.js';
 
 function expectBadRequest(fn: () => unknown, message: string) {

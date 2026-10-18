@@ -2,11 +2,10 @@ import type { Octokit } from '@octokit/rest';
 import type { CohortRepoRepository } from '../../db/repositories/cohort-repo.repository.js';
 import type { MemberRepository } from '../../db/repositories/member.repository.js';
 import type { MissionRepoRepository } from '../../db/repositories/mission-repo.repository.js';
-import type { WorkspaceService } from '../workspace/workspace.service.js';
-import type { ActivityLogService } from '../activity-log/activity-log.service.js';
+import type { WorkspaceService } from '../workspace/index.js';
+import type { ActivityLogService } from '../activity-log/index.js';
 import type { SyncService } from './sync.service.js';
-import type { RepoService } from '../repo/repo.service.js';
-import type { BlogAdminService } from '../blog/blog.admin.service.js';
+import type { RepoSyncRunner, WorkspaceBlogSyncRunner } from './sync.ports.js';
 import type { SyncQueue, SyncJobType } from './sync.queue.js';
 import { createSyncQueue } from './sync.queue.js';
 
@@ -18,8 +17,8 @@ export function createSyncAdminService(deps: {
   syncService: SyncService;
   activityLogService: ActivityLogService;
   octokit: Octokit;
-  repoService: RepoService;
-  blogAdminService: BlogAdminService;
+  repoService: RepoSyncRunner;
+  blogAdminService: WorkspaceBlogSyncRunner;
 }) {
   const {
     memberRepo,

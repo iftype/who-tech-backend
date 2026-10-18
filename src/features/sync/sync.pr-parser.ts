@@ -1,5 +1,5 @@
 import { extractNicknameTokens } from '../../shared/nickname.js';
-import { detectCohort } from './github.service.js';
+import { detectCohort } from '../../infra/github/github.client.js';
 import type { CohortRule, ParsedSubmission, PrStatus } from '../../shared/types/index.js';
 
 export type RawPR = {

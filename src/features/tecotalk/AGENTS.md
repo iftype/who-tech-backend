@@ -43,7 +43,7 @@ createTecoTalkService({ tecoTalkRepo, memberRepo, workspaceService, fetchVideos?
 
 - `TecoTalkRepository`, `MemberRepository` — DB 접근
 - `WorkspaceService.getSyncContext()` — workspaceId + cohortRules
-- `detectCohort` (`../sync/github.service.js`) — 연도→기수 매핑 재사용
+- `detectCohort` (`../sync/github.client.js`) — 연도→기수 매핑 재사용
 - 환경변수: `YOUTUBE_API_KEY`(필수), `TECOTALK_PLAYLIST_ID`(선택, 기본 우아한테크코스 재생목록)
 
 ## 운영

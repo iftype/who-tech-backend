@@ -9,7 +9,7 @@ import type { CohortRepoRepository } from '../../db/repositories/cohort-repo.rep
 import { parseCohorts } from '../../shared/cohort-regex.js';
 import { createRepoSyncer } from './sync.repo-sync.js';
 import type { CohortRule } from '../../shared/types/index.js';
-import type { ActivityLogService } from '../activity-log/activity-log.service.js';
+import type { ActivityLogService } from '../activity-log/index.js';
 export { parsePRsToSubmissions } from './sync.pr-parser.js';
 
 export function createSyncService(deps: {

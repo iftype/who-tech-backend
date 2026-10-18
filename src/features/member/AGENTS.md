@@ -266,5 +266,5 @@ Tokens are sorted by count (desc), then by last seen date (desc).
 | `src/shared/github-profile.ts`                | Previous GitHub ID tracking, stale profile detection          |
 | `src/db/repositories/member.repository.ts`    | Member data access with relations                             |
 | `src/db/repositories/blog-post.repository.ts` | Blog post queries for feed and member posts                   |
-| `src/features/sync/github.service.ts`         | `fetchUserProfile`, `fetchUserBlogCandidates`, `detectCohort` |
-| `src/features/blog/blog.rss.ts`               | `probeRss` for RSS feed detection                             |
+| `src/infra/github/github.client.ts`           | `fetchUserProfile`, `fetchUserBlogCandidates`, `detectCohort` |
+| `src/infra/rss/rss.ts`                        | `probeRss` for RSS feed detection                             |

@@ -1,8 +1,8 @@
 import type { Octokit } from '@octokit/rest';
 import type { MemberRepository } from '../../db/repositories/member.repository.js';
 import { mergePreviousGithubIds } from '../../shared/github-profile.js';
-import { fetchUserBlogCandidates } from '../sync/github.service.js';
-import { probeRss } from './blog.rss.js';
+import { fetchUserBlogCandidates } from '../../infra/github/github.client.js';
+import { probeRss } from '../../infra/rss/rss.js';
 
 export async function backfillMemberBlogLinks(
   memberRepo: MemberRepository,

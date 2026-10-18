@@ -28,21 +28,22 @@ src/features/sync/
 ├── sync.repo-sync.ts      # Per-repository sync: fetch, parse, profile resolve, upsert
 ├── sync.pr-parser.ts      # PR to Submission parsing with cohort detection
 ├── sync.queue.ts          # In-memory job queue with SSE progress
-├── github.service.ts      # GitHub API client and helpers
+├── sync.ports.ts          # Ports other features implement (RepoSyncRunner, WorkspaceBlogSyncRunner)
+├── index.ts               # Public entry point for other features
 └── sync.route.ts          # HTTP routes for admin sync endpoints
 ```
 
 ### File Responsibilities
 
-| File                    | Lines | Role                                                                                                                                                 |
-| ----------------------- | ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `sync.service.ts`       | 177   | Defines `syncWorkspace`, `syncContinuousRepos`, `syncCohortRepoList`. Iterates over repo lists and delegates per-repo work to `syncRepo`.            |
-| `sync.admin.service.ts` | 98    | Wraps the core service for admin use. Creates and exposes the `SyncQueue`. Provides status queries and job management methods.                       |
-| `sync.repo-sync.ts`     | 267   | **Heaviest file.** Handles fetching PRs for a single repo, resolving member profiles, merging nickname stats, and upserting members and submissions. |
-| `sync.pr-parser.ts`     | 47    | Pure function `parsePRsToSubmissions`. Filters ghost users, resolves PR status, extracts nickname tokens, and detects cohort.                        |
-| `sync.queue.ts`         | 228   | In-memory queue with job lifecycle (queued → running → completed/failed/cancelled). Supports progress and done subscriptions for SSE.                |
-| `github.service.ts`     | 200   | Octokit client factory with throttling, `fetchRepoPRs`, `fetchUserProfile`, `fetchUserBlogCandidates`, and `detectCohort`.                           |
-| `sync.route.ts`         | 180   | Express router. Exposes sync endpoints plus job queue endpoints with SSE streaming.                                                                  |
+| File                            | Lines | Role                                                                                                                                                 |
+| ------------------------------- | ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sync.service.ts`               | 177   | Defines `syncWorkspace`, `syncContinuousRepos`, `syncCohortRepoList`. Iterates over repo lists and delegates per-repo work to `syncRepo`.            |
+| `sync.admin.service.ts`         | 98    | Wraps the core service for admin use. Creates and exposes the `SyncQueue`. Provides status queries and job management methods.                       |
+| `sync.repo-sync.ts`             | 267   | **Heaviest file.** Handles fetching PRs for a single repo, resolving member profiles, merging nickname stats, and upserting members and submissions. |
+| `sync.pr-parser.ts`             | 47    | Pure function `parsePRsToSubmissions`. Filters ghost users, resolves PR status, extracts nickname tokens, and detects cohort.                        |
+| `sync.queue.ts`                 | 228   | In-memory queue with job lifecycle (queued → running → completed/failed/cancelled). Supports progress and done subscriptions for SSE.                |
+| `infra/github/github.client.ts` | 200   | Octokit client factory with throttling, `fetchRepoPRs`, `fetchUserProfile`, `fetchUserBlogCandidates`, and `detectCohort`.                           |
+| `sync.route.ts`                 | 180   | Express router. Exposes sync endpoints plus job queue endpoints with SSE streaming.                                                                  |
 
 ---
 

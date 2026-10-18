@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { asyncHandler } from '../../shared/http.js';
 import { parseId } from '../../shared/validation.js';
 import type { IgnoredDomainRepository } from '../../db/repositories/ignored-domain.repository.js';
-import type { WorkspaceService } from '../workspace/workspace.service.js';
+import type { WorkspaceService } from '../workspace/index.js';
 
 export function createIgnoredDomainRouter(deps: {
   ignoredDomainRepo: IgnoredDomainRepository;

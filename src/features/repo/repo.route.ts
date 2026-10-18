@@ -1,8 +1,9 @@
 import { Router } from 'express';
 import { asyncHandler, HttpError } from '../../shared/http.js';
-import { parseId, parseRepoCreateInput, parseRepoUpdateInput } from '../../shared/validation.js';
+import { parseId } from '../../shared/validation.js';
+import { parseRepoCreateInput, parseRepoUpdateInput } from './repo.validation.js';
 import type { RepoService } from './repo.service.js';
-import type { SyncAdminService } from '../sync/sync.admin.service.js';
+import type { SyncAdminService } from '../sync/index.js';
 
 export function createRepoRouter(service: RepoService, syncAdminService: SyncAdminService) {
   const router = Router();

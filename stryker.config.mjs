@@ -11,6 +11,8 @@ export default {
   mutate: [
     'src/shared/nickname.ts',
     'src/shared/validation.ts',
+    'src/features/workspace/workspace.validation.ts',
+    'src/features/repo/repo.validation.ts',
     'src/shared/member-cohort.ts',
     'src/shared/member-track.ts',
     'src/features/sync/sync.pr-parser.ts',

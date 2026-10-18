@@ -41,32 +41,42 @@ app.ts (composition root)
 
 ## 레이어링
 
-- `feature.route` → `feature.service` → `db/repository`(Prisma) + `shared/*` 유틸
-- 별도의 엔티티 클래스 레이어는 필수 아님. Prisma 모델 + 서비스 단의 응답 shaping으로 API 계약을 맞춘다.
-- 규칙이 복잡해지면 service 내부 순수 함수나 소형 타입부터 도입하고, 여러 feature에서 쓰이면 `shared/`로 승격한다.
+- `feature.route` → `feature.service` → `db/repository`(Prisma) + `infra/*`(외부 연동) + `shared/*` 유틸
+- 객체 조립은 `src/container.ts` 한 곳에서 한다 (저장소 → 서비스 순서로 만들고 주입). `src/app.ts`는 HTTP 설정과 라우트 연결만 한다
+- 다른 기능은 그 기능의 공개 진입점(`features/<name>/index.ts`)으로만 참조한다. 기능끼리 순환 의존 금지
+  - 반대 방향이 필요하면 의존받는 쪽에 포트(인터페이스)를 두고 조립 코드에서 구현을 꽂는다 (예: `features/sync/sync.ports.ts`의 `RepoSyncRunner`·`WorkspaceBlogSyncRunner`)
+- `shared`·`db`·`infra`는 `features`를 모른다
+- 위 규칙은 `npm run deps:check`(dependency-cruiser + `scripts/check-feature-cycles.mjs --strict`)로 CI에서 강제한다
+- 별도의 엔티티 클래스 레이어는 필수 아님. Prisma 모델 + 서비스 단의 응답 shaping으로 API 계약을 맞춘다 (계약은 `src/__tests__/integration/api-contract.int.test.ts`로 고정)
 
 ## 디렉토리 구조
 
 ```
 src/
-  features/         # 도메인별 route + service
+  app.ts            # HTTP 설정·라우트 연결
+  container.ts      # 객체 그래프 조립 (Composition Root)
+  features/         # 도메인별 route + service (+ index.ts 공개 진입점)
     sync/
       sync.service.ts        # syncWorkspace, syncContinuousRepos
       sync.repo-sync.ts      # syncRepo (resolveProfile, upsertMemberAndSubmission)
       sync.pr-parser.ts      # parsePRsToSubmissions
       sync.admin.service.ts  # SSE 어댑터 (syncWorkspace/continuous 래핑)
-      github.service.ts      # fetchRepoPRs, fetchUserBlogCandidates
+      sync.queue.ts          # 작업 큐 (repo·blog 작업은 포트로 위임)
+      sync.ports.ts          # RepoSyncRunner, WorkspaceBlogSyncRunner
     blog/
       blog.service.ts        # createBlogService (syncBlogs)
-      blog.rss.ts            # RSS 유틸 (probeRss, resolveRSSUrlsForBlog 등)
       blog.admin.service.ts  # 싱크 잡 큐, 로그 기록
       blog.backfill.ts       # backfillMemberBlogLinks
     member/
       member.service.ts      # createMemberService
       member.response.ts     # toMemberResponse 매퍼
       member.profile-refresh.ts  # refreshMemberProfileById
+    repo/  workspace/        # *.validation.ts: 기능 전용 요청 검증
+  infra/            # 외부 연동
+    github/github.client.ts  # Octokit, fetchRepoPRs, fetchUserBlogCandidates, detectCohort
+    rss/rss.ts               # RSS 수집·검사 (fetchRSSItems, probeRss, resolveRSSUrlsForBlog, isNonPostPageUrl)
   db/               # Prisma repository
-  shared/           # 공통 유틸
+  shared/           # 공통 유틸 (http 에러, 미들웨어, 쿼리 파싱 등)
   public/
     admin-spa/      # Vite + React + Tailwind SPA (빌드 → dist/public/admin-dist/)
     guide.html      # 공개 가이드 페이지

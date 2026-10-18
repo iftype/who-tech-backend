@@ -1,8 +1,8 @@
 import type { Octokit } from '@octokit/rest';
 import { randomUUID } from 'crypto';
 import type { MissionRepoRepository } from '../../db/repositories/mission-repo.repository.js';
-import type { WorkspaceService } from '../workspace/workspace.service.js';
-import type { SyncService } from '../sync/sync.service.js';
+import type { WorkspaceService } from '../workspace/index.js';
+import type { SyncService } from '../sync/index.js';
 import { HttpError } from '../../shared/http.js';
 import { parseCohorts } from '../../shared/cohort-regex.js';
 import { discoverMissionRepos, fetchOrgRepos } from './repo-discovery.service.js';

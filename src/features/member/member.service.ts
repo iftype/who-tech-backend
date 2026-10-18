@@ -2,18 +2,18 @@ import type { Octokit } from '@octokit/rest';
 import type { MemberRepository } from '../../db/repositories/member.repository.js';
 import type { BlogPostRepository } from '../../db/repositories/blog-post.repository.js';
 import type { BannedWordRepository } from '../../db/repositories/banned-word.repository.js';
-import type { WorkspaceService } from '../workspace/workspace.service.js';
+import type { WorkspaceService } from '../workspace/index.js';
 import PQueue from 'p-queue';
 import { normalizeBlogUrl } from '../../shared/blog.js';
 import { buildCohortList } from '../../shared/member-cohort.js';
 import { shouldRefreshProfile } from '../../shared/github-profile.js';
-import { fetchUserProfile } from '../sync/github.service.js';
+import { fetchUserProfile } from '../../infra/github/github.client.js';
 import { toMemberResponse } from './member.response.js';
 import { refreshMemberProfileById } from './member.profile-refresh.js';
 import { applyDominantCohort } from './member.cohort-recalc.js';
 
 import type { SubmissionRepository } from '../../db/repositories/submission.repository.js';
-import type { SyncService } from '../sync/sync.service.js';
+import type { SyncService } from '../sync/index.js';
 
 export function createMemberService(deps: {
   memberRepo: MemberRepository;
