@@ -40,4 +40,5 @@
 - [sync 모듈](.claude/docs/sync.md)
 - [어드민](.claude/docs/admin.md)
 - [배포](.claude/docs/deploy.md)
+- [DB 백업·복구](.claude/docs/backup.md)
 - [인프라](.claude/docs/infra.md)
