@@ -75,6 +75,17 @@ async function resolveBlogUrl(blogUrl: string): Promise<string | null> {
   }
 }
 
+// 일부 블로그(Hugo·Jekyll 등)는 RSS에 소개·방명록·태그 목록 같은 정적 페이지도 넣는다. 글이 아니므로 수집하지 않는다
+const NON_POST_PATH = /\/(page|pages|tag|tags|category|categories)\/|\/(about|guestbook)\/?$/i;
+
+export function isNonPostPageUrl(url: string): boolean {
+  try {
+    return NON_POST_PATH.test(new URL(url).pathname);
+  } catch {
+    return false;
+  }
+}
+
 export function resolveRSSUrlsForBlog(blogUrl: string): string[] {
   const normalizedBlogUrl = normalizeBlogUrl(blogUrl);
   if (!normalizedBlogUrl) return [];
