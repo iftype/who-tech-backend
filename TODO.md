@@ -1,4 +1,17 @@
-=== 마지막 세션: 2026-07-09 ===
+=== 마지막 세션: 2026-10-18 ===
+
+### 완료 작업 (개선 플랜 Phase 1~9, 상세: 루트 `who-tech/IMPROVEMENT_PLAN.md`)
+
+✅ Node 24 LTS 전환 (로컬·CI·Vercel·서버, pm2 7 데몬 포함), slack-emoji 앱 삭제
+✅ CI(lint·format·tsc·test·coverage·build) 필수 체크 + CI 성공 후에만 배포, `/health`, 배포 직전 DB 백업·헬스 체크·자동 롤백
+✅ commitlint 통일, Dependabot, CODEOWNERS·PR 템플릿, release-please(v1.1.0, v1.2.0), 원격 브랜치 정리
+✅ 취약점: 프론트 critical 0, 백엔드 critical 0 (남은 high 3은 prisma 7 필요 → 백로그)
+✅ 일일 DB 백업 크론 + 복구 리허설, `MissionRepo.workspaceId` FK 마이그레이션
+✅ 업타임 체크·워크플로 실패 이슈 알림, 시스템 logrotate
+✅ 테스트: 백엔드 lines 65%·functions 61%(래칫 강제), admin-spa vitest, 뮤테이션 테스트(Stryker) 주간 실행
+✅ 리팩토링: member 서비스 중복 제거, admin RepoTab·SyncTab·ArchiveTab·MemberTable 분리, ESLint 경고 0
+
+=== 이전 세션: 2026-07-09 ===
 
 ### 완료 작업
 
@@ -30,9 +43,9 @@
 - [x] blog.service.ts (309→107): blog.rss.ts 분리
 - [x] member.service.ts (365→218): member.response.ts, member.profile-refresh.ts 분리
 - [x] sync.service.ts (436→394): sync.pr-parser.ts 분리
-- [ ] sync.service.ts (394줄) 추가 분리 여지 있음 (resolveProfile, upsertMemberAndSubmission)
-- [ ] blog.admin.service.ts (279줄), repo.service.ts (256줄) 분리 검토
-- [ ] 하네스 문서(.claude/rules/, .claude/docs/) 업데이트
+- [x] sync.service.ts 추가 분리 검토 → 현재 228줄, 추가 분리 불필요 (2026-10-18)
+- [x] blog.admin.service.ts(232줄), repo.service.ts(275줄) 검토 → 책임 단일, 분리 불필요 (2026-10-18)
+- [x] 하네스 문서(.claude/rules/, .claude/docs/) 업데이트 (#157)
 
 ## 3️⃣ 어드민 React SPA — 누락 기능 / 버그 (2026-04-22 분석)
 
@@ -58,7 +71,7 @@
 
 - [x] **candidate 레포 승인 플로우**: `discover`로 발견된 후보(`candidate`)를 `active`로 승인하는 UI
   - RepoTab 액션 컬럼에 candidate 상태일 때 ✓ 버튼 추가
-- [ ] **싱크 작업 히스토리**: `/admin/repos/sync-jobs/:jobId` API 존재하나 작업 목록/히스토리 API 없음. 백엔드 추가 필요
+- [x] **싱크 작업 히스토리**: 목록 API(`/admin/repos/sync-jobs`, `/admin/blog/sync-jobs`, `/admin/sync/jobs`)와 SyncTab "최근 싱크 작업" 표로 제공됨
 
 ### 🟢 P2 — 부가 탭 (API 존재, UI 없음) ✅ 완료
 
@@ -80,7 +93,7 @@
 
 ## 4️⃣ Dependabot 취약점 패치
 
-- 현재 2개 high severity (GitHub Security tab 참고)
+- [x] 2026-10-18: Dependabot 설정(주간, major 제외), audit fix·의존성 그룹 머지. 남은 high 3건은 prisma 7 필요(백로그)
 
 ---
 
@@ -127,10 +140,22 @@
 ## 서버 운영 메모
 
 - GitHub Token: Classic PAT (`public_repo` + `read:user`), `.env`에 저장
-- pm2 env 업데이트: `set -a && . .env && set +a && pm2 restart backend --update-env`
+- pm2 env 업데이트: `set -a && . .env && set +a && pm2 restart backend --update-env` (backend는 `~/.who-tech-backend-node` = nvm Node 24로 실행, 롤백은 `.claude/docs/deploy.md`)
+- DB 백업·복구: `.claude/docs/backup.md` (일일 03:17, 배포 직전 자동)
 - blog 수집 24h 게이트: sync에서 profileFetchedAt 기준, 즉시 반영은 개인 새로고침 사용
 - admin-spa 로컬 개발: `cd src/public/admin-spa && npm install && npm run dev` (포트 5173, /admin 프록시→3000)
 
 === 다음 작업 ===
 
-- [ ] 변경된 `blog-check.yml` 스케줄러(30분마다 작동) 및 `sinceMinutes=35` 파라미터가 프로덕션 GitHub Actions에 정상 반영되어 주기적으로 동작하는지 모니터링
+- [x] `blog-check.yml` 모니터링 → 실패 시 `alerts.yml`이 이슈로 자동 알림 (2026-10-18)
+
+## 백로그 (2026-10-18 개선 플랜에서 이월)
+
+- [ ] Prisma 6 → 7 (driver adapter·better-sqlite3 네이티브 모듈, 배포 설치 방식 변경 필요) — 남은 high 취약점 3건 해소
+- [ ] 런타임 major: p-queue 10 / 개발 도구 major: eslint 10, @commitlint 21, admin-spa typescript 7·vite 7+·plugin-react 6, jest-dom 7
+- [ ] Expo SDK 업그레이드 (image-size 취약점 해소)
+- [ ] DB 백업 외부 저장소 복제 (현재 서버 디스크에만 있음)
+- [ ] 모바일 테스트 환경 구성 후 `WebSkeleton.tsx` 정리
+- [ ] 피드 커서 정렬에 `id` 동률 기준 명시 (현재 SQLite 기본 순서에 의존, 회귀 테스트로 고정)
+- [ ] 잘못된 JSON 요청이 500 대신 400을 반환하도록
+- [ ] 시스템 Node 20(EOL)은 `/usr/bin/pm2` CLI용으로만 남음 → 필요 시 제거
