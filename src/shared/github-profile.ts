@@ -9,12 +9,13 @@ export function parsePreviousGithubIds(raw: string | null | undefined): string[]
   }
 }
 
+// 기존 이전 ID 목록(PreviousGithubId 테이블에서 읽은 값)에 현재 ID를 더하고 새 ID를 뺀다
 export function mergePreviousGithubIds(
-  raw: string | null | undefined,
+  existing: readonly string[],
   currentGithubId: string | null | undefined,
   nextGithubId: string,
 ): string | null {
-  const merged = new Set(parsePreviousGithubIds(raw));
+  const merged = new Set(existing);
   if (currentGithubId && currentGithubId !== nextGithubId) {
     merged.add(currentGithubId);
   }

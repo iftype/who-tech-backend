@@ -88,6 +88,7 @@ function makeDeps(overrides: Record<string, Record<string, jest.Mock>> = {}) {
     memberRepo: {
       findByGithubUserId: jest.fn().mockResolvedValue(null as never),
       findByGithubId: jest.fn().mockResolvedValue(null as never),
+      findPreviousGithubIds: jest.fn().mockResolvedValue([] as never),
       upsert: jest.fn().mockResolvedValue(makeMember() as never),
       upsertParticipation: jest.fn().mockResolvedValue(undefined as never),
       ...overrides['memberRepo'],
@@ -185,6 +186,7 @@ describe('syncRepo', () => {
       memberRepo: {
         findByGithubUserId: jest.fn().mockResolvedValue(existing as never),
         findByGithubId: jest.fn().mockResolvedValue(existing as never),
+        findPreviousGithubIds: jest.fn().mockResolvedValue([] as never),
         upsert: jest.fn().mockResolvedValue(existing as never),
         upsertParticipation: jest.fn().mockResolvedValue(undefined as never),
       },
@@ -204,6 +206,7 @@ describe('syncRepo', () => {
       memberRepo: {
         findByGithubUserId: jest.fn().mockResolvedValue(existing as never),
         findByGithubId: jest.fn().mockResolvedValue(existing as never),
+        findPreviousGithubIds: jest.fn().mockResolvedValue([] as never),
         upsert: jest.fn().mockResolvedValue(existing as never),
         upsertParticipation: jest.fn().mockResolvedValue(undefined as never),
       },
@@ -265,6 +268,7 @@ describe('syncRepo', () => {
       memberRepo: {
         findByGithubUserId: jest.fn().mockResolvedValue(existing as never),
         findByGithubId: jest.fn().mockResolvedValue(existing as never),
+        findPreviousGithubIds: jest.fn().mockResolvedValue([] as never),
         upsert: jest.fn().mockResolvedValue(existing as never),
         upsertParticipation: jest.fn().mockResolvedValue(undefined as never),
       },

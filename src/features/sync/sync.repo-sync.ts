@@ -29,6 +29,7 @@ type ResolvedProfile = {
 };
 
 type ExistingMember = {
+  id?: number;
   blog?: string | null;
   avatarUrl?: string | null;
   profileFetchedAt?: Date | null;
@@ -151,11 +152,9 @@ export function createRepoSyncer(deps: {
     existingMember: ExistingMember,
   ): Promise<void> => {
     const { githubId, githubUserId, blog, avatarUrl, profileFetchedAt, profileRefreshError } = profile;
-    const previousGithubIds = mergePreviousGithubIds(
-      existingMember?.previousGithubIds,
-      existingMember?.githubId,
-      githubId,
-    );
+    const existingPreviousIds =
+      existingMember?.id != null ? await memberRepo.findPreviousGithubIds(existingMember.id) : [];
+    const previousGithubIds = mergePreviousGithubIds(existingPreviousIds, existingMember?.githubId, githubId);
 
     if (!githubUserId) throw new Error(`githubUserId is missing for user: ${s.githubId}`);
 

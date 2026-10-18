@@ -48,7 +48,11 @@ export async function backfillMemberBlogLinks(
       const baseFields = {
         githubId: profile.githubId,
         githubUserId: profile.githubUserId,
-        previousGithubIds: mergePreviousGithubIds(member.previousGithubIds, member.githubId, profile.githubId),
+        previousGithubIds: mergePreviousGithubIds(
+          await memberRepo.findPreviousGithubIds(member.id),
+          member.githubId,
+          profile.githubId,
+        ),
         avatarUrl: profile.avatarUrl,
         profileFetchedAt: new Date(),
         profileRefreshError: null,

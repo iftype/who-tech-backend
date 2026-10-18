@@ -37,6 +37,7 @@ export async function refreshMemberProfileById(
   if (!fetchGithub) {
     updated = await memberRepo.update(id, { nicknameStats: statsValue, nickname: resolvedNickname });
   } else {
+    const previousIds = await memberRepo.findPreviousGithubIds(id);
     let profileFields: {
       githubId: string;
       githubUserId: number | null;
@@ -62,7 +63,7 @@ export async function refreshMemberProfileById(
       profileFields = {
         githubId: profile.githubId,
         githubUserId: profile.githubUserId,
-        previousGithubIds: mergePreviousGithubIds(member.previousGithubIds, member.githubId, profile.githubId),
+        previousGithubIds: mergePreviousGithubIds(previousIds, member.githubId, profile.githubId),
         avatarUrl: profile.avatarUrl ?? member.avatarUrl ?? null,
         blog: resolvedBlog ?? member.blog ?? null,
       };
@@ -70,7 +71,7 @@ export async function refreshMemberProfileById(
       profileFields = {
         githubId: member.githubId,
         githubUserId: member.githubUserId ?? null,
-        previousGithubIds: member.previousGithubIds ?? null,
+        previousGithubIds: previousIds.length > 0 ? JSON.stringify(previousIds) : null,
         avatarUrl: member.avatarUrl ?? null,
       };
       profileRefreshError = error instanceof Error ? error.message : String(error);
