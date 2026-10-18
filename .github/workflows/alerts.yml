@@ -1,0 +1,60 @@
+name: Failure Alerts
+
+# 스케줄/배포 워크플로가 실패하면 워크플로마다 이슈 하나를 열고(이미 있으면 코멘트), 다시 성공하면 닫는다
+on:
+  workflow_run:
+    workflows:
+      - CI
+      - Deploy to Server
+      - Uptime Check
+      - Blog Check
+      - Continuous Sync
+      - Member Profile Refresh
+      - Sync
+      - TecoTalk Sync
+    types: [completed]
+    branches: [main]
+
+permissions:
+  issues: write
+
+concurrency:
+  group: alerts-${{ github.event.workflow_run.name }}
+  cancel-in-progress: false
+
+jobs:
+  alert:
+    if: contains(fromJSON('["failure","timed_out","success"]'), github.event.workflow_run.conclusion)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Open, update, or close alert issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          NAME: ${{ github.event.workflow_run.name }}
+          CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          RUN_URL: ${{ github.event.workflow_run.html_url }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          title="[알림] $NAME 실패"
+          gh label create alert -R "$REPO" --color B60205 --description '워크플로 실패 알림' 2>/dev/null || true
+          number="$(gh issue list -R "$REPO" --state open --label alert --limit 100 --json number,title \
+            --jq "[.[] | select(.title == \"$title\")][0].number // empty")"
+
+          if [ "$CONCLUSION" = "success" ]; then
+            if [ -n "$number" ]; then
+              gh issue comment "$number" -R "$REPO" --body "✅ 복구됨: $RUN_URL"
+              gh issue close "$number" -R "$REPO"
+            fi
+            exit 0
+          fi
+
+          msg="❌ \`$CONCLUSION\` — $RUN_URL (commit \`${SHA:0:7}\`)"
+          if [ -n "$number" ]; then
+            gh issue comment "$number" -R "$REPO" --body "$msg"
+          else
+            gh issue create -R "$REPO" --title "$title" --label alert --assignee "${{ github.repository_owner }}" \
+              --body "$msg
+
+          같은 워크플로가 다시 성공하면 이 이슈는 자동으로 닫힙니다."
+          fi
