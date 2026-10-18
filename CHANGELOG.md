@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/iftype/who-tech-backend/compare/v1.2.0...v1.2.1) (2026-10-18)
+
+
+### 버그 수정
+
+* 잘못된 JSON 본문에 500 대신 400 응답 ([#177](https://github.com/iftype/who-tech-backend/issues/177)) ([54cc244](https://github.com/iftype/who-tech-backend/commit/54cc24498c809df80f55c41edf0a1525e2581271))
+
 ## [1.2.0](https://github.com/iftype/who-tech-backend/compare/v1.1.0...v1.2.0) (2026-10-18)
 
 
