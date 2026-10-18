@@ -111,6 +111,34 @@ function buildMemberWhere(workspaceId: number, filters?: MemberFilters): Prisma.
 }
 
 export function createMemberRepository(db: PrismaClient) {
+  const syncPreviousGithubIds = async (memberId: number, previousIdsJson: string | null) => {
+    const existing = await db.previousGithubId.findMany({ where: { memberId } });
+    const existingIds = new Set(existing.map((r) => r.githubId));
+    const newIds = previousIdsJson ? (JSON.parse(previousIdsJson) as string[]) : [];
+    const newIdSet = new Set(newIds);
+
+    const toDelete = existing.filter((r) => !newIdSet.has(r.githubId));
+    const toAdd = newIds.filter((id) => !existingIds.has(id));
+
+    if (toDelete.length > 0) {
+      await db.previousGithubId.deleteMany({
+        where: { memberId, githubId: { in: toDelete.map((r) => r.githubId) } },
+      });
+    }
+    for (const githubId of toAdd) {
+      await db.previousGithubId.create({ data: { githubId, memberId } }).catch(() => null);
+    }
+  };
+
+  // 이전 GitHub ID는 JSON 컬럼과 PreviousGithubId 테이블에 함께 둔다 (검색은 테이블을 읽는다).
+  // previousGithubIds를 쓰는 저장 메서드는 여기서 테이블까지 맞춘다 — 호출하는 쪽이 따로 동기화할 필요가 없다 (ARCHITECTURE_PLAN F-1)
+  const syncPreviousIdsIfWritten = async (memberId: number, data: { previousGithubIds?: unknown }) => {
+    if (!('previousGithubIds' in data)) return;
+    const value = data.previousGithubIds;
+    if (value === null || value === undefined) await syncPreviousGithubIds(memberId, null);
+    else if (typeof value === 'string') await syncPreviousGithubIds(memberId, value);
+  };
+
   return {
     // 필터 기반 조회
     findWithFilters: (workspaceId: number, filters?: MemberFilters): Promise<MemberDetailWithRelations[]> =>
@@ -169,8 +197,11 @@ export function createMemberRepository(db: PrismaClient) {
     create: (data: Prisma.MemberUncheckedCreateInput): Promise<MemberDetailWithRelations> =>
       db.member.create({ data, include: memberDetailInclude }),
 
-    update: (id: number, data: Prisma.MemberUncheckedUpdateInput): Promise<MemberDetailWithRelations> =>
-      db.member.update({ where: { id }, data, include: memberDetailInclude }),
+    update: async (id: number, data: Prisma.MemberUncheckedUpdateInput): Promise<MemberDetailWithRelations> => {
+      const updated = await db.member.update({ where: { id }, data, include: memberDetailInclude });
+      await syncPreviousIdsIfWritten(id, data);
+      return updated;
+    },
 
     listStaleProfiles: (
       workspaceId: number,
@@ -229,6 +260,7 @@ export function createMemberRepository(db: PrismaClient) {
         },
         include: memberDetailInclude,
       });
+      await syncPreviousIdsIfWritten(result.id, updateData);
 
       return result as unknown as MemberDetailWithRelations;
     },
@@ -254,24 +286,7 @@ export function createMemberRepository(db: PrismaClient) {
     },
 
     // 이전 GitHub ID 동기화 (previousGithubIds JSON + PreviousGithubId 테이블)
-    syncPreviousGithubIds: async (memberId: number, previousIdsJson: string | null) => {
-      const existing = await db.previousGithubId.findMany({ where: { memberId } });
-      const existingIds = new Set(existing.map((r) => r.githubId));
-      const newIds = previousIdsJson ? (JSON.parse(previousIdsJson) as string[]) : [];
-      const newIdSet = new Set(newIds);
-
-      const toDelete = existing.filter((r) => !newIdSet.has(r.githubId));
-      const toAdd = newIds.filter((id) => !existingIds.has(id));
-
-      if (toDelete.length > 0) {
-        await db.previousGithubId.deleteMany({
-          where: { memberId, githubId: { in: toDelete.map((r) => r.githubId) } },
-        });
-      }
-      for (const githubId of toAdd) {
-        await db.previousGithubId.create({ data: { githubId, memberId } }).catch(() => null);
-      }
-    },
+    syncPreviousGithubIds,
 
     // 특정 기수에 대한 참여 정보 전체 삭제 (역할 교체 시 사용)
     deleteParticipationsByCohort: async (memberId: number, cohortNumber: number) => {
@@ -296,7 +311,11 @@ export function createMemberRepository(db: PrismaClient) {
       ]),
 
     // 기타 편의 메서드
-    patch: (id: number, data: Partial<Prisma.MemberUpdateInput>) => db.member.update({ where: { id }, data }),
+    patch: async (id: number, data: Partial<Prisma.MemberUpdateInput>) => {
+      const updated = await db.member.update({ where: { id }, data });
+      await syncPreviousIdsIfWritten(id, data);
+      return updated;
+    },
 
     count: () => db.member.count(),
 
