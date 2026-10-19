@@ -60,7 +60,7 @@ jobs:
         run: npm --prefix src/public/admin-spa run lint:tokens
 
       - name: Check dependency rules
-        # 백엔드: 의존 방향·기능 단위 순환 금지(실패). admin-spa: 보고 모드(D-3에서 실패 처리로 전환)
+        # 백엔드: 의존 방향·기능 단위 순환 금지. admin-spa: 계층 방향·순환·안 쓰는 모듈 금지 (모두 실패 처리)
         run: npm run deps:check
 
       - name: Build (server + admin-spa)
