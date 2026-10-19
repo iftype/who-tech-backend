@@ -137,7 +137,11 @@ describe('SyncTab flow', () => {
     // 최근 작업은 완료(없으면 시작) 시각 최신순. 블로그 작업은 종류·메시지를 그대로 보여 준다
     const recent = (await screen.findByText('최근 싱크 작업 (3)')).parentElement!;
     const rows = within(recent).getAllByRole('row').slice(1);
-    expect(rows.map((r) => r.lastElementChild?.textContent)).toEqual(['java-lotto — 레포 완료', '✓ 7개', '블로그 실패']);
+    expect(rows.map((r) => r.lastElementChild?.textContent)).toEqual([
+      'java-lotto — 레포 완료',
+      '✓ 7개',
+      '블로그 실패',
+    ]);
     expect(within(rows[2]!).getByText('블로그')).toBeInTheDocument();
   });
 
