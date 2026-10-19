@@ -282,6 +282,10 @@ export function createMemberRepository(db: PrismaClient) {
 
     replacePreviousGithubIds,
 
+    // 닉네임 통계 재계산용: 모든 제출의 제목·시각 (상세 include는 최근 50건만 싣는다)
+    findSubmissionTitles: (memberId: number) =>
+      db.submission.findMany({ where: { memberId }, select: { title: true, submittedAt: true } }),
+
     // 특정 기수에 대한 참여 정보 전체 삭제 (역할 교체 시 사용)
     deleteParticipationsByCohort: async (memberId: number, cohortNumber: number) => {
       const cohort = await db.cohort.findUnique({ where: { number: cohortNumber } });

@@ -241,8 +241,26 @@ describe('repo sync writes (SQLite)', () => {
     await syncer.syncRepo({} as never, workspaceId, 'woowacourse', baseRepo, RULES);
     await counted.$disconnect();
 
-    // 2026-10-20 측정: 예전 쓰기 경로 153개(PR당 약 31 — 상세 include 조회·upsert 반환), 지금 59개(약 12).
-    // 조회 2 + 트랜잭션(BEGIN·멤버 upsert·이전 아이디·참여·제출·COMMIT), 기수·역할 upsert는 첫 건만
-    expect(queries).toBeLessThanOrEqual(60);
+    // 2026-10-20 측정: 예전 쓰기 경로 153개(PR당 약 31 — 상세 include 조회·upsert 반환), 지금 64개(약 13).
+    // 조회 3(멤버·이전 아이디·제출 제목) + 트랜잭션(BEGIN·멤버 upsert·이전 아이디·참여·제출·COMMIT),
+    // 기수·역할 upsert는 첫 건만. 제출 제목은 닉네임 통계를 멱등하게 다시 계산하는 근거
+    expect(queries).toBeLessThanOrEqual(65);
+  });
+
+  it('should count each pull request once even when it is processed again (5-minute overlap, resync)', async () => {
+    const prs = [
+      pr(1, 'crew1', 1001, '[1단계] 콘티 제출', '2026-03-02T00:00:00Z'),
+      pr(2, 'crew1', 1001, '[2단계] 콘티 제출', '2026-03-09T00:00:00Z'),
+    ];
+    fetchRepoPRs.mockResolvedValueOnce(prs).mockResolvedValueOnce(prs).mockResolvedValueOnce([prs[1]]);
+    const syncer = makeSyncer();
+    await syncer.syncRepo({} as never, workspaceId, 'woowacourse', baseRepo, RULES);
+    const once = (await snapshotRows())[0]?.nicknameStats;
+
+    await syncer.syncRepo({} as never, workspaceId, 'woowacourse', baseRepo, RULES);
+    await syncer.syncRepo({} as never, workspaceId, 'woowacourse', baseRepo, RULES);
+
+    expect((await snapshotRows())[0]?.nicknameStats).toEqual(once);
+    expect(once).toEqual(expect.arrayContaining([expect.objectContaining({ nickname: '콘티', count: 2 })]));
   });
 });

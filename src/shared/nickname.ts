@@ -107,6 +107,25 @@ export function mergeNicknameStat(
   return sortNicknameStats([...stats, { nickname, count: 1, lastSeenAt: submittedAt.toISOString() }]);
 }
 
+/**
+ * 제출 제목들로 닉네임 통계를 처음부터 계산한다. 같은 제출을 몇 번 다시 계산해도 결과가 같다(멱등).
+ * 예전에는 PR을 처리할 때마다 기존 통계에 +1을 해서, 같은 PR을 다시 처리하면(5분 겹침·재수집) 횟수가 부풀었다.
+ * 오래된 제출부터 반영해 lastSeenAt이 가장 최근 제출 시각이 되게 한다
+ */
+export function computeNicknameStats(
+  submissions: readonly { title: string; submittedAt: Date }[],
+  bannedWords: ReadonlySet<string>,
+): string | null {
+  const ordered = [...submissions].sort((a, b) => a.submittedAt.getTime() - b.submittedAt.getTime());
+  let value: string | null = null;
+  for (const submission of ordered) {
+    for (const token of extractNicknameTokens(submission.title)) {
+      if (!bannedWords.has(token)) value = JSON.stringify(mergeNicknameStat(value, token, submission.submittedAt));
+    }
+  }
+  return value;
+}
+
 export function resolveDisplayNickname(
   manualNickname: string | null | undefined,
   nicknameStatsValue: string | null | undefined,
@@ -118,6 +137,10 @@ export function resolveDisplayNickname(
 
   const stats = parseNicknameStats(nicknameStatsValue);
   if (stats.length > 0) {
+    // 1위와 횟수가 같으면 지금 닉네임을 유지한다 (PR 제목에 닉네임과 실명을 같이 쓰면 둘이 동률이라
+    // 계산 순서에 따라 실명으로 바뀌거나 싱크마다 오락가락할 수 있다)
+    const current = fallbackNickname ? stats.find((stat) => stat.nickname === fallbackNickname) : undefined;
+    if (current && current.count === stats[0]!.count) return current.nickname;
     return stats[0]!.nickname;
   }
 

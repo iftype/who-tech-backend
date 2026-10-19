@@ -145,7 +145,7 @@ exports[`repo sync writes (SQLite) should create members, cohorts, previous ids 
     ],
     "githubId": "new-login",
     "githubUserId": 3003,
-    "nickname": "단계",
+    "nickname": "네오",
     "nicknameStats": [
       {
         "count": 1,

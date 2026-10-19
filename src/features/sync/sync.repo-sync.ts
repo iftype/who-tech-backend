@@ -10,7 +10,7 @@ import type { BannedWordRepository } from '../../db/repositories/banned-word.rep
 import type { IgnoredDomainRepository } from '../../db/repositories/ignored-domain.repository.js';
 import { mergePreviousGithubIds, shouldRefreshProfile } from '../../shared/github-profile.js';
 import { HttpError } from '../../shared/http.js';
-import { mergeNicknameStat, resolveDisplayNickname } from '../../shared/nickname.js';
+import { computeNicknameStats, resolveDisplayNickname } from '../../shared/nickname.js';
 import { fetchRepoPRs, fetchUserBlogCandidates } from '../../infra/github/github.client.js';
 import { probeRss } from '../../infra/rss/rss.js';
 import { parsePRsToSubmissions } from './sync.pr-parser.js';
@@ -227,12 +227,14 @@ export function createRepoSyncer(deps: {
         // 공통 미션: 이미 알려진 멤버에만 submission 연결
         if (isCommonMission && !existingMember) continue;
 
-        let statsValue = existingMember?.nicknameStats ?? null;
-        for (const token of s.nicknameTokens) {
-          if (!bannedWords.has(token)) {
-            statsValue = JSON.stringify(mergeNicknameStat(statsValue, token, s.submittedAt));
-          }
-        }
+        // 이 PR을 포함한 멤버의 모든 제출 제목으로 다시 계산한다 → 같은 PR을 몇 번 처리해도 횟수가 같다
+        const otherSubmissions = (existingMember?.submissions ?? []).filter(
+          (sub) => !(sub.prNumber === s.prNumber && sub.missionRepoId === repo.id),
+        );
+        const statsValue = computeNicknameStats(
+          [...otherSubmissions, { title: s.title, submittedAt: s.submittedAt }],
+          bannedWords,
+        );
         const displayNickname = resolveDisplayNickname(
           existingMember?.manualNickname,
           statsValue,
