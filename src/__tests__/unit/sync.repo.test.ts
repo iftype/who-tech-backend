@@ -84,23 +84,15 @@ const makeRepo = (overrides: Record<string, unknown> = {}) => ({
 
 function makeDeps(overrides: Record<string, Record<string, jest.Mock>> = {}) {
   return {
-    memberRepo: {
-      findByGithubUserId: jest.fn().mockResolvedValue(null as never),
-      findByGithubId: jest.fn().mockResolvedValue(null as never),
-      findPreviousGithubIds: jest.fn().mockResolvedValue([] as never),
-      replacePreviousGithubIds: jest.fn().mockResolvedValue(undefined as never),
-      upsert: jest.fn().mockResolvedValue(makeMember() as never),
-      upsertParticipation: jest.fn().mockResolvedValue(undefined as never),
-      ...overrides['memberRepo'],
+    syncWriteRepo: {
+      findTarget: jest.fn().mockResolvedValue(null as never),
+      applyPullRequest: jest.fn().mockResolvedValue({ memberId: 1 } as never),
+      ...overrides['syncWriteRepo'],
     },
     missionRepoRepo: {
       touch: jest.fn().mockResolvedValue(undefined as never),
       findMany: jest.fn().mockResolvedValue([] as never),
       ...overrides['missionRepoRepo'],
-    },
-    submissionRepo: {
-      upsert: jest.fn().mockResolvedValue(undefined as never),
-      ...overrides['submissionRepo'],
     },
     workspaceRepo: {
       findByIdOrThrow: jest.fn().mockResolvedValue({
@@ -159,8 +151,7 @@ describe('syncRepo', () => {
 
     expect(result.synced).toBe(1);
     expect(result.failures).toHaveLength(0);
-    expect(deps.memberRepo.upsert).toHaveBeenCalledTimes(1);
-    expect(deps.submissionRepo.upsert).toHaveBeenCalledTimes(1);
+    expect(deps.syncWriteRepo.applyPullRequest).toHaveBeenCalledTimes(1);
   });
 
   it('공통 미션(track=null) + 미지의 멤버 → 스킵', async () => {
@@ -171,8 +162,7 @@ describe('syncRepo', () => {
     const result = await syncRepo({} as never, 1, 'woowacourse', makeRepo({ track: null }), COHORT_RULES);
 
     expect(result.synced).toBe(0);
-    expect(deps.memberRepo.upsert).not.toHaveBeenCalled();
-    expect(deps.submissionRepo.upsert).not.toHaveBeenCalled();
+    expect(deps.syncWriteRepo.applyPullRequest).not.toHaveBeenCalled();
   });
 
   it('공통 미션(track=null) + 기존 멤버 → submission 연결', async () => {
@@ -183,13 +173,9 @@ describe('syncRepo', () => {
       profileFetchedAt: new Date(),
     });
     const deps = makeDeps({
-      memberRepo: {
-        findByGithubUserId: jest.fn().mockResolvedValue(existing as never),
-        findByGithubId: jest.fn().mockResolvedValue(existing as never),
-        findPreviousGithubIds: jest.fn().mockResolvedValue([] as never),
-        replacePreviousGithubIds: jest.fn().mockResolvedValue(undefined as never),
-        upsert: jest.fn().mockResolvedValue(existing as never),
-        upsertParticipation: jest.fn().mockResolvedValue(undefined as never),
+      syncWriteRepo: {
+        findTarget: jest.fn().mockResolvedValue({ previousGithubIds: [], ...existing } as never),
+        applyPullRequest: jest.fn().mockResolvedValue({ memberId: 1 } as never),
       },
     });
     const { syncRepo } = createSyncService(deps as never);
@@ -197,20 +183,16 @@ describe('syncRepo', () => {
     const result = await syncRepo({} as never, 1, 'woowacourse', makeRepo({ track: null }), COHORT_RULES);
 
     expect(result.synced).toBe(1);
-    expect(deps.submissionRepo.upsert).toHaveBeenCalledTimes(1);
+    expect(deps.syncWriteRepo.applyPullRequest).toHaveBeenCalledTimes(1);
   });
 
   it('금지어 토큰은 nicknameStats에 포함되지 않는다', async () => {
     mockFetchRepoPRs.mockResolvedValue([makePR({ title: '[1단계] 콘티 제출합니다.' })] as never);
     const existing = makeMember();
     const deps = makeDeps({
-      memberRepo: {
-        findByGithubUserId: jest.fn().mockResolvedValue(existing as never),
-        findByGithubId: jest.fn().mockResolvedValue(existing as never),
-        findPreviousGithubIds: jest.fn().mockResolvedValue([] as never),
-        replacePreviousGithubIds: jest.fn().mockResolvedValue(undefined as never),
-        upsert: jest.fn().mockResolvedValue(existing as never),
-        upsertParticipation: jest.fn().mockResolvedValue(undefined as never),
+      syncWriteRepo: {
+        findTarget: jest.fn().mockResolvedValue({ previousGithubIds: [], ...existing } as never),
+        applyPullRequest: jest.fn().mockResolvedValue({ memberId: 1 } as never),
       },
       bannedWordRepo: {
         findAll: jest.fn().mockResolvedValue([{ word: '제출합니다' }] as never),
@@ -220,8 +202,8 @@ describe('syncRepo', () => {
 
     await syncRepo({} as never, 1, 'woowacourse', makeRepo(), COHORT_RULES);
 
-    const upsertArgs = (deps.memberRepo.upsert as jest.Mock).mock.calls[0] as unknown[];
-    const data = upsertArgs[2] as { nicknameStats: string };
+    const applyArgs = (deps.syncWriteRepo.applyPullRequest as jest.Mock).mock.calls[0] as unknown[];
+    const data = (applyArgs[0] as { member: { nicknameStats: string } }).member;
     const nicknames = (JSON.parse(data.nicknameStats) as Array<{ nickname: string }>).map((s) => s.nickname);
     expect(nicknames).toContain('콘티');
     expect(nicknames).not.toContain('제출합니다');
@@ -267,13 +249,9 @@ describe('syncRepo', () => {
       profileFetchedAt: new Date(),
     });
     const deps = makeDeps({
-      memberRepo: {
-        findByGithubUserId: jest.fn().mockResolvedValue(existing as never),
-        findByGithubId: jest.fn().mockResolvedValue(existing as never),
-        findPreviousGithubIds: jest.fn().mockResolvedValue([] as never),
-        replacePreviousGithubIds: jest.fn().mockResolvedValue(undefined as never),
-        upsert: jest.fn().mockResolvedValue(existing as never),
-        upsertParticipation: jest.fn().mockResolvedValue(undefined as never),
+      syncWriteRepo: {
+        findTarget: jest.fn().mockResolvedValue({ previousGithubIds: [], ...existing } as never),
+        applyPullRequest: jest.fn().mockResolvedValue({ memberId: 1 } as never),
       },
     });
     const { syncRepo } = createSyncService(deps as never);
@@ -294,8 +272,8 @@ describe('syncRepo', () => {
 
     await syncRepo({} as never, 1, 'woowacourse', makeRepo(), COHORT_RULES);
 
-    const upsertArgs = (deps.memberRepo.upsert as jest.Mock).mock.calls[0] as unknown[];
-    const data = upsertArgs[2] as { githubId: string };
+    const applyArgs = (deps.syncWriteRepo.applyPullRequest as jest.Mock).mock.calls[0] as unknown[];
+    const data = (applyArgs[0] as { member: { githubId: string } }).member;
     expect(data.githubId).toBe('testuser');
   });
 
@@ -326,8 +304,9 @@ describe('syncRepo', () => {
       } as never);
     let upsertCount = 0;
     const deps = makeDeps({
-      submissionRepo: {
-        upsert: jest.fn().mockImplementation(async () => {
+      syncWriteRepo: {
+        findTarget: jest.fn().mockResolvedValue(null as never),
+        applyPullRequest: jest.fn().mockImplementation(async () => {
           upsertCount++;
           if (upsertCount === 1) throw new Error('db constraint error');
         }),
@@ -505,6 +484,15 @@ describe('syncWorkspace', () => {
 
     await syncWorkspace({} as never, 1);
 
-    expect(deps.memberRepo.upsertParticipation).not.toHaveBeenCalled();
+    expect(
+      (deps.syncWriteRepo.applyPullRequest as jest.Mock).mock.calls.map(
+        (c) => (c[0] as { cohort: number | null }).cohort,
+      ),
+    ).toEqual(expect.arrayContaining([null]));
+    expect(
+      (deps.syncWriteRepo.applyPullRequest as jest.Mock).mock.calls.every(
+        (c) => (c[0] as { cohort: number | null }).cohort === null,
+      ),
+    ).toBe(true);
   });
 });

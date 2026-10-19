@@ -1,0 +1,260 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`repo sync writes (SQLite) should create members, cohorts, previous ids and submissions exactly as before: results 1`] = `
+{
+  "first": {
+    "failures": [],
+    "synced": 5,
+  },
+  "second": {
+    "failures": [],
+    "synced": 1,
+  },
+}
+`;
+
+exports[`repo sync writes (SQLite) should create members, cohorts, previous ids and submissions exactly as before: rows 1`] = `
+[
+  {
+    "avatarUrl": "https://avatars/1001",
+    "blog": "https://velog.io/@crew1",
+    "cohorts": [
+      "8:crew",
+    ],
+    "githubId": "crew1",
+    "githubUserId": 1001,
+    "nickname": "콘티",
+    "nicknameStats": [
+      {
+        "count": 3,
+        "lastSeenAt": "2026-04-01T00:00:00.000Z",
+        "nickname": "콘티",
+      },
+      {
+        "count": 2,
+        "lastSeenAt": "2026-03-09T00:00:00.000Z",
+        "nickname": "단계",
+      },
+      {
+        "count": 1,
+        "lastSeenAt": "2026-04-01T00:00:00.000Z",
+        "nickname": "공통",
+      },
+      {
+        "count": 1,
+        "lastSeenAt": "2026-04-01T00:00:00.000Z",
+        "nickname": "제출",
+      },
+      {
+        "count": 1,
+        "lastSeenAt": "2026-03-09T00:00:00.000Z",
+        "nickname": "리뷰",
+      },
+      {
+        "count": 1,
+        "lastSeenAt": "2026-03-09T00:00:00.000Z",
+        "nickname": "요청",
+      },
+      {
+        "count": 1,
+        "lastSeenAt": "2026-03-02T00:00:00.000Z",
+        "nickname": "자동차",
+      },
+      {
+        "count": 1,
+        "lastSeenAt": "2026-03-02T00:00:00.000Z",
+        "nickname": "경주",
+      },
+      {
+        "count": 1,
+        "lastSeenAt": "2026-03-02T00:00:00.000Z",
+        "nickname": "제출합니다",
+      },
+    ],
+    "previousIds": [],
+    "profileFetched": true,
+    "profileRefreshError": null,
+    "submissions": [
+      {
+        "prNumber": 1,
+        "repo": "java-racingcar",
+        "status": "merged",
+        "submittedAt": "2026-03-02T00:00:00.000Z",
+        "title": "[1단계 - 자동차 경주] 콘티 미션 제출합니다.",
+      },
+      {
+        "prNumber": 2,
+        "repo": "java-racingcar",
+        "status": "open",
+        "submittedAt": "2026-03-09T00:00:00.000Z",
+        "title": "[2단계] 콘티 리뷰 요청",
+      },
+      {
+        "prNumber": 10,
+        "repo": "java-common",
+        "status": "merged",
+        "submittedAt": "2026-04-01T00:00:00.000Z",
+        "title": "[공통] 콘티 제출",
+      },
+    ],
+  },
+  {
+    "avatarUrl": "https://avatars/2002",
+    "blog": "https://velog.io/@crew2",
+    "cohorts": [
+      "7:crew",
+    ],
+    "githubId": "crew2",
+    "githubUserId": 2002,
+    "nickname": "단계",
+    "nicknameStats": [
+      {
+        "count": 1,
+        "lastSeenAt": "2025-03-05T00:00:00.000Z",
+        "nickname": "단계",
+      },
+      {
+        "count": 1,
+        "lastSeenAt": "2025-03-05T00:00:00.000Z",
+        "nickname": "가람",
+      },
+      {
+        "count": 1,
+        "lastSeenAt": "2025-03-05T00:00:00.000Z",
+        "nickname": "제출",
+      },
+    ],
+    "previousIds": [],
+    "profileFetched": true,
+    "profileRefreshError": null,
+    "submissions": [
+      {
+        "prNumber": 3,
+        "repo": "java-racingcar",
+        "status": "merged",
+        "submittedAt": "2025-03-05T00:00:00.000Z",
+        "title": "[1단계] 가람 제출",
+      },
+    ],
+  },
+  {
+    "avatarUrl": "https://avatars/3003",
+    "blog": "https://velog.io/@old-login",
+    "cohorts": [
+      "8:crew",
+    ],
+    "githubId": "new-login",
+    "githubUserId": 3003,
+    "nickname": "단계",
+    "nicknameStats": [
+      {
+        "count": 1,
+        "lastSeenAt": "2026-03-03T00:00:00.000Z",
+        "nickname": "단계",
+      },
+      {
+        "count": 1,
+        "lastSeenAt": "2026-03-03T00:00:00.000Z",
+        "nickname": "네오",
+      },
+      {
+        "count": 1,
+        "lastSeenAt": "2026-03-03T00:00:00.000Z",
+        "nickname": "제출",
+      },
+    ],
+    "previousIds": [
+      "old-login",
+    ],
+    "profileFetched": true,
+    "profileRefreshError": null,
+    "submissions": [
+      {
+        "prNumber": 4,
+        "repo": "java-racingcar",
+        "status": "merged",
+        "submittedAt": "2026-03-03T00:00:00.000Z",
+        "title": "[1단계] 네오 제출",
+      },
+    ],
+  },
+  {
+    "avatarUrl": "https://avatars/4004",
+    "blog": null,
+    "cohorts": [
+      "8:crew",
+    ],
+    "githubId": "nocandidate",
+    "githubUserId": 4004,
+    "nickname": "단계",
+    "nicknameStats": [
+      {
+        "count": 1,
+        "lastSeenAt": "2026-03-04T00:00:00.000Z",
+        "nickname": "단계",
+      },
+      {
+        "count": 1,
+        "lastSeenAt": "2026-03-04T00:00:00.000Z",
+        "nickname": "블로그없음",
+      },
+      {
+        "count": 1,
+        "lastSeenAt": "2026-03-04T00:00:00.000Z",
+        "nickname": "제출",
+      },
+    ],
+    "previousIds": [],
+    "profileFetched": true,
+    "profileRefreshError": null,
+    "submissions": [
+      {
+        "prNumber": 5,
+        "repo": "java-racingcar",
+        "status": "merged",
+        "submittedAt": "2026-03-04T00:00:00.000Z",
+        "title": "[1단계] 블로그없음 제출",
+      },
+    ],
+  },
+]
+`;
+
+exports[`repo sync writes (SQLite) should keep the existing blog and avatar for deleted (ghost) accounts: ghost rows 1`] = `
+[
+  {
+    "avatarUrl": "https://kept.avatar",
+    "blog": "https://kept.blog",
+    "cohorts": [
+      "8:crew",
+    ],
+    "githubId": "crew1",
+    "githubUserId": 1001,
+    "nickname": "단계",
+    "nicknameStats": [
+      {
+        "count": 1,
+        "lastSeenAt": "2026-03-02T00:00:00.000Z",
+        "nickname": "단계",
+      },
+      {
+        "count": 1,
+        "lastSeenAt": "2026-03-02T00:00:00.000Z",
+        "nickname": "콘티",
+      },
+    ],
+    "previousIds": [],
+    "profileFetched": true,
+    "profileRefreshError": null,
+    "submissions": [
+      {
+        "prNumber": 7,
+        "repo": "java-racingcar",
+        "status": "merged",
+        "submittedAt": "2026-03-02T00:00:00.000Z",
+        "title": "[1단계] 콘티",
+      },
+    ],
+  },
+]
+`;
