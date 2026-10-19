@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.3](https://github.com/iftype/who-tech-backend/compare/v1.2.2...v1.2.3) (2026-10-19)
+
+
+### 버그 수정
+
+* **admin:** 구조 개선 중 찾은 어드민 버그 4건 ([#198](https://github.com/iftype/who-tech-backend/issues/198)) ([47ec21b](https://github.com/iftype/who-tech-backend/commit/47ec21bf8d6fc71889b618143e980c9d54f282c4))
+
 ## [1.2.2](https://github.com/iftype/who-tech-backend/compare/v1.2.1...v1.2.2) (2026-10-19)
 
 
