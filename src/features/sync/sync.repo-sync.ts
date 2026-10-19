@@ -15,6 +15,7 @@ import { fetchRepoPRs, fetchUserBlogCandidates } from '../../infra/github/github
 import { probeRss } from '../../infra/rss/rss.js';
 import { parsePRsToSubmissions } from './sync.pr-parser.js';
 import type { CohortRule } from '../../shared/types/index.js';
+import { CancelledError, throwIfCancelled } from '../../shared/errors.js';
 
 type ProfileCacheEntry = {
   githubUserId: number | null;
@@ -68,6 +69,9 @@ export function createRepoSyncer(deps: {
         ...(signal ? { signal } : {}),
       });
     } catch (error) {
+      // 취소로 끊긴 요청은 실패가 아니라 취소로 올린다
+      throwIfCancelled(signal);
+      if (error instanceof CancelledError) throw error;
       const detail = error instanceof Error ? error.message : String(error);
       throw new HttpError(500, `repo sync fetch failed: ${repo.name} — ${detail}`);
     }
@@ -211,7 +215,7 @@ export function createRepoSyncer(deps: {
     onProgress?.({ total, processed, synced, percent: total === 0 ? 100 : 0, phase: 'PR 파싱 완료' });
 
     for (const s of submissions) {
-      if (signal?.aborted) throw new Error('cancelled');
+      throwIfCancelled(signal);
       try {
         const existingMember = await syncWriteRepo.findTarget(s.githubUserId ?? null, s.githubId, workspaceId);
 

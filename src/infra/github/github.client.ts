@@ -4,6 +4,7 @@ import type { CohortRule } from '../../shared/types/index.js';
 
 const ThrottledOctokit = Octokit.plugin(throttling);
 import { normalizeBlogUrl } from '../../shared/blog.js';
+import { throwIfCancelled } from '../../shared/errors.js';
 
 export function detectCohort(submittedAt: Date, cohortRules: CohortRule[]): number | null {
   const year = submittedAt.getFullYear();
@@ -52,7 +53,7 @@ export async function fetchRepoPRs(
   let page = 1;
 
   while (true) {
-    if (signal?.aborted) throw new Error('cancelled');
+    throwIfCancelled(signal);
 
     let data: Awaited<ReturnType<typeof octokit.pulls.list>>['data'];
     try {

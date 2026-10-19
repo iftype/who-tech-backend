@@ -1,40 +1,29 @@
 import { Router } from 'express';
-import { asyncHandler } from '../../shared/http.js';
+
 import { startSse, runSseJob } from '../../shared/sse-handler.js';
 import { parseNumberQuery, parseOptionalNumberQuery } from '../../shared/validation.js';
 import type { SyncAdminService } from './sync.admin.service.js';
+import { CancelledError } from '../../shared/errors.js';
 
 export function createSyncRouter(service: SyncAdminService) {
   const router = Router();
 
-  router.get(
-    '/status',
-    asyncHandler(async (_req, res) => {
-      res.json(await service.getAdminStatus());
-    }),
-  );
+  router.get('/status', async (_req, res) => {
+    res.json(await service.getAdminStatus());
+  });
 
-  router.get(
-    '/github-status',
-    asyncHandler(async (_req, res) => {
-      res.json(await service.getGithubStatus());
-    }),
-  );
+  router.get('/github-status', async (_req, res) => {
+    res.json(await service.getGithubStatus());
+  });
 
-  router.post(
-    '/sync',
-    asyncHandler(async (req, res) => {
-      const cohort = typeof req.body?.cohort === 'number' ? req.body.cohort : undefined;
-      res.json(await service.syncWorkspace(undefined, cohort));
-    }),
-  );
+  router.post('/sync', async (req, res) => {
+    const cohort = typeof req.body?.cohort === 'number' ? req.body.cohort : undefined;
+    res.json(await service.syncWorkspace(undefined, cohort));
+  });
 
-  router.post(
-    '/sync/continuous',
-    asyncHandler(async (_req, res) => {
-      res.json(await service.syncContinuous());
-    }),
-  );
+  router.post('/sync/continuous', async (_req, res) => {
+    res.json(await service.syncContinuous());
+  });
 
   router.get('/sync/continuous/stream', (_req, res) => {
     const send = startSse(res);
@@ -55,17 +44,14 @@ export function createSyncRouter(service: SyncAdminService) {
     );
   });
 
-  router.post(
-    '/sync/cohort-repos',
-    asyncHandler(async (req, res) => {
-      const cohort = typeof req.body?.cohort === 'number' ? req.body.cohort : NaN;
-      if (Number.isNaN(cohort)) {
-        res.status(400).json({ error: 'cohort required' });
-        return;
-      }
-      res.json(await service.syncCohortRepoList(cohort));
-    }),
-  );
+  router.post('/sync/cohort-repos', async (req, res) => {
+    const cohort = typeof req.body?.cohort === 'number' ? req.body.cohort : NaN;
+    if (Number.isNaN(cohort)) {
+      res.status(400).json({ error: 'cohort required' });
+      return;
+    }
+    res.json(await service.syncCohortRepoList(cohort));
+  });
 
   router.get('/sync/cohort-repos/stream', (req, res) => {
     const send = startSse(res);
@@ -84,59 +70,50 @@ export function createSyncRouter(service: SyncAdminService) {
 
   // --- Job Queue Endpoints ---
 
-  router.post(
-    '/sync/jobs',
-    asyncHandler(async (req, res) => {
-      const type = req.body?.type as string | undefined;
-      const cohort = typeof req.body?.cohort === 'number' ? req.body.cohort : undefined;
-      const repoId = typeof req.body?.repoId === 'number' ? req.body.repoId : undefined;
-      const blogSource = typeof req.body?.blogSource === 'string' ? req.body.blogSource : undefined;
+  router.post('/sync/jobs', async (req, res) => {
+    const type = req.body?.type as string | undefined;
+    const cohort = typeof req.body?.cohort === 'number' ? req.body.cohort : undefined;
+    const repoId = typeof req.body?.repoId === 'number' ? req.body.repoId : undefined;
+    const blogSource = typeof req.body?.blogSource === 'string' ? req.body.blogSource : undefined;
 
-      if (
-        type !== 'workspace' &&
-        type !== 'continuous' &&
-        type !== 'cohort-repos' &&
-        type !== 'repo' &&
-        type !== 'blog'
-      ) {
-        res.status(400).json({ error: 'type must be workspace, continuous, cohort-repos, repo, or blog' });
-        return;
-      }
+    if (
+      type !== 'workspace' &&
+      type !== 'continuous' &&
+      type !== 'cohort-repos' &&
+      type !== 'repo' &&
+      type !== 'blog'
+    ) {
+      res.status(400).json({ error: 'type must be workspace, continuous, cohort-repos, repo, or blog' });
+      return;
+    }
 
-      if (type === 'cohort-repos' && cohort == null) {
-        res.status(400).json({ error: 'cohort is required for cohort-repos job' });
-        return;
-      }
+    if (type === 'cohort-repos' && cohort == null) {
+      res.status(400).json({ error: 'cohort is required for cohort-repos job' });
+      return;
+    }
 
-      if (type === 'repo' && repoId == null) {
-        res.status(400).json({ error: 'repoId is required for repo job' });
-        return;
-      }
+    if (type === 'repo' && repoId == null) {
+      res.status(400).json({ error: 'repoId is required for repo job' });
+      return;
+    }
 
-      const id = service.createJob(type, cohort, repoId, blogSource);
-      const job = service.getJob(id);
-      res.status(201).json(job);
-    }),
-  );
+    const id = service.createJob(type, cohort, repoId, blogSource);
+    const job = service.getJob(id);
+    res.status(201).json(job);
+  });
 
-  router.get(
-    '/sync/jobs',
-    asyncHandler(async (_req, res) => {
-      res.json(service.getJobs());
-    }),
-  );
+  router.get('/sync/jobs', async (_req, res) => {
+    res.json(service.getJobs());
+  });
 
-  router.delete(
-    '/sync/jobs/:id',
-    asyncHandler(async (req, res) => {
-      const success = service.cancelJob(String(req.params['id'] ?? ''));
-      if (!success) {
-        res.status(404).json({ error: 'job not found or already completed' });
-        return;
-      }
-      res.json({ success: true });
-    }),
-  );
+  router.delete('/sync/jobs/:id', async (req, res) => {
+    const success = service.cancelJob(String(req.params['id'] ?? ''));
+    if (!success) {
+      res.status(404).json({ error: 'job not found or already completed' });
+      return;
+    }
+    res.json({ success: true });
+  });
 
   router.get('/sync/jobs/:id/stream', (req, res) => {
     const jobId = String(req.params['id'] ?? '');
@@ -189,7 +166,7 @@ export function createSyncRouter(service: SyncAdminService) {
         unsubProgress();
         const j = completedJob as { status: string; result?: unknown; error?: string };
         if (j.status === 'cancelled') {
-          throw new Error('cancelled');
+          throw new CancelledError();
         }
         return j.result ?? {};
       }),
