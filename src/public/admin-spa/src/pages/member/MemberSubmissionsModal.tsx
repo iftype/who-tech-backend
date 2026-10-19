@@ -6,6 +6,7 @@ import { Badge } from '../../components/ui/Badge.js';
 import type { Member, Submission } from '../../lib/types.js';
 import { adminApi } from '../../lib/admin-api.js';
 import { queryKeys } from '../../lib/query-keys.js';
+import { TextLink } from '../../components/ui/TextLink.js';
 
 export interface SubmissionsModalState {
   member: Member;
@@ -49,14 +50,9 @@ export function MemberSubmissionsModal({ state, onChange, onRefresh }: Props) {
               <div key={s.id} className="border border-base-100 rounded p-2 flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <a
-                      href={s.prUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-primary-600 hover:underline"
-                    >
+                    <TextLink href={s.prUrl} target="_blank" rel="noopener noreferrer" size="sm">
                       #{s.prNumber} {s.title}
-                    </a>
+                    </TextLink>
                     <Badge tone={s.status === 'merged' ? 'accent' : s.status === 'open' ? 'success' : 'base'}>
                       {s.status}
                     </Badge>

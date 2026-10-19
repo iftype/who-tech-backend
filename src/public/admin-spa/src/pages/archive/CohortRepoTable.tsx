@@ -1,6 +1,7 @@
 import type { CohortRepo } from '../../lib/types.js';
-import { Table, TableFrame, TBody, THead, Td, Th } from '../../components/ui/Table.js';
+import { Table, TableFrame, TBody, Td, Th, THead, Tr } from '../../components/ui/Table.js';
 import type { CohortRepoEditor, CohortRepoFieldEditor } from './useCohortRepoEditor.js';
+import { TextLink } from '../../components/ui/TextLink.js';
 
 // 숫자 칸(순서·레벨): 누르면 입력칸으로 바뀐다
 function NumberCell({
@@ -52,19 +53,19 @@ export function CohortRepoTable({ repos, editor }: { repos: CohortRepo[]; editor
         </THead>
         <TBody>
           {repos.map((cr) => (
-            <tr key={cr.id} className="hover:bg-base-50">
+            <Tr key={cr.id}>
               <Td>
                 <NumberCell cr={cr} field={editor.order} display={cr.order} title="클릭하여 순서 변경" />
               </Td>
               <Td>
-                <a
+                <TextLink
                   href={cr.missionRepo.repoUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-primary-600 hover:underline text-xs font-medium"
+                  className="font-medium"
                 >
                   {cr.missionRepo.name}
-                </a>
+                </TextLink>
               </Td>
               <Td className="text-xs text-base-600">{cr.missionRepo.track ?? '—'}</Td>
               <Td>
@@ -80,7 +81,7 @@ export function CohortRepoTable({ repos, editor }: { repos: CohortRepo[]; editor
                   ✕
                 </button>
               </Td>
-            </tr>
+            </Tr>
           ))}
         </TBody>
       </Table>

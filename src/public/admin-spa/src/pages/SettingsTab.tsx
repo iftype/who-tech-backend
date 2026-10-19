@@ -6,7 +6,7 @@ import { showToast } from '../components/ui/Toast.js';
 import { adminApi } from '../lib/admin-api.js';
 import { queryKeys } from '../lib/query-keys.js';
 import { Button } from '../components/ui/Button.js';
-import { FieldLabel, TextInput } from '../components/ui/Field.js';
+import { Checkbox, FieldLabel, TextInput } from '../components/ui/Field.js';
 import { EmptyState, SectionTitle } from '../components/ui/Section.js';
 
 export default function SettingsTab() {
@@ -122,12 +122,10 @@ export default function SettingsTab() {
         <SectionTitle className="mb-3">워크스페이스</SectionTitle>
         <form onSubmit={saveWorkspace} className="space-y-3 bg-base-50 border border-base-200 rounded p-4">
           <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={blogSyncEnabled}
               onChange={(e) => toggleBlogSync(e.target.checked)}
               disabled={saveWorkspaceMutation.isPending}
-              className="rounded"
             />
             <span className="text-sm text-base-700">블로그 RSS 자동 싱크</span>
             {saveWorkspaceMutation.isPending && <span className="text-xs text-base-400">저장 중...</span>}

@@ -4,9 +4,10 @@ import { useQuery } from '@tanstack/react-query';
 import type { Submission } from '../lib/types.js';
 import { adminApi } from '../lib/admin-api.js';
 import { queryKeys } from '../lib/query-keys.js';
-import { Table, TableFrame, TBody, THead, Td, Th } from '../components/ui/Table.js';
+import { Table, TableFrame, TBody, Td, Th, THead, Tr } from '../components/ui/Table.js';
 import { Badge, type BadgeTone } from '../components/ui/Badge.js';
 import { EmptyState, SectionTitle } from '../components/ui/Section.js';
+import { TextLink } from '../components/ui/TextLink.js';
 
 type StatusFilter = '' | 'open' | 'merged' | 'closed';
 
@@ -133,26 +134,21 @@ export default function PRTab() {
                 </THead>
                 <TBody>
                   {filteredSubmissions.map((s: Submission) => (
-                    <tr key={s.id} className="hover:bg-base-50">
+                    <Tr key={s.id}>
                       <Td className="text-xs text-base-600">
                         {s.missionRepo.name}
                         {s.missionRepo.track && <span className="text-base-400 ml-1">({s.missionRepo.track})</span>}
                       </Td>
                       <Td>
-                        <a
-                          href={s.prUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-primary-600 hover:underline"
-                        >
+                        <TextLink href={s.prUrl} target="_blank" rel="noopener noreferrer">
                           #{s.prNumber} {s.title}
-                        </a>
+                        </TextLink>
                       </Td>
                       <Td>
                         <Badge tone={PR_STATUS_TONE[s.status] ?? 'base'}>{s.status}</Badge>
                       </Td>
                       <Td className="text-xs text-base-500">{new Date(s.submittedAt).toLocaleDateString('ko-KR')}</Td>
-                    </tr>
+                    </Tr>
                   ))}
                 </TBody>
               </Table>

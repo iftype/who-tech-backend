@@ -1,5 +1,6 @@
 import { Modal } from '../../components/ui/Modal.js';
 import type { BlogPost, Member } from '../../lib/types.js';
+import { TextLink } from '../../components/ui/TextLink.js';
 
 export interface BlogPostsModalState {
   member: Member;
@@ -16,14 +17,9 @@ export function MemberBlogPostsModal({ state, onClose }: { state: BlogPostsModal
           ) : (
             state.posts.map((p) => (
               <div key={p.id} className="border border-base-100 rounded p-2">
-                <a
-                  href={p.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-primary-600 hover:underline"
-                >
+                <TextLink href={p.url} target="_blank" rel="noopener noreferrer" size="sm">
                   {p.title}
-                </a>
+                </TextLink>
                 <p className="text-xs text-base-400 mt-0.5">{new Date(p.publishedAt).toLocaleDateString('ko-KR')}</p>
               </div>
             ))

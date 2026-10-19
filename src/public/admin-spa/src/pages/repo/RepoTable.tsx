@@ -5,6 +5,7 @@ import { RepoRow } from './RepoRow.js';
 import type { RepoEditing } from './useRepoEditing.js';
 import type { RepoSelection } from './useRepoSelection.js';
 import type { RepoSync } from './useRepoSync.js';
+import { Checkbox } from '../../components/ui/Field.js';
 
 interface Props {
   repos: MissionRepo[];
@@ -39,8 +40,7 @@ export function RepoTable({ repos, title, emptyMessage, editing, sync, selection
           <THead>
             <tr>
               <Th className="w-8">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={allSelected}
                   onChange={() =>
                     selection.toggleAll(
@@ -48,7 +48,7 @@ export function RepoTable({ repos, title, emptyMessage, editing, sync, selection
                       allSelected,
                     )
                   }
-                  className="rounded border-base-300"
+                  className="border-base-300"
                 />
               </Th>
               <Th>레포</Th>
