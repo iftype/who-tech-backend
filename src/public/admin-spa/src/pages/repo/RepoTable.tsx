@@ -9,6 +9,15 @@ import {
   type EditingCell,
 } from './repo-options.js';
 import { Table, TBody, THead, Td, Th } from '../../components/ui/Table.js';
+import { Badge, badgeVariants, type BadgeTone } from '../../components/ui/Badge.js';
+
+const REPO_STATUS_TONE: Record<string, BadgeTone> = { active: 'success', candidate: 'highlight', excluded: 'danger' };
+// 제외(excluded)는 강조 없이 기본 회색 배지로 둔다
+const TAB_CATEGORY_TONE: Record<string, BadgeTone<'subtle'>> = {
+  base: 'primary',
+  common: 'accent',
+  precourse: 'caution',
+};
 
 export function RepoTable({
   repos,
@@ -57,16 +66,14 @@ export function RepoTable({
     savingField?.repoId === repoId && savingField?.field === field;
 
   const statusBadge = (s: string, repo: MissionRepo) => {
-    const colors: Record<string, string> = {
-      active: 'bg-success-100 text-success-700 border-success-200',
-      candidate: 'bg-highlight-100 text-highlight-700 border-highlight-200',
-      excluded: 'bg-danger-100 text-danger-700 border-danger-200',
-    };
     return (
       <button
         onClick={() => onToggleStatus(repo)}
         title="클릭하여 상태 전환 (active → candidate → excluded → active)"
-        className={`text-xs px-1.5 py-0.5 rounded font-medium border cursor-pointer hover:scale-105 transition-transform ${colors[s] ?? 'bg-base-100 text-base-500 border-base-200'}`}
+        className={badgeVariants({
+          tone: REPO_STATUS_TONE[s] ?? 'base',
+          className: 'cursor-pointer hover:scale-105 transition-transform',
+        })}
       >
         {s}
       </button>
@@ -75,18 +82,13 @@ export function RepoTable({
 
   const tabCategoryBadge = (c: string) => {
     const labels: Record<string, string> = { base: '기준', common: '공통', precourse: '프리코스', excluded: '제외' };
-    const colors: Record<string, string> = {
-      base: 'bg-primary-50 text-primary-700 border-primary-200',
-      common: 'bg-accent-50 text-accent-700 border-accent-200',
-      precourse: 'bg-caution-50 text-caution-700 border-caution-200',
-      excluded: 'bg-base-100 text-base-500 border-base-200',
-    };
-    return (
-      <span
-        className={`text-xs px-1.5 py-0.5 rounded font-medium border ${colors[c] ?? 'bg-base-100 text-base-500 border-base-200'}`}
-      >
+    const tone = TAB_CATEGORY_TONE[c];
+    return tone ? (
+      <Badge emphasis="subtle" tone={tone}>
         {labels[c] ?? c}
-      </span>
+      </Badge>
+    ) : (
+      <Badge>{labels[c] ?? c}</Badge>
     );
   };
 
@@ -210,11 +212,11 @@ export function RepoTable({
                     <button
                       onClick={() => void onToggleSyncMode(r)}
                       title="클릭하여 전환"
-                      className={`text-xs px-1.5 py-0.5 rounded font-medium border ${
+                      className={
                         r.syncMode === 'continuous'
-                          ? 'bg-accent-50 text-accent-700 border-accent-200 hover:bg-accent-100'
-                          : 'bg-base-50 text-base-500 border-base-200 hover:bg-base-100'
-                      }`}
+                          ? badgeVariants({ emphasis: 'subtle', tone: 'accent', className: 'hover:bg-accent-100' })
+                          : badgeVariants({ emphasis: 'subtle', tone: 'base', className: 'hover:bg-base-100' })
+                      }
                     >
                       {r.syncMode === 'continuous' ? '연속' : '1회'}
                     </button>

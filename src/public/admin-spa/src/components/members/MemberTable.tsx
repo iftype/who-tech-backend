@@ -7,6 +7,7 @@ import { useRefreshCooldowns } from '../../hooks/useRefreshCooldowns.js';
 import type { Member, BlogPost, MemberCohort, Submission } from '../../lib/types.js';
 import { adminApi } from '../../lib/admin-api.js';
 import { queryKeys } from '../../lib/query-keys.js';
+import { Badge } from '../ui/Badge.js';
 import { Table, TableFrame, TBody, THead, Td, Th } from '../ui/Table.js';
 import { Button } from '../ui/Button.js';
 
@@ -545,11 +546,9 @@ export default function MemberTable({ members, onRefresh }: Props) {
                       >
                         #{s.prNumber} {s.title}
                       </a>
-                      <span
-                        className={`text-xs px-1.5 py-0.5 rounded font-medium border ${s.status === 'merged' ? 'bg-accent-100 text-accent-700 border-accent-200' : s.status === 'open' ? 'bg-success-100 text-success-700 border-success-200' : 'bg-base-100 text-base-500 border-base-200'}`}
-                      >
+                      <Badge tone={s.status === 'merged' ? 'accent' : s.status === 'open' ? 'success' : 'base'}>
                         {s.status}
-                      </span>
+                      </Badge>
                     </div>
                     <p className="text-xs text-base-400 mt-0.5">
                       {s.missionRepo.name} · {new Date(s.submittedAt).toLocaleDateString('ko-KR')}

@@ -1,6 +1,9 @@
 import type { SyncQueueJob } from '../../lib/types.js';
 import type { RecentSyncJob } from '../../lib/types.js';
 import { Table, TBody, THead, Td, Th } from '../../components/ui/Table.js';
+import { Badge, type BadgeTone } from '../../components/ui/Badge.js';
+
+const JOB_STATUS_TONE: Record<string, BadgeTone> = { completed: 'success', failed: 'danger', running: 'primary' };
 
 export function RecentJobsTable({ jobs }: { jobs: (SyncQueueJob | RecentSyncJob)[] }) {
   return (
@@ -32,36 +35,20 @@ export function RecentJobsTable({ jobs }: { jobs: (SyncQueueJob | RecentSyncJob)
                   </Td>
                   <Td>
                     {isQueueJob ? (
-                      <span className="text-xs px-1.5 py-0.5 rounded font-medium border bg-accent-50 text-accent-700 border-accent-200">
+                      <Badge emphasis="subtle" tone="accent">
                         {queueJob.type === 'workspace' ? '전체' : queueJob.type === 'continuous' ? '연속' : '기수레포'}
                         {queueJob.cohort != null ? ` (${queueJob.cohort}기)` : ''}
-                      </span>
+                      </Badge>
                     ) : (
-                      <span
-                        className={`text-xs px-1.5 py-0.5 rounded font-medium border ${
-                          repoJob.repoName
-                            ? 'bg-primary-50 text-primary-700 border-primary-200'
-                            : 'bg-success-50 text-success-700 border-success-200'
-                        }`}
-                      >
+                      <Badge emphasis="subtle" tone={repoJob.repoName ? 'primary' : 'success'}>
                         {repoJob.repoName ? '레포' : '블로그'}
-                      </span>
+                      </Badge>
                     )}
                   </Td>
                   <Td>
-                    <span
-                      className={`text-xs px-1.5 py-0.5 rounded font-medium border ${
-                        (isQueueJob ? queueJob.status : repoJob.status) === 'completed'
-                          ? 'bg-success-100 text-success-700 border-success-200'
-                          : (isQueueJob ? queueJob.status : repoJob.status) === 'failed'
-                            ? 'bg-danger-100 text-danger-700 border-danger-200'
-                            : (isQueueJob ? queueJob.status : repoJob.status) === 'running'
-                              ? 'bg-primary-100 text-primary-700 border-primary-200'
-                              : 'bg-base-100 text-base-500 border-base-200'
-                      }`}
-                    >
+                    <Badge tone={JOB_STATUS_TONE[isQueueJob ? queueJob.status : repoJob.status] ?? 'base'}>
                       {isQueueJob ? queueJob.status : repoJob.status}
-                    </span>
+                    </Badge>
                   </Td>
                   <Td className="text-base-700 truncate max-w-[300px]">
                     {isQueueJob

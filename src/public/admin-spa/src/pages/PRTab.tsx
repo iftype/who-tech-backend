@@ -5,8 +5,11 @@ import type { Submission } from '../lib/types.js';
 import { adminApi } from '../lib/admin-api.js';
 import { queryKeys } from '../lib/query-keys.js';
 import { Table, TableFrame, TBody, THead, Td, Th } from '../components/ui/Table.js';
+import { Badge, type BadgeTone } from '../components/ui/Badge.js';
 
 type StatusFilter = '' | 'open' | 'merged' | 'closed';
+
+const PR_STATUS_TONE: Record<string, BadgeTone> = { open: 'success', merged: 'accent', closed: 'danger' };
 
 export default function PRTab() {
   const [selectedMemberId, setSelectedMemberId] = useState<number | null>(() => {
@@ -39,21 +42,6 @@ export default function PRTab() {
     if (!statusFilter) return true;
     return s.status === statusFilter;
   });
-
-  const statusBadge = (status: string) => {
-    const colors: Record<string, string> = {
-      open: 'bg-success-100 text-success-700 border-success-200',
-      merged: 'bg-accent-100 text-accent-700 border-accent-200',
-      closed: 'bg-danger-100 text-danger-700 border-danger-200',
-    };
-    return (
-      <span
-        className={`text-xs px-1.5 py-0.5 rounded font-medium border ${colors[status] ?? 'bg-base-100 text-base-500 border-base-200'}`}
-      >
-        {status}
-      </span>
-    );
-  };
 
   return (
     <div className="space-y-4">
@@ -159,7 +147,9 @@ export default function PRTab() {
                           #{s.prNumber} {s.title}
                         </a>
                       </Td>
-                      <Td>{statusBadge(s.status)}</Td>
+                      <Td>
+                        <Badge tone={PR_STATUS_TONE[s.status] ?? 'base'}>{s.status}</Badge>
+                      </Td>
                       <Td className="text-xs text-base-500">{new Date(s.submittedAt).toLocaleDateString('ko-KR')}</Td>
                     </tr>
                   ))}

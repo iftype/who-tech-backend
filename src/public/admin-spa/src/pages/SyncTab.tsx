@@ -12,6 +12,7 @@ import { RecentJobsTable } from './sync/RecentJobsTable.js';
 import { adminApi } from '../lib/admin-api.js';
 import { queryKeys } from '../lib/query-keys.js';
 import { Table, TBody, THead, Td, Th } from '../components/ui/Table.js';
+import { Badge } from '../components/ui/Badge.js';
 import { Button } from '../components/ui/Button.js';
 
 export default function SyncTab() {
@@ -467,10 +468,10 @@ export default function SyncTab() {
                       )}
                     </Td>
                     <Td>
-                      <span className="text-xs px-1.5 py-0.5 rounded font-medium border bg-primary-50 text-primary-700 border-primary-200">
+                      <Badge emphasis="subtle" tone="primary">
                         {j.type === 'workspace' ? '전체' : j.type === 'continuous' ? '연속' : '기수레포'}
                         {j.cohort != null ? ` (${j.cohort}기)` : ''}
-                      </span>
+                      </Badge>
                     </Td>
                     <Td>
                       <span

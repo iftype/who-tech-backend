@@ -16,6 +16,7 @@ import {
 } from './repo/repo-options.js';
 import { adminApi } from '../lib/admin-api.js';
 import { queryKeys } from '../lib/query-keys.js';
+import { Badge } from '../components/ui/Badge.js';
 
 export default function RepoTab() {
   const [status, setStatus] = useState<StatusFilter>('');
@@ -304,21 +305,21 @@ export default function RepoTab() {
         <div className="font-semibold text-console-700 mb-1.5">상태 설명</div>
         <div className="flex flex-wrap gap-x-4 gap-y-1">
           <span>
-            <span className="inline-block px-1.5 py-0.5 rounded font-medium border bg-success-100 text-success-700 border-success-200 mr-1">
+            <Badge tone="success" className="inline-block mr-1">
               active
-            </span>{' '}
+            </Badge>{' '}
             전체 싱크 대상에 포함됨
           </span>
           <span>
-            <span className="inline-block px-1.5 py-0.5 rounded font-medium border bg-highlight-100 text-highlight-700 border-highlight-200 mr-1">
+            <Badge tone="highlight" className="inline-block mr-1">
               candidate
-            </span>{' '}
+            </Badge>{' '}
             후보 상태, 수동으로 active로 승인 필요
           </span>
           <span>
-            <span className="inline-block px-1.5 py-0.5 rounded font-medium border bg-danger-100 text-danger-700 border-danger-200 mr-1">
+            <Badge tone="danger" className="inline-block mr-1">
               excluded
-            </span>{' '}
+            </Badge>{' '}
             싱크 대상에서 제외됨
           </span>
         </div>
