@@ -1,13 +1,15 @@
 import type { ReactNode } from 'react';
 
 import type { MissionRepo } from '../../lib/types.js';
-import { Td } from '../../components/ui/Table.js';
+import { Td, Tr } from '../../components/ui/Table.js';
 import { Badge, badgeVariants, type BadgeTone } from '../../components/ui/Badge.js';
 import { EditableSelectCell, EditableTextCell, SyncProgress } from './RepoCells.js';
 import { TAB_CATEGORY_OPTIONS, TRACK_OPTIONS, TYPE_OPTIONS, type EditableField } from './repo-options.js';
 import type { RepoEditing } from './useRepoEditing.js';
 import type { RepoSelection } from './useRepoSelection.js';
 import type { RepoSync } from './useRepoSync.js';
+import { TextLink } from '../../components/ui/TextLink.js';
+import { Checkbox } from '../../components/ui/Field.js';
 
 const REPO_STATUS_TONE: Record<string, BadgeTone> = { active: 'success', candidate: 'highlight', excluded: 'danger' };
 // 제외(excluded)는 강조 없이 기본 회색 배지로 둔다
@@ -73,24 +75,18 @@ export function RepoRow({ repo: r, editing, sync, selection }: Props) {
   );
 
   return (
-    <tr className="hover:bg-base-50">
+    <Tr>
       <Td>
-        <input
-          type="checkbox"
+        <Checkbox
           checked={selection.selectedRepoIds.has(r.id)}
           onChange={() => selection.toggle(r.id)}
-          className="rounded border-base-300"
+          className="border-base-300"
         />
       </Td>
       <Td>
-        <a
-          href={r.repoUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-primary-600 hover:underline text-xs font-medium"
-        >
+        <TextLink href={r.repoUrl} target="_blank" rel="noopener noreferrer" className="font-medium">
           {r.name}
-        </a>
+        </TextLink>
         {activeJob && <SyncProgress job={activeJob} />}
       </Td>
       {editableCell(
@@ -185,6 +181,6 @@ export function RepoRow({ repo: r, editing, sync, selection }: Props) {
           </button>
         </div>
       </Td>
-    </tr>
+    </Tr>
   );
 }

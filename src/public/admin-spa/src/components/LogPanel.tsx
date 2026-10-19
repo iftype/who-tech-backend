@@ -2,6 +2,10 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 
 import { adminApi } from '../lib/admin-api.js';
 
+// 콘솔 머리의 작은 버튼(지우기·접기)
+const CONSOLE_BUTTON_CLASS =
+  'text-[11px] px-2 py-0.5 rounded border border-console-700 text-console-500 hover:bg-console-700 hover:text-console-200 transition-colors';
+
 export interface LogEntry {
   ts: number;
   tag: 'ok' | 'err' | 'run' | 'info';
@@ -87,16 +91,10 @@ export function LogPanel() {
           Activity Log ({entries.length})
         </span>
         <div className="flex gap-1.5" onClick={(e) => e.stopPropagation()}>
-          <button
-            onClick={clear}
-            className="text-[11px] px-2 py-0.5 rounded border border-console-700 text-console-500 hover:bg-console-700 hover:text-console-200 transition-colors"
-          >
+          <button onClick={clear} className={CONSOLE_BUTTON_CLASS}>
             Clear
           </button>
-          <button
-            onClick={() => setCollapsed((c) => !c)}
-            className="text-[11px] px-2 py-0.5 rounded border border-console-700 text-console-500 hover:bg-console-700 hover:text-console-200 transition-colors"
-          >
+          <button onClick={() => setCollapsed((c) => !c)} className={CONSOLE_BUTTON_CLASS}>
             {collapsed ? '▲' : '▼'}
           </button>
         </div>
