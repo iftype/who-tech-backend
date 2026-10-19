@@ -1,7 +1,7 @@
 import type { Octokit } from '@octokit/rest';
 import type { MemberRepository } from '../../db/repositories/member.repository.js';
 import { mergePreviousGithubIds } from '../../shared/github-profile.js';
-import { resolveDisplayNickname, extractNicknameTokens, mergeNicknameStat } from '../../shared/nickname.js';
+import { computeNicknameStats, resolveDisplayNickname } from '../../shared/nickname.js';
 import { fetchUserBlogCandidates } from '../../infra/github/github.client.js';
 import { probeRss } from '../../infra/rss/rss.js';
 import { toMemberResponse } from './member.response.js';
@@ -21,14 +21,8 @@ export async function refreshMemberProfileById(
   const member = await memberRepo.findByIdWithRelations(id);
   if (!member) throw new NotFoundError('member not found');
 
-  let statsValue: string | null = null;
-  for (const submission of member.submissions) {
-    for (const token of extractNicknameTokens(submission.title)) {
-      if (!bannedWords.has(token)) {
-        statsValue = JSON.stringify(mergeNicknameStat(statsValue, token, submission.submittedAt));
-      }
-    }
-  }
+  // 모든 제출로 다시 계산한다 (예전에는 상세 include의 최근 50건만 봐서 제출이 많은 멤버의 통계가 잘렸다)
+  const statsValue = computeNicknameStats(await memberRepo.findSubmissionTitles(id), bannedWords);
 
   const resolvedNickname = resolveDisplayNickname(member.manualNickname, statsValue, null);
 

@@ -17,6 +17,8 @@ const syncTargetSelect = {
   profileFetchedAt: true,
   profileRefreshError: true,
   previousIds: { select: { githubId: true }, orderBy: { id: 'asc' } },
+  // 닉네임 통계를 처음부터 다시 계산하는 근거 (제목·시각만)
+  submissions: { select: { prNumber: true, missionRepoId: true, title: true, submittedAt: true } },
 } satisfies Prisma.MemberSelect;
 
 type SyncTargetRow = Prisma.MemberGetPayload<{ select: typeof syncTargetSelect }>;
