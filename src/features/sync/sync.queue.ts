@@ -38,6 +38,9 @@ export type SyncJob = {
 };
 
 type ProgressSubscriber = (progress: SyncJobProgress) => void;
+
+// 끝난 작업은 이 시간이 지나면 목록에서 지운다 (프로세스가 살아 있는 동안 작업 배열이 끝없이 커지지 않게)
+export const FINISHED_JOB_TTL_MS = 6 * 60 * 60 * 1000;
 type DoneSubscriber = (job: SyncJob) => void;
 
 export function createSyncQueue(deps: {
@@ -82,7 +85,19 @@ export function createSyncQueue(deps: {
     }
   };
 
+  const pruneFinished = (now: number): void => {
+    for (let i = jobs.length - 1; i >= 0; i--) {
+      const job = jobs[i];
+      if (job?.completedAt && now - job.completedAt.getTime() > FINISHED_JOB_TTL_MS) {
+        jobs.splice(i, 1);
+        progressSubs.delete(job.id);
+        doneSubs.delete(job.id);
+      }
+    }
+  };
+
   const enqueue = (type: SyncJobType, cohort?: number, repoId?: number, blogSource?: string): string => {
+    pruneFinished(Date.now());
     const id = randomUUID();
     const job: SyncJob = {
       id,

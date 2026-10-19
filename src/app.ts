@@ -3,8 +3,8 @@ import compression from 'compression';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { existsSync, readFileSync } from 'fs';
-import { spawn, execSync } from 'child_process';
-import { adminAuth } from './shared/middleware/auth.js';
+import { execSync } from 'child_process';
+import { adminAuth, bearerToken, isAdminToken } from './shared/middleware/auth.js';
 import { errorHandler } from './shared/middleware/error.js';
 import { createContainer } from './container.js';
 
@@ -23,6 +23,8 @@ import { createMemberPublicRouter } from './features/member/member.public.route.
 import { createArchiveRouter } from './features/archive/archive.route.js';
 import { createTecoTalkRouter } from './features/tecotalk/tecotalk.route.js';
 import { createHealthRouter } from './features/health/health.route.js';
+import { createDeployRouter } from './features/deploy/deploy.route.js';
+import { createDeployService } from './features/deploy/deploy.service.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const publicDir = existsSync(join(__dirname, 'public'))
@@ -94,48 +96,14 @@ app.use(
 
 app.use('/members', createMemberPublicRouter(memberPublicService));
 
-app.post('/admin/deploy', (req, res): void => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader?.replace('Bearer ', '');
-  if (token !== process.env['ADMIN_SECRET']) {
-    res.status(401).json({ error: 'Unauthorized' });
-    return;
-  }
-
-  const logFile = `/tmp/who-tech-deploy-${Date.now()}.log`;
-  res.json({ ok: true, message: 'deploy started', logFile });
-
-  const child = spawn('bash', [join(__dirname, '..', 'scripts', 'deploy.sh')], {
-    detached: true,
-    stdio: 'ignore',
-    shell: false,
-  });
-  child.unref();
-});
-
-app.get('/admin/deploy/logs', (req, res): void => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader?.replace('Bearer ', '');
-  if (token !== process.env['ADMIN_SECRET']) {
-    res.status(401).json({ error: 'Unauthorized' });
-    return;
-  }
-
-  try {
-    const logs = execSync('ls -t /tmp/who-tech-deploy-*.log 2>/dev/null | head -10')
-      .toString()
-      .trim()
-      .split('\n')
-      .filter(Boolean);
-    const result = logs.map((log) => ({
-      file: log,
-      content: execSync(`tail -n 30 "${log}" 2>/dev/null || echo "Unable to read log"`).toString(),
-    }));
-    res.json(result);
-  } catch {
-    res.json([]);
-  }
-});
+app.use(
+  '/admin',
+  createDeployRouter({
+    service: createDeployService({ scriptPath: join(__dirname, '..', 'scripts', 'deploy.sh') }),
+    isAuthorized: isAdminToken,
+    bearerToken,
+  }),
+);
 
 app.use('/admin', adminAuth);
 app.use('/admin/workspace', createWorkspaceRouter(workspaceService));
