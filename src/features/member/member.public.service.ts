@@ -13,6 +13,7 @@ import { summarizeTracks } from '../../shared/member-track.js';
 import { buildMemberArchive } from './member.archive.js';
 import { refreshMemberProfileById } from './member.profile-refresh.js';
 import { parseCohortRules } from '../../shared/cohort-rules.js';
+import { NotFoundError } from '../../shared/errors.js';
 
 export function createMemberPublicService(deps: {
   memberRepo: MemberRepository;
@@ -234,7 +235,7 @@ export function createMemberPublicService(deps: {
     refreshMemberProfile: async (githubId: string) => {
       const workspace = await workspaceService.getOrThrow();
       const member = await memberRepo.findByGithubId(githubId, workspace.id);
-      if (!member) throw new Error('Member not found');
+      if (!member) throw new NotFoundError('Member not found');
 
       const rateLimit = await activityLogService.checkRateLimit(githubId, 1);
       if (!rateLimit.allowed) {

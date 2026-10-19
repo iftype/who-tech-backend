@@ -8,6 +8,7 @@ import { createTecoTalkRouter } from '../../features/tecotalk/tecotalk.route.js'
 import { createMemberRouter } from '../../features/member/member.route.js';
 import { createMemberPublicRouter } from '../../features/member/member.public.route.js';
 import { errorHandler } from '../../shared/middleware/error.js';
+import { NotFoundError } from '../../shared/errors.js';
 
 // 외부 서비스(GitHub·YouTube·RSS)를 부르는 엔드포인트의 라우트 계약 (ARCHITECTURE_PLAN A-3).
 // DB만 쓰는 엔드포인트는 integration/api-contract.int.test.ts가 실제 DB로 고정하고,
@@ -61,7 +62,7 @@ const REFRESH = 'memberPublic.refreshMemberProfile';
 const steps: Step[] = [
   ['post', '/members/fe-crew/refresh', undefined, { [REFRESH]: { member: { githubId: 'fe-crew' } } }],
   ['post', '/members/fe-crew/refresh', undefined, { [REFRESH]: { rateLimited: true, remainingSeconds: 42 } }],
-  ['post', '/members/ghost/refresh', undefined, { [REFRESH]: new Error('Member not found') }],
+  ['post', '/members/ghost/refresh', undefined, { [REFRESH]: new NotFoundError('Member not found') }],
   ['post', '/members/fe-crew/refresh', undefined, { [REFRESH]: new Error('GitHub down') }],
   ['get', '/admin/github-status'],
   ['post', '/admin/sync', {}],

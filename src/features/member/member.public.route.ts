@@ -2,6 +2,7 @@ import { Router } from 'express';
 
 import { parseOptionalNumberQuery } from '../../shared/validation.js';
 import type { MemberPublicService } from './member.public.service.js';
+import { NotFoundError } from '../../shared/errors.js';
 
 export function createMemberPublicRouter(service: MemberPublicService) {
   const router = Router();
@@ -124,11 +125,12 @@ export function createMemberPublicRouter(service: MemberPublicService) {
       }
       res.json(result.member);
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      if (message === 'Member not found') {
-        res.status(404).json({ error: 'Member not found' });
+      // 공개 API는 { error } 모양으로 답한다 (어드민의 { message }와 다름 — 계약 유지)
+      if (error instanceof NotFoundError) {
+        res.status(404).json({ error: error.message });
         return;
       }
+      const message = error instanceof Error ? error.message : String(error);
       res.status(500).json({ error: message });
     }
   });
