@@ -2,6 +2,20 @@
 
 ---
 
+## 2026-10-19
+
+**어드민 SPA 구조 정리 (ARCHITECTURE_PLAN D-1b·D-2·D-3, 화면·동작 변화 없음)**
+
+- **폴더**: `pages/<탭>Tab.tsx`(조립만) + `pages/<탭>/`(그 탭 전용 훅·컴포넌트: `member`·`sync`·`repo`·`archive`) → `components`(공용: `Layout`, `StreamLogConsole` 등)·`components/ui`(기본 부품) → `hooks` → `lib`(API·쿼리 키·유틸)
+- **기본 부품** (`components/ui`, cva): `Table`·`Th`·`Td`, `Button`, `Badge`, `TextInput`·`Select`·`FieldLabel`, `SectionTitle`·`Panel`·`EmptyState`, `Modal`, `Toast`. 원래 손으로 쓴 클래스와 같은지 단위 테스트로 고정
+- **색**: 원시 팔레트(`text-gray-500`) 대신 역할별 계열(`text-base-500`, `bg-primary-600`, `bg-danger-50` …), `index.css` `@theme`에 정의. `npm --prefix src/public/admin-spa run lint:tokens`가 CI에서 막는다
+- **공통 훅**: `useEventStreamLog`(SSE 진행 로그, 싱크·아카이브 탭), `useSortableData`
+- **규칙** (`.dependency-cruiser.cjs`, 위반 시 CI 실패): 순환 금지, 안 쓰는 모듈 금지, `lib`은 화면을 모름, `ui`는 다른 화면 코드에 기대지 않음, 공용은 페이지를 모름, 탭 폴더끼리 참조 금지
+- **내보내기**: 탭 화면(`pages/*Tab.tsx`)만 `export default`(지연 로딩), 나머지는 이름 있는 내보내기
+- **동작 고정 테스트**: `MemberTable.test.tsx`, `SyncTab.flow.test.tsx`, `ArchiveTab.flow.test.tsx`, `RepoTab.flow.test.tsx`. 분리 전 코드와 분리 후 코드에서 똑같이 통과하는 것을 확인
+
+---
+
 ## 2026-04-23
 
 **싱크 작업 큐 UI + 레포 일괄 트랙 변경 + 멤버 기수 재계산**

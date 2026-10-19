@@ -1,40 +1,33 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { showToast } from '../components/ui/Toast.js';
-import { createEventSource } from '../lib/sse.js';
-import type { CohortRepo } from '../lib/types.js';
-import { formatStep, logColor, type StreamLogEntry } from '../lib/stream-log.js';
+import { StreamLogConsole } from '../components/StreamLogConsole.js';
+import { useEventStreamLog } from '../hooks/useEventStreamLog.js';
 import { adminApi } from '../lib/admin-api.js';
 import { queryKeys } from '../lib/query-keys.js';
-import { Table, TableFrame, TBody, THead, Td, Th } from '../components/ui/Table.js';
 import { Button } from '../components/ui/Button.js';
 import { EmptyState, Panel, SectionTitle } from '../components/ui/Section.js';
 import { FieldLabel, Select, TextInput } from '../components/ui/Field.js';
+import { CohortRepoAddBar } from './archive/CohortRepoAddBar.js';
+import { CohortRepoTable } from './archive/CohortRepoTable.js';
+import { groupCohortReposByLevel } from './archive/group-by-level.js';
+import { useCohortRepoEditor } from './archive/useCohortRepoEditor.js';
 
 export default function ArchiveTab() {
   const queryClient = useQueryClient();
   const [cohort, setCohort] = useState('');
   const [track, setTrack] = useState('');
-  const [selectedRepoId, setSelectedRepoId] = useState('');
-  const [syncRunning, setSyncRunning] = useState(false);
-  const [logs, setLogs] = useState<StreamLogEntry[]>([]);
-  const logEndRef = useRef<HTMLDivElement>(null);
-  const esRef = useRef<EventSource | null>(null);
-  const [editingOrderId, setEditingOrderId] = useState<number | null>(null);
-  const [editingOrderValue, setEditingOrderValue] = useState('');
-  const orderInputRef = useRef<HTMLInputElement>(null);
-  const [editingLevelId, setEditingLevelId] = useState<number | null>(null);
-  const [editingLevelValue, setEditingLevelValue] = useState('');
-  const levelInputRef = useRef<HTMLInputElement>(null);
-  const [searchQuery, setSearchQuery] = useState('');
+  const stream = useEventStreamLog();
+  const editor = useCohortRepoEditor();
 
   const cohortNum = cohort ? Number(cohort) : NaN;
+  const hasCohort = Number.isFinite(cohortNum) && cohortNum > 0;
 
   const { data: cohortRepos = [], isLoading: reposLoading } = useQuery({
     queryKey: queryKeys.cohortRepos.byCohort(cohortNum),
     queryFn: () => adminApi.cohortRepos.list(cohortNum),
-    enabled: Number.isFinite(cohortNum) && cohortNum > 0,
+    enabled: hasCohort,
   });
 
   const { data: allRepos = [] } = useQuery({
@@ -43,74 +36,8 @@ export default function ArchiveTab() {
   });
 
   const filteredRepos = track ? cohortRepos.filter((cr) => cr.missionRepo.track === track) : cohortRepos;
-
   const commonRepos = filteredRepos.filter((cr) => cr.missionRepo.tabCategory === 'common');
   const trackRepos = filteredRepos.filter((cr) => cr.missionRepo.tabCategory !== 'common');
-
-  const reposByLevel = useCallback(() => {
-    const map = new Map<number | null, CohortRepo[]>();
-    for (const cr of filteredRepos) {
-      const level = cr.level ?? null;
-      if (!map.has(level)) map.set(level, []);
-      map.get(level)!.push(cr);
-    }
-    const sortedLevels = [...map.keys()].sort((a, b) => {
-      if (a === null) return 1;
-      if (b === null) return -1;
-      return a - b;
-    });
-    return sortedLevels.map((level) => ({ level, repos: map.get(level)! }));
-  }, [filteredRepos]);
-
-  const addLog = useCallback((type: StreamLogEntry['type'], message: string) => {
-    setLogs((prev) => [...prev, { ts: Date.now(), type, message }]);
-    setTimeout(() => logEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
-  }, []);
-
-  const stopSync = useCallback(() => {
-    esRef.current?.close();
-    esRef.current = null;
-    setSyncRunning(false);
-  }, []);
-
-  const runCohortReposSync = useCallback(() => {
-    if (syncRunning || !Number.isFinite(cohortNum)) return;
-    setLogs([]);
-    setSyncRunning(true);
-    addLog('info', '기수 레포 업데이트 시작');
-
-    const es = createEventSource(`/admin/sync/cohort-repos/stream?cohort=${cohortNum}`);
-    esRef.current = es;
-
-    es.addEventListener('progress', (e: MessageEvent) => {
-      try {
-        addLog('progress', formatStep(JSON.parse(e.data as string)));
-      } catch {
-        addLog('progress', e.data as string);
-      }
-    });
-    es.addEventListener('done', (e: MessageEvent) => {
-      try {
-        const d = JSON.parse(e.data as string) as Record<string, unknown>;
-        addLog('done', d['message'] ? String(d['message']) : '완료');
-      } catch {
-        addLog('done', '완료');
-      }
-      stopSync();
-    });
-    es.addEventListener('error', (e: MessageEvent) => {
-      try {
-        const d = JSON.parse(e.data as string) as Record<string, unknown>;
-        addLog('error', d['message'] ? String(d['message']) : '오류 발생');
-      } catch {
-        addLog('error', '연결 오류');
-      }
-      stopSync();
-    });
-    es.onerror = () => {
-      if (es.readyState === EventSource.CLOSED) stopSync();
-    };
-  }, [syncRunning, cohortNum, addLog, stopSync]);
 
   const autoFillMutation = useMutation({
     mutationFn: () => adminApi.cohortRepos.autoFill(cohortNum),
@@ -121,191 +48,10 @@ export default function ArchiveTab() {
     onError: (e) => showToast(e instanceof Error ? e.message : '자동 채우기 실패', 'error'),
   });
 
-  const addRepoMutation = useMutation({
-    mutationFn: (missionRepoId: number) => adminApi.cohortRepos.create(cohortNum, missionRepoId),
-    onSuccess: () => {
-      showToast('레포 추가 완료');
-      setSelectedRepoId('');
-      void queryClient.invalidateQueries({ queryKey: queryKeys.cohortRepos.all() });
-    },
-    onError: (e) => showToast(e instanceof Error ? e.message : '추가 실패', 'error'),
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => adminApi.cohortRepos.remove(id),
-    onSuccess: () => {
-      showToast('삭제 완료');
-      void queryClient.invalidateQueries({ queryKey: queryKeys.cohortRepos.all() });
-    },
-    onError: (e) => showToast(e instanceof Error ? e.message : '삭제 실패', 'error'),
-  });
-
-  const updateOrderMutation = useMutation({
-    mutationFn: ({ id, order }: { id: number; order: number }) => adminApi.cohortRepos.update(id, { order }),
-    onSuccess: () => {
-      setEditingOrderId(null);
-      void queryClient.invalidateQueries({ queryKey: queryKeys.cohortRepos.all() });
-    },
-    onError: (e) => {
-      showToast(e instanceof Error ? e.message : '순서 변경 실패', 'error');
-      setEditingOrderId(null);
-    },
-  });
-
-  const updateLevelMutation = useMutation({
-    mutationFn: ({ id, level }: { id: number; level: number | null }) => adminApi.cohortRepos.update(id, { level }),
-    onSuccess: () => {
-      setEditingLevelId(null);
-      void queryClient.invalidateQueries({ queryKey: queryKeys.cohortRepos.all() });
-    },
-    onError: (e) => {
-      showToast(e instanceof Error ? e.message : '레벨 변경 실패', 'error');
-      setEditingLevelId(null);
-    },
-  });
-
-  const saveOrder = (cr: CohortRepo) => {
-    const newOrder = Number(editingOrderValue);
-    if (isNaN(newOrder)) {
-      showToast('숫자를 입력하세요', 'error');
-      return;
-    }
-    if (newOrder === cr.order) {
-      setEditingOrderId(null);
-      return;
-    }
-    updateOrderMutation.mutate({ id: cr.id, order: newOrder });
+  const runCohortReposSync = () => {
+    if (stream.running || !Number.isFinite(cohortNum)) return;
+    stream.follow(`/admin/sync/cohort-repos/stream?cohort=${cohortNum}`, '기수 레포 업데이트 시작');
   };
-
-  const saveLevel = (cr: CohortRepo) => {
-    const raw = editingLevelValue.trim();
-    const newLevel = raw === '' ? null : Number(raw);
-    if (raw !== '' && isNaN(newLevel as number)) {
-      showToast('숫자를 입력하세요', 'error');
-      return;
-    }
-    if (newLevel === cr.level) {
-      setEditingLevelId(null);
-      return;
-    }
-    updateLevelMutation.mutate({ id: cr.id, level: newLevel });
-  };
-
-  useEffect(() => {
-    if (editingOrderId != null) {
-      setTimeout(() => orderInputRef.current?.focus(), 0);
-    }
-  }, [editingOrderId]);
-
-  useEffect(() => {
-    if (editingLevelId != null) {
-      setTimeout(() => levelInputRef.current?.focus(), 0);
-    }
-  }, [editingLevelId]);
-
-  const handleAddRepo = () => {
-    const id = Number(selectedRepoId);
-    if (!id || isNaN(id)) {
-      showToast('레포를 선택하세요', 'error');
-      return;
-    }
-    addRepoMutation.mutate(id);
-  };
-
-  const existingRepoIds = new Set(cohortRepos.map((cr) => cr.missionRepoId));
-  const availableRepos = allRepos
-    .filter((r) => !existingRepoIds.has(r.id))
-    .filter((r) => {
-      if (searchQuery.trim()) {
-        const q = searchQuery.trim().toLowerCase();
-        const nameMatch = r.name.toLowerCase().includes(q);
-        const trackMatch = r.track?.toLowerCase().includes(q) ?? false;
-        if (!nameMatch && !trackMatch) return false;
-      }
-      return true;
-    });
-
-  const renderRepoRow = (cr: CohortRepo) => (
-    <tr key={cr.id} className="hover:bg-base-50">
-      <Td>
-        {editingOrderId === cr.id ? (
-          <input
-            ref={orderInputRef}
-            type="number"
-            value={editingOrderValue}
-            onChange={(e) => setEditingOrderValue(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') saveOrder(cr);
-              if (e.key === 'Escape') setEditingOrderId(null);
-            }}
-            className="border border-primary-300 rounded px-1 py-0.5 text-xs w-14 text-center focus:outline-none focus:ring-1 focus:ring-primary-400"
-          />
-        ) : (
-          <button
-            onClick={() => {
-              setEditingOrderId(cr.id);
-              setEditingOrderValue(String(cr.order));
-            }}
-            className="text-xs text-base-600 font-mono hover:text-primary-600 hover:underline px-1"
-            title="클릭하여 순서 변경"
-          >
-            {cr.order}
-          </button>
-        )}
-      </Td>
-      <Td>
-        <a
-          href={cr.missionRepo.repoUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-primary-600 hover:underline text-xs font-medium"
-        >
-          {cr.missionRepo.name}
-        </a>
-      </Td>
-      <Td className="text-xs text-base-600">{cr.missionRepo.track ?? '—'}</Td>
-      <Td>
-        {editingLevelId === cr.id ? (
-          <input
-            ref={levelInputRef}
-            type="number"
-            value={editingLevelValue}
-            onChange={(e) => setEditingLevelValue(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') saveLevel(cr);
-              if (e.key === 'Escape') setEditingLevelId(null);
-            }}
-            className="border border-primary-300 rounded px-1 py-0.5 text-xs w-14 text-center focus:outline-none focus:ring-1 focus:ring-primary-400"
-          />
-        ) : (
-          <button
-            onClick={() => {
-              setEditingLevelId(cr.id);
-              setEditingLevelValue(cr.level != null ? String(cr.level) : '');
-            }}
-            className="text-xs text-base-600 font-mono hover:text-primary-600 hover:underline px-1"
-            title="클릭하여 레벨 변경"
-          >
-            {cr.level ?? '—'}
-          </button>
-        )}
-      </Td>
-      <Td>
-        <button
-          onClick={() => {
-            if (confirm(`${cr.missionRepo.name}을(를) 삭제하시겠습니까?`)) {
-              deleteMutation.mutate(cr.id);
-            }
-          }}
-          disabled={deleteMutation.isPending}
-          className="text-xs text-base-400 hover:text-danger-500 disabled:opacity-40 px-1"
-          title="삭제"
-        >
-          ✕
-        </button>
-      </Td>
-    </tr>
-  );
 
   return (
     <div className="space-y-6">
@@ -332,7 +78,7 @@ export default function ArchiveTab() {
         </div>
       </div>
 
-      {Number.isFinite(cohortNum) && cohortNum > 0 && (
+      {hasCohort && (
         <Panel variant="card" className="space-y-4">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <SectionTitle as="h3">
@@ -347,51 +93,18 @@ export default function ArchiveTab() {
               >
                 {autoFillMutation.isPending ? '채우는 중...' : '자동 채우기'}
               </Button>
-              <Button onClick={runCohortReposSync} disabled={syncRunning} size="sm">
-                {syncRunning ? '싱크 중...' : '목록 전체 재 Sync'}
+              <Button onClick={runCohortReposSync} disabled={stream.running} size="sm">
+                {stream.running ? '싱크 중...' : '목록 전체 재 Sync'}
               </Button>
-              {syncRunning && (
-                <Button onClick={stopSync} tone="dangerSoft" size="sm">
+              {stream.running && (
+                <Button onClick={stream.stop} tone="dangerSoft" size="sm">
                   중단
                 </Button>
               )}
             </div>
           </div>
 
-          <div className="flex items-center gap-2 flex-wrap">
-            <TextInput
-              type="text"
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                setSelectedRepoId('');
-              }}
-              placeholder="레포 검색..."
-              size="sm"
-              className="w-40"
-            />
-            <Select
-              value={selectedRepoId}
-              onChange={(e) => setSelectedRepoId(e.target.value)}
-              size="sm"
-              className="min-w-[200px]"
-            >
-              <option value="">레포 선택 ({availableRepos.length}개)</option>
-              {availableRepos.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.name} {r.track ? `(${r.track})` : ''}
-                </option>
-              ))}
-            </Select>
-            <Button
-              onClick={handleAddRepo}
-              disabled={addRepoMutation.isPending || !selectedRepoId}
-              tone="neutral"
-              size="sm"
-            >
-              {addRepoMutation.isPending ? '추가 중...' : '추가'}
-            </Button>
-          </div>
+          <CohortRepoAddBar cohort={cohortNum} cohortRepos={cohortRepos} allRepos={allRepos} />
 
           {reposLoading ? (
             <EmptyState size="md">로딩 중...</EmptyState>
@@ -400,39 +113,13 @@ export default function ArchiveTab() {
               {trackRepos.length > 0 && (
                 <div>
                   {commonRepos.length > 0 && <p className="text-xs font-medium text-base-600 mb-1">트랙 미션</p>}
-                  <TableFrame>
-                    <Table>
-                      <THead>
-                        <tr>
-                          <Th>순서</Th>
-                          <Th>레포</Th>
-                          <Th>트랙</Th>
-                          <Th>레벨</Th>
-                          <Th>작업</Th>
-                        </tr>
-                      </THead>
-                      <TBody>{trackRepos.map(renderRepoRow)}</TBody>
-                    </Table>
-                  </TableFrame>
+                  <CohortRepoTable repos={trackRepos} editor={editor} />
                 </div>
               )}
               {commonRepos.length > 0 && (
                 <div>
                   <p className="text-xs font-medium text-base-600 mb-1">공통 미션</p>
-                  <TableFrame>
-                    <Table>
-                      <THead>
-                        <tr>
-                          <Th>순서</Th>
-                          <Th>레포</Th>
-                          <Th>트랙</Th>
-                          <Th>레벨</Th>
-                          <Th>작업</Th>
-                        </tr>
-                      </THead>
-                      <TBody>{commonRepos.map(renderRepoRow)}</TBody>
-                    </Table>
-                  </TableFrame>
+                  <CohortRepoTable repos={commonRepos} editor={editor} />
                 </div>
               )}
               {filteredRepos.length === 0 && (
@@ -442,26 +129,13 @@ export default function ArchiveTab() {
               {filteredRepos.length > 0 && (
                 <div className="space-y-4 mt-6">
                   <h4 className="text-sm font-semibold text-base-700">레벨별 레포</h4>
-                  {reposByLevel().map(({ level, repos }) => (
+                  {groupCohortReposByLevel(filteredRepos).map(({ level, repos }) => (
                     <div key={level ?? 'null'}>
                       <p className="text-xs font-medium text-base-600 mb-1">
                         {level !== null ? `Lv ${level}` : '미분류'}
                         <span className="text-base-400 font-normal ml-1">({repos.length}개)</span>
                       </p>
-                      <TableFrame>
-                        <Table>
-                          <THead>
-                            <tr>
-                              <Th>순서</Th>
-                              <Th>레포</Th>
-                              <Th>트랙</Th>
-                              <Th>레벨</Th>
-                              <Th>작업</Th>
-                            </tr>
-                          </THead>
-                          <TBody>{repos.map(renderRepoRow)}</TBody>
-                        </Table>
-                      </TableFrame>
+                      <CohortRepoTable repos={repos} editor={editor} />
                     </div>
                   ))}
                 </div>
@@ -471,17 +145,7 @@ export default function ArchiveTab() {
         </Panel>
       )}
 
-      {logs.length > 0 && (
-        <div className="bg-base-900 rounded border border-base-700 p-4 font-mono text-xs max-h-48 overflow-y-auto">
-          {logs.map((entry, i) => (
-            <div key={i} className={`${logColor(entry.type)} leading-5`}>
-              <span className="text-base-600 mr-2">{new Date(entry.ts).toLocaleTimeString('ko-KR')}</span>
-              {entry.message}
-            </div>
-          ))}
-          <div ref={logEndRef} />
-        </div>
-      )}
+      {stream.logs.length > 0 && <StreamLogConsole logs={stream.logs} endRef={stream.logEndRef} className="max-h-48" />}
     </div>
   );
 }

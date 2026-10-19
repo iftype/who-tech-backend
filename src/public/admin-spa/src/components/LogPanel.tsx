@@ -15,7 +15,7 @@ export function addLog(tag: LogEntry['tag'], msg: string) {
   logListeners.forEach((fn) => fn(entry));
 }
 
-export default function LogPanel() {
+export function LogPanel() {
   const [entries, setEntries] = useState<LogEntry[]>([]);
   const [collapsed, setCollapsed] = useState(false);
   const bodyRef = useRef<HTMLDivElement>(null);
