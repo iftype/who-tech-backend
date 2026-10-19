@@ -110,14 +110,14 @@ export default function SettingsTab() {
   };
 
   if (workspaceLoading) {
-    return <div className="py-12 text-center text-gray-400 text-sm">로딩 중...</div>;
+    return <div className="py-12 text-center text-base-400 text-sm">로딩 중...</div>;
   }
 
   return (
     <div className="space-y-6 max-w-2xl">
       <section>
-        <h2 className="text-sm font-semibold text-gray-700 mb-3">워크스페이스</h2>
-        <form onSubmit={saveWorkspace} className="space-y-3 bg-gray-50 border border-gray-200 rounded p-4">
+        <h2 className="text-sm font-semibold text-base-700 mb-3">워크스페이스</h2>
+        <form onSubmit={saveWorkspace} className="space-y-3 bg-base-50 border border-base-200 rounded p-4">
           <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
@@ -126,22 +126,22 @@ export default function SettingsTab() {
               disabled={saveWorkspaceMutation.isPending}
               className="rounded"
             />
-            <span className="text-sm text-gray-700">블로그 RSS 자동 싱크</span>
-            {saveWorkspaceMutation.isPending && <span className="text-xs text-gray-400">저장 중...</span>}
+            <span className="text-sm text-base-700">블로그 RSS 자동 싱크</span>
+            {saveWorkspaceMutation.isPending && <span className="text-xs text-base-400">저장 중...</span>}
           </label>
           <div>
-            <label className="text-xs text-gray-500 block mb-1">기수 규칙 (JSON)</label>
+            <label className="text-xs text-base-500 block mb-1">기수 규칙 (JSON)</label>
             <textarea
               value={cohortRulesText}
               onChange={(e) => setCohortRulesText(e.target.value)}
               rows={6}
-              className="w-full border border-gray-300 rounded px-3 py-2 text-xs font-mono"
+              className="w-full border border-base-300 rounded px-3 py-2 text-xs font-mono"
             />
           </div>
           <button
             type="submit"
             disabled={saveWorkspaceMutation.isPending}
-            className="bg-blue-600 text-white text-sm rounded px-4 py-1.5 hover:bg-blue-700 disabled:opacity-40"
+            className="bg-primary-600 text-white text-sm rounded px-4 py-1.5 hover:bg-primary-700 disabled:opacity-40"
           >
             {saveWorkspaceMutation.isPending ? '저장 중...' : '저장'}
           </button>
@@ -149,18 +149,18 @@ export default function SettingsTab() {
       </section>
 
       <section>
-        <h2 className="text-sm font-semibold text-gray-700 mb-3">금지어 ({bannedWords.length})</h2>
+        <h2 className="text-sm font-semibold text-base-700 mb-3">금지어 ({bannedWords.length})</h2>
         <form onSubmit={addBannedWord} className="flex gap-2 mb-3">
           <input
             value={newWord}
             onChange={(e) => setNewWord(e.target.value)}
             placeholder="추가할 금지어"
-            className="border border-gray-300 rounded px-3 py-1.5 text-sm flex-1"
+            className="border border-base-300 rounded px-3 py-1.5 text-sm flex-1"
           />
           <button
             type="submit"
             disabled={addBannedWordMutation.isPending || !newWord.trim()}
-            className="bg-gray-700 text-white text-sm rounded px-3 py-1.5 hover:bg-gray-800 disabled:opacity-40"
+            className="bg-base-700 text-white text-sm rounded px-3 py-1.5 hover:bg-base-800 disabled:opacity-40"
           >
             추가
           </button>
@@ -169,10 +169,10 @@ export default function SettingsTab() {
           {bannedWords.map((w) => (
             <span
               key={w.id}
-              className="inline-flex items-center gap-1 bg-red-50 border border-red-200 text-red-700 text-xs rounded px-2 py-1"
+              className="inline-flex items-center gap-1 bg-danger-50 border border-danger-200 text-danger-700 text-xs rounded px-2 py-1"
             >
               {w.word}
-              <button onClick={() => deleteBannedWordMutation.mutate(w.id)} className="hover:text-red-900 ml-0.5">
+              <button onClick={() => deleteBannedWordMutation.mutate(w.id)} className="hover:text-danger-900 ml-0.5">
                 ✕
               </button>
             </span>
@@ -181,18 +181,18 @@ export default function SettingsTab() {
       </section>
 
       <section>
-        <h2 className="text-sm font-semibold text-gray-700 mb-3">무시 도메인 ({ignoredDomains.length})</h2>
+        <h2 className="text-sm font-semibold text-base-700 mb-3">무시 도메인 ({ignoredDomains.length})</h2>
         <form onSubmit={addIgnoredDomain} className="flex gap-2 mb-3">
           <input
             value={newDomain}
             onChange={(e) => setNewDomain(e.target.value)}
             placeholder="예: example.com"
-            className="border border-gray-300 rounded px-3 py-1.5 text-sm flex-1"
+            className="border border-base-300 rounded px-3 py-1.5 text-sm flex-1"
           />
           <button
             type="submit"
             disabled={addIgnoredDomainMutation.isPending || !newDomain.trim()}
-            className="bg-gray-700 text-white text-sm rounded px-3 py-1.5 hover:bg-gray-800 disabled:opacity-40"
+            className="bg-base-700 text-white text-sm rounded px-3 py-1.5 hover:bg-base-800 disabled:opacity-40"
           >
             추가
           </button>
@@ -201,10 +201,10 @@ export default function SettingsTab() {
           {ignoredDomains.map((d) => (
             <span
               key={d.id}
-              className="inline-flex items-center gap-1 bg-gray-100 border border-gray-300 text-gray-700 text-xs rounded px-2 py-1"
+              className="inline-flex items-center gap-1 bg-base-100 border border-base-300 text-base-700 text-xs rounded px-2 py-1"
             >
               {d.domain}
-              <button onClick={() => deleteIgnoredDomainMutation.mutate(d.id)} className="hover:text-gray-900 ml-0.5">
+              <button onClick={() => deleteIgnoredDomainMutation.mutate(d.id)} className="hover:text-base-900 ml-0.5">
                 ✕
               </button>
             </span>

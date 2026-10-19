@@ -256,48 +256,48 @@ export default function SyncTab() {
       {/* 상태 */}
       {status && (
         <div className="grid grid-cols-1 gap-3 md:grid-cols-3 xl:grid-cols-5">
-          <div className="bg-gray-50 border border-gray-200 rounded p-3">
-            <p className="text-xs text-gray-500">멤버 수</p>
-            <p className="text-xl font-semibold text-gray-900">{status.memberCount}</p>
+          <div className="bg-base-50 border border-base-200 rounded p-3">
+            <p className="text-xs text-base-500">멤버 수</p>
+            <p className="text-xl font-semibold text-base-900">{status.memberCount}</p>
           </div>
-          <div className="bg-gray-50 border border-gray-200 rounded p-3">
-            <p className="text-xs text-gray-500">활성 레포</p>
-            <p className="text-xl font-semibold text-gray-900">{repoCount ?? '—'}</p>
+          <div className="bg-base-50 border border-base-200 rounded p-3">
+            <p className="text-xs text-base-500">활성 레포</p>
+            <p className="text-xl font-semibold text-base-900">{repoCount ?? '—'}</p>
           </div>
-          <div className="bg-gray-50 border border-gray-200 rounded p-3">
-            <p className="text-xs text-gray-500">마지막 싱크</p>
-            <p className="text-sm font-medium text-gray-700">{formatDate(status.lastSyncAt)}</p>
+          <div className="bg-base-50 border border-base-200 rounded p-3">
+            <p className="text-xs text-base-500">마지막 싱크</p>
+            <p className="text-sm font-medium text-base-700">{formatDate(status.lastSyncAt)}</p>
           </div>
-          <div className="bg-gray-50 border border-gray-200 rounded p-3">
+          <div className="bg-base-50 border border-base-200 rounded p-3">
             <div className="flex items-center justify-between gap-2">
-              <p className="text-xs text-gray-500">GitHub API</p>
+              <p className="text-xs text-base-500">GitHub API</p>
               <span
                 className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
                   !githubStatus
-                    ? 'bg-gray-100 text-gray-500'
+                    ? 'bg-base-100 text-base-500'
                     : githubStatus.ok
                       ? githubStatus.remaining < 100
-                        ? 'bg-orange-100 text-orange-700'
-                        : 'bg-green-100 text-green-700'
-                      : 'bg-red-100 text-red-700'
+                        ? 'bg-caution-100 text-caution-700'
+                        : 'bg-success-100 text-success-700'
+                      : 'bg-danger-100 text-danger-700'
                 }`}
               >
                 {!githubStatus ? '확인 중' : githubStatus.ok ? '정상' : '오류'}
               </span>
             </div>
-            <p className="text-xl font-semibold text-gray-900">
+            <p className="text-xl font-semibold text-base-900">
               {githubStatus?.ok ? `${githubStatus.remaining}/${githubStatus.limit}` : '—'}
             </p>
             {githubStatus?.resetAt && (
-              <p className="text-[10px] text-gray-400">reset {formatDate(githubStatus.resetAt)}</p>
+              <p className="text-[10px] text-base-400">reset {formatDate(githubStatus.resetAt)}</p>
             )}
           </div>
-          <div className="bg-gray-50 border border-gray-200 rounded p-3">
-            <p className="text-xs text-gray-500">테코톡 매칭</p>
-            <p className="text-xl font-semibold text-gray-900">
+          <div className="bg-base-50 border border-base-200 rounded p-3">
+            <p className="text-xs text-base-500">테코톡 매칭</p>
+            <p className="text-xl font-semibold text-base-900">
               {tecoTalkStatusCounts.matched}/{tecoTalks.length}
             </p>
-            <p className="text-[10px] text-gray-400">
+            <p className="text-[10px] text-base-400">
               ambiguous {tecoTalkStatusCounts.ambiguous} · unmatched {tecoTalkStatusCounts.unmatched}
             </p>
           </div>
@@ -312,17 +312,17 @@ export default function SyncTab() {
       />
 
       {/* 블로그 싱크 */}
-      <div className="bg-white border border-gray-200 rounded p-4">
-        <h3 className="text-xs font-semibold text-gray-600 mb-2">블로그</h3>
+      <div className="bg-white border border-base-200 rounded p-4">
+        <h3 className="text-xs font-semibold text-base-600 mb-2">블로그</h3>
         <div className="flex items-center gap-3 flex-wrap">
           <button
             onClick={() => blogSyncMutation.mutate()}
             disabled={blogSyncMutation.isPending}
-            className="bg-blue-600 text-white text-sm rounded px-4 py-1.5 hover:bg-blue-700 disabled:opacity-40"
+            className="bg-primary-600 text-white text-sm rounded px-4 py-1.5 hover:bg-primary-700 disabled:opacity-40"
           >
             {blogSyncMutation.isPending ? 'RSS 싱크 중...' : 'RSS 전체 싱크'}
           </button>
-          <label className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded px-3 py-1.5 cursor-pointer">
+          <label className="flex items-center gap-2 bg-base-50 border border-base-200 rounded px-3 py-1.5 cursor-pointer">
             <input
               type="checkbox"
               checked={workspace?.blogSyncEnabled ?? false}
@@ -330,23 +330,23 @@ export default function SyncTab() {
               disabled={toggleBlogSyncMutation.isPending}
               className="rounded"
             />
-            <span className="text-xs text-gray-700">자동 싱크</span>
+            <span className="text-xs text-base-700">자동 싱크</span>
           </label>
         </div>
       </div>
 
       {/* 프로필 새로고침 */}
-      <div className="bg-white border border-gray-200 rounded p-4">
-        <h3 className="text-xs font-semibold text-gray-600 mb-2">프로필</h3>
+      <div className="bg-white border border-base-200 rounded p-4">
+        <h3 className="text-xs font-semibold text-base-600 mb-2">프로필</h3>
         <div className="flex items-center gap-3 flex-wrap">
           <button
             onClick={() => profileRefreshMutation.mutate()}
             disabled={profileRefreshMutation.isPending}
-            className="bg-green-600 text-white text-sm rounded px-4 py-1.5 hover:bg-green-700 disabled:opacity-40"
+            className="bg-success-600 text-white text-sm rounded px-4 py-1.5 hover:bg-success-700 disabled:opacity-40"
           >
             {profileRefreshMutation.isPending ? '프로필 새로고침 중...' : '프로필 전체 새로고침'}
           </button>
-          <label className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded px-3 py-1.5 cursor-pointer">
+          <label className="flex items-center gap-2 bg-base-50 border border-base-200 rounded px-3 py-1.5 cursor-pointer">
             <input
               type="checkbox"
               checked={workspace?.profileRefreshEnabled ?? false}
@@ -354,17 +354,17 @@ export default function SyncTab() {
               disabled={toggleProfileRefreshMutation.isPending}
               className="rounded"
             />
-            <span className="text-xs text-gray-700">자동 새로고침</span>
+            <span className="text-xs text-base-700">자동 새로고침</span>
           </label>
         </div>
       </div>
 
       {/* 테코톡 */}
-      <div className="bg-white border border-gray-200 rounded p-4 space-y-3">
+      <div className="bg-white border border-base-200 rounded p-4 space-y-3">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h3 className="text-xs font-semibold text-gray-600">테코톡</h3>
-            <p className="text-[11px] text-gray-400 mt-1">
+            <h3 className="text-xs font-semibold text-base-600">테코톡</h3>
+            <p className="text-[11px] text-base-400 mt-1">
               최신 업로드:{' '}
               {latestTecoTalk ? `${latestTecoTalk.title} · ${formatDate(latestTecoTalk.uploadedAt)}` : '없음'}
             </p>
@@ -373,51 +373,51 @@ export default function SyncTab() {
             <button
               onClick={() => tecoTalkSyncMutation.mutate('incremental')}
               disabled={tecoTalkSyncMutation.isPending}
-              className="bg-red-600 text-white text-sm rounded px-4 py-1.5 hover:bg-red-700 disabled:opacity-40"
+              className="bg-danger-600 text-white text-sm rounded px-4 py-1.5 hover:bg-danger-700 disabled:opacity-40"
             >
               {tecoTalkSyncMutation.isPending ? '싱크 중...' : '증분 싱크'}
             </button>
             <button
               onClick={() => tecoTalkSyncMutation.mutate('full')}
               disabled={tecoTalkSyncMutation.isPending}
-              className="bg-gray-700 text-white text-sm rounded px-4 py-1.5 hover:bg-gray-800 disabled:opacity-40"
+              className="bg-base-700 text-white text-sm rounded px-4 py-1.5 hover:bg-base-800 disabled:opacity-40"
             >
               {tecoTalkSyncMutation.isPending ? '싱크 중...' : '전체 재매칭'}
             </button>
           </div>
         </div>
         <div className="grid grid-cols-4 gap-2 text-xs">
-          <div className="rounded border border-gray-200 bg-gray-50 p-2">
-            <p className="text-gray-500">전체</p>
-            <p className="font-semibold text-gray-900">{tecoTalks.length}</p>
+          <div className="rounded border border-base-200 bg-base-50 p-2">
+            <p className="text-base-500">전체</p>
+            <p className="font-semibold text-base-900">{tecoTalks.length}</p>
           </div>
-          <div className="rounded border border-green-200 bg-green-50 p-2">
-            <p className="text-green-700">matched</p>
-            <p className="font-semibold text-green-900">{tecoTalkStatusCounts.matched}</p>
+          <div className="rounded border border-success-200 bg-success-50 p-2">
+            <p className="text-success-700">matched</p>
+            <p className="font-semibold text-success-900">{tecoTalkStatusCounts.matched}</p>
           </div>
-          <div className="rounded border border-orange-200 bg-orange-50 p-2">
-            <p className="text-orange-700">ambiguous</p>
-            <p className="font-semibold text-orange-900">{tecoTalkStatusCounts.ambiguous}</p>
+          <div className="rounded border border-caution-200 bg-caution-50 p-2">
+            <p className="text-caution-700">ambiguous</p>
+            <p className="font-semibold text-caution-900">{tecoTalkStatusCounts.ambiguous}</p>
           </div>
-          <div className="rounded border border-red-200 bg-red-50 p-2">
-            <p className="text-red-700">unmatched</p>
-            <p className="font-semibold text-red-900">{tecoTalkStatusCounts.unmatched}</p>
+          <div className="rounded border border-danger-200 bg-danger-50 p-2">
+            <p className="text-danger-700">unmatched</p>
+            <p className="font-semibold text-danger-900">{tecoTalkStatusCounts.unmatched}</p>
           </div>
         </div>
       </div>
 
       {/* 컨트롤 */}
-      <div className="bg-white border border-gray-200 rounded p-4 space-y-3">
-        <h3 className="text-xs font-semibold text-gray-600">미션 싱크</h3>
+      <div className="bg-white border border-base-200 rounded p-4 space-y-3">
+        <h3 className="text-xs font-semibold text-base-600">미션 싱크</h3>
         <div className="flex items-center gap-3 flex-wrap">
           <div>
-            <label className="text-xs text-gray-500 block mb-1">기수 (선택)</label>
+            <label className="text-xs text-base-500 block mb-1">기수 (선택)</label>
             <input
               type="number"
               value={cohortInput}
               onChange={(e) => setCohortInput(e.target.value)}
               placeholder="예: 9"
-              className="border border-gray-300 rounded px-2 py-1.5 text-sm w-20"
+              className="border border-base-300 rounded px-2 py-1.5 text-sm w-20"
               disabled={!!running}
             />
           </div>
@@ -425,27 +425,30 @@ export default function SyncTab() {
             <button
               onClick={runSync}
               disabled={enqueueMutation.isPending}
-              className="bg-blue-600 text-white text-sm rounded px-4 py-1.5 hover:bg-blue-700 disabled:opacity-40"
+              className="bg-primary-600 text-white text-sm rounded px-4 py-1.5 hover:bg-primary-700 disabled:opacity-40"
             >
               {enqueueMutation.isPending ? '큐 추가 중...' : cohortInput ? `${cohortInput}기 싱크` : '전체 싱크'}
             </button>
             <button
               onClick={runContinuous}
               disabled={enqueueMutation.isPending}
-              className="bg-purple-600 text-white text-sm rounded px-4 py-1.5 hover:bg-purple-700 disabled:opacity-40"
+              className="bg-accent-600 text-white text-sm rounded px-4 py-1.5 hover:bg-accent-700 disabled:opacity-40"
             >
               {enqueueMutation.isPending ? '큐 추가 중...' : '연속 싱크'}
             </button>
             <button
               onClick={runCohortRepos}
               disabled={enqueueMutation.isPending || !cohortInput}
-              className="bg-gray-700 text-white text-sm rounded px-4 py-1.5 hover:bg-gray-800 disabled:opacity-40"
+              className="bg-base-700 text-white text-sm rounded px-4 py-1.5 hover:bg-base-800 disabled:opacity-40"
               title={!cohortInput ? '기수를 입력하세요' : undefined}
             >
               {enqueueMutation.isPending ? '큐 추가 중...' : '기수 레포 업데이트'}
             </button>
             {running && (
-              <button onClick={stop} className="bg-red-500 text-white text-sm rounded px-4 py-1.5 hover:bg-red-600">
+              <button
+                onClick={stop}
+                className="bg-danger-500 text-white text-sm rounded px-4 py-1.5 hover:bg-danger-600"
+              >
                 중단
               </button>
             )}
@@ -454,30 +457,30 @@ export default function SyncTab() {
       </div>
 
       {activeQueueJobs.length > 0 && (
-        <div className="bg-white border border-gray-200 rounded p-4">
-          <h3 className="text-xs font-semibold text-gray-600 mb-3">현재 싱크 작업 ({activeQueueJobs.length})</h3>
-          <div className="max-h-64 overflow-y-auto rounded border border-gray-200">
+        <div className="bg-white border border-base-200 rounded p-4">
+          <h3 className="text-xs font-semibold text-base-600 mb-3">현재 싱크 작업 ({activeQueueJobs.length})</h3>
+          <div className="max-h-64 overflow-y-auto rounded border border-base-200">
             <table className="w-full text-xs">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-base-50 border-b border-base-200">
                 <tr>
-                  <th className="text-left font-medium text-gray-500 px-3 py-2">시작</th>
-                  <th className="text-left font-medium text-gray-500 px-3 py-2">종류</th>
-                  <th className="text-left font-medium text-gray-500 px-3 py-2">상태</th>
-                  <th className="text-left font-medium text-gray-500 px-3 py-2">진행</th>
-                  <th className="text-left font-medium text-gray-500 px-3 py-2">결과</th>
-                  <th className="text-left font-medium text-gray-500 px-3 py-2">액션</th>
+                  <th className="text-left font-medium text-base-500 px-3 py-2">시작</th>
+                  <th className="text-left font-medium text-base-500 px-3 py-2">종류</th>
+                  <th className="text-left font-medium text-base-500 px-3 py-2">상태</th>
+                  <th className="text-left font-medium text-base-500 px-3 py-2">진행</th>
+                  <th className="text-left font-medium text-base-500 px-3 py-2">결과</th>
+                  <th className="text-left font-medium text-base-500 px-3 py-2">액션</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-base-100">
                 {activeQueueJobs.map((j) => (
-                  <tr key={j.id} className="hover:bg-gray-50">
-                    <td className="px-3 py-2 text-gray-500 whitespace-nowrap">
+                  <tr key={j.id} className="hover:bg-base-50">
+                    <td className="px-3 py-2 text-base-500 whitespace-nowrap">
                       {new Date(j.status === 'running' && j.startedAt ? j.startedAt : j.createdAt).toLocaleString(
                         'ko-KR',
                       )}
                     </td>
                     <td className="px-3 py-2">
-                      <span className="text-xs px-1.5 py-0.5 rounded font-medium border bg-blue-50 text-blue-700 border-blue-200">
+                      <span className="text-xs px-1.5 py-0.5 rounded font-medium border bg-primary-50 text-primary-700 border-primary-200">
                         {j.type === 'workspace' ? '전체' : j.type === 'continuous' ? '연속' : '기수레포'}
                         {j.cohort != null ? ` (${j.cohort}기)` : ''}
                       </span>
@@ -485,21 +488,21 @@ export default function SyncTab() {
                     <td className="px-3 py-2">
                       <span
                         className={`text-xs px-1.5 py-0.5 rounded font-medium ${
-                          j.status === 'queued' ? 'bg-gray-100 text-gray-600' : 'bg-blue-100 text-blue-700'
+                          j.status === 'queued' ? 'bg-base-100 text-base-600' : 'bg-primary-100 text-primary-700'
                         }`}
                       >
                         {j.status}
                       </span>
                     </td>
-                    <td className="px-3 py-2 text-gray-700">
+                    <td className="px-3 py-2 text-base-700">
                       {j.progress ? `${j.progress.repo} (${j.progress.done}/${j.progress.total})` : '—'}
                     </td>
-                    <td className="px-3 py-2 text-gray-700 truncate max-w-[200px]">—</td>
+                    <td className="px-3 py-2 text-base-700 truncate max-w-[200px]">—</td>
                     <td className="px-3 py-2">
                       <button
                         onClick={() => cancelJobMutation.mutate(j.id)}
                         disabled={cancelJobMutation.isPending}
-                        className="text-xs px-2 py-0.5 rounded bg-red-50 text-red-600 hover:bg-red-100 disabled:opacity-40"
+                        className="text-xs px-2 py-0.5 rounded bg-danger-50 text-danger-600 hover:bg-danger-100 disabled:opacity-40"
                       >
                         취소
                       </button>
@@ -514,10 +517,10 @@ export default function SyncTab() {
 
       {/* 로그 */}
       {logs.length > 0 && (
-        <div className="bg-gray-900 rounded border border-gray-700 p-4 font-mono text-xs max-h-96 overflow-y-auto">
+        <div className="bg-base-900 rounded border border-base-700 p-4 font-mono text-xs max-h-96 overflow-y-auto">
           {logs.map((entry, i) => (
             <div key={i} className={`${logColor(entry.type)} leading-5`}>
-              <span className="text-gray-600 mr-2">{new Date(entry.ts).toLocaleTimeString('ko-KR')}</span>
+              <span className="text-base-600 mr-2">{new Date(entry.ts).toLocaleTimeString('ko-KR')}</span>
               {entry.message}
             </div>
           ))}

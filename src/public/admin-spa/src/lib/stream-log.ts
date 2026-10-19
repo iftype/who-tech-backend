@@ -23,8 +23,8 @@ export function formatStep(data: unknown): string {
 }
 
 export function logColor(type: StreamLogEntry['type']): string {
-  if (type === 'done') return 'text-green-400';
-  if (type === 'error') return 'text-red-400';
-  if (type === 'info') return 'text-blue-400';
-  return 'text-gray-300';
+  if (type === 'done') return 'text-success-400';
+  if (type === 'error') return 'text-danger-400';
+  if (type === 'info') return 'text-primary-400';
+  return 'text-base-300';
 }

@@ -41,13 +41,13 @@ export default function PRTab() {
 
   const statusBadge = (status: string) => {
     const colors: Record<string, string> = {
-      open: 'bg-green-100 text-green-700 border-green-200',
-      merged: 'bg-purple-100 text-purple-700 border-purple-200',
-      closed: 'bg-red-100 text-red-700 border-red-200',
+      open: 'bg-success-100 text-success-700 border-success-200',
+      merged: 'bg-accent-100 text-accent-700 border-accent-200',
+      closed: 'bg-danger-100 text-danger-700 border-danger-200',
     };
     return (
       <span
-        className={`text-xs px-1.5 py-0.5 rounded font-medium border ${colors[status] ?? 'bg-gray-100 text-gray-500 border-gray-200'}`}
+        className={`text-xs px-1.5 py-0.5 rounded font-medium border ${colors[status] ?? 'bg-base-100 text-base-500 border-base-200'}`}
       >
         {status}
       </span>
@@ -57,30 +57,30 @@ export default function PRTab() {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-sm font-semibold text-gray-700 mb-2">
-          멤버 선택 {!membersLoading && <span className="text-gray-400 font-normal">({members.length}명)</span>}
+        <h2 className="text-sm font-semibold text-base-700 mb-2">
+          멤버 선택 {!membersLoading && <span className="text-base-400 font-normal">({members.length}명)</span>}
         </h2>
         {membersLoading ? (
-          <div className="py-4 text-center text-gray-400 text-sm">로딩 중...</div>
+          <div className="py-4 text-center text-base-400 text-sm">로딩 중...</div>
         ) : (
-          <div className="overflow-x-auto rounded border border-gray-200">
+          <div className="overflow-x-auto rounded border border-base-200">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-base-50 border-b border-base-200">
                 <tr>
-                  <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">닉네임</th>
-                  <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">GitHub</th>
-                  <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">기수</th>
-                  <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">PR 수</th>
+                  <th className="text-left text-xs font-medium text-base-500 px-3 py-2">닉네임</th>
+                  <th className="text-left text-xs font-medium text-base-500 px-3 py-2">GitHub</th>
+                  <th className="text-left text-xs font-medium text-base-500 px-3 py-2">기수</th>
+                  <th className="text-left text-xs font-medium text-base-500 px-3 py-2">PR 수</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-base-100">
                 {members.map((m) => (
                   <tr
                     key={m.id}
-                    className={`cursor-pointer hover:bg-gray-50 ${selectedMemberId === m.id ? 'bg-blue-50' : ''}`}
+                    className={`cursor-pointer hover:bg-base-50 ${selectedMemberId === m.id ? 'bg-primary-50' : ''}`}
                     onClick={() => setSelectedMemberId(m.id)}
                   >
-                    <td className="px-3 py-2 text-xs font-medium text-gray-900">
+                    <td className="px-3 py-2 text-xs font-medium text-base-900">
                       {m.avatarUrl && (
                         <img
                           src={m.avatarUrl}
@@ -91,11 +91,11 @@ export default function PRTab() {
                       )}
                       {m.nickname ?? m.githubId}
                     </td>
-                    <td className="px-3 py-2 text-xs text-gray-600">{m.githubId}</td>
-                    <td className="px-3 py-2 text-xs text-gray-500">
+                    <td className="px-3 py-2 text-xs text-base-600">{m.githubId}</td>
+                    <td className="px-3 py-2 text-xs text-base-500">
                       {m.cohorts.map((c) => c.cohort).join(', ') || '—'}
                     </td>
-                    <td className="px-3 py-2 text-xs text-gray-600">{m._count.submissions}</td>
+                    <td className="px-3 py-2 text-xs text-base-600">{m._count.submissions}</td>
                   </tr>
                 ))}
               </tbody>
@@ -107,9 +107,9 @@ export default function PRTab() {
       {selectedMemberId && (
         <div>
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-sm font-semibold text-gray-700">
+            <h2 className="text-sm font-semibold text-base-700">
               {memberDetail?.nickname ?? memberDetail?.githubId}의 PR{' '}
-              {!detailLoading && <span className="text-gray-400 font-normal">({filteredSubmissions.length}개)</span>}
+              {!detailLoading && <span className="text-base-400 font-normal">({filteredSubmissions.length}개)</span>}
             </h2>
             <div className="flex gap-1">
               {(['', 'open', 'merged', 'closed'] as StatusFilter[]).map((s) => (
@@ -118,8 +118,8 @@ export default function PRTab() {
                   onClick={() => setStatusFilter(s)}
                   className={`text-xs px-3 py-1.5 rounded border ${
                     statusFilter === s
-                      ? 'bg-gray-800 text-white border-gray-800'
-                      : 'border-gray-300 text-gray-600 hover:border-gray-400'
+                      ? 'bg-base-800 text-white border-base-800'
+                      : 'border-base-300 text-base-600 hover:border-base-400'
                   }`}
                 >
                   {s || '전체'}
@@ -129,39 +129,39 @@ export default function PRTab() {
           </div>
 
           {detailLoading ? (
-            <div className="py-8 text-center text-gray-400 text-sm">로딩 중...</div>
+            <div className="py-8 text-center text-base-400 text-sm">로딩 중...</div>
           ) : filteredSubmissions.length === 0 ? (
-            <div className="py-8 text-center text-gray-400 text-sm">PR 없음</div>
+            <div className="py-8 text-center text-base-400 text-sm">PR 없음</div>
           ) : (
-            <div className="overflow-x-auto rounded border border-gray-200">
+            <div className="overflow-x-auto rounded border border-base-200">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50 border-b border-gray-200">
+                <thead className="bg-base-50 border-b border-base-200">
                   <tr>
-                    <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">레포</th>
-                    <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">PR 제목</th>
-                    <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">상태</th>
-                    <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">제출일</th>
+                    <th className="text-left text-xs font-medium text-base-500 px-3 py-2">레포</th>
+                    <th className="text-left text-xs font-medium text-base-500 px-3 py-2">PR 제목</th>
+                    <th className="text-left text-xs font-medium text-base-500 px-3 py-2">상태</th>
+                    <th className="text-left text-xs font-medium text-base-500 px-3 py-2">제출일</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-base-100">
                   {filteredSubmissions.map((s: Submission) => (
-                    <tr key={s.id} className="hover:bg-gray-50">
-                      <td className="px-3 py-2 text-xs text-gray-600">
+                    <tr key={s.id} className="hover:bg-base-50">
+                      <td className="px-3 py-2 text-xs text-base-600">
                         {s.missionRepo.name}
-                        {s.missionRepo.track && <span className="text-gray-400 ml-1">({s.missionRepo.track})</span>}
+                        {s.missionRepo.track && <span className="text-base-400 ml-1">({s.missionRepo.track})</span>}
                       </td>
                       <td className="px-3 py-2">
                         <a
                           href={s.prUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-xs text-blue-600 hover:underline"
+                          className="text-xs text-primary-600 hover:underline"
                         >
                           #{s.prNumber} {s.title}
                         </a>
                       </td>
                       <td className="px-3 py-2">{statusBadge(s.status)}</td>
-                      <td className="px-3 py-2 text-xs text-gray-500">
+                      <td className="px-3 py-2 text-xs text-base-500">
                         {new Date(s.submittedAt).toLocaleDateString('ko-KR')}
                       </td>
                     </tr>

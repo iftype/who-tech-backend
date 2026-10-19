@@ -280,7 +280,7 @@ export default function MemberTable({ members, onRefresh }: Props) {
 
   const SortHeader = ({ label, k }: { label: string; k: SortKey }) => (
     <th
-      className="text-left text-[11px] font-medium text-gray-500 px-1.5 py-1 cursor-pointer hover:text-gray-700 whitespace-nowrap"
+      className="text-left text-[11px] font-medium text-base-500 px-1.5 py-1 cursor-pointer hover:text-base-700 whitespace-nowrap"
       onClick={() => toggleSort(k)}
     >
       {label} {sortKey === k ? (sortDir === 'asc' ? '↑' : '↓') : ''}
@@ -289,23 +289,23 @@ export default function MemberTable({ members, onRefresh }: Props) {
 
   return (
     <>
-      <div className="overflow-x-auto rounded border border-gray-200 max-h-[60vh] overflow-y-auto">
+      <div className="overflow-x-auto rounded border border-base-200 max-h-[60vh] overflow-y-auto">
         <table className="w-full text-xs">
-          <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
+          <thead className="bg-base-50 border-b border-base-200 sticky top-0 z-10">
             <tr>
-              <th className="text-left text-[11px] font-medium text-gray-500 px-1.5 py-1">프로필</th>
-              <th className="text-left text-[11px] font-medium text-gray-500 px-1.5 py-1">기수/역할</th>
-              <th className="text-left text-[11px] font-medium text-gray-500 px-1.5 py-1">트랙</th>
-              <th className="text-left text-[11px] font-medium text-gray-500 px-1.5 py-1">블로그</th>
-              <th className="text-left text-[11px] font-medium text-gray-500 px-1.5 py-1 w-6">RSS</th>
+              <th className="text-left text-[11px] font-medium text-base-500 px-1.5 py-1">프로필</th>
+              <th className="text-left text-[11px] font-medium text-base-500 px-1.5 py-1">기수/역할</th>
+              <th className="text-left text-[11px] font-medium text-base-500 px-1.5 py-1">트랙</th>
+              <th className="text-left text-[11px] font-medium text-base-500 px-1.5 py-1">블로그</th>
+              <th className="text-left text-[11px] font-medium text-base-500 px-1.5 py-1 w-6">RSS</th>
               <SortHeader label="제출" k="_count.submissions" />
               <SortHeader label="글" k="_count.blogPosts" />
-              <th className="text-left text-[11px] font-medium text-gray-500 px-1.5 py-1">작업</th>
+              <th className="text-left text-[11px] font-medium text-base-500 px-1.5 py-1">작업</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-base-100">
             {sorted.map((m) => (
-              <tr key={m.id} className="hover:bg-gray-50">
+              <tr key={m.id} className="hover:bg-base-50">
                 <td className="px-1.5 py-1">
                   <div className="flex items-center gap-1.5">
                     {m.avatarUrl && (
@@ -320,7 +320,7 @@ export default function MemberTable({ members, onRefresh }: Props) {
                             value={editValue}
                             onChange={(e) => setEditValue(e.target.value)}
                             onKeyDown={handleKeyDown}
-                            className="border border-blue-400 rounded px-1.5 py-0.5 text-xs w-20 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            className="border border-primary-400 rounded px-1.5 py-0.5 text-xs w-20 focus:outline-none focus:ring-1 focus:ring-primary-500"
                             placeholder="닉네임"
                             disabled={updateMemberMutation.isPending}
                           />
@@ -328,7 +328,7 @@ export default function MemberTable({ members, onRefresh }: Props) {
                       ) : (
                         <button
                           onClick={() => startEdit(m, 'manualNickname')}
-                          className="font-medium text-gray-900 hover:text-blue-600 text-xs text-left truncate max-w-[80px] block"
+                          className="font-medium text-base-900 hover:text-primary-600 text-xs text-left truncate max-w-[80px] block"
                           title={`${m.manualNickname ?? m.nickname ?? m.githubId} (${m.githubId})`}
                         >
                           {m.manualNickname ?? m.nickname ?? m.githubId}
@@ -347,17 +347,17 @@ export default function MemberTable({ members, onRefresh }: Props) {
                     title="기수/역할 편집"
                   >
                     {m.cohorts.length === 0 ? (
-                      <span className="text-gray-300 text-[10px]">—</span>
+                      <span className="text-base-300 text-[10px]">—</span>
                     ) : (
                       <div className="flex flex-wrap gap-0.5">
                         {m.cohorts.map((c) => (
                           <span
                             key={c.cohort}
-                            className="text-[10px] bg-blue-50 text-blue-700 border border-blue-200 rounded px-1 py-0 whitespace-nowrap"
+                            className="text-[10px] bg-primary-50 text-primary-700 border border-primary-200 rounded px-1 py-0 whitespace-nowrap"
                           >
                             {c.cohort}기
                             {c.roles.length > 0 && (
-                              <span className="text-blue-400 ml-0.5">
+                              <span className="text-primary-400 ml-0.5">
                                 ({c.roles.map((r) => ROLE_LABELS[r] ?? r).join(',')})
                               </span>
                             )}
@@ -379,7 +379,7 @@ export default function MemberTable({ members, onRefresh }: Props) {
                           updateMemberMutation.mutate({ memberId: m.id, data });
                         }}
                         onKeyDown={handleKeyDown}
-                        className="border border-blue-400 rounded px-1 py-0.5 text-[10px] focus:outline-none focus:ring-1 focus:ring-blue-500 w-16"
+                        className="border border-primary-400 rounded px-1 py-0.5 text-[10px] focus:outline-none focus:ring-1 focus:ring-primary-500 w-16"
                         disabled={updateMemberMutation.isPending}
                       >
                         {TRACK_OPTIONS.map((t) => (
@@ -392,7 +392,7 @@ export default function MemberTable({ members, onRefresh }: Props) {
                   ) : (
                     <button
                       onClick={() => startEdit(m, 'track')}
-                      className={`text-[10px] px-1 py-0 rounded border whitespace-nowrap ${m.track ? 'bg-gray-100 text-gray-700 border-gray-200 hover:bg-gray-200' : 'text-gray-300 border-transparent hover:text-blue-600'}`}
+                      className={`text-[10px] px-1 py-0 rounded border whitespace-nowrap ${m.track ? 'bg-base-100 text-base-700 border-base-200 hover:bg-base-200' : 'text-base-300 border-transparent hover:text-primary-600'}`}
                       title="트랙 편집"
                     >
                       {m.track || '—'}
@@ -408,7 +408,7 @@ export default function MemberTable({ members, onRefresh }: Props) {
                         value={editValue}
                         onChange={(e) => setEditValue(e.target.value)}
                         onKeyDown={handleKeyDown}
-                        className="border border-blue-400 rounded px-1.5 py-0.5 text-xs w-24 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        className="border border-primary-400 rounded px-1.5 py-0.5 text-xs w-24 focus:outline-none focus:ring-1 focus:ring-primary-500"
                         placeholder="블로그 URL"
                         disabled={updateMemberMutation.isPending}
                       />
@@ -416,7 +416,7 @@ export default function MemberTable({ members, onRefresh }: Props) {
                   ) : m.blog ? (
                     <button
                       onClick={() => startEdit(m, 'blog')}
-                      className="text-[10px] text-blue-600 hover:underline truncate block text-left max-w-[100px]"
+                      className="text-[10px] text-primary-600 hover:underline truncate block text-left max-w-[100px]"
                       title={m.blog}
                     >
                       {m.blog.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')}
@@ -424,7 +424,7 @@ export default function MemberTable({ members, onRefresh }: Props) {
                   ) : (
                     <button
                       onClick={() => startEdit(m, 'blog')}
-                      className="text-gray-300 text-[10px] hover:text-blue-600"
+                      className="text-base-300 text-[10px] hover:text-primary-600"
                       title="블로그 추가"
                     >
                       —
@@ -433,15 +433,15 @@ export default function MemberTable({ members, onRefresh }: Props) {
                 </td>
                 <td className="px-1.5 py-1 text-center">
                   {m.rssStatus === 'ok' ? (
-                    <span className="text-[10px] text-green-600" title="RSS 정상">
+                    <span className="text-[10px] text-success-600" title="RSS 정상">
                       ✅
                     </span>
                   ) : m.rssStatus === 'error' ? (
-                    <span className="text-[10px] text-red-500" title="RSS 오류">
+                    <span className="text-[10px] text-danger-500" title="RSS 오류">
                       ❌
                     </span>
                   ) : (
-                    <span className="text-[10px] text-gray-300" title="RSS 미설정">
+                    <span className="text-[10px] text-base-300" title="RSS 미설정">
                       —
                     </span>
                   )}
@@ -449,7 +449,7 @@ export default function MemberTable({ members, onRefresh }: Props) {
                 <td className="px-1.5 py-1 text-center">
                   <button
                     onClick={() => void openPRModal(m)}
-                    className="text-[10px] text-gray-600 hover:text-blue-600 font-medium"
+                    className="text-[10px] text-base-600 hover:text-primary-600 font-medium"
                     title="PR 확인"
                   >
                     {m._count.submissions}
@@ -458,7 +458,7 @@ export default function MemberTable({ members, onRefresh }: Props) {
                 <td className="px-1.5 py-1 text-center">
                   <button
                     onClick={() => void openBlogModal(m)}
-                    className="text-[10px] text-gray-600 hover:text-blue-600"
+                    className="text-[10px] text-base-600 hover:text-primary-600"
                     title="블로그 글 보기"
                   >
                     {m._count.blogPosts}
@@ -469,7 +469,7 @@ export default function MemberTable({ members, onRefresh }: Props) {
                     <button
                       onClick={() => void refreshProfile(m)}
                       disabled={refreshing === m.id || !!(cooldowns[m.id] && cooldowns[m.id] > 0)}
-                      className="text-[10px] text-gray-500 hover:text-blue-600 disabled:opacity-40 px-0.5 min-w-[20px]"
+                      className="text-[10px] text-base-500 hover:text-primary-600 disabled:opacity-40 px-0.5 min-w-[20px]"
                       title={cooldowns[m.id] ? `${cooldowns[m.id]}초 후 가능` : '프로필 새로고침'}
                     >
                       {refreshing === m.id ? '⟳' : cooldowns[m.id] ? `${cooldowns[m.id]}s` : '↺'}
@@ -477,7 +477,7 @@ export default function MemberTable({ members, onRefresh }: Props) {
                     <button
                       onClick={() => void resyncSubmissions(m)}
                       disabled={resyncing === m.id}
-                      className="text-[10px] text-gray-500 hover:text-green-600 disabled:opacity-40 px-0.5"
+                      className="text-[10px] text-base-500 hover:text-success-600 disabled:opacity-40 px-0.5"
                       title="PR 재수집"
                     >
                       {resyncing === m.id ? '⟳' : '↻'}
@@ -485,7 +485,7 @@ export default function MemberTable({ members, onRefresh }: Props) {
                     <button
                       onClick={() => void recalculateCohorts(m)}
                       disabled={recalculating === m.id}
-                      className="text-[10px] text-gray-500 hover:text-amber-600 disabled:opacity-40 px-0.5"
+                      className="text-[10px] text-base-500 hover:text-warning-600 disabled:opacity-40 px-0.5"
                       title="기수 재계산"
                     >
                       {recalculating === m.id ? '⟳' : '⚡'}
@@ -493,7 +493,7 @@ export default function MemberTable({ members, onRefresh }: Props) {
                     <button
                       onClick={() => void deleteMember(m)}
                       disabled={deleting === m.id}
-                      className="text-[10px] text-gray-400 hover:text-red-500 disabled:opacity-40 px-0.5"
+                      className="text-[10px] text-base-400 hover:text-danger-500 disabled:opacity-40 px-0.5"
                       title="삭제"
                     >
                       ✕
@@ -504,7 +504,7 @@ export default function MemberTable({ members, onRefresh }: Props) {
             ))}
           </tbody>
         </table>
-        {sorted.length === 0 && <div className="py-12 text-center text-gray-400 text-sm">멤버 없음</div>}
+        {sorted.length === 0 && <div className="py-12 text-center text-base-400 text-sm">멤버 없음</div>}
       </div>
 
       <Modal
@@ -515,27 +515,27 @@ export default function MemberTable({ members, onRefresh }: Props) {
         {prModal && (
           <div className="space-y-2 max-h-[60vh] overflow-y-auto">
             {prModal.submissions.length === 0 ? (
-              <p className="text-gray-400 text-sm">제출 내역 없음</p>
+              <p className="text-base-400 text-sm">제출 내역 없음</p>
             ) : (
               prModal.submissions.map((s) => (
-                <div key={s.id} className="border border-gray-100 rounded p-2 flex items-start justify-between gap-2">
+                <div key={s.id} className="border border-base-100 rounded p-2 flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <a
                         href={s.prUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-sm text-blue-600 hover:underline"
+                        className="text-sm text-primary-600 hover:underline"
                       >
                         #{s.prNumber} {s.title}
                       </a>
                       <span
-                        className={`text-xs px-1.5 py-0.5 rounded font-medium border ${s.status === 'merged' ? 'bg-purple-100 text-purple-700 border-purple-200' : s.status === 'open' ? 'bg-green-100 text-green-700 border-green-200' : 'bg-gray-100 text-gray-500 border-gray-200'}`}
+                        className={`text-xs px-1.5 py-0.5 rounded font-medium border ${s.status === 'merged' ? 'bg-accent-100 text-accent-700 border-accent-200' : s.status === 'open' ? 'bg-success-100 text-success-700 border-success-200' : 'bg-base-100 text-base-500 border-base-200'}`}
                       >
                         {s.status}
                       </span>
                     </div>
-                    <p className="text-xs text-gray-400 mt-0.5">
+                    <p className="text-xs text-base-400 mt-0.5">
                       {s.missionRepo.name} · {new Date(s.submittedAt).toLocaleDateString('ko-KR')}
                     </p>
                   </div>
@@ -556,7 +556,7 @@ export default function MemberTable({ members, onRefresh }: Props) {
                           .catch((e) => showToast(e instanceof Error ? e.message : '삭제 실패', 'error'));
                       }
                     }}
-                    className="text-xs text-gray-400 hover:text-red-500 px-1"
+                    className="text-xs text-base-400 hover:text-danger-500 px-1"
                     title="PR 삭제"
                   >
                     ✕
@@ -576,19 +576,19 @@ export default function MemberTable({ members, onRefresh }: Props) {
         {blogModal && (
           <div className="space-y-2">
             {blogModal.posts.length === 0 ? (
-              <p className="text-gray-400 text-sm">포스트 없음</p>
+              <p className="text-base-400 text-sm">포스트 없음</p>
             ) : (
               blogModal.posts.map((p) => (
-                <div key={p.id} className="border border-gray-100 rounded p-2">
+                <div key={p.id} className="border border-base-100 rounded p-2">
                   <a
                     href={p.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm text-blue-600 hover:underline"
+                    className="text-sm text-primary-600 hover:underline"
                   >
                     {p.title}
                   </a>
-                  <p className="text-xs text-gray-400 mt-0.5">{new Date(p.publishedAt).toLocaleDateString('ko-KR')}</p>
+                  <p className="text-xs text-base-400 mt-0.5">{new Date(p.publishedAt).toLocaleDateString('ko-KR')}</p>
                 </div>
               ))
             )}
@@ -599,10 +599,10 @@ export default function MemberTable({ members, onRefresh }: Props) {
       <Modal open={!!cohortModal} onClose={() => setCohortModal(null)} title={`${cohortModal?.githubId} 기수/역할`}>
         {cohortModal && (
           <div className="space-y-3">
-            <div className="flex items-center justify-between rounded border border-gray-200 bg-gray-50 px-3 py-2">
+            <div className="flex items-center justify-between rounded border border-base-200 bg-base-50 px-3 py-2">
               <div>
-                <p className="text-xs font-medium text-gray-700">자동 산정 잠금</p>
-                <p className="text-[10px] text-gray-400">활성화 시 기수 자동 재산정을 건너뜁니다</p>
+                <p className="text-xs font-medium text-base-700">자동 산정 잠금</p>
+                <p className="text-[10px] text-base-400">활성화 시 기수 자동 재산정을 건너뜁니다</p>
               </div>
               <button
                 onClick={() =>
@@ -611,7 +611,7 @@ export default function MemberTable({ members, onRefresh }: Props) {
                     onRefresh();
                   })
                 }
-                className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${cohortModal.cohortLocked ? 'bg-blue-600' : 'bg-gray-200'}`}
+                className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${cohortModal.cohortLocked ? 'bg-primary-600' : 'bg-base-200'}`}
                 title={cohortModal.cohortLocked ? '잠금 해제' : '잠금 설정'}
               >
                 <span
@@ -620,24 +620,24 @@ export default function MemberTable({ members, onRefresh }: Props) {
               </button>
             </div>
             <div>
-              <p className="text-xs text-gray-500 mb-2">현재 기수</p>
+              <p className="text-xs text-base-500 mb-2">현재 기수</p>
               {cohortModal.cohorts.length === 0 ? (
-                <p className="text-xs text-gray-400">기수 없음</p>
+                <p className="text-xs text-base-400">기수 없음</p>
               ) : (
                 <div className="space-y-1.5">
                   {cohortModal.cohorts.map((c: MemberCohort) => (
                     <div
                       key={c.cohort}
-                      className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded px-2 py-1.5"
+                      className="flex items-center gap-2 bg-base-50 border border-base-200 rounded px-2 py-1.5"
                     >
-                      <span className="text-xs font-semibold text-gray-700 w-8">{c.cohort}기</span>
+                      <span className="text-xs font-semibold text-base-700 w-8">{c.cohort}기</span>
                       <div className="flex gap-1 flex-wrap">
                         {ROLE_OPTIONS.map((role) => (
                           <button
                             key={role}
                             onClick={() => toggleCohortRole(cohortModal.id, c.cohort, c.roles, role)}
                             disabled={updateCohortRolesMutation.isPending}
-                            className={`text-[10px] px-1.5 py-0.5 rounded border transition-colors ${c.roles.includes(role) ? 'bg-blue-100 text-blue-700 border-blue-300' : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-100'}`}
+                            className={`text-[10px] px-1.5 py-0.5 rounded border transition-colors ${c.roles.includes(role) ? 'bg-primary-100 text-primary-700 border-primary-300' : 'bg-white text-base-500 border-base-200 hover:bg-base-100'}`}
                           >
                             {ROLE_LABELS[role]}
                           </button>
@@ -646,7 +646,7 @@ export default function MemberTable({ members, onRefresh }: Props) {
                       <button
                         onClick={() => deleteCohortMutation.mutate({ memberId: cohortModal.id, cohort: c.cohort })}
                         disabled={deleteCohortMutation.isPending}
-                        className="text-[10px] text-gray-400 hover:text-red-500 ml-auto disabled:opacity-40"
+                        className="text-[10px] text-base-400 hover:text-danger-500 ml-auto disabled:opacity-40"
                         title="기수 삭제"
                       >
                         ✕
@@ -657,14 +657,14 @@ export default function MemberTable({ members, onRefresh }: Props) {
               )}
             </div>
             <div>
-              <p className="text-xs text-gray-500 mb-2">기수 추가</p>
+              <p className="text-xs text-base-500 mb-2">기수 추가</p>
               <div className="flex gap-2">
                 <input
                   type="number"
                   value={newCohortInput}
                   onChange={(e) => setNewCohortInput(e.target.value)}
                   placeholder="예: 9"
-                  className="border border-gray-300 rounded px-2 py-1 text-xs w-20"
+                  className="border border-base-300 rounded px-2 py-1 text-xs w-20"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') handleAddCohort();
                   }}
@@ -672,7 +672,7 @@ export default function MemberTable({ members, onRefresh }: Props) {
                 <button
                   onClick={handleAddCohort}
                   disabled={addCohortMutation.isPending || !newCohortInput}
-                  className="bg-blue-600 text-white text-xs rounded px-2 py-1 hover:bg-blue-700 disabled:opacity-40"
+                  className="bg-primary-600 text-white text-xs rounded px-2 py-1 hover:bg-primary-700 disabled:opacity-40"
                 >
                   추가
                 </button>

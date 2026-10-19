@@ -222,7 +222,7 @@ export default function ArchiveTab() {
     });
 
   const renderRepoRow = (cr: CohortRepo) => (
-    <tr key={cr.id} className="hover:bg-gray-50">
+    <tr key={cr.id} className="hover:bg-base-50">
       <td className="px-3 py-2">
         {editingOrderId === cr.id ? (
           <input
@@ -234,7 +234,7 @@ export default function ArchiveTab() {
               if (e.key === 'Enter') saveOrder(cr);
               if (e.key === 'Escape') setEditingOrderId(null);
             }}
-            className="border border-blue-300 rounded px-1 py-0.5 text-xs w-14 text-center focus:outline-none focus:ring-1 focus:ring-blue-400"
+            className="border border-primary-300 rounded px-1 py-0.5 text-xs w-14 text-center focus:outline-none focus:ring-1 focus:ring-primary-400"
           />
         ) : (
           <button
@@ -242,7 +242,7 @@ export default function ArchiveTab() {
               setEditingOrderId(cr.id);
               setEditingOrderValue(String(cr.order));
             }}
-            className="text-xs text-gray-600 font-mono hover:text-blue-600 hover:underline px-1"
+            className="text-xs text-base-600 font-mono hover:text-primary-600 hover:underline px-1"
             title="클릭하여 순서 변경"
           >
             {cr.order}
@@ -254,12 +254,12 @@ export default function ArchiveTab() {
           href={cr.missionRepo.repoUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-blue-600 hover:underline text-xs font-medium"
+          className="text-primary-600 hover:underline text-xs font-medium"
         >
           {cr.missionRepo.name}
         </a>
       </td>
-      <td className="px-3 py-2 text-xs text-gray-600">{cr.missionRepo.track ?? '—'}</td>
+      <td className="px-3 py-2 text-xs text-base-600">{cr.missionRepo.track ?? '—'}</td>
       <td className="px-3 py-2">
         {editingLevelId === cr.id ? (
           <input
@@ -271,7 +271,7 @@ export default function ArchiveTab() {
               if (e.key === 'Enter') saveLevel(cr);
               if (e.key === 'Escape') setEditingLevelId(null);
             }}
-            className="border border-blue-300 rounded px-1 py-0.5 text-xs w-14 text-center focus:outline-none focus:ring-1 focus:ring-blue-400"
+            className="border border-primary-300 rounded px-1 py-0.5 text-xs w-14 text-center focus:outline-none focus:ring-1 focus:ring-primary-400"
           />
         ) : (
           <button
@@ -279,7 +279,7 @@ export default function ArchiveTab() {
               setEditingLevelId(cr.id);
               setEditingLevelValue(cr.level != null ? String(cr.level) : '');
             }}
-            className="text-xs text-gray-600 font-mono hover:text-blue-600 hover:underline px-1"
+            className="text-xs text-base-600 font-mono hover:text-primary-600 hover:underline px-1"
             title="클릭하여 레벨 변경"
           >
             {cr.level ?? '—'}
@@ -294,7 +294,7 @@ export default function ArchiveTab() {
             }
           }}
           disabled={deleteMutation.isPending}
-          className="text-xs text-gray-400 hover:text-red-500 disabled:opacity-40 px-1"
+          className="text-xs text-base-400 hover:text-danger-500 disabled:opacity-40 px-1"
           title="삭제"
         >
           ✕
@@ -307,21 +307,21 @@ export default function ArchiveTab() {
     <div className="space-y-6">
       <div className="flex items-center gap-3 flex-wrap">
         <div>
-          <label className="text-xs text-gray-500 block mb-1">기수 (필수)</label>
+          <label className="text-xs text-base-500 block mb-1">기수 (필수)</label>
           <input
             type="number"
             value={cohort}
             onChange={(e) => setCohort(e.target.value)}
             placeholder="예: 8"
-            className="border border-gray-300 rounded px-2 py-1.5 text-sm w-20"
+            className="border border-base-300 rounded px-2 py-1.5 text-sm w-20"
           />
         </div>
         <div>
-          <label className="text-xs text-gray-500 block mb-1">트랙 (선택)</label>
+          <label className="text-xs text-base-500 block mb-1">트랙 (선택)</label>
           <select
             value={track}
             onChange={(e) => setTrack(e.target.value)}
-            className="border border-gray-300 rounded px-2 py-1.5 text-sm"
+            className="border border-base-300 rounded px-2 py-1.5 text-sm"
           >
             <option value="">전체</option>
             <option value="frontend">frontend</option>
@@ -332,30 +332,30 @@ export default function ArchiveTab() {
       </div>
 
       {Number.isFinite(cohortNum) && cohortNum > 0 && (
-        <div className="bg-white border border-gray-200 rounded p-4 space-y-4">
+        <div className="bg-white border border-base-200 rounded p-4 space-y-4">
           <div className="flex items-center justify-between flex-wrap gap-2">
-            <h3 className="text-sm font-semibold text-gray-700">
-              기수별 레포 순서 <span className="text-gray-400 font-normal">({filteredRepos.length}개)</span>
+            <h3 className="text-sm font-semibold text-base-700">
+              기수별 레포 순서 <span className="text-base-400 font-normal">({filteredRepos.length}개)</span>
             </h3>
             <div className="flex items-center gap-2 flex-wrap">
               <button
                 onClick={() => autoFillMutation.mutate()}
                 disabled={autoFillMutation.isPending}
-                className="bg-purple-600 text-white text-xs rounded px-3 py-1.5 hover:bg-purple-700 disabled:opacity-40"
+                className="bg-accent-600 text-white text-xs rounded px-3 py-1.5 hover:bg-accent-700 disabled:opacity-40"
               >
                 {autoFillMutation.isPending ? '채우는 중...' : '자동 채우기'}
               </button>
               <button
                 onClick={runCohortReposSync}
                 disabled={syncRunning}
-                className="bg-blue-600 text-white text-xs rounded px-3 py-1.5 hover:bg-blue-700 disabled:opacity-40"
+                className="bg-primary-600 text-white text-xs rounded px-3 py-1.5 hover:bg-primary-700 disabled:opacity-40"
               >
                 {syncRunning ? '싱크 중...' : '목록 전체 재 Sync'}
               </button>
               {syncRunning && (
                 <button
                   onClick={stopSync}
-                  className="bg-red-500 text-white text-xs rounded px-3 py-1.5 hover:bg-red-600"
+                  className="bg-danger-500 text-white text-xs rounded px-3 py-1.5 hover:bg-danger-600"
                 >
                   중단
                 </button>
@@ -372,12 +372,12 @@ export default function ArchiveTab() {
                 setSelectedRepoId('');
               }}
               placeholder="레포 검색..."
-              className="border border-gray-300 rounded px-2 py-1.5 text-sm w-40"
+              className="border border-base-300 rounded px-2 py-1.5 text-sm w-40"
             />
             <select
               value={selectedRepoId}
               onChange={(e) => setSelectedRepoId(e.target.value)}
-              className="border border-gray-300 rounded px-2 py-1.5 text-sm min-w-[200px]"
+              className="border border-base-300 rounded px-2 py-1.5 text-sm min-w-[200px]"
             >
               <option value="">레포 선택 ({availableRepos.length}개)</option>
               {availableRepos.map((r) => (
@@ -389,81 +389,81 @@ export default function ArchiveTab() {
             <button
               onClick={handleAddRepo}
               disabled={addRepoMutation.isPending || !selectedRepoId}
-              className="bg-gray-700 text-white text-xs rounded px-3 py-1.5 hover:bg-gray-800 disabled:opacity-40"
+              className="bg-base-700 text-white text-xs rounded px-3 py-1.5 hover:bg-base-800 disabled:opacity-40"
             >
               {addRepoMutation.isPending ? '추가 중...' : '추가'}
             </button>
           </div>
 
           {reposLoading ? (
-            <div className="py-8 text-center text-gray-400 text-sm">로딩 중...</div>
+            <div className="py-8 text-center text-base-400 text-sm">로딩 중...</div>
           ) : (
             <>
               {trackRepos.length > 0 && (
                 <div>
-                  {commonRepos.length > 0 && <p className="text-xs font-medium text-gray-600 mb-1">트랙 미션</p>}
-                  <div className="overflow-x-auto rounded border border-gray-200">
+                  {commonRepos.length > 0 && <p className="text-xs font-medium text-base-600 mb-1">트랙 미션</p>}
+                  <div className="overflow-x-auto rounded border border-base-200">
                     <table className="w-full text-sm">
-                      <thead className="bg-gray-50 border-b border-gray-200">
+                      <thead className="bg-base-50 border-b border-base-200">
                         <tr>
-                          <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">순서</th>
-                          <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">레포</th>
-                          <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">트랙</th>
-                          <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">레벨</th>
-                          <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">작업</th>
+                          <th className="text-left text-xs font-medium text-base-500 px-3 py-2">순서</th>
+                          <th className="text-left text-xs font-medium text-base-500 px-3 py-2">레포</th>
+                          <th className="text-left text-xs font-medium text-base-500 px-3 py-2">트랙</th>
+                          <th className="text-left text-xs font-medium text-base-500 px-3 py-2">레벨</th>
+                          <th className="text-left text-xs font-medium text-base-500 px-3 py-2">작업</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-100">{trackRepos.map(renderRepoRow)}</tbody>
+                      <tbody className="divide-y divide-base-100">{trackRepos.map(renderRepoRow)}</tbody>
                     </table>
                   </div>
                 </div>
               )}
               {commonRepos.length > 0 && (
                 <div>
-                  <p className="text-xs font-medium text-gray-600 mb-1">공통 미션</p>
-                  <div className="overflow-x-auto rounded border border-gray-200">
+                  <p className="text-xs font-medium text-base-600 mb-1">공통 미션</p>
+                  <div className="overflow-x-auto rounded border border-base-200">
                     <table className="w-full text-sm">
-                      <thead className="bg-gray-50 border-b border-gray-200">
+                      <thead className="bg-base-50 border-b border-base-200">
                         <tr>
-                          <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">순서</th>
-                          <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">레포</th>
-                          <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">트랙</th>
-                          <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">레벨</th>
-                          <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">작업</th>
+                          <th className="text-left text-xs font-medium text-base-500 px-3 py-2">순서</th>
+                          <th className="text-left text-xs font-medium text-base-500 px-3 py-2">레포</th>
+                          <th className="text-left text-xs font-medium text-base-500 px-3 py-2">트랙</th>
+                          <th className="text-left text-xs font-medium text-base-500 px-3 py-2">레벨</th>
+                          <th className="text-left text-xs font-medium text-base-500 px-3 py-2">작업</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-100">{commonRepos.map(renderRepoRow)}</tbody>
+                      <tbody className="divide-y divide-base-100">{commonRepos.map(renderRepoRow)}</tbody>
                     </table>
                   </div>
                 </div>
               )}
               {filteredRepos.length === 0 && (
-                <div className="py-8 text-center text-gray-400 text-sm">
+                <div className="py-8 text-center text-base-400 text-sm">
                   등록된 레포가 없습니다. 자동 채우기를 사용하거나 직접 추가하세요.
                 </div>
               )}
 
               {filteredRepos.length > 0 && (
                 <div className="space-y-4 mt-6">
-                  <h4 className="text-sm font-semibold text-gray-700">레벨별 레포</h4>
+                  <h4 className="text-sm font-semibold text-base-700">레벨별 레포</h4>
                   {reposByLevel().map(({ level, repos }) => (
                     <div key={level ?? 'null'}>
-                      <p className="text-xs font-medium text-gray-600 mb-1">
+                      <p className="text-xs font-medium text-base-600 mb-1">
                         {level !== null ? `Lv ${level}` : '미분류'}
-                        <span className="text-gray-400 font-normal ml-1">({repos.length}개)</span>
+                        <span className="text-base-400 font-normal ml-1">({repos.length}개)</span>
                       </p>
-                      <div className="overflow-x-auto rounded border border-gray-200">
+                      <div className="overflow-x-auto rounded border border-base-200">
                         <table className="w-full text-sm">
-                          <thead className="bg-gray-50 border-b border-gray-200">
+                          <thead className="bg-base-50 border-b border-base-200">
                             <tr>
-                              <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">순서</th>
-                              <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">레포</th>
-                              <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">트랙</th>
-                              <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">레벨</th>
-                              <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">작업</th>
+                              <th className="text-left text-xs font-medium text-base-500 px-3 py-2">순서</th>
+                              <th className="text-left text-xs font-medium text-base-500 px-3 py-2">레포</th>
+                              <th className="text-left text-xs font-medium text-base-500 px-3 py-2">트랙</th>
+                              <th className="text-left text-xs font-medium text-base-500 px-3 py-2">레벨</th>
+                              <th className="text-left text-xs font-medium text-base-500 px-3 py-2">작업</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-gray-100">{repos.map(renderRepoRow)}</tbody>
+                          <tbody className="divide-y divide-base-100">{repos.map(renderRepoRow)}</tbody>
                         </table>
                       </div>
                     </div>
@@ -476,10 +476,10 @@ export default function ArchiveTab() {
       )}
 
       {logs.length > 0 && (
-        <div className="bg-gray-900 rounded border border-gray-700 p-4 font-mono text-xs max-h-48 overflow-y-auto">
+        <div className="bg-base-900 rounded border border-base-700 p-4 font-mono text-xs max-h-48 overflow-y-auto">
           {logs.map((entry, i) => (
             <div key={i} className={`${logColor(entry.type)} leading-5`}>
-              <span className="text-gray-600 mr-2">{new Date(entry.ts).toLocaleTimeString('ko-KR')}</span>
+              <span className="text-base-600 mr-2">{new Date(entry.ts).toLocaleTimeString('ko-KR')}</span>
               {entry.message}
             </div>
           ))}

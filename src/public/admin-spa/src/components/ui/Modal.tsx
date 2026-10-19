@@ -16,8 +16,8 @@ export default function Modal({ open, onClose, title, children }: ModalProps) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-semibold text-gray-900">{title}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">
+          <h2 className="text-base font-semibold text-base-900">{title}</h2>
+          <button onClick={onClose} className="text-base-400 hover:text-base-600 text-xl leading-none">
             ×
           </button>
         </div>

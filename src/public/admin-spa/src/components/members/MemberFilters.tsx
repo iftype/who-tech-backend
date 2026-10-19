@@ -16,12 +16,12 @@ export default function MemberFiltersBar({ filters, onChange }: Props) {
         placeholder="검색 (닉네임/깃허브ID)"
         value={filters.q ?? ''}
         onChange={(e: ChangeEvent<HTMLInputElement>) => set('q', e.target.value)}
-        className="border border-gray-300 rounded px-3 py-1.5 text-sm w-48"
+        className="border border-base-300 rounded px-3 py-1.5 text-sm w-48"
       />
       <select
         value={filters.role ?? ''}
         onChange={(e) => set('role', e.target.value)}
-        className="border border-gray-300 rounded px-3 py-1.5 text-sm"
+        className="border border-base-300 rounded px-3 py-1.5 text-sm"
       >
         <option value="">전체 역할</option>
         <option value="crew">크루</option>
@@ -31,7 +31,7 @@ export default function MemberFiltersBar({ filters, onChange }: Props) {
       <select
         value={filters.track ?? ''}
         onChange={(e) => set('track', e.target.value)}
-        className="border border-gray-300 rounded px-3 py-1.5 text-sm"
+        className="border border-base-300 rounded px-3 py-1.5 text-sm"
       >
         <option value="">전체 트랙</option>
         <option value="frontend">프론트엔드</option>
@@ -46,13 +46,13 @@ export default function MemberFiltersBar({ filters, onChange }: Props) {
             hasBlog: e.target.value === '' ? undefined : e.target.value === 'true',
           })
         }
-        className="border border-gray-300 rounded px-3 py-1.5 text-sm"
+        className="border border-base-300 rounded px-3 py-1.5 text-sm"
       >
         <option value="">블로그 전체</option>
         <option value="true">있음</option>
         <option value="false">없음</option>
       </select>
-      <button onClick={() => onChange({})} className="text-xs text-gray-400 hover:text-gray-600 px-2">
+      <button onClick={() => onChange({})} className="text-xs text-base-400 hover:text-base-600 px-2">
         초기화
       </button>
     </div>

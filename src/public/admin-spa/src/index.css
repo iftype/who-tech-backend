@@ -1,16 +1,83 @@
 @import 'tailwindcss';
 
 @theme {
-  --color-primary-50: #f0fdfa;
-  --color-primary-100: #ccfbf1;
-  --color-primary-200: #99f6e4;
-  --color-primary-300: #5eead4;
-  --color-primary-400: #2dd4bf;
-  --color-primary-500: #14b8a6;
-  --color-primary-600: #0d9488;
-  --color-primary-700: #0f766e;
-  --color-primary-800: #115e59;
-  --color-primary-900: #134e4a;
+  /* 역할별 색상 계열 (ARCHITECTURE_PLAN D-1b). Tailwind 팔레트를 그대로 가리켜 색은 바뀌지 않는다.
+     화면에서는 gray·blue 같은 팔레트 이름 대신 이 이름만 쓴다 (lint:tokens가 검사) */
+  /* base: 기본 글자·면·선 */
+  --color-base-50: var(--color-gray-50);
+  --color-base-100: var(--color-gray-100);
+  --color-base-200: var(--color-gray-200);
+  --color-base-300: var(--color-gray-300);
+  --color-base-400: var(--color-gray-400);
+  --color-base-500: var(--color-gray-500);
+  --color-base-600: var(--color-gray-600);
+  --color-base-700: var(--color-gray-700);
+  --color-base-800: var(--color-gray-800);
+  --color-base-900: var(--color-gray-900);
+  /* primary: 주요 동작 (탭·버튼·링크·선택) */
+  --color-primary-50: var(--color-blue-50);
+  --color-primary-100: var(--color-blue-100);
+  --color-primary-200: var(--color-blue-200);
+  --color-primary-300: var(--color-blue-300);
+  --color-primary-400: var(--color-blue-400);
+  --color-primary-500: var(--color-blue-500);
+  --color-primary-600: var(--color-blue-600);
+  --color-primary-700: var(--color-blue-700);
+  /* danger: 위험·삭제·오류 */
+  --color-danger-50: var(--color-red-50);
+  --color-danger-100: var(--color-red-100);
+  --color-danger-200: var(--color-red-200);
+  --color-danger-300: var(--color-red-300);
+  --color-danger-400: var(--color-red-400);
+  --color-danger-500: var(--color-red-500);
+  --color-danger-600: var(--color-red-600);
+  --color-danger-700: var(--color-red-700);
+  --color-danger-900: var(--color-red-900);
+  /* success: 성공·완료 */
+  --color-success-50: var(--color-green-50);
+  --color-success-100: var(--color-green-100);
+  --color-success-200: var(--color-green-200);
+  --color-success-300: var(--color-green-300);
+  --color-success-400: var(--color-green-400);
+  --color-success-600: var(--color-green-600);
+  --color-success-700: var(--color-green-700);
+  --color-success-900: var(--color-green-900);
+  /* accent: 보조 강조 */
+  --color-accent-50: var(--color-purple-50);
+  --color-accent-100: var(--color-purple-100);
+  --color-accent-200: var(--color-purple-200);
+  --color-accent-400: var(--color-purple-400);
+  --color-accent-600: var(--color-purple-600);
+  --color-accent-700: var(--color-purple-700);
+  /* warning: 주의 */
+  --color-warning-50: var(--color-amber-50);
+  --color-warning-300: var(--color-amber-300);
+  --color-warning-600: var(--color-amber-600);
+  /* caution: 경고 */
+  --color-caution-50: var(--color-orange-50);
+  --color-caution-100: var(--color-orange-100);
+  --color-caution-200: var(--color-orange-200);
+  --color-caution-600: var(--color-orange-600);
+  --color-caution-700: var(--color-orange-700);
+  --color-caution-900: var(--color-orange-900);
+  /* highlight: 강조 표시 */
+  --color-highlight-100: var(--color-yellow-100);
+  --color-highlight-200: var(--color-yellow-200);
+  --color-highlight-400: var(--color-yellow-400);
+  --color-highlight-700: var(--color-yellow-700);
+  /* console: 하단 로그 콘솔 */
+  --color-console-100: var(--color-slate-100);
+  --color-console-200: var(--color-slate-200);
+  --color-console-300: var(--color-slate-300);
+  --color-console-400: var(--color-slate-400);
+  --color-console-500: var(--color-slate-500);
+  --color-console-600: var(--color-slate-600);
+  --color-console-700: var(--color-slate-700);
+  --color-console-800: var(--color-slate-800);
+  --color-console-900: var(--color-slate-900);
+  /* brand: 동기화 버튼·진행 막대 그라데이션 */
+  --color-brand-teal: var(--color-teal-700);
+  --color-brand-sky: var(--color-sky-700);
 }
 
 body {

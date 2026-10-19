@@ -15,7 +15,7 @@ export default function TabNav() {
   const [location, navigate] = useHashLocation();
 
   return (
-    <nav className="flex border-b border-gray-200 bg-white px-4">
+    <nav className="flex border-b border-base-200 bg-white px-4">
       {TABS.map((tab) => {
         const active = location === tab.path || (location === '/' && tab.path === '/members');
         return (
@@ -23,7 +23,7 @@ export default function TabNav() {
             key={tab.path}
             onClick={() => navigate(tab.path)}
             className={`px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors ${
-              active ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'
+              active ? 'border-primary-600 text-primary-600' : 'border-transparent text-base-500 hover:text-base-700'
             }`}
           >
             {tab.label}
