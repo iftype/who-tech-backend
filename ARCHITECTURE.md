@@ -56,6 +56,8 @@ src/public/admin-spa/src/
 ```
 
 - 서버 호출은 `adminApi.*`, 캐시 키는 `queryKeys.*`만 쓴다 (화면에 경로 문자열·키 배열 0)
+- 뮤테이션 토스트는 `lib/query-client.ts`의 `MutationCache`가 `meta.errorMessage`·`successMessage`로 한곳에서 띄운다 (토스트 함수는 `main.tsx`가 주입 — `lib`은 화면을 모른다)
+- 인증 상태의 출처는 `AuthContext` 하나. `apiFetch`가 401을 받으면 `admin:unauthorized` 이벤트로 알리고 컨텍스트가 로그아웃한다
 - 색은 역할별 계열(`base`·`primary`·`danger`·`success`·`accent` …, `index.css` `@theme`). 단계(500·600)는 그대로 두고 이름만 역할로 바꿔 화면이 1px도 바뀌지 않게 옮겼다 → [ADR 0004](docs/adr/0004-admin-role-colors.md)
 
 ## 새 기능을 추가하는 방법 (백엔드)
@@ -106,3 +108,5 @@ src/public/admin-spa/src/
 - [0002 DB는 확장 → 이전 → 축소로 바꾼다](docs/adr/0002-expand-migrate-contract.md)
 - [0003 구조 변경의 안전망: 계약·스크린샷·운영 지문](docs/adr/0003-safety-nets.md)
 - [0004 어드민 색은 역할별 계열로 옮긴다](docs/adr/0004-admin-role-colors.md)
+- [0005 레포 싱크: PR 하나는 트랜잭션 하나, 통계는 다시 계산](docs/adr/0005-sync-unit-of-work.md)
+- [0006 보안 수정과 에러 모델](docs/adr/0006-security-and-error-model.md)

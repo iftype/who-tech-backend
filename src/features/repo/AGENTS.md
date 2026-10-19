@@ -21,7 +21,7 @@ createRepoService({ missionRepoRepo, workspaceService, syncService, octokit }): 
 | `listRepos(status?)`                 | status 필터로 레포 목록 조회. cohorts JSON 파싱 포함                                                 |
 | `createRepo(input)`                  | 수동 레포 생성. 기본값: type=individual, tabCategory=base/common, status=active, syncMode=continuous |
 | `updateRepoMatchingRules(id, input)` | 레포 속성 선택적 수정                                                                                |
-| `enqueueRepoSyncById(id)`            | 단일 레포 sync job 등록. 전체 PR 재수집(lastSyncAt=null)                                             |
+| `findRepoName(id)`                   | 싱크 작업 목록에 보여 줄 레포 이름 (없는 레포면 null)                                                |
 | `refreshRepoCandidates()`            | GitHub org의 public 레포를 스캔해 candidate/excluded 자동 분류 및 upsert                             |
 | `resetRepoSyncStatus(id)`            | lastSyncAt을 null로 설정해 다음 sync 시 전체 재수집                                                  |
 | `deleteRepo(id)`                     | 레포 및 연결된 Submission 삭제                                                                       |
@@ -54,3 +54,9 @@ createRepoService({ missionRepoRepo, workspaceService, syncService, octokit }): 
 - 레포 발견 규칙: `javascript-|react-|java-|spring-|android-|kotlin-|compose-|jwp-|ts-` 접두사 또는 mission 관련 키워드 포함. docs/roadmap/wiki 등은 excluded.
 - track 추론: 접두사 → frontend/backend/android. 없으면 language 보조 판단.
 - 수동 sync는 전체 PR 재수집(once 모드와 동일 동작).
+
+## 레포 싱크 작업
+
+- `POST /admin/repos/:id/sync`는 싱크 큐(`syncAdminService.createJob('repo', …)`)에 넣는다
+- `GET /admin/repos/sync-jobs[/:id]`는 같은 큐를 읽고 `repo.sync-jobs.ts`가 예전 응답 모양(`repoName`, `progress.percent·phase`, `result.failures`)으로 바꾼다
+- 예전에는 아무도 채우지 않는 레포 전용 저장소를 읽어 항상 404였다(#203)
