@@ -26,6 +26,25 @@ const getSortValue = (m: Member, key: SortKey): unknown => {
   return m[key as keyof Member];
 };
 
+// 렌더 안에서 만들면 다시 그릴 때마다 머리 칸이 새로 붙어 클릭이 사라질 수 있어 밖에 둔다
+function SortHeader({
+  label,
+  active,
+  dir,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  dir: 'asc' | 'desc';
+  onClick: () => void;
+}) {
+  return (
+    <Th density="compact" size="11" className="cursor-pointer hover:text-base-700 whitespace-nowrap" onClick={onClick}>
+      {label} {active ? (dir === 'asc' ? '↑' : '↓') : ''}
+    </Th>
+  );
+}
+
 export default function MemberTable({ members, onRefresh }: Props) {
   const { sorted, sortKey, sortDir, toggle } = useSortableData(members, {
     initialKey: 'cohort' as SortKey,
@@ -60,15 +79,8 @@ export default function MemberTable({ members, onRefresh }: Props) {
     }
   };
 
-  const SortHeader = ({ label, k }: { label: string; k: SortKey }) => (
-    <Th
-      density="compact"
-      size="11"
-      className="cursor-pointer hover:text-base-700 whitespace-nowrap"
-      onClick={() => toggle(k)}
-    >
-      {label} {sortKey === k ? (sortDir === 'asc' ? '↑' : '↓') : ''}
-    </Th>
+  const sortHeader = (label: string, k: SortKey) => (
+    <SortHeader label={label} active={sortKey === k} dir={sortDir} onClick={() => toggle(k)} />
   );
 
   return (
@@ -92,8 +104,8 @@ export default function MemberTable({ members, onRefresh }: Props) {
               <Th density="compact" size="11" className="w-6">
                 RSS
               </Th>
-              <SortHeader label="제출" k="_count.submissions" />
-              <SortHeader label="글" k="_count.blogPosts" />
+              {sortHeader('제출', '_count.submissions')}
+              {sortHeader('글', '_count.blogPosts')}
               <Th density="compact" size="11">
                 작업
               </Th>
