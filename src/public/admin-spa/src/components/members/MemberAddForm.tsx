@@ -3,6 +3,7 @@ import { useState, type FormEvent } from 'react';
 import { showToast } from '../ui/Toast.js';
 import type { Member } from '../../lib/types.js';
 import { adminApi } from '../../lib/admin-api.js';
+import { Button } from '../ui/Button.js';
 
 interface Props {
   onAdded: (m: Member) => void;
@@ -36,12 +37,9 @@ export default function MemberAddForm({ onAdded }: Props) {
 
   if (!open) {
     return (
-      <button
-        onClick={() => setOpen(true)}
-        className="mb-4 bg-primary-600 text-white text-sm rounded px-3 py-1.5 hover:bg-primary-700"
-      >
+      <Button onClick={() => setOpen(true)} size="md" className="mb-4">
         + 멤버 추가
-      </button>
+      </Button>
     );
   }
 

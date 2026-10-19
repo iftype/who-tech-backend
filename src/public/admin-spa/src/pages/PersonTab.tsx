@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { showToast } from '../components/ui/Toast.js';
 import { adminApi } from '../lib/admin-api.js';
 import { queryKeys } from '../lib/query-keys.js';
+import { Button } from '../components/ui/Button.js';
 
 export default function PersonTab() {
   const queryClient = useQueryClient();
@@ -83,13 +84,9 @@ export default function PersonTab() {
             placeholder="메모 (선택)"
             className="border border-base-300 rounded px-3 py-1.5 text-sm flex-1 min-w-[200px]"
           />
-          <button
-            onClick={() => createMutation.mutate()}
-            disabled={!newName.trim() || createMutation.isPending}
-            className="bg-primary-600 text-white text-sm rounded px-4 py-1.5 hover:bg-primary-700 disabled:opacity-40"
-          >
+          <Button onClick={() => createMutation.mutate()} disabled={!newName.trim() || createMutation.isPending}>
             생성
-          </button>
+          </Button>
         </div>
       </section>
 

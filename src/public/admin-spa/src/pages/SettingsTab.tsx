@@ -5,6 +5,7 @@ import { showToast } from '../components/ui/Toast.js';
 
 import { adminApi } from '../lib/admin-api.js';
 import { queryKeys } from '../lib/query-keys.js';
+import { Button } from '../components/ui/Button.js';
 
 export default function SettingsTab() {
   const queryClient = useQueryClient();
@@ -138,13 +139,9 @@ export default function SettingsTab() {
               className="w-full border border-base-300 rounded px-3 py-2 text-xs font-mono"
             />
           </div>
-          <button
-            type="submit"
-            disabled={saveWorkspaceMutation.isPending}
-            className="bg-primary-600 text-white text-sm rounded px-4 py-1.5 hover:bg-primary-700 disabled:opacity-40"
-          >
+          <Button type="submit" disabled={saveWorkspaceMutation.isPending}>
             {saveWorkspaceMutation.isPending ? '저장 중...' : '저장'}
-          </button>
+          </Button>
         </form>
       </section>
 
@@ -157,13 +154,9 @@ export default function SettingsTab() {
             placeholder="추가할 금지어"
             className="border border-base-300 rounded px-3 py-1.5 text-sm flex-1"
           />
-          <button
-            type="submit"
-            disabled={addBannedWordMutation.isPending || !newWord.trim()}
-            className="bg-base-700 text-white text-sm rounded px-3 py-1.5 hover:bg-base-800 disabled:opacity-40"
-          >
+          <Button type="submit" disabled={addBannedWordMutation.isPending || !newWord.trim()} tone="neutral" size="md">
             추가
-          </button>
+          </Button>
         </form>
         <div className="flex flex-wrap gap-1.5">
           {bannedWords.map((w) => (
@@ -189,13 +182,14 @@ export default function SettingsTab() {
             placeholder="예: example.com"
             className="border border-base-300 rounded px-3 py-1.5 text-sm flex-1"
           />
-          <button
+          <Button
             type="submit"
             disabled={addIgnoredDomainMutation.isPending || !newDomain.trim()}
-            className="bg-base-700 text-white text-sm rounded px-3 py-1.5 hover:bg-base-800 disabled:opacity-40"
+            tone="neutral"
+            size="md"
           >
             추가
-          </button>
+          </Button>
         </form>
         <div className="flex flex-wrap gap-1.5">
           {ignoredDomains.map((d) => (

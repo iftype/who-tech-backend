@@ -5,6 +5,7 @@ import { showToast } from '../components/ui/Toast.js';
 
 import { adminApi } from '../lib/admin-api.js';
 import { queryKeys } from '../lib/query-keys.js';
+import { Button } from '../components/ui/Button.js';
 
 export default function BlogTab() {
   const [sinceMinutes, setSinceMinutes] = useState(65);
@@ -66,27 +67,15 @@ export default function BlogTab() {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3 flex-wrap">
-        <button
-          onClick={() => syncMutation.mutate()}
-          disabled={syncMutation.isPending}
-          className="bg-primary-600 text-white text-sm rounded px-4 py-1.5 hover:bg-primary-700 disabled:opacity-40"
-        >
+        <Button onClick={() => syncMutation.mutate()} disabled={syncMutation.isPending}>
           {syncMutation.isPending ? 'RSS 싱크 중...' : 'RSS 전체 싱크'}
-        </button>
-        <button
-          onClick={() => teamSyncMutation.mutate()}
-          disabled={teamSyncMutation.isPending}
-          className="bg-emerald-600 text-white text-sm rounded px-4 py-1.5 hover:bg-emerald-700 disabled:opacity-40"
-        >
+        </Button>
+        <Button onClick={() => teamSyncMutation.mutate()} disabled={teamSyncMutation.isPending} tone="positive">
           {teamSyncMutation.isPending ? '팀 블로그 수집 중...' : '팀 블로그 새로고침'}
-        </button>
-        <button
-          onClick={() => backfillMutation.mutate()}
-          disabled={backfillMutation.isPending}
-          className="bg-base-700 text-white text-sm rounded px-4 py-1.5 hover:bg-base-800 disabled:opacity-40"
-        >
+        </Button>
+        <Button onClick={() => backfillMutation.mutate()} disabled={backfillMutation.isPending} tone="neutral">
           {backfillMutation.isPending ? '백필 중...' : 'GitHub 블로그 백필'}
-        </button>
+        </Button>
         <div className="ml-auto flex items-center gap-2">
           <label className="text-xs text-base-500">최근</label>
           <select

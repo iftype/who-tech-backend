@@ -8,6 +8,7 @@ import type { Member, BlogPost, MemberCohort, Submission } from '../../lib/types
 import { adminApi } from '../../lib/admin-api.js';
 import { queryKeys } from '../../lib/query-keys.js';
 import { Table, TableFrame, TBody, THead, Td, Th } from '../ui/Table.js';
+import { Button } from '../ui/Button.js';
 
 type SortKey = 'nickname' | 'cohort' | 'githubId' | '_count.submissions' | '_count.blogPosts';
 
@@ -684,13 +685,9 @@ export default function MemberTable({ members, onRefresh }: Props) {
                     if (e.key === 'Enter') handleAddCohort();
                   }}
                 />
-                <button
-                  onClick={handleAddCohort}
-                  disabled={addCohortMutation.isPending || !newCohortInput}
-                  className="bg-primary-600 text-white text-xs rounded px-2 py-1 hover:bg-primary-700 disabled:opacity-40"
-                >
+                <Button onClick={handleAddCohort} disabled={addCohortMutation.isPending || !newCohortInput} size="xs">
                   추가
-                </button>
+                </Button>
               </div>
             </div>
           </div>

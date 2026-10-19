@@ -8,6 +8,7 @@ import { formatStep, logColor, type StreamLogEntry } from '../lib/stream-log.js'
 import { adminApi } from '../lib/admin-api.js';
 import { queryKeys } from '../lib/query-keys.js';
 import { Table, TableFrame, TBody, THead, Td, Th } from '../components/ui/Table.js';
+import { Button } from '../components/ui/Button.js';
 
 export default function ArchiveTab() {
   const queryClient = useQueryClient();
@@ -339,27 +340,21 @@ export default function ArchiveTab() {
               기수별 레포 순서 <span className="text-base-400 font-normal">({filteredRepos.length}개)</span>
             </h3>
             <div className="flex items-center gap-2 flex-wrap">
-              <button
+              <Button
                 onClick={() => autoFillMutation.mutate()}
                 disabled={autoFillMutation.isPending}
-                className="bg-accent-600 text-white text-xs rounded px-3 py-1.5 hover:bg-accent-700 disabled:opacity-40"
+                tone="accent"
+                size="sm"
               >
                 {autoFillMutation.isPending ? '채우는 중...' : '자동 채우기'}
-              </button>
-              <button
-                onClick={runCohortReposSync}
-                disabled={syncRunning}
-                className="bg-primary-600 text-white text-xs rounded px-3 py-1.5 hover:bg-primary-700 disabled:opacity-40"
-              >
+              </Button>
+              <Button onClick={runCohortReposSync} disabled={syncRunning} size="sm">
                 {syncRunning ? '싱크 중...' : '목록 전체 재 Sync'}
-              </button>
+              </Button>
               {syncRunning && (
-                <button
-                  onClick={stopSync}
-                  className="bg-danger-500 text-white text-xs rounded px-3 py-1.5 hover:bg-danger-600"
-                >
+                <Button onClick={stopSync} tone="dangerSoft" size="sm">
                   중단
-                </button>
+                </Button>
               )}
             </div>
           </div>
@@ -387,13 +382,14 @@ export default function ArchiveTab() {
                 </option>
               ))}
             </select>
-            <button
+            <Button
               onClick={handleAddRepo}
               disabled={addRepoMutation.isPending || !selectedRepoId}
-              className="bg-base-700 text-white text-xs rounded px-3 py-1.5 hover:bg-base-800 disabled:opacity-40"
+              tone="neutral"
+              size="sm"
             >
               {addRepoMutation.isPending ? '추가 중...' : '추가'}
-            </button>
+            </Button>
           </div>
 
           {reposLoading ? (

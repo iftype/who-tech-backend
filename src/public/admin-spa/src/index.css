@@ -42,6 +42,9 @@
   --color-success-600: var(--color-green-600);
   --color-success-700: var(--color-green-700);
   --color-success-900: var(--color-green-900);
+  /* positive: 블로그 수집처럼 데이터를 늘리는 동작 */
+  --color-positive-600: var(--color-emerald-600);
+  --color-positive-700: var(--color-emerald-700);
   /* accent: 보조 강조 */
   --color-accent-50: var(--color-purple-50);
   --color-accent-100: var(--color-purple-100);

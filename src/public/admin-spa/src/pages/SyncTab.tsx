@@ -12,6 +12,7 @@ import { RecentJobsTable } from './sync/RecentJobsTable.js';
 import { adminApi } from '../lib/admin-api.js';
 import { queryKeys } from '../lib/query-keys.js';
 import { Table, TBody, THead, Td, Th } from '../components/ui/Table.js';
+import { Button } from '../components/ui/Button.js';
 
 export default function SyncTab() {
   const [cohortInput, setCohortInput] = useState('');
@@ -316,13 +317,9 @@ export default function SyncTab() {
       <div className="bg-white border border-base-200 rounded p-4">
         <h3 className="text-xs font-semibold text-base-600 mb-2">블로그</h3>
         <div className="flex items-center gap-3 flex-wrap">
-          <button
-            onClick={() => blogSyncMutation.mutate()}
-            disabled={blogSyncMutation.isPending}
-            className="bg-primary-600 text-white text-sm rounded px-4 py-1.5 hover:bg-primary-700 disabled:opacity-40"
-          >
+          <Button onClick={() => blogSyncMutation.mutate()} disabled={blogSyncMutation.isPending}>
             {blogSyncMutation.isPending ? 'RSS 싱크 중...' : 'RSS 전체 싱크'}
-          </button>
+          </Button>
           <label className="flex items-center gap-2 bg-base-50 border border-base-200 rounded px-3 py-1.5 cursor-pointer">
             <input
               type="checkbox"
@@ -340,13 +337,13 @@ export default function SyncTab() {
       <div className="bg-white border border-base-200 rounded p-4">
         <h3 className="text-xs font-semibold text-base-600 mb-2">프로필</h3>
         <div className="flex items-center gap-3 flex-wrap">
-          <button
+          <Button
             onClick={() => profileRefreshMutation.mutate()}
             disabled={profileRefreshMutation.isPending}
-            className="bg-success-600 text-white text-sm rounded px-4 py-1.5 hover:bg-success-700 disabled:opacity-40"
+            tone="success"
           >
             {profileRefreshMutation.isPending ? '프로필 새로고침 중...' : '프로필 전체 새로고침'}
-          </button>
+          </Button>
           <label className="flex items-center gap-2 bg-base-50 border border-base-200 rounded px-3 py-1.5 cursor-pointer">
             <input
               type="checkbox"
@@ -371,20 +368,20 @@ export default function SyncTab() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <button
+            <Button
               onClick={() => tecoTalkSyncMutation.mutate('incremental')}
               disabled={tecoTalkSyncMutation.isPending}
-              className="bg-danger-600 text-white text-sm rounded px-4 py-1.5 hover:bg-danger-700 disabled:opacity-40"
+              tone="danger"
             >
               {tecoTalkSyncMutation.isPending ? '싱크 중...' : '증분 싱크'}
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => tecoTalkSyncMutation.mutate('full')}
               disabled={tecoTalkSyncMutation.isPending}
-              className="bg-base-700 text-white text-sm rounded px-4 py-1.5 hover:bg-base-800 disabled:opacity-40"
+              tone="neutral"
             >
               {tecoTalkSyncMutation.isPending ? '싱크 중...' : '전체 재매칭'}
-            </button>
+            </Button>
           </div>
         </div>
         <div className="grid grid-cols-4 gap-2 text-xs">
@@ -423,35 +420,24 @@ export default function SyncTab() {
             />
           </div>
           <div className="flex gap-2 items-end flex-wrap pt-4">
-            <button
-              onClick={runSync}
-              disabled={enqueueMutation.isPending}
-              className="bg-primary-600 text-white text-sm rounded px-4 py-1.5 hover:bg-primary-700 disabled:opacity-40"
-            >
+            <Button onClick={runSync} disabled={enqueueMutation.isPending}>
               {enqueueMutation.isPending ? '큐 추가 중...' : cohortInput ? `${cohortInput}기 싱크` : '전체 싱크'}
-            </button>
-            <button
-              onClick={runContinuous}
-              disabled={enqueueMutation.isPending}
-              className="bg-accent-600 text-white text-sm rounded px-4 py-1.5 hover:bg-accent-700 disabled:opacity-40"
-            >
+            </Button>
+            <Button onClick={runContinuous} disabled={enqueueMutation.isPending} tone="accent">
               {enqueueMutation.isPending ? '큐 추가 중...' : '연속 싱크'}
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={runCohortRepos}
               disabled={enqueueMutation.isPending || !cohortInput}
-              className="bg-base-700 text-white text-sm rounded px-4 py-1.5 hover:bg-base-800 disabled:opacity-40"
+              tone="neutral"
               title={!cohortInput ? '기수를 입력하세요' : undefined}
             >
               {enqueueMutation.isPending ? '큐 추가 중...' : '기수 레포 업데이트'}
-            </button>
+            </Button>
             {running && (
-              <button
-                onClick={stop}
-                className="bg-danger-500 text-white text-sm rounded px-4 py-1.5 hover:bg-danger-600"
-              >
+              <Button onClick={stop} tone="dangerSoft">
                 중단
-              </button>
+              </Button>
             )}
           </div>
         </div>
