@@ -7,6 +7,7 @@ import type { CohortRepo } from '../lib/types.js';
 import { formatStep, logColor, type StreamLogEntry } from '../lib/stream-log.js';
 import { adminApi } from '../lib/admin-api.js';
 import { queryKeys } from '../lib/query-keys.js';
+import { Table, TableFrame, TBody, THead, Td, Th } from '../components/ui/Table.js';
 
 export default function ArchiveTab() {
   const queryClient = useQueryClient();
@@ -223,7 +224,7 @@ export default function ArchiveTab() {
 
   const renderRepoRow = (cr: CohortRepo) => (
     <tr key={cr.id} className="hover:bg-base-50">
-      <td className="px-3 py-2">
+      <Td>
         {editingOrderId === cr.id ? (
           <input
             ref={orderInputRef}
@@ -248,8 +249,8 @@ export default function ArchiveTab() {
             {cr.order}
           </button>
         )}
-      </td>
-      <td className="px-3 py-2">
+      </Td>
+      <Td>
         <a
           href={cr.missionRepo.repoUrl}
           target="_blank"
@@ -258,9 +259,9 @@ export default function ArchiveTab() {
         >
           {cr.missionRepo.name}
         </a>
-      </td>
-      <td className="px-3 py-2 text-xs text-base-600">{cr.missionRepo.track ?? '—'}</td>
-      <td className="px-3 py-2">
+      </Td>
+      <Td className="text-xs text-base-600">{cr.missionRepo.track ?? '—'}</Td>
+      <Td>
         {editingLevelId === cr.id ? (
           <input
             ref={levelInputRef}
@@ -285,8 +286,8 @@ export default function ArchiveTab() {
             {cr.level ?? '—'}
           </button>
         )}
-      </td>
-      <td className="px-3 py-2">
+      </Td>
+      <Td>
         <button
           onClick={() => {
             if (confirm(`${cr.missionRepo.name}을(를) 삭제하시겠습니까?`)) {
@@ -299,7 +300,7 @@ export default function ArchiveTab() {
         >
           ✕
         </button>
-      </td>
+      </Td>
     </tr>
   );
 
@@ -402,39 +403,39 @@ export default function ArchiveTab() {
               {trackRepos.length > 0 && (
                 <div>
                   {commonRepos.length > 0 && <p className="text-xs font-medium text-base-600 mb-1">트랙 미션</p>}
-                  <div className="overflow-x-auto rounded border border-base-200">
-                    <table className="w-full text-sm">
-                      <thead className="bg-base-50 border-b border-base-200">
+                  <TableFrame>
+                    <Table>
+                      <THead>
                         <tr>
-                          <th className="text-left text-xs font-medium text-base-500 px-3 py-2">순서</th>
-                          <th className="text-left text-xs font-medium text-base-500 px-3 py-2">레포</th>
-                          <th className="text-left text-xs font-medium text-base-500 px-3 py-2">트랙</th>
-                          <th className="text-left text-xs font-medium text-base-500 px-3 py-2">레벨</th>
-                          <th className="text-left text-xs font-medium text-base-500 px-3 py-2">작업</th>
+                          <Th>순서</Th>
+                          <Th>레포</Th>
+                          <Th>트랙</Th>
+                          <Th>레벨</Th>
+                          <Th>작업</Th>
                         </tr>
-                      </thead>
-                      <tbody className="divide-y divide-base-100">{trackRepos.map(renderRepoRow)}</tbody>
-                    </table>
-                  </div>
+                      </THead>
+                      <TBody>{trackRepos.map(renderRepoRow)}</TBody>
+                    </Table>
+                  </TableFrame>
                 </div>
               )}
               {commonRepos.length > 0 && (
                 <div>
                   <p className="text-xs font-medium text-base-600 mb-1">공통 미션</p>
-                  <div className="overflow-x-auto rounded border border-base-200">
-                    <table className="w-full text-sm">
-                      <thead className="bg-base-50 border-b border-base-200">
+                  <TableFrame>
+                    <Table>
+                      <THead>
                         <tr>
-                          <th className="text-left text-xs font-medium text-base-500 px-3 py-2">순서</th>
-                          <th className="text-left text-xs font-medium text-base-500 px-3 py-2">레포</th>
-                          <th className="text-left text-xs font-medium text-base-500 px-3 py-2">트랙</th>
-                          <th className="text-left text-xs font-medium text-base-500 px-3 py-2">레벨</th>
-                          <th className="text-left text-xs font-medium text-base-500 px-3 py-2">작업</th>
+                          <Th>순서</Th>
+                          <Th>레포</Th>
+                          <Th>트랙</Th>
+                          <Th>레벨</Th>
+                          <Th>작업</Th>
                         </tr>
-                      </thead>
-                      <tbody className="divide-y divide-base-100">{commonRepos.map(renderRepoRow)}</tbody>
-                    </table>
-                  </div>
+                      </THead>
+                      <TBody>{commonRepos.map(renderRepoRow)}</TBody>
+                    </Table>
+                  </TableFrame>
                 </div>
               )}
               {filteredRepos.length === 0 && (
@@ -452,20 +453,20 @@ export default function ArchiveTab() {
                         {level !== null ? `Lv ${level}` : '미분류'}
                         <span className="text-base-400 font-normal ml-1">({repos.length}개)</span>
                       </p>
-                      <div className="overflow-x-auto rounded border border-base-200">
-                        <table className="w-full text-sm">
-                          <thead className="bg-base-50 border-b border-base-200">
+                      <TableFrame>
+                        <Table>
+                          <THead>
                             <tr>
-                              <th className="text-left text-xs font-medium text-base-500 px-3 py-2">순서</th>
-                              <th className="text-left text-xs font-medium text-base-500 px-3 py-2">레포</th>
-                              <th className="text-left text-xs font-medium text-base-500 px-3 py-2">트랙</th>
-                              <th className="text-left text-xs font-medium text-base-500 px-3 py-2">레벨</th>
-                              <th className="text-left text-xs font-medium text-base-500 px-3 py-2">작업</th>
+                              <Th>순서</Th>
+                              <Th>레포</Th>
+                              <Th>트랙</Th>
+                              <Th>레벨</Th>
+                              <Th>작업</Th>
                             </tr>
-                          </thead>
-                          <tbody className="divide-y divide-base-100">{repos.map(renderRepoRow)}</tbody>
-                        </table>
-                      </div>
+                          </THead>
+                          <TBody>{repos.map(renderRepoRow)}</TBody>
+                        </Table>
+                      </TableFrame>
                     </div>
                   ))}
                 </div>

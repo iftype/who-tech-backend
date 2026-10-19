@@ -1,35 +1,36 @@
 import type { SyncQueueJob } from '../../lib/types.js';
 import type { RecentSyncJob } from '../../lib/types.js';
+import { Table, TBody, THead, Td, Th } from '../../components/ui/Table.js';
 
 export function RecentJobsTable({ jobs }: { jobs: (SyncQueueJob | RecentSyncJob)[] }) {
   return (
     <div className="bg-white border border-base-200 rounded p-4">
       <h3 className="text-xs font-semibold text-base-600 mb-3">최근 싱크 작업 ({jobs.length})</h3>
       <div className="max-h-64 overflow-y-auto rounded border border-base-200">
-        <table className="w-full text-xs">
-          <thead className="bg-base-50 border-b border-base-200">
+        <Table size="xs">
+          <THead>
             <tr>
-              <th className="text-left font-medium text-base-500 px-3 py-2">시작</th>
-              <th className="text-left font-medium text-base-500 px-3 py-2">종류</th>
-              <th className="text-left font-medium text-base-500 px-3 py-2">상태</th>
-              <th className="text-left font-medium text-base-500 px-3 py-2">메시지</th>
+              <Th size="inherit">시작</Th>
+              <Th size="inherit">종류</Th>
+              <Th size="inherit">상태</Th>
+              <Th size="inherit">메시지</Th>
             </tr>
-          </thead>
-          <tbody className="divide-y divide-base-100">
+          </THead>
+          <TBody>
             {jobs.map((j) => {
               const isQueueJob = !('repoName' in j);
               const queueJob = j as SyncQueueJob;
               const repoJob = j as RecentSyncJob;
               return (
                 <tr key={j.id} className="hover:bg-base-50">
-                  <td className="px-3 py-2 text-base-500 whitespace-nowrap">
+                  <Td className="text-base-500 whitespace-nowrap">
                     {isQueueJob
                       ? new Date(queueJob.completedAt ?? queueJob.createdAt).toLocaleString('ko-KR')
                       : repoJob.startedAt
                         ? new Date(repoJob.startedAt).toLocaleString('ko-KR')
                         : '—'}
-                  </td>
-                  <td className="px-3 py-2">
+                  </Td>
+                  <Td>
                     {isQueueJob ? (
                       <span className="text-xs px-1.5 py-0.5 rounded font-medium border bg-accent-50 text-accent-700 border-accent-200">
                         {queueJob.type === 'workspace' ? '전체' : queueJob.type === 'continuous' ? '연속' : '기수레포'}
@@ -46,8 +47,8 @@ export function RecentJobsTable({ jobs }: { jobs: (SyncQueueJob | RecentSyncJob)
                         {repoJob.repoName ? '레포' : '블로그'}
                       </span>
                     )}
-                  </td>
-                  <td className="px-3 py-2">
+                  </Td>
+                  <Td>
                     <span
                       className={`text-xs px-1.5 py-0.5 rounded font-medium border ${
                         (isQueueJob ? queueJob.status : repoJob.status) === 'completed'
@@ -61,19 +62,19 @@ export function RecentJobsTable({ jobs }: { jobs: (SyncQueueJob | RecentSyncJob)
                     >
                       {isQueueJob ? queueJob.status : repoJob.status}
                     </span>
-                  </td>
-                  <td className="px-3 py-2 text-base-700 truncate max-w-[300px]">
+                  </Td>
+                  <Td className="text-base-700 truncate max-w-[300px]">
                     {isQueueJob
                       ? typeof queueJob.result?.totalSynced === 'number'
                         ? `✓ ${queueJob.result.totalSynced}개`
                         : (queueJob.error ?? '—')
                       : `${repoJob.repoName ? `${repoJob.repoName} — ` : ''}${repoJob.message}`}
-                  </td>
+                  </Td>
                 </tr>
               );
             })}
-          </tbody>
-        </table>
+          </TBody>
+        </Table>
       </div>
     </div>
   );

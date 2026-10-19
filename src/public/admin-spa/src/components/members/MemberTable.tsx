@@ -7,6 +7,7 @@ import { useRefreshCooldowns } from '../../hooks/useRefreshCooldowns.js';
 import type { Member, BlogPost, MemberCohort, Submission } from '../../lib/types.js';
 import { adminApi } from '../../lib/admin-api.js';
 import { queryKeys } from '../../lib/query-keys.js';
+import { Table, TableFrame, TBody, THead, Td, Th } from '../ui/Table.js';
 
 type SortKey = 'nickname' | 'cohort' | 'githubId' | '_count.submissions' | '_count.blogPosts';
 
@@ -279,34 +280,48 @@ export default function MemberTable({ members, onRefresh }: Props) {
   };
 
   const SortHeader = ({ label, k }: { label: string; k: SortKey }) => (
-    <th
-      className="text-left text-[11px] font-medium text-base-500 px-1.5 py-1 cursor-pointer hover:text-base-700 whitespace-nowrap"
+    <Th
+      density="compact"
+      size="11"
+      className="cursor-pointer hover:text-base-700 whitespace-nowrap"
       onClick={() => toggleSort(k)}
     >
       {label} {sortKey === k ? (sortDir === 'asc' ? '↑' : '↓') : ''}
-    </th>
+    </Th>
   );
 
   return (
     <>
-      <div className="overflow-x-auto rounded border border-base-200 max-h-[60vh] overflow-y-auto">
-        <table className="w-full text-xs">
-          <thead className="bg-base-50 border-b border-base-200 sticky top-0 z-10">
+      <TableFrame className="max-h-[60vh] overflow-y-auto">
+        <Table size="xs">
+          <THead className="sticky top-0 z-10">
             <tr>
-              <th className="text-left text-[11px] font-medium text-base-500 px-1.5 py-1">프로필</th>
-              <th className="text-left text-[11px] font-medium text-base-500 px-1.5 py-1">기수/역할</th>
-              <th className="text-left text-[11px] font-medium text-base-500 px-1.5 py-1">트랙</th>
-              <th className="text-left text-[11px] font-medium text-base-500 px-1.5 py-1">블로그</th>
-              <th className="text-left text-[11px] font-medium text-base-500 px-1.5 py-1 w-6">RSS</th>
+              <Th density="compact" size="11">
+                프로필
+              </Th>
+              <Th density="compact" size="11">
+                기수/역할
+              </Th>
+              <Th density="compact" size="11">
+                트랙
+              </Th>
+              <Th density="compact" size="11">
+                블로그
+              </Th>
+              <Th density="compact" size="11" className="w-6">
+                RSS
+              </Th>
               <SortHeader label="제출" k="_count.submissions" />
               <SortHeader label="글" k="_count.blogPosts" />
-              <th className="text-left text-[11px] font-medium text-base-500 px-1.5 py-1">작업</th>
+              <Th density="compact" size="11">
+                작업
+              </Th>
             </tr>
-          </thead>
-          <tbody className="divide-y divide-base-100">
+          </THead>
+          <TBody>
             {sorted.map((m) => (
               <tr key={m.id} className="hover:bg-base-50">
-                <td className="px-1.5 py-1">
+                <Td density="compact">
                   <div className="flex items-center gap-1.5">
                     {m.avatarUrl && (
                       <img src={m.avatarUrl} className="w-5 h-5 rounded-full flex-shrink-0" alt="" loading="lazy" />
@@ -336,8 +351,8 @@ export default function MemberTable({ members, onRefresh }: Props) {
                       )}
                     </div>
                   </div>
-                </td>
-                <td className="px-1.5 py-1">
+                </Td>
+                <Td density="compact">
                   <button
                     onClick={() => {
                       setNewCohortInput('');
@@ -366,8 +381,8 @@ export default function MemberTable({ members, onRefresh }: Props) {
                       </div>
                     )}
                   </button>
-                </td>
-                <td className="px-1.5 py-1">
+                </Td>
+                <Td density="compact">
                   {editCell?.memberId === m.id && editCell.field === 'track' ? (
                     <div ref={editContainerRef}>
                       <select
@@ -398,8 +413,8 @@ export default function MemberTable({ members, onRefresh }: Props) {
                       {m.track || '—'}
                     </button>
                   )}
-                </td>
-                <td className="px-1.5 py-1">
+                </Td>
+                <Td density="compact">
                   {editCell?.memberId === m.id && editCell.field === 'blog' ? (
                     <div ref={editContainerRef}>
                       <input
@@ -430,8 +445,8 @@ export default function MemberTable({ members, onRefresh }: Props) {
                       —
                     </button>
                   )}
-                </td>
-                <td className="px-1.5 py-1 text-center">
+                </Td>
+                <Td density="compact" className="text-center">
                   {m.rssStatus === 'ok' ? (
                     <span className="text-[10px] text-success-600" title="RSS 정상">
                       ✅
@@ -445,8 +460,8 @@ export default function MemberTable({ members, onRefresh }: Props) {
                       —
                     </span>
                   )}
-                </td>
-                <td className="px-1.5 py-1 text-center">
+                </Td>
+                <Td density="compact" className="text-center">
                   <button
                     onClick={() => void openPRModal(m)}
                     className="text-[10px] text-base-600 hover:text-primary-600 font-medium"
@@ -454,8 +469,8 @@ export default function MemberTable({ members, onRefresh }: Props) {
                   >
                     {m._count.submissions}
                   </button>
-                </td>
-                <td className="px-1.5 py-1 text-center">
+                </Td>
+                <Td density="compact" className="text-center">
                   <button
                     onClick={() => void openBlogModal(m)}
                     className="text-[10px] text-base-600 hover:text-primary-600"
@@ -463,8 +478,8 @@ export default function MemberTable({ members, onRefresh }: Props) {
                   >
                     {m._count.blogPosts}
                   </button>
-                </td>
-                <td className="px-1.5 py-1">
+                </Td>
+                <Td density="compact">
                   <div className="flex gap-0.5">
                     <button
                       onClick={() => void refreshProfile(m)}
@@ -499,13 +514,13 @@ export default function MemberTable({ members, onRefresh }: Props) {
                       ✕
                     </button>
                   </div>
-                </td>
+                </Td>
               </tr>
             ))}
-          </tbody>
-        </table>
+          </TBody>
+        </Table>
         {sorted.length === 0 && <div className="py-12 text-center text-base-400 text-sm">멤버 없음</div>}
-      </div>
+      </TableFrame>
 
       <Modal
         open={!!prModal}

@@ -8,6 +8,7 @@ import {
   type EditableField,
   type EditingCell,
 } from './repo-options.js';
+import { Table, TBody, THead, Td, Th } from '../../components/ui/Table.js';
 
 export function RepoTable({
   repos,
@@ -110,10 +111,10 @@ export function RepoTable({
         {title} <span className="text-base-400 font-normal">({repos.length}개)</span>
       </h3>
       <div className="overflow-x-auto rounded-2xl border border-console-200/60">
-        <table className="w-full text-sm">
-          <thead className="bg-base-50 border-b border-base-200">
+        <Table>
+          <THead>
             <tr>
-              <th className="text-left text-xs font-medium text-base-500 px-3 py-2 w-8">
+              <Th className="w-8">
                 <input
                   type="checkbox"
                   checked={repos.length > 0 && repos.every((r) => selectedRepoIds.has(r.id))}
@@ -126,35 +127,35 @@ export function RepoTable({
                   }}
                   className="rounded border-base-300"
                 />
-              </th>
-              <th className="text-left text-xs font-medium text-base-500 px-3 py-2">레포</th>
-              <th className="text-left text-xs font-medium text-base-500 px-3 py-2">트랙</th>
-              <th className="text-left text-xs font-medium text-base-500 px-3 py-2">타입</th>
-              <th className="text-left text-xs font-medium text-base-500 px-3 py-2">카테고리</th>
-              <th className="text-left text-xs font-medium text-base-500 px-3 py-2">상태</th>
-              <th className="text-left text-xs font-medium text-base-500 px-3 py-2">모드</th>
-              <th className="text-left text-xs font-medium text-base-500 px-3 py-2">기수</th>
-              <th className="text-left text-xs font-medium text-base-500 px-3 py-2">설명</th>
-              <th className="text-left text-xs font-medium text-base-500 px-3 py-2">마지막싱크</th>
-              <th className="text-left text-xs font-medium text-base-500 px-3 py-2">제출</th>
-              <th className="text-left text-xs font-medium text-base-500 px-3 py-2">작업</th>
+              </Th>
+              <Th>레포</Th>
+              <Th>트랙</Th>
+              <Th>타입</Th>
+              <Th>카테고리</Th>
+              <Th>상태</Th>
+              <Th>모드</Th>
+              <Th>기수</Th>
+              <Th>설명</Th>
+              <Th>마지막싱크</Th>
+              <Th>제출</Th>
+              <Th>작업</Th>
             </tr>
-          </thead>
-          <tbody className="divide-y divide-base-100">
+          </THead>
+          <TBody>
             {repos.map((r) => {
               const isSyncing = syncingRepos.has(r.id);
               const activeJob = activeJobs.get(r.id);
               return (
                 <tr key={r.id} className="hover:bg-base-50">
-                  <td className="px-3 py-2">
+                  <Td>
                     <input
                       type="checkbox"
                       checked={selectedRepoIds.has(r.id)}
                       onChange={() => onToggleSelect(r.id)}
                       className="rounded border-base-300"
                     />
-                  </td>
-                  <td className="px-3 py-2">
+                  </Td>
+                  <Td>
                     <a
                       href={r.repoUrl}
                       target="_blank"
@@ -164,8 +165,8 @@ export function RepoTable({
                       {r.name}
                     </a>
                     {activeJob && <SyncProgress job={activeJob} />}
-                  </td>
-                  <td className={cellClass} onClick={() => onStartEdit(r.id, 'track')}>
+                  </Td>
+                  <Td density="none" className={cellClass} onClick={() => onStartEdit(r.id, 'track')}>
                     {isEditing(r.id, 'track') ? (
                       <EditableSelectCell
                         value={r.track ?? ''}
@@ -177,8 +178,8 @@ export function RepoTable({
                     ) : (
                       <span className="text-xs text-base-600">{trackLabel(r.track)}</span>
                     )}
-                  </td>
-                  <td className={cellClass} onClick={() => onStartEdit(r.id, 'type')}>
+                  </Td>
+                  <Td density="none" className={cellClass} onClick={() => onStartEdit(r.id, 'type')}>
                     {isEditing(r.id, 'type') ? (
                       <EditableSelectCell
                         value={r.type}
@@ -190,8 +191,8 @@ export function RepoTable({
                     ) : (
                       <span className="text-xs text-base-600">{typeLabel(r.type)}</span>
                     )}
-                  </td>
-                  <td className={cellClass} onClick={() => onStartEdit(r.id, 'tabCategory')}>
+                  </Td>
+                  <Td density="none" className={cellClass} onClick={() => onStartEdit(r.id, 'tabCategory')}>
                     {isEditing(r.id, 'tabCategory') ? (
                       <EditableSelectCell
                         value={r.tabCategory}
@@ -203,9 +204,9 @@ export function RepoTable({
                     ) : (
                       tabCategoryBadge(r.tabCategory)
                     )}
-                  </td>
-                  <td className="px-3 py-2">{statusBadge(r.status, r)}</td>
-                  <td className="px-3 py-2">
+                  </Td>
+                  <Td>{statusBadge(r.status, r)}</Td>
+                  <Td>
                     <button
                       onClick={() => void onToggleSyncMode(r)}
                       title="클릭하여 전환"
@@ -217,8 +218,8 @@ export function RepoTable({
                     >
                       {r.syncMode === 'continuous' ? '연속' : '1회'}
                     </button>
-                  </td>
-                  <td className={cellClass} onClick={() => onStartEdit(r.id, 'cohorts')}>
+                  </Td>
+                  <Td density="none" className={cellClass} onClick={() => onStartEdit(r.id, 'cohorts')}>
                     {isEditing(r.id, 'cohorts') ? (
                       <EditableTextCell
                         value={r.cohorts.join(', ')}
@@ -230,8 +231,12 @@ export function RepoTable({
                     ) : (
                       <span className="text-xs text-base-500">{r.cohorts.join(', ') || '—'}</span>
                     )}
-                  </td>
-                  <td className={`${cellClass} max-w-[200px]`} onClick={() => onStartEdit(r.id, 'description')}>
+                  </Td>
+                  <Td
+                    density="none"
+                    className={`${cellClass} max-w-[200px]`}
+                    onClick={() => onStartEdit(r.id, 'description')}
+                  >
                     {isEditing(r.id, 'description') ? (
                       <EditableTextCell
                         value={r.description ?? ''}
@@ -245,8 +250,8 @@ export function RepoTable({
                         {r.description || '—'}
                       </span>
                     )}
-                  </td>
-                  <td className="px-3 py-2 text-xs text-base-500 whitespace-nowrap">
+                  </Td>
+                  <Td className="text-xs text-base-500 whitespace-nowrap">
                     {r.lastSyncAt
                       ? new Date(r.lastSyncAt).toLocaleString('ko-KR', {
                           month: '2-digit',
@@ -256,9 +261,9 @@ export function RepoTable({
                           hour12: false,
                         })
                       : '—'}
-                  </td>
-                  <td className="px-3 py-2 text-xs text-base-600">{r._count.submissions}</td>
-                  <td className="px-3 py-2">
+                  </Td>
+                  <Td className="text-xs text-base-600">{r._count.submissions}</Td>
+                  <Td>
                     <div className="flex gap-1 items-center">
                       <button
                         onClick={() => void onSync(r)}
@@ -284,12 +289,12 @@ export function RepoTable({
                         삭제
                       </button>
                     </div>
-                  </td>
+                  </Td>
                 </tr>
               );
             })}
-          </tbody>
-        </table>
+          </TBody>
+        </Table>
       </div>
     </div>
   );

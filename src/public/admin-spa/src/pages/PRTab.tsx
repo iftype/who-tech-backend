@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import type { Submission } from '../lib/types.js';
 import { adminApi } from '../lib/admin-api.js';
 import { queryKeys } from '../lib/query-keys.js';
+import { Table, TableFrame, TBody, THead, Td, Th } from '../components/ui/Table.js';
 
 type StatusFilter = '' | 'open' | 'merged' | 'closed';
 
@@ -63,24 +64,24 @@ export default function PRTab() {
         {membersLoading ? (
           <div className="py-4 text-center text-base-400 text-sm">로딩 중...</div>
         ) : (
-          <div className="overflow-x-auto rounded border border-base-200">
-            <table className="w-full text-sm">
-              <thead className="bg-base-50 border-b border-base-200">
+          <TableFrame>
+            <Table>
+              <THead>
                 <tr>
-                  <th className="text-left text-xs font-medium text-base-500 px-3 py-2">닉네임</th>
-                  <th className="text-left text-xs font-medium text-base-500 px-3 py-2">GitHub</th>
-                  <th className="text-left text-xs font-medium text-base-500 px-3 py-2">기수</th>
-                  <th className="text-left text-xs font-medium text-base-500 px-3 py-2">PR 수</th>
+                  <Th>닉네임</Th>
+                  <Th>GitHub</Th>
+                  <Th>기수</Th>
+                  <Th>PR 수</Th>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-base-100">
+              </THead>
+              <TBody>
                 {members.map((m) => (
                   <tr
                     key={m.id}
                     className={`cursor-pointer hover:bg-base-50 ${selectedMemberId === m.id ? 'bg-primary-50' : ''}`}
                     onClick={() => setSelectedMemberId(m.id)}
                   >
-                    <td className="px-3 py-2 text-xs font-medium text-base-900">
+                    <Td className="text-xs font-medium text-base-900">
                       {m.avatarUrl && (
                         <img
                           src={m.avatarUrl}
@@ -90,17 +91,15 @@ export default function PRTab() {
                         />
                       )}
                       {m.nickname ?? m.githubId}
-                    </td>
-                    <td className="px-3 py-2 text-xs text-base-600">{m.githubId}</td>
-                    <td className="px-3 py-2 text-xs text-base-500">
-                      {m.cohorts.map((c) => c.cohort).join(', ') || '—'}
-                    </td>
-                    <td className="px-3 py-2 text-xs text-base-600">{m._count.submissions}</td>
+                    </Td>
+                    <Td className="text-xs text-base-600">{m.githubId}</Td>
+                    <Td className="text-xs text-base-500">{m.cohorts.map((c) => c.cohort).join(', ') || '—'}</Td>
+                    <Td className="text-xs text-base-600">{m._count.submissions}</Td>
                   </tr>
                 ))}
-              </tbody>
-            </table>
-          </div>
+              </TBody>
+            </Table>
+          </TableFrame>
         )}
       </div>
 
@@ -133,24 +132,24 @@ export default function PRTab() {
           ) : filteredSubmissions.length === 0 ? (
             <div className="py-8 text-center text-base-400 text-sm">PR 없음</div>
           ) : (
-            <div className="overflow-x-auto rounded border border-base-200">
-              <table className="w-full text-sm">
-                <thead className="bg-base-50 border-b border-base-200">
+            <TableFrame>
+              <Table>
+                <THead>
                   <tr>
-                    <th className="text-left text-xs font-medium text-base-500 px-3 py-2">레포</th>
-                    <th className="text-left text-xs font-medium text-base-500 px-3 py-2">PR 제목</th>
-                    <th className="text-left text-xs font-medium text-base-500 px-3 py-2">상태</th>
-                    <th className="text-left text-xs font-medium text-base-500 px-3 py-2">제출일</th>
+                    <Th>레포</Th>
+                    <Th>PR 제목</Th>
+                    <Th>상태</Th>
+                    <Th>제출일</Th>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-base-100">
+                </THead>
+                <TBody>
                   {filteredSubmissions.map((s: Submission) => (
                     <tr key={s.id} className="hover:bg-base-50">
-                      <td className="px-3 py-2 text-xs text-base-600">
+                      <Td className="text-xs text-base-600">
                         {s.missionRepo.name}
                         {s.missionRepo.track && <span className="text-base-400 ml-1">({s.missionRepo.track})</span>}
-                      </td>
-                      <td className="px-3 py-2">
+                      </Td>
+                      <Td>
                         <a
                           href={s.prUrl}
                           target="_blank"
@@ -159,16 +158,14 @@ export default function PRTab() {
                         >
                           #{s.prNumber} {s.title}
                         </a>
-                      </td>
-                      <td className="px-3 py-2">{statusBadge(s.status)}</td>
-                      <td className="px-3 py-2 text-xs text-base-500">
-                        {new Date(s.submittedAt).toLocaleDateString('ko-KR')}
-                      </td>
+                      </Td>
+                      <Td>{statusBadge(s.status)}</Td>
+                      <Td className="text-xs text-base-500">{new Date(s.submittedAt).toLocaleDateString('ko-KR')}</Td>
                     </tr>
                   ))}
-                </tbody>
-              </table>
-            </div>
+                </TBody>
+              </Table>
+            </TableFrame>
           )}
         </div>
       )}

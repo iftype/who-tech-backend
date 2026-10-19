@@ -1,4 +1,5 @@
 import type { AdminStatus, MissionRepo, Workspace } from '../../lib/types.js';
+import { Table, TBody, THead, Td, Th } from '../../components/ui/Table.js';
 
 export function SyncScheduleStatus({
   workspace,
@@ -65,22 +66,30 @@ export function SyncScheduleStatus({
       </div>
       {continuousRepos.length > 0 && (
         <div className="max-h-40 overflow-y-auto rounded border border-base-200">
-          <table className="w-full text-xs">
-            <thead className="bg-base-50 border-b border-base-200">
+          <Table size="xs">
+            <THead>
               <tr>
-                <th className="text-left font-medium text-base-500 px-2 py-1">레포</th>
-                <th className="text-left font-medium text-base-500 px-2 py-1">트랙</th>
+                <Th density="tight" size="inherit">
+                  레포
+                </Th>
+                <Th density="tight" size="inherit">
+                  트랙
+                </Th>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-base-100">
+            </THead>
+            <TBody>
               {continuousRepos.map((r) => (
                 <tr key={r.id} className="hover:bg-base-50">
-                  <td className="px-2 py-1 font-medium text-base-700 truncate max-w-[200px]">{r.name}</td>
-                  <td className="px-2 py-1 text-base-500">{r.track ?? '—'}</td>
+                  <Td density="tight" className="font-medium text-base-700 truncate max-w-[200px]">
+                    {r.name}
+                  </Td>
+                  <Td density="tight" className="text-base-500">
+                    {r.track ?? '—'}
+                  </Td>
                 </tr>
               ))}
-            </tbody>
-          </table>
+            </TBody>
+          </Table>
         </div>
       )}
     </div>

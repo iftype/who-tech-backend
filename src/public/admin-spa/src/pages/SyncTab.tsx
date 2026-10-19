@@ -11,6 +11,7 @@ import { SyncScheduleStatus } from './sync/SyncScheduleStatus.js';
 import { RecentJobsTable } from './sync/RecentJobsTable.js';
 import { adminApi } from '../lib/admin-api.js';
 import { queryKeys } from '../lib/query-keys.js';
+import { Table, TBody, THead, Td, Th } from '../components/ui/Table.js';
 
 export default function SyncTab() {
   const [cohortInput, setCohortInput] = useState('');
@@ -460,32 +461,32 @@ export default function SyncTab() {
         <div className="bg-white border border-base-200 rounded p-4">
           <h3 className="text-xs font-semibold text-base-600 mb-3">현재 싱크 작업 ({activeQueueJobs.length})</h3>
           <div className="max-h-64 overflow-y-auto rounded border border-base-200">
-            <table className="w-full text-xs">
-              <thead className="bg-base-50 border-b border-base-200">
+            <Table size="xs">
+              <THead>
                 <tr>
-                  <th className="text-left font-medium text-base-500 px-3 py-2">시작</th>
-                  <th className="text-left font-medium text-base-500 px-3 py-2">종류</th>
-                  <th className="text-left font-medium text-base-500 px-3 py-2">상태</th>
-                  <th className="text-left font-medium text-base-500 px-3 py-2">진행</th>
-                  <th className="text-left font-medium text-base-500 px-3 py-2">결과</th>
-                  <th className="text-left font-medium text-base-500 px-3 py-2">액션</th>
+                  <Th size="inherit">시작</Th>
+                  <Th size="inherit">종류</Th>
+                  <Th size="inherit">상태</Th>
+                  <Th size="inherit">진행</Th>
+                  <Th size="inherit">결과</Th>
+                  <Th size="inherit">액션</Th>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-base-100">
+              </THead>
+              <TBody>
                 {activeQueueJobs.map((j) => (
                   <tr key={j.id} className="hover:bg-base-50">
-                    <td className="px-3 py-2 text-base-500 whitespace-nowrap">
+                    <Td className="text-base-500 whitespace-nowrap">
                       {new Date(j.status === 'running' && j.startedAt ? j.startedAt : j.createdAt).toLocaleString(
                         'ko-KR',
                       )}
-                    </td>
-                    <td className="px-3 py-2">
+                    </Td>
+                    <Td>
                       <span className="text-xs px-1.5 py-0.5 rounded font-medium border bg-primary-50 text-primary-700 border-primary-200">
                         {j.type === 'workspace' ? '전체' : j.type === 'continuous' ? '연속' : '기수레포'}
                         {j.cohort != null ? ` (${j.cohort}기)` : ''}
                       </span>
-                    </td>
-                    <td className="px-3 py-2">
+                    </Td>
+                    <Td>
                       <span
                         className={`text-xs px-1.5 py-0.5 rounded font-medium ${
                           j.status === 'queued' ? 'bg-base-100 text-base-600' : 'bg-primary-100 text-primary-700'
@@ -493,12 +494,12 @@ export default function SyncTab() {
                       >
                         {j.status}
                       </span>
-                    </td>
-                    <td className="px-3 py-2 text-base-700">
+                    </Td>
+                    <Td className="text-base-700">
                       {j.progress ? `${j.progress.repo} (${j.progress.done}/${j.progress.total})` : '—'}
-                    </td>
-                    <td className="px-3 py-2 text-base-700 truncate max-w-[200px]">—</td>
-                    <td className="px-3 py-2">
+                    </Td>
+                    <Td className="text-base-700 truncate max-w-[200px]">—</Td>
+                    <Td>
                       <button
                         onClick={() => cancelJobMutation.mutate(j.id)}
                         disabled={cancelJobMutation.isPending}
@@ -506,11 +507,11 @@ export default function SyncTab() {
                       >
                         취소
                       </button>
-                    </td>
+                    </Td>
                   </tr>
                 ))}
-              </tbody>
-            </table>
+              </TBody>
+            </Table>
           </div>
         </div>
       )}
