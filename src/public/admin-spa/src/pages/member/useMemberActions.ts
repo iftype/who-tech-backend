@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-import { showToast } from '../ui/Toast.js';
+import { showToast } from '../../components/ui/Toast.js';
 import { useRefreshCooldowns } from '../../hooks/useRefreshCooldowns.js';
 import type { Member } from '../../lib/types.js';
 import { adminApi } from '../../lib/admin-api.js';

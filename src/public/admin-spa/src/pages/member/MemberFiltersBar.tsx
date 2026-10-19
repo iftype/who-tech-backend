@@ -1,13 +1,13 @@
 import type { ChangeEvent } from 'react';
 import type { MemberFilters } from '../../hooks/useMembers.js';
-import { Select, TextInput } from '../ui/Field.js';
+import { Select, TextInput } from '../../components/ui/Field.js';
 
 interface Props {
   filters: MemberFilters;
   onChange: (f: MemberFilters) => void;
 }
 
-export default function MemberFiltersBar({ filters, onChange }: Props) {
+export function MemberFiltersBar({ filters, onChange }: Props) {
   const set = (key: keyof MemberFilters, value: unknown) => onChange({ ...filters, [key]: value || undefined });
 
   return (

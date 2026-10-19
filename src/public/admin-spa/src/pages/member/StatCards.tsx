@@ -1,9 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 
-import { adminApi } from '../lib/admin-api.js';
-import { queryKeys } from '../lib/query-keys.js';
+import { adminApi } from '../../lib/admin-api.js';
+import { queryKeys } from '../../lib/query-keys.js';
 
-export default function StatCards() {
+export function StatCards() {
   const { data: status } = useQuery({
     queryKey: queryKeys.adminStatus(),
     queryFn: () => adminApi.status(),

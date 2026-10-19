@@ -1,11 +1,11 @@
 import { useState } from 'react';
 
-import { showToast } from '../ui/Toast.js';
+import { showToast } from '../../components/ui/Toast.js';
 import type { Member } from '../../lib/types.js';
 import { adminApi } from '../../lib/admin-api.js';
 import { useSortableData } from '../../hooks/useSortableData.js';
-import { Table, TableFrame, TBody, THead, Th } from '../ui/Table.js';
-import { EmptyState } from '../ui/Section.js';
+import { Table, TableFrame, TBody, THead, Th } from '../../components/ui/Table.js';
+import { EmptyState } from '../../components/ui/Section.js';
 import { MemberRow } from './MemberRow.js';
 import { MemberBlogPostsModal, type BlogPostsModalState } from './MemberBlogPostsModal.js';
 import { MemberCohortModal } from './MemberCohortModal.js';
@@ -45,7 +45,7 @@ function SortHeader({
   );
 }
 
-export default function MemberTable({ members, onRefresh }: Props) {
+export function MemberTable({ members, onRefresh }: Props) {
   const { sorted, sortKey, sortDir, toggle } = useSortableData(members, {
     initialKey: 'cohort' as SortKey,
     initialDir: 'desc',

@@ -1,4 +1,4 @@
-import Modal from '../ui/Modal.js';
+import { Modal } from '../../components/ui/Modal.js';
 import type { BlogPost, Member } from '../../lib/types.js';
 
 export interface BlogPostsModalState {

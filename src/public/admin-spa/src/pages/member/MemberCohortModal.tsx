@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-import { showToast } from '../ui/Toast.js';
-import Modal from '../ui/Modal.js';
-import { Button } from '../ui/Button.js';
+import { showToast } from '../../components/ui/Toast.js';
+import { Modal } from '../../components/ui/Modal.js';
+import { Button } from '../../components/ui/Button.js';
 import type { Member, MemberCohort } from '../../lib/types.js';
 import { adminApi } from '../../lib/admin-api.js';
 import { queryKeys } from '../../lib/query-keys.js';

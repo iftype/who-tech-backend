@@ -1,5 +1,5 @@
 import type { Member } from '../../lib/types.js';
-import { Td } from '../ui/Table.js';
+import { Td } from '../../components/ui/Table.js';
 import { ROLE_LABELS, TRACK_OPTIONS } from './member-labels.js';
 import type { MemberActions } from './useMemberActions.js';
 import type { MemberInlineEdit } from './useMemberInlineEdit.js';

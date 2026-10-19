@@ -1,7 +1,7 @@
 import { useEffect, Suspense, lazy } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext.js';
-import Layout from './components/Layout.js';
-import LoginPage from './components/LoginPage.js';
+import { Layout } from './components/Layout.js';
+import { LoginPage } from './components/LoginPage.js';
 import MemberTab from './pages/MemberTab.js';
 import { useHashLocation } from './hooks/useHashLocation.js';
 

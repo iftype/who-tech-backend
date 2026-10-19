@@ -11,7 +11,7 @@ const TABS = [
   { path: '/settings', label: '설정' },
 ] as const;
 
-export default function TabNav() {
+export function TabNav() {
   const [location, navigate] = useHashLocation();
 
   return (

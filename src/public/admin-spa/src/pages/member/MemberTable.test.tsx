@@ -7,9 +7,9 @@ import type { Member } from '../../lib/types';
 const apiFetch = vi.fn();
 const showToast = vi.fn();
 vi.mock('../../lib/api.js', () => ({ apiFetch: (...args: unknown[]) => apiFetch(...args) }));
-vi.mock('../ui/Toast.js', () => ({ showToast: (...args: unknown[]) => showToast(...args) }));
+vi.mock('../../components/ui/Toast.js', () => ({ showToast: (...args: unknown[]) => showToast(...args) }));
 
-const { default: MemberTable } = await import('./MemberTable');
+const { MemberTable } = await import('./MemberTable');
 
 function member(id: number, overrides: Partial<Member> = {}): Member {
   return {

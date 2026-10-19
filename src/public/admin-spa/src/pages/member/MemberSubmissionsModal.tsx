@@ -1,8 +1,8 @@
 import { useQueryClient } from '@tanstack/react-query';
 
-import { showToast } from '../ui/Toast.js';
-import Modal from '../ui/Modal.js';
-import { Badge } from '../ui/Badge.js';
+import { showToast } from '../../components/ui/Toast.js';
+import { Modal } from '../../components/ui/Modal.js';
+import { Badge } from '../../components/ui/Badge.js';
 import type { Member, Submission } from '../../lib/types.js';
 import { adminApi } from '../../lib/admin-api.js';
 import { queryKeys } from '../../lib/query-keys.js';

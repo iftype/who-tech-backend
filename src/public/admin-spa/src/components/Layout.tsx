@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import TabNav from './TabNav.js';
-import LogPanel from './LogPanel.js';
+import { TabNav } from './TabNav.js';
+import { LogPanel } from './LogPanel.js';
 import { useAuth } from '../context/AuthContext.js';
 
 import { adminApi } from '../lib/admin-api.js';
@@ -9,7 +9,7 @@ import { queryKeys } from '../lib/query-keys.js';
 
 declare const __APP_VERSION__: string;
 
-export default function Layout({ children }: { children: ReactNode }) {
+export function Layout({ children }: { children: ReactNode }) {
   const { logout } = useAuth();
 
   const { data: githubStatus } = useQuery({
