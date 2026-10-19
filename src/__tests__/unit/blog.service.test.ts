@@ -245,6 +245,29 @@ describe('createBlogService - syncBlogs', () => {
     fetchSpy.mockRestore();
   });
 
+  it('글이 하나도 없는 피드면 기존 글을 지우지 않는다 (일시적으로 빈 피드에 최근 90일 글이 사라지던 문제)', async () => {
+    const emptyRssXml = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"><channel><title>Test Blog</title></channel></rss>`;
+    const fetchSpy = jest.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: async () => emptyRssXml,
+    } as Response);
+    const deleteByMemberNotInUrls = (jest.fn() as Mock<() => Promise<{ count: number }>>).mockResolvedValue({
+      count: 5,
+    });
+    const deps = makeMockDeps({
+      findWithFilters: (jest.fn() as Mock<() => Promise<MemberWithRelations[]>>).mockResolvedValue([mockMember]),
+      deleteByMemberNotInUrls,
+    });
+
+    const result = await createBlogService(deps).syncBlogs(1);
+
+    expect(deleteByMemberNotInUrls).not.toHaveBeenCalled();
+    expect(result.deleted).toBe(0);
+    fetchSpy.mockRestore();
+  });
+
   it('RSS 수집 실패 시 deleteByMemberNotInUrls가 호출되지 않는다', async () => {
     const fetchSpy = jest.spyOn(global, 'fetch').mockResolvedValue({
       ok: false,
