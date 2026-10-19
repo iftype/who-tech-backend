@@ -4,12 +4,11 @@ import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const showToast = vi.fn();
-vi.mock('../components/ui/Toast.js', () => ({ showToast: (...args: unknown[]) => showToast(...args) }));
 
 const { createAdminQueryClient, toErrorMessage } = await import('./query-client');
 
 function setup(mutationFn: () => Promise<unknown>, meta?: { errorMessage?: string; successMessage?: string }) {
-  const client = createAdminQueryClient({ retry: false });
+  const client = createAdminQueryClient({ notify: showToast, retry: false });
   const wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={client}>{children}</QueryClientProvider>
   );

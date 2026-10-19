@@ -14,7 +14,7 @@ const { createAdminQueryClient } = await import('../lib/query-client');
 
 function renderTab() {
   return render(
-    <QueryClientProvider client={createAdminQueryClient({ retry: false })}>
+    <QueryClientProvider client={createAdminQueryClient({ notify: showToast, retry: false })}>
       <SettingsTab />
     </QueryClientProvider>,
   );
