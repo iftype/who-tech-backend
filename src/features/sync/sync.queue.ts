@@ -3,7 +3,7 @@ import type { Octokit } from '@octokit/rest';
 import type { SyncService } from './sync.service.js';
 import type { ActivityLogService } from '../activity-log/index.js';
 import type { WorkspaceService } from '../workspace/index.js';
-import type { RepoSyncRunner, WorkspaceBlogSyncRunner } from './sync.ports.js';
+import type { RepoSyncFailure, RepoSyncRunner, SyncProgress, WorkspaceBlogSyncRunner } from './sync.ports.js';
 
 export type SyncJobType = 'workspace' | 'continuous' | 'cohort-repos' | 'repo' | 'blog';
 
@@ -27,6 +27,8 @@ export type SyncJob = {
   cohort?: number;
   repoId?: number;
   blogSource?: string;
+  /** 사람이 읽는 대상 이름 (레포 작업이면 레포 이름) */
+  label?: string;
   status: SyncJobStatus;
   createdAt: Date;
   startedAt?: Date;
@@ -34,8 +36,20 @@ export type SyncJob = {
   progress?: SyncJobProgress;
   result?: SyncJobResult;
   error?: string;
+  /** 레포·블로그 작업의 단계별 진행 (어드민 레포 탭이 percent·phase를 보여 준다) */
+  step?: SyncProgress;
+  /** 레포 작업 결과: 실패한 PR 목록까지 */
+  repoResult?: { synced: number; failures: RepoSyncFailure[] };
   abortController: AbortController;
 };
+
+type JobContext = {
+  signal: AbortSignal;
+  onProgress: (step: SyncJobProgress) => void;
+  onStep: (step: SyncProgress) => void;
+};
+
+type JobHandler = (job: SyncJob, ctx: JobContext) => Promise<SyncJobResult>;
 
 type ProgressSubscriber = (progress: SyncJobProgress) => void;
 
@@ -96,7 +110,40 @@ export function createSyncQueue(deps: {
     }
   };
 
-  const enqueue = (type: SyncJobType, cohort?: number, repoId?: number, blogSource?: string): string => {
+  const workspaceId = async (): Promise<number> => (await workspaceService.getOrThrow()).id;
+
+  // 작업 종류별 실행 방법. 종류를 추가할 때 if/else를 늘리지 않고 여기 한 줄을 더한다
+  const handlers: Record<SyncJobType, JobHandler> = {
+    workspace: async (job, { signal, onProgress }) =>
+      syncService.syncWorkspace(octokit, await workspaceId(), onProgress, job.cohort, signal),
+    continuous: async (_job, { signal, onProgress }) =>
+      syncService.syncContinuousRepos(octokit, await workspaceId(), onProgress, signal),
+    'cohort-repos': async (job, { signal, onProgress }) => {
+      if (job.cohort == null) throw new Error('cohort is required for cohort-repos job');
+      return syncService.syncCohortRepoList(octokit, await workspaceId(), job.cohort, onProgress, signal);
+    },
+    repo: async (job, { onStep }) => {
+      if (job.repoId == null) throw new Error('repoId is required for repo job');
+      const repoResult = await repoService.executeRepoSync(job.repoId, onStep);
+      job.repoResult = { synced: repoResult.synced, failures: repoResult.failures ?? [] };
+      return { totalSynced: repoResult.synced, reposSynced: 1 };
+    },
+    blog: async (job, { onStep }) => {
+      const blogResult = await blogAdminService.executeWorkspaceBlogSync(
+        (job.blogSource as 'manual' | 'github-actions' | 'scheduler') ?? 'manual',
+        onStep,
+      );
+      return { totalSynced: blogResult.synced, reposSynced: 1 };
+    },
+  };
+
+  const enqueue = (
+    type: SyncJobType,
+    cohort?: number,
+    repoId?: number,
+    blogSource?: string,
+    label?: string,
+  ): string => {
     pruneFinished(Date.now());
     const id = randomUUID();
     const job: SyncJob = {
@@ -105,6 +152,7 @@ export function createSyncQueue(deps: {
       ...(cohort != null ? { cohort } : {}),
       ...(repoId != null ? { repoId } : {}),
       ...(blogSource != null ? { blogSource } : {}),
+      ...(label != null ? { label } : {}),
       status: 'queued',
       createdAt: new Date(),
       abortController: new AbortController(),
@@ -184,64 +232,15 @@ export function createSyncQueue(deps: {
           emitProgress(job.id, step);
         };
 
-        try {
-          let result: SyncJobResult;
+        const onStep = (step: SyncProgress): void => {
+          job.step = step;
+          onProgress({ repo: step.phase, done: step.processed, total: step.total, synced: step.synced });
+        };
 
-          if (job.type === 'workspace') {
-            result = await syncService.syncWorkspace(
-              octokit,
-              (await workspaceService.getOrThrow()).id,
-              onProgress,
-              job.cohort,
-              job.abortController.signal,
-            );
-          } else if (job.type === 'continuous') {
-            result = await syncService.syncContinuousRepos(
-              octokit,
-              (await workspaceService.getOrThrow()).id,
-              onProgress,
-              job.abortController.signal,
-            );
-          } else if (job.type === 'cohort-repos') {
-            if (job.cohort == null) {
-              throw new Error('cohort is required for cohort-repos job');
-            }
-            result = await syncService.syncCohortRepoList(
-              octokit,
-              (await workspaceService.getOrThrow()).id,
-              job.cohort,
-              onProgress,
-              job.abortController.signal,
-            );
-          } else if (job.type === 'repo') {
-            if (job.repoId == null) {
-              throw new Error('repoId is required for repo job');
-            }
-            const repoResult = await repoService.executeRepoSync(job.repoId, (progress) => {
-              onProgress({
-                repo: progress.phase,
-                done: progress.processed,
-                total: progress.total,
-                synced: progress.synced,
-              });
-            });
-            result = { totalSynced: repoResult.synced, reposSynced: 1 };
-          } else if (job.type === 'blog') {
-            const blogResult = await blogAdminService.executeWorkspaceBlogSync(
-              (job.blogSource as 'manual' | 'github-actions' | 'scheduler') ?? 'manual',
-              (progress) => {
-                onProgress({
-                  repo: progress.phase,
-                  done: progress.processed,
-                  total: progress.total,
-                  synced: progress.synced,
-                });
-              },
-            );
-            result = { totalSynced: blogResult.synced, reposSynced: 1 };
-          } else {
-            throw new Error(`Unknown job type: ${job.type}`);
-          }
+        try {
+          const handler = handlers[job.type];
+          if (!handler) throw new Error(`Unknown job type: ${job.type}`);
+          const result = await handler(job, { signal: job.abortController.signal, onProgress, onStep });
 
           job.status = 'completed';
           job.result = result;

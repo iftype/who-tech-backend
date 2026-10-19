@@ -4,6 +4,7 @@ import { parseId } from '../../shared/validation.js';
 import { parseRepoCreateInput, parseRepoUpdateInput } from './repo.validation.js';
 import type { RepoService } from './repo.service.js';
 import type { SyncAdminService } from '../sync/index.js';
+import { listRepoSyncJobs, toRepoSyncJob } from './repo.sync-jobs.js';
 
 export function createRepoRouter(service: RepoService, syncAdminService: SyncAdminService) {
   const router = Router();
@@ -41,7 +42,8 @@ export function createRepoRouter(service: RepoService, syncAdminService: SyncAdm
     '/:id/sync',
     asyncHandler(async (req, res) => {
       const repoId = parseId(req.params['id']);
-      const jobId = syncAdminService.createJob('repo', undefined, repoId);
+      const repoName = await service.findRepoName(repoId);
+      const jobId = syncAdminService.createJob('repo', undefined, repoId, undefined, repoName ?? undefined);
       const job = syncAdminService.getJob(jobId);
       res.status(202).json(job);
     }),
@@ -58,7 +60,7 @@ export function createRepoRouter(service: RepoService, syncAdminService: SyncAdm
   router.get(
     '/sync-jobs',
     asyncHandler(async (_req, res) => {
-      res.json(service.listRepoSyncJobs());
+      res.json(listRepoSyncJobs(syncAdminService));
     }),
   );
 
@@ -69,7 +71,11 @@ export function createRepoRouter(service: RepoService, syncAdminService: SyncAdm
       if (!jobId || Array.isArray(jobId)) {
         throw new HttpError(400, 'invalid job id');
       }
-      res.json(await service.getRepoSyncJob(jobId));
+      const job = syncAdminService.getJob(jobId);
+      if (!job || job.type !== 'repo') {
+        throw new HttpError(404, 'sync job not found');
+      }
+      res.json(toRepoSyncJob(job));
     }),
   );
 
