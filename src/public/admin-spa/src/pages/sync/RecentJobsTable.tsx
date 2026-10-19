@@ -1,5 +1,5 @@
 import type { SyncQueueJob } from '../../lib/types.js';
-import type { RecentSyncJob } from './sync-format.js';
+import type { RecentSyncJob } from '../../lib/types.js';
 
 export function RecentJobsTable({ jobs }: { jobs: (SyncQueueJob | RecentSyncJob)[] }) {
   return (

@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiFetch } from '../lib/api.js';
+
 import { showToast } from '../components/ui/Toast.js';
-import type { Person, Member } from '../lib/types.js';
+import { adminApi } from '../lib/admin-api.js';
+import { queryKeys } from '../lib/query-keys.js';
 
 export default function PersonTab() {
   const queryClient = useQueryClient();
@@ -12,53 +13,49 @@ export default function PersonTab() {
   const [linkMemberId, setLinkMemberId] = useState('');
 
   const { data: persons = [], isLoading } = useQuery({
-    queryKey: ['persons'],
-    queryFn: () => apiFetch<Person[]>('/admin/persons'),
+    queryKey: queryKeys.persons(),
+    queryFn: () => adminApi.persons.list(),
   });
 
   const { data: members = [] } = useQuery({
-    queryKey: ['members', 'person-link'],
-    queryFn: () => apiFetch<Member[]>('/admin/members'),
+    queryKey: queryKeys.members.personLink(),
+    queryFn: () => adminApi.members.list(),
   });
 
   const createMutation = useMutation({
-    mutationFn: () =>
-      apiFetch<Person>('/admin/persons', {
-        method: 'POST',
-        body: JSON.stringify({ displayName: newName, note: newNote }),
-      }),
+    mutationFn: () => adminApi.persons.create({ displayName: newName, note: newNote }),
     onSuccess: () => {
       setNewName('');
       setNewNote('');
-      void queryClient.invalidateQueries({ queryKey: ['persons'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.persons() });
     },
     onError: (e) => showToast(e instanceof Error ? e.message : '생성 실패', 'error'),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => apiFetch(`/admin/persons/${id}`, { method: 'DELETE' }),
+    mutationFn: (id: number) => adminApi.persons.remove(id),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['persons'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.persons() });
     },
     onError: (e) => showToast(e instanceof Error ? e.message : '삭제 실패', 'error'),
   });
 
   const linkMutation = useMutation({
     mutationFn: ({ personId, memberId }: { personId: number; memberId: number }) =>
-      apiFetch(`/admin/persons/${personId}/members/${memberId}`, { method: 'POST' }),
+      adminApi.persons.linkMember(personId, memberId),
     onSuccess: () => {
       setLinkingPersonId(null);
       setLinkMemberId('');
-      void queryClient.invalidateQueries({ queryKey: ['persons'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.persons() });
     },
     onError: (e) => showToast(e instanceof Error ? e.message : '연결 실패', 'error'),
   });
 
   const unlinkMutation = useMutation({
     mutationFn: ({ personId, memberId }: { personId: number; memberId: number }) =>
-      apiFetch(`/admin/persons/${personId}/members/${memberId}`, { method: 'DELETE' }),
+      adminApi.persons.unlinkMember(personId, memberId),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['persons'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.persons() });
     },
     onError: (e) => showToast(e instanceof Error ? e.message : '해제 실패', 'error'),
   });

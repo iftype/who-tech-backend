@@ -1,10 +1,12 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiFetch } from '../../lib/api.js';
+
 import { showToast } from '../ui/Toast.js';
 import Modal from '../ui/Modal.js';
 import { useRefreshCooldowns } from '../../hooks/useRefreshCooldowns.js';
 import type { Member, BlogPost, MemberCohort, Submission } from '../../lib/types.js';
+import { adminApi } from '../../lib/admin-api.js';
+import { queryKeys } from '../../lib/query-keys.js';
 
 type SortKey = 'nickname' | 'cohort' | 'githubId' | '_count.submissions' | '_count.blogPosts';
 
@@ -41,9 +43,9 @@ export default function MemberTable({ members, onRefresh }: Props) {
 
   const updateMemberMutation = useMutation({
     mutationFn: ({ memberId, data }: { memberId: number; data: Record<string, unknown> }) =>
-      apiFetch(`/admin/members/${memberId}`, { method: 'PATCH', body: JSON.stringify(data) }),
+      adminApi.members.update(memberId, data),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['members'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.members.all() });
       onRefresh();
       showToast('수정 완료');
       setEditCell(null);
@@ -53,9 +55,9 @@ export default function MemberTable({ members, onRefresh }: Props) {
 
   const updateCohortRolesMutation = useMutation({
     mutationFn: ({ memberId, cohort, roles }: { memberId: number; cohort: number; roles: string[] }) =>
-      apiFetch(`/admin/members/${memberId}`, { method: 'PATCH', body: JSON.stringify({ cohort, roles }) }),
+      adminApi.members.update(memberId, { cohort, roles }),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['members'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.members.all() });
       onRefresh();
       showToast('역할 수정 완료');
     },
@@ -139,7 +141,7 @@ export default function MemberTable({ members, onRefresh }: Props) {
     }
     setRefreshing(member.id);
     try {
-      await apiFetch(`/admin/members/${member.id}/refresh-profile`, { method: 'POST' });
+      await adminApi.members.refreshProfile(member.id);
       startCooldown(member.id);
       showToast(`${member.githubId} 새로고침 완료`);
       onRefresh();
@@ -157,16 +159,19 @@ export default function MemberTable({ members, onRefresh }: Props) {
   };
 
   const deleteMemberMutation = useMutation({
-    mutationFn: (memberId: number) => apiFetch(`/admin/members/${memberId}`, { method: 'DELETE' }),
+    mutationFn: (memberId: number) => adminApi.members.remove(memberId),
     onMutate: async (memberId) => {
-      await queryClient.cancelQueries({ queryKey: ['members'] });
-      const previousMembers = queryClient.getQueryData<Member[]>(['members']);
-      queryClient.setQueryData(['members'], (old: Member[] | undefined) => old?.filter((m) => m.id !== memberId) ?? []);
+      await queryClient.cancelQueries({ queryKey: queryKeys.members.all() });
+      const previousMembers = queryClient.getQueryData<Member[]>(queryKeys.members.all());
+      queryClient.setQueryData(
+        queryKeys.members.all(),
+        (old: Member[] | undefined) => old?.filter((m) => m.id !== memberId) ?? [],
+      );
       return { previousMembers };
     },
     onError: (_err, _memberId, context) => {
       if (context?.previousMembers) {
-        queryClient.setQueryData(['members'], context.previousMembers);
+        queryClient.setQueryData(queryKeys.members.all(), context.previousMembers);
       }
       showToast('삭제 실패', 'error');
     },
@@ -175,7 +180,7 @@ export default function MemberTable({ members, onRefresh }: Props) {
       onRefresh();
     },
     onSettled: () => {
-      void queryClient.invalidateQueries({ queryKey: ['members'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.members.all() });
     },
   });
 
@@ -188,7 +193,7 @@ export default function MemberTable({ members, onRefresh }: Props) {
     if (!confirm(`${member.githubId}의 기수를 submissions 기준으로 재계산합니다. 계속하시겠습니까?`)) return;
     setRecalculating(member.id);
     try {
-      await apiFetch(`/admin/members/${member.id}/recalculate-cohorts`, { method: 'POST' });
+      await adminApi.members.recalculateCohorts(member.id);
       showToast('기수 재계산 완료');
       onRefresh();
     } catch (e) {
@@ -202,9 +207,7 @@ export default function MemberTable({ members, onRefresh }: Props) {
     if (!confirm(`${member.githubId}의 PR을 모든 레포지토리에서 재수집합니다. 계속하시겠습니까?`)) return;
     setResyncing(member.id);
     try {
-      const result = await apiFetch<{ totalSynced: number }>(`/admin/members/${member.id}/resync-submissions`, {
-        method: 'POST',
-      });
+      const result = await adminApi.members.resyncSubmissions(member.id);
       showToast(`${member.githubId} PR 재수집 완료 (${result.totalSynced}개)`);
       onRefresh();
     } catch (e) {
@@ -216,13 +219,7 @@ export default function MemberTable({ members, onRefresh }: Props) {
 
   const openBlogModal = async (member: Member) => {
     try {
-      interface BlogPostResponse {
-        archive: BlogPost[];
-        latest: BlogPost[];
-        page: number;
-        totalPages: number;
-      }
-      const result = await apiFetch<BlogPostResponse>(`/admin/members/${member.id}/blog-posts`);
+      const result = await adminApi.members.blogPosts(member.id);
       const allPosts = [...result.latest, ...result.archive];
       setBlogModal({ member, posts: allPosts });
     } catch {
@@ -236,7 +233,7 @@ export default function MemberTable({ members, onRefresh }: Props) {
       return;
     }
     try {
-      const detail = await apiFetch<Member>(`/admin/members/${member.id}`);
+      const detail = await adminApi.members.detail(member.id);
       setPrModal({ member: detail, submissions: detail.submissions ?? [] });
     } catch {
       showToast('PR 로딩 실패', 'error');
@@ -245,9 +242,9 @@ export default function MemberTable({ members, onRefresh }: Props) {
 
   const deleteCohortMutation = useMutation({
     mutationFn: ({ memberId, cohort }: { memberId: number; cohort: number }) =>
-      apiFetch(`/admin/members/${memberId}/cohorts/${cohort}`, { method: 'DELETE' }),
+      adminApi.members.removeCohort(memberId, cohort),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['members'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.members.all() });
       onRefresh();
       showToast('기수 삭제 완료');
     },
@@ -256,9 +253,9 @@ export default function MemberTable({ members, onRefresh }: Props) {
 
   const addCohortMutation = useMutation({
     mutationFn: ({ memberId, cohort }: { memberId: number; cohort: number }) =>
-      apiFetch(`/admin/members/${memberId}`, { method: 'PATCH', body: JSON.stringify({ cohort }) }),
+      adminApi.members.update(memberId, { cohort }),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['members'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.members.all() });
       onRefresh();
       setNewCohortInput('');
       showToast('기수 추가 완료');
@@ -545,14 +542,15 @@ export default function MemberTable({ members, onRefresh }: Props) {
                   <button
                     onClick={() => {
                       if (confirm(`PR #${s.prNumber} ${s.title}을(를) 삭제하시겠습니까?`)) {
-                        apiFetch(`/admin/members/${prModal.member.id}/submissions/${s.id}`, { method: 'DELETE' })
+                        adminApi.members
+                          .removeSubmission(prModal.member.id, s.id)
                           .then(() => {
                             showToast('PR 삭제 완료');
                             setPrModal({
                               member: prModal.member,
                               submissions: prModal.submissions.filter((sub) => sub.id !== s.id),
                             });
-                            void queryClient.invalidateQueries({ queryKey: ['members'] });
+                            void queryClient.invalidateQueries({ queryKey: queryKeys.members.all() });
                             onRefresh();
                           })
                           .catch((e) => showToast(e instanceof Error ? e.message : '삭제 실패', 'error'));
@@ -608,10 +606,7 @@ export default function MemberTable({ members, onRefresh }: Props) {
               </div>
               <button
                 onClick={() =>
-                  apiFetch(`/admin/members/${cohortModal.id}`, {
-                    method: 'PATCH',
-                    body: JSON.stringify({ cohortLocked: !cohortModal.cohortLocked }),
-                  }).then(() => {
+                  adminApi.members.update(cohortModal.id, { cohortLocked: !cohortModal.cohortLocked }).then(() => {
                     setCohortModal({ ...cohortModal, cohortLocked: !cohortModal.cohortLocked });
                     onRefresh();
                   })

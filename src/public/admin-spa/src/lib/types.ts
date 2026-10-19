@@ -189,3 +189,39 @@ export interface Member {
   submissions: Submission[];
   _count: { submissions: number; blogPosts: number };
 }
+
+export interface SyncJob {
+  id: string;
+  repoId: number;
+  repoName: string;
+  status: 'queued' | 'running' | 'completed' | 'failed';
+  message: string;
+  startedAt: string;
+  finishedAt: string | null;
+  progress: {
+    total: number;
+    processed: number;
+    synced: number;
+    percent: number;
+    phase: string;
+  };
+  result: { synced: number; failures: unknown[] } | null;
+  error: string | null;
+}
+
+export interface RecentSyncJob {
+  id: string;
+  status: string;
+  message: string;
+  startedAt: string;
+  finishedAt: string | null;
+  repoName?: string;
+  source?: string;
+}
+
+export interface BlogPostResponse {
+  archive: BlogPost[];
+  latest: BlogPost[];
+  page: number;
+  totalPages: number;
+}

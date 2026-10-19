@@ -1,20 +1,16 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createEventSource } from '../lib/sse.js';
-import { apiFetch } from '../lib/api.js';
+
 import { showToast } from '../components/ui/Toast.js';
-import type {
-  AdminStatus,
-  GithubStatus,
-  MissionRepo,
-  TecoTalkAdminItem,
-  Workspace,
-  SyncQueueJob,
-} from '../lib/types.js';
-import { formatDate, type JobType, type RecentSyncJob } from './sync/sync-format.js';
+import type { SyncQueueJob } from '../lib/types.js';
+import { formatDate, type JobType } from './sync/sync-format.js';
+import type { RecentSyncJob } from '../lib/types.js';
 import { formatStep, logColor, type StreamLogEntry } from '../lib/stream-log.js';
 import { SyncScheduleStatus } from './sync/SyncScheduleStatus.js';
 import { RecentJobsTable } from './sync/RecentJobsTable.js';
+import { adminApi } from '../lib/admin-api.js';
+import { queryKeys } from '../lib/query-keys.js';
 
 export default function SyncTab() {
   const [cohortInput, setCohortInput] = useState('');
@@ -53,32 +49,32 @@ export default function SyncTab() {
   }, []);
 
   const { data: status, refetch: refetchStatus } = useQuery({
-    queryKey: ['admin-status'],
-    queryFn: () => apiFetch<AdminStatus>('/admin/status'),
+    queryKey: queryKeys.adminStatus(),
+    queryFn: () => adminApi.status(),
     staleTime: 60_000,
   });
 
   const { data: workspace } = useQuery({
-    queryKey: ['workspace'],
-    queryFn: () => apiFetch<Workspace>('/admin/workspace'),
+    queryKey: queryKeys.workspace(),
+    queryFn: () => adminApi.workspace.get(),
     staleTime: 300_000,
   });
 
   const { data: githubStatus } = useQuery({
-    queryKey: ['github-status'],
-    queryFn: () => apiFetch<GithubStatus>('/admin/github-status'),
+    queryKey: queryKeys.githubStatus(),
+    queryFn: () => adminApi.githubStatus(),
     refetchInterval: 30_000,
     staleTime: 30_000,
   });
 
   const { data: repos = [] } = useQuery({
-    queryKey: ['repos', 'sync-schedule'],
-    queryFn: () => apiFetch<MissionRepo[]>('/admin/repos'),
+    queryKey: queryKeys.repos.syncSchedule(),
+    queryFn: () => adminApi.repos.list(),
   });
 
   const { data: tecoTalks = [] } = useQuery({
-    queryKey: ['tecotalks', 'sync-status'],
-    queryFn: () => apiFetch<TecoTalkAdminItem[]>('/admin/tecotalk'),
+    queryKey: queryKeys.tecotalkSyncStatus(),
+    queryFn: () => adminApi.tecotalk.list(),
     staleTime: 30_000,
   });
 
@@ -94,22 +90,22 @@ export default function SyncTab() {
   const latestTecoTalk = tecoTalks[0];
 
   const { data: repoJobs = [] } = useQuery({
-    queryKey: ['repo-sync-jobs'],
-    queryFn: () => apiFetch<RecentSyncJob[]>('/admin/repos/sync-jobs'),
+    queryKey: queryKeys.repos.syncJobs(),
+    queryFn: () => adminApi.repos.syncJobs(),
     staleTime: 10_000,
     refetchInterval: running ? 2000 : 10_000,
   });
 
   const { data: blogJobs = [] } = useQuery({
-    queryKey: ['blog-sync-jobs'],
-    queryFn: () => apiFetch<RecentSyncJob[]>('/admin/blog/sync-jobs'),
+    queryKey: queryKeys.blog.syncJobs(),
+    queryFn: () => adminApi.blog.syncJobs(),
     staleTime: 10_000,
     refetchInterval: running ? 2000 : 10_000,
   });
 
   const { data: queueJobs = [] } = useQuery({
-    queryKey: ['sync-queue-jobs'],
-    queryFn: () => apiFetch<SyncQueueJob[]>('/admin/sync/jobs'),
+    queryKey: queryKeys.syncQueueJobs(),
+    queryFn: () => adminApi.sync.jobs(),
     staleTime: 0,
     refetchInterval: 3000,
   });
@@ -128,19 +124,16 @@ export default function SyncTab() {
   const queryClient = useQueryClient();
 
   const blogSyncMutation = useMutation({
-    mutationFn: () => apiFetch<{ id: string; status: string }>('/admin/blog/sync', { method: 'POST' }),
+    mutationFn: () => adminApi.blog.sync(),
     onSuccess: () => {
       showToast('블로그 싱크 작업이 큐에 추가되었습니다');
-      void queryClient.invalidateQueries({ queryKey: ['blog-sync-jobs'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.blog.syncJobs() });
     },
     onError: (e) => showToast(e instanceof Error ? e.message : '블로그 싱크 실패', 'error'),
   });
 
   const profileRefreshMutation = useMutation({
-    mutationFn: () =>
-      apiFetch<{ checked: number; refreshed: number; failed: number }>('/admin/members/refresh-profiles', {
-        method: 'POST',
-      }),
+    mutationFn: () => adminApi.members.refreshProfiles(),
     onSuccess: (result) => {
       showToast(`프로필 새로고침 완료 — ${result.refreshed}/${result.checked}명, 실패 ${result.failed}명`);
     },
@@ -148,13 +141,9 @@ export default function SyncTab() {
   });
 
   const tecoTalkSyncMutation = useMutation({
-    mutationFn: (mode: 'incremental' | 'full') =>
-      apiFetch<{ total: number; matched: number; ambiguous: number; unmatched: number }>(
-        `/admin/tecotalk/sync${mode === 'full' ? '?mode=full' : ''}`,
-        { method: 'POST' },
-      ),
+    mutationFn: (mode: 'incremental' | 'full') => adminApi.tecotalk.sync(mode),
     onSuccess: (result) => {
-      void queryClient.invalidateQueries({ queryKey: ['tecotalks', 'sync-status'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.tecotalkSyncStatus() });
       showToast(
         `테코톡 싱크 완료 — ${result.matched}/${result.total} 매칭, ambiguous ${result.ambiguous}, unmatched ${result.unmatched}`,
       );
@@ -163,37 +152,26 @@ export default function SyncTab() {
   });
 
   const toggleBlogSyncMutation = useMutation({
-    mutationFn: (enabled: boolean) =>
-      apiFetch<Workspace>('/admin/workspace', {
-        method: 'PUT',
-        body: JSON.stringify({ blogSyncEnabled: enabled }),
-      }),
+    mutationFn: (enabled: boolean) => adminApi.workspace.update({ blogSyncEnabled: enabled }),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['workspace'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.workspace() });
     },
     onError: (e) => showToast(e instanceof Error ? e.message : '변경 실패', 'error'),
   });
 
   const toggleProfileRefreshMutation = useMutation({
-    mutationFn: (enabled: boolean) =>
-      apiFetch<Workspace>('/admin/workspace', {
-        method: 'PUT',
-        body: JSON.stringify({ profileRefreshEnabled: enabled }),
-      }),
+    mutationFn: (enabled: boolean) => adminApi.workspace.update({ profileRefreshEnabled: enabled }),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['workspace'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.workspace() });
     },
     onError: (e) => showToast(e instanceof Error ? e.message : '변경 실패', 'error'),
   });
 
   const enqueueMutation = useMutation({
     mutationFn: (params: { type: 'workspace' | 'continuous' | 'cohort-repos'; cohort?: number }) =>
-      apiFetch<{ id: string; status: string; createdAt: string }>('/admin/sync/jobs', {
-        method: 'POST',
-        body: JSON.stringify(params),
-      }),
+      adminApi.sync.createJob(params),
     onSuccess: (result) => {
-      void queryClient.invalidateQueries({ queryKey: ['sync-queue-jobs'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.syncQueueJobs() });
       showToast('작업이 큐에 추가되었습니다');
       setLogs([]);
       setRunning(result.id as unknown as JobType);
@@ -217,7 +195,7 @@ export default function SyncTab() {
         }
         stop();
         void refetchStatus();
-        void queryClient.invalidateQueries({ queryKey: ['sync-queue-jobs'] });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.syncQueueJobs() });
       });
       es.addEventListener('error', (e: MessageEvent) => {
         try {
@@ -227,12 +205,12 @@ export default function SyncTab() {
           addLog('error', '연결 오류');
         }
         stop();
-        void queryClient.invalidateQueries({ queryKey: ['sync-queue-jobs'] });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.syncQueueJobs() });
       });
       es.onerror = () => {
         if (es.readyState === EventSource.CLOSED) {
           stop();
-          void queryClient.invalidateQueries({ queryKey: ['sync-queue-jobs'] });
+          void queryClient.invalidateQueries({ queryKey: queryKeys.syncQueueJobs() });
         }
       };
     },
@@ -240,9 +218,9 @@ export default function SyncTab() {
   });
 
   const cancelJobMutation = useMutation({
-    mutationFn: (jobId: string) => apiFetch<{ success: boolean }>(`/admin/sync/jobs/${jobId}`, { method: 'DELETE' }),
+    mutationFn: (jobId: string) => adminApi.sync.cancelJob(jobId),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['sync-queue-jobs'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.syncQueueJobs() });
       showToast('작업이 취소되었습니다');
     },
     onError: (e) => showToast(e instanceof Error ? e.message : '취소 실패', 'error'),

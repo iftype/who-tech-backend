@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiFetch, pollSyncJob, type SyncJob } from '../lib/api.js';
+import { pollSyncJob } from '../lib/api.js';
+import type { SyncJob } from '../lib/types.js';
 import { showToast } from '../components/ui/Toast.js';
 import { addLog } from '../components/LogPanel.js';
 import type { MissionRepo } from '../lib/types.js';
@@ -13,6 +14,8 @@ import {
   type StatusFilter,
   type TabCategoryFilter,
 } from './repo/repo-options.js';
+import { adminApi } from '../lib/admin-api.js';
+import { queryKeys } from '../lib/query-keys.js';
 
 export default function RepoTab() {
   const [status, setStatus] = useState<StatusFilter>('');
@@ -31,10 +34,10 @@ export default function RepoTab() {
   useEffect(() => () => stopPollFns.current.forEach((stop) => stop()), []);
 
   const { data: repos = [], isLoading } = useQuery({
-    queryKey: ['repos', status],
+    queryKey: queryKeys.repos.byStatus(status),
     queryFn: () => {
       const params = status ? `?status=${status}` : '';
-      return apiFetch<MissionRepo[]>(`/admin/repos${params}`);
+      return adminApi.repos.list(params);
     },
   });
 
@@ -48,11 +51,10 @@ export default function RepoTab() {
   const onceRepos = filteredRepos.filter((r) => r.syncMode === 'once');
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: Record<string, unknown> }) =>
-      apiFetch(`/admin/repos/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    mutationFn: ({ id, data }: { id: number; data: Record<string, unknown> }) => adminApi.repos.update(id, data),
     onSuccess: () => {
       showToast('수정 완료');
-      void queryClient.invalidateQueries({ queryKey: ['repos'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.repos.all() });
     },
     onError: (e) => {
       showToast(e instanceof Error ? e.message : '수정 실패', 'error');
@@ -65,15 +67,13 @@ export default function RepoTab() {
 
   const batchTrackMutation = useMutation({
     mutationFn: async ({ ids, track }: { ids: number[]; track: string | null }) => {
-      await Promise.all(
-        ids.map((id) => apiFetch(`/admin/repos/${id}`, { method: 'PATCH', body: JSON.stringify({ track }) })),
-      );
+      await Promise.all(ids.map((id) => adminApi.repos.update(id, { track })));
     },
     onSuccess: () => {
       showToast('일괄 변경 완료');
       setSelectedRepoIds(new Set());
       setBatchTrackValue('');
-      void queryClient.invalidateQueries({ queryKey: ['repos'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.repos.all() });
     },
     onError: (e) => {
       showToast(e instanceof Error ? e.message : '일괄 변경 실패', 'error');
@@ -81,11 +81,10 @@ export default function RepoTab() {
   });
 
   const resetLastSyncAtMutation = useMutation({
-    mutationFn: (id: number) =>
-      apiFetch(`/admin/repos/${id}`, { method: 'PATCH', body: JSON.stringify({ lastSyncAt: null }) }),
+    mutationFn: (id: number) => adminApi.repos.update(id, { lastSyncAt: null }),
     onSuccess: () => {
       showToast('lastSyncAt 초기화 완료');
-      void queryClient.invalidateQueries({ queryKey: ['repos'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.repos.all() });
     },
     onError: (e) => {
       showToast(e instanceof Error ? e.message : '초기화 실패', 'error');
@@ -140,21 +139,19 @@ export default function RepoTab() {
   }, []);
 
   const discoverMutation = useMutation({
-    mutationFn: () =>
-      apiFetch<{ discovered: number; created: number; updated: number }>('/admin/repos/discover', { method: 'POST' }),
+    mutationFn: () => adminApi.repos.discover(),
     onSuccess: (result) => {
       showToast(`탐색 완료 — ${result.discovered}개 발견, ${result.created}개 생성, ${result.updated}개 갱신`);
-      void queryClient.invalidateQueries({ queryKey: ['repos'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.repos.all() });
     },
     onError: (e) => showToast(e instanceof Error ? e.message : '탐색 실패', 'error'),
   });
 
   const continuousSyncMutation = useMutation({
-    mutationFn: () =>
-      apiFetch<{ totalSynced: number; reposSynced: number }>('/admin/sync/continuous', { method: 'POST' }),
+    mutationFn: () => adminApi.sync.continuous(),
     onSuccess: (result) => {
       showToast(`연속 싱크 완료 — ${result.totalSynced}건, ${result.reposSynced}개 레포`);
-      void queryClient.invalidateQueries({ queryKey: ['repos'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.repos.all() });
     },
     onError: (e) => showToast(e instanceof Error ? e.message : '연속 싱크 실패', 'error'),
   });
@@ -163,7 +160,7 @@ export default function RepoTab() {
     setSyncingRepos((prev) => new Set(prev).add(repo.id));
     addLog('run', `[${repo.name}] 싱크 시작`);
     try {
-      const job = await apiFetch<SyncJob>(`/admin/repos/${repo.id}/sync`, { method: 'POST' });
+      const job = await adminApi.repos.sync(repo.id);
       setActiveJobs((prev) => new Map(prev).set(repo.id, job));
 
       const stop = pollSyncJob(job.id, (updated) => {
@@ -185,7 +182,7 @@ export default function RepoTab() {
             return m;
           });
           stopPollFns.current.delete(repo.id);
-          void queryClient.invalidateQueries({ queryKey: ['repos'] });
+          void queryClient.invalidateQueries({ queryKey: queryKeys.repos.all() });
         } else if (updated.status === 'failed') {
           addLog('err', `[${repo.name}] 싱크 실패: ${updated.error ?? updated.message}`);
           showToast(`${repo.name} 싱크 실패`, 'error');
@@ -232,8 +229,8 @@ export default function RepoTab() {
   const toggleStatus = async (repo: MissionRepo) => {
     const newStatus = STATUS_CYCLE[repo.status] ?? 'active';
     try {
-      await apiFetch(`/admin/repos/${repo.id}`, { method: 'PATCH', body: JSON.stringify({ status: newStatus }) });
-      void queryClient.invalidateQueries({ queryKey: ['repos'] });
+      await adminApi.repos.update(repo.id, { status: newStatus });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.repos.all() });
     } catch (e) {
       showToast(e instanceof Error ? e.message : '수정 실패', 'error');
     }
@@ -242,8 +239,8 @@ export default function RepoTab() {
   const toggleSyncMode = async (repo: MissionRepo) => {
     const newMode = repo.syncMode === 'continuous' ? 'once' : 'continuous';
     try {
-      await apiFetch(`/admin/repos/${repo.id}`, { method: 'PATCH', body: JSON.stringify({ syncMode: newMode }) });
-      void queryClient.invalidateQueries({ queryKey: ['repos'] });
+      await adminApi.repos.update(repo.id, { syncMode: newMode });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.repos.all() });
     } catch (e) {
       showToast(e instanceof Error ? e.message : '수정 실패', 'error');
     }
@@ -253,9 +250,9 @@ export default function RepoTab() {
     if (!confirm(`${repo.name} 삭제하시겠습니까? 관련 submission도 삭제됩니다.`)) return;
     setDeleting(repo.id);
     try {
-      await apiFetch(`/admin/repos/${repo.id}`, { method: 'DELETE' });
+      await adminApi.repos.remove(repo.id);
       showToast('삭제 완료');
-      void queryClient.invalidateQueries({ queryKey: ['repos'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.repos.all() });
     } catch (e) {
       showToast(e instanceof Error ? e.message : '삭제 실패', 'error');
     } finally {
