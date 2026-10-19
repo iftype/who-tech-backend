@@ -1,4 +1,4 @@
-import { describe, expect, it, jest, beforeEach } from '@jest/globals';
+import { describe, expect, it, jest } from '@jest/globals';
 import { createRepoService } from '../../features/repo/repo.service.js';
 
 // ─── 픽스처 헬퍼 ──────────────────────────────────────────────────────────────
@@ -58,52 +58,18 @@ function makeDeps(
   };
 }
 
-// ─── enqueueRepoSyncById ──────────────────────────────────────────────────────
+// ─── findRepoName ─────────────────────────────────────────────────────────────
 
-describe('enqueueRepoSyncById', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
+describe('findRepoName', () => {
+  it('should return the repo name', async () => {
+    const service = createRepoService(makeDeps() as never);
+    await expect(service.findRepoName(10)).resolves.toBe('java-racingcar');
   });
 
-  it('같은 repoId로 두 번 호출 시 기존 running job을 반환하고 새 job을 생성하지 않는다', async () => {
-    // syncRepo가 완료되지 않도록 pending Promise 사용
-    let resolveSync!: () => void;
-    const syncPending = new Promise<{ synced: number; failures: [] }>((resolve) => {
-      resolveSync = () => resolve({ synced: 0, failures: [] });
-    });
-
-    const deps = makeDeps({ syncRepoImpl: () => syncPending });
-    const service = createRepoService(deps as never);
-
-    const job1 = await service.enqueueRepoSyncById(10);
-    // await 사이에 microtask가 flush되어 syncRepo가 호출되지만 pending 상태 유지
-    const job2 = await service.enqueueRepoSyncById(10);
-
-    // 두 호출 모두 같은 job을 반환해야 함
-    expect(job1.id).toBe(job2.id);
-
-    // syncRepo는 첫 번째 enqueue에서 한 번만 호출되어야 함 (새 job 생성 없음)
-    expect(deps.syncService.syncRepo).toHaveBeenCalledTimes(1);
-
-    // cleanup
-    resolveSync();
-    await syncPending.catch(() => null);
-  });
-
-  it('sync 완료 후 runningRepoJobs에서 제거되어 다음 호출 시 새 job이 생성된다', async () => {
+  it('should return null for a missing repo instead of throwing', async () => {
     const deps = makeDeps();
+    deps.missionRepoRepo.findByIdOrThrow.mockRejectedValue(new Error('not found'));
     const service = createRepoService(deps as never);
-
-    const job1 = await service.enqueueRepoSyncById(10);
-
-    // 비동기 sync 실행 완료 대기 (microtask + syncRepo Promise 처리)
-    await Promise.resolve();
-    // syncRepo 자체는 mockResolvedValue이므로 한 번 더 flush
-    await new Promise((resolve) => setTimeout(resolve, 0));
-
-    const job2 = await service.enqueueRepoSyncById(10);
-
-    expect(job1.id).not.toBe(job2.id);
-    expect(deps.syncService.syncRepo).toHaveBeenCalledTimes(2);
+    await expect(service.findRepoName(999)).resolves.toBeNull();
   });
 });

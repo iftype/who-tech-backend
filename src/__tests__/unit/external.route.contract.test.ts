@@ -80,7 +80,7 @@ const steps: Step[] = [
   ['post', '/admin/repos/discover'],
   ['post', '/admin/repos/1/sync', {}],
   ['post', '/admin/repos/abc/sync', {}],
-  ['get', '/admin/repos/sync-jobs/job-1'],
+  // GET /admin/repos/sync-jobs/:id 는 실제 큐로 repo.sync-jobs.route.test.ts 가 고정한다
   ['post', '/admin/tecotalk/sync', {}],
   ['post', '/admin/tecotalk/sync', { mode: 'full' }],
   ['post', '/admin/members', { githubId: 'new-crew', cohort: 8, roles: ['crew'], track: 'frontend' }],
