@@ -134,9 +134,7 @@ describe('MemberTable', () => {
     await userEvent.clear(screen.getByPlaceholderText('블로그 URL'));
     await userEvent.type(screen.getByPlaceholderText('블로그 URL'), 'https://new.example.com');
     await userEvent.click(document.body);
-    await waitFor(() =>
-      expect(calls('PATCH')).toEqual([['/admin/members/2', '{"blog":"https://new.example.com"}']]),
-    );
+    await waitFor(() => expect(calls('PATCH')).toEqual([['/admin/members/2', '{"blog":"https://new.example.com"}']]));
 
     await userEvent.click(screen.getAllByTitle('트랙 편집')[0]);
     await userEvent.selectOptions(screen.getByRole('combobox'), 'frontend');
