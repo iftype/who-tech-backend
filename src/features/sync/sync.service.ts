@@ -10,6 +10,7 @@ import { createRepoSyncer } from './sync.repo-sync.js';
 import type { CohortRule } from '../../shared/types/index.js';
 import type { ActivityLogService } from '../activity-log/index.js';
 import { parseCohortRules } from '../../shared/cohort-rules.js';
+import { CancelledError, throwIfCancelled } from '../../shared/errors.js';
 export { parsePRsToSubmissions } from './sync.pr-parser.js';
 
 export function createSyncService(deps: {
@@ -52,7 +53,7 @@ export function createSyncService(deps: {
     let reposSynced = 0;
 
     for (let i = 0; i < repos.length; i++) {
-      if (signal?.aborted) throw new Error('cancelled');
+      throwIfCancelled(signal);
       const repo = repos[i]!;
       try {
         const { synced } = await syncRepo(octokit, workspaceId, org, repo, cohortRules, undefined, signal);
@@ -63,6 +64,8 @@ export function createSyncService(deps: {
           await activityLogService.addLog('sync', `${logPrefix}: [${repo.name}] synced ${synced} items`);
         }
       } catch (err) {
+        // 취소는 레포 실패가 아니다: 남은 레포를 건너뛰고 바로 끝낸다 (예전에는 실패로 기록한 뒤 다음 반복에서 멈췄다)
+        if (err instanceof CancelledError) throw err;
         const message = err instanceof Error ? err.message : String(err);
         await activityLogService.addLog('sync_error', `${logPrefix} Failed: [${repo.name}] - ${message}`);
         onProgress?.({ repo: `${repo.name} (failed)`, done: i + 1, total: repos.length, synced: 0 });
@@ -137,7 +140,7 @@ export function createSyncService(deps: {
     let totalSynced = 0;
     let reposSynced = 0;
     for (let i = 0; i < cohortRepos.length; i++) {
-      if (signal?.aborted) throw new Error('cancelled');
+      throwIfCancelled(signal);
       const missionRepo = cohortRepos[i]!.missionRepo;
       try {
         const { synced } = await syncRepo(
@@ -158,7 +161,7 @@ export function createSyncService(deps: {
         reposSynced++;
         onProgress?.({ repo: missionRepo.name, done: i + 1, total: cohortRepos.length, synced });
       } catch (err) {
-        if (err instanceof Error && err.message === 'cancelled') throw err;
+        if (err instanceof CancelledError) throw err;
         const message = err instanceof Error ? err.message : String(err);
         await activityLogService.addLog('sync_error', `Cohort Sync Failed: [${missionRepo.name}] - ${message}`);
         onProgress?.({ repo: `${missionRepo.name} (failed)`, done: i + 1, total: cohortRepos.length, synced: 0 });
@@ -183,7 +186,7 @@ export function createSyncService(deps: {
     let totalSynced = 0;
     let reposSynced = 0;
     for (let i = 0; i < activeRepos.length; i++) {
-      if (signal?.aborted) throw new Error('cancelled');
+      throwIfCancelled(signal);
       const repo = activeRepos[i]!;
       try {
         const { synced } = await syncRepo(
@@ -205,7 +208,7 @@ export function createSyncService(deps: {
         if (synced > 0) reposSynced++;
         onProgress?.({ repo: repo.name, done: i + 1, total: activeRepos.length, synced });
       } catch (err) {
-        if (err instanceof Error && err.message === 'cancelled') throw err;
+        if (err instanceof CancelledError) throw err;
         const message = err instanceof Error ? err.message : String(err);
         await activityLogService.addLog('sync_error', `Member Sync Failed: [${repo.name}] - ${message}`);
         onProgress?.({ repo: `${repo.name} (failed)`, done: i + 1, total: activeRepos.length, synced: 0 });

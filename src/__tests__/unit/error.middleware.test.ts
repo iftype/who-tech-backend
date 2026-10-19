@@ -52,4 +52,14 @@ describe('errorHandler', () => {
     expect(res.status).toBe(500);
     expect(res.body).toEqual({ message: 'internal server error' });
   });
+
+  it('should catch a rejected async handler without a wrapper (Express 5)', async () => {
+    const res = await request(
+      makeApp(async () => {
+        throw new HttpError(409, 'conflict');
+      }),
+    ).put('/x');
+    expect(res.status).toBe(409);
+    expect(res.body).toEqual({ message: 'conflict' });
+  });
 });
