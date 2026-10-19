@@ -72,3 +72,38 @@ describe('apiFetch', () => {
     await expect(apiFetch('/admin/x')).rejects.toThrow('500: Internal Server Error');
   });
 });
+
+describe('apiFetch with a real Response', () => {
+  it('should keep the raw text of a non-JSON error body (body can be read only once)', async () => {
+    fetchMock.mockResolvedValue(new Response('Bad Gateway from nginx', { status: 502 }));
+    await expect(apiFetch('/admin/x')).rejects.toThrow('502: Bad Gateway from nginx');
+  });
+
+  it('should announce an expired session so the app can log out', async () => {
+    localStorage.setItem('admin_token', 'expired');
+    fetchMock.mockResolvedValue(new Response('{}', { status: 401 }));
+    const onExpired = vi.fn();
+    window.addEventListener('admin:unauthorized', onExpired);
+
+    await expect(apiFetch('/admin/repos')).rejects.toThrow('Unauthorized');
+
+    window.removeEventListener('admin:unauthorized', onExpired);
+    expect(onExpired).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('pollSyncJob', () => {
+  it('should stop polling when the job is cancelled', async () => {
+    vi.useFakeTimers();
+    fetchMock.mockResolvedValue(response(200, { id: 'j1', status: 'cancelled' }));
+    const onUpdate = vi.fn();
+
+    const { pollSyncJob } = await import('./api');
+    pollSyncJob('j1', onUpdate);
+    await vi.advanceTimersByTimeAsync(10_000);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(onUpdate).toHaveBeenCalledWith({ id: 'j1', status: 'cancelled' });
+    vi.useRealTimers();
+  });
+});
