@@ -1,5 +1,6 @@
 import Parser from 'rss-parser';
 import { normalizeBlogUrl } from '../../shared/blog.js';
+import { fetchPublic } from './safe-fetch.js';
 
 export type BlogSyncFailure = {
   githubId: string;
@@ -61,9 +62,8 @@ async function resolveBlogUrl(blogUrl: string): Promise<string | null> {
   const timeout = setTimeout(() => controller.abort(), 8000);
 
   try {
-    const response = await fetch(normalized, {
+    const response = await fetchPublic(normalized, {
       method: 'GET',
-      redirect: 'follow',
       headers: { 'User-Agent': BROWSER_UA },
       signal: controller.signal,
     });
@@ -127,9 +127,8 @@ async function fetchFeedText(rssUrl: string): Promise<string> {
   const timeout = setTimeout(() => controller.abort(), 15000);
 
   try {
-    const response = await fetch(rssUrl, {
+    const response = await fetchPublic(rssUrl, {
       method: 'GET',
-      redirect: 'follow',
       headers: {
         'User-Agent': BROWSER_UA,
         Accept: 'application/rss+xml, application/xml, text/xml, */*',
