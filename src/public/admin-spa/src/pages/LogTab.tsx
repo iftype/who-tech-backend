@@ -5,6 +5,8 @@ import { showToast } from '../components/ui/Toast.js';
 
 import { adminApi } from '../lib/admin-api.js';
 import { queryKeys } from '../lib/query-keys.js';
+import { EmptyState } from '../components/ui/Section.js';
+import { TextInput } from '../components/ui/Field.js';
 
 type LogCategory = 'all' | 'repo' | 'blog' | 'refresh';
 
@@ -71,12 +73,7 @@ export default function LogTab() {
               프로필 새로고침
             </button>
           </div>
-          <input
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            placeholder="타입/메시지 필터"
-            className="border border-base-300 rounded px-3 py-1.5 text-sm"
-          />
+          <TextInput value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="타입/메시지 필터" />
           <span className="text-xs text-base-400">{filtered.length}개</span>
         </div>
         <button
@@ -90,7 +87,7 @@ export default function LogTab() {
       </div>
 
       {isLoading ? (
-        <div className="py-12 text-center text-base-400 text-sm">로딩 중...</div>
+        <EmptyState>로딩 중...</EmptyState>
       ) : (
         <div className="bg-base-900 rounded border border-base-700 p-4 font-mono text-xs max-h-[70vh] overflow-y-auto">
           {filtered.length === 0 ? (

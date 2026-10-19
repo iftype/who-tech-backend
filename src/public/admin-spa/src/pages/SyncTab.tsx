@@ -14,6 +14,8 @@ import { queryKeys } from '../lib/query-keys.js';
 import { Table, TBody, THead, Td, Th } from '../components/ui/Table.js';
 import { Badge } from '../components/ui/Badge.js';
 import { Button } from '../components/ui/Button.js';
+import { FieldLabel, TextInput } from '../components/ui/Field.js';
+import { Panel, SectionTitle } from '../components/ui/Section.js';
 
 export default function SyncTab() {
   const [cohortInput, setCohortInput] = useState('');
@@ -259,19 +261,19 @@ export default function SyncTab() {
       {/* 상태 */}
       {status && (
         <div className="grid grid-cols-1 gap-3 md:grid-cols-3 xl:grid-cols-5">
-          <div className="bg-base-50 border border-base-200 rounded p-3">
+          <Panel>
             <p className="text-xs text-base-500">멤버 수</p>
             <p className="text-xl font-semibold text-base-900">{status.memberCount}</p>
-          </div>
-          <div className="bg-base-50 border border-base-200 rounded p-3">
+          </Panel>
+          <Panel>
             <p className="text-xs text-base-500">활성 레포</p>
             <p className="text-xl font-semibold text-base-900">{repoCount ?? '—'}</p>
-          </div>
-          <div className="bg-base-50 border border-base-200 rounded p-3">
+          </Panel>
+          <Panel>
             <p className="text-xs text-base-500">마지막 싱크</p>
             <p className="text-sm font-medium text-base-700">{formatDate(status.lastSyncAt)}</p>
-          </div>
-          <div className="bg-base-50 border border-base-200 rounded p-3">
+          </Panel>
+          <Panel>
             <div className="flex items-center justify-between gap-2">
               <p className="text-xs text-base-500">GitHub API</p>
               <span
@@ -294,8 +296,8 @@ export default function SyncTab() {
             {githubStatus?.resetAt && (
               <p className="text-[10px] text-base-400">reset {formatDate(githubStatus.resetAt)}</p>
             )}
-          </div>
-          <div className="bg-base-50 border border-base-200 rounded p-3">
+          </Panel>
+          <Panel>
             <p className="text-xs text-base-500">테코톡 매칭</p>
             <p className="text-xl font-semibold text-base-900">
               {tecoTalkStatusCounts.matched}/{tecoTalks.length}
@@ -303,7 +305,7 @@ export default function SyncTab() {
             <p className="text-[10px] text-base-400">
               ambiguous {tecoTalkStatusCounts.ambiguous} · unmatched {tecoTalkStatusCounts.unmatched}
             </p>
-          </div>
+          </Panel>
         </div>
       )}
 
@@ -315,8 +317,10 @@ export default function SyncTab() {
       />
 
       {/* 블로그 싱크 */}
-      <div className="bg-white border border-base-200 rounded p-4">
-        <h3 className="text-xs font-semibold text-base-600 mb-2">블로그</h3>
+      <Panel variant="card">
+        <SectionTitle as="h3" size="sm" className="mb-2">
+          블로그
+        </SectionTitle>
         <div className="flex items-center gap-3 flex-wrap">
           <Button onClick={() => blogSyncMutation.mutate()} disabled={blogSyncMutation.isPending}>
             {blogSyncMutation.isPending ? 'RSS 싱크 중...' : 'RSS 전체 싱크'}
@@ -332,11 +336,13 @@ export default function SyncTab() {
             <span className="text-xs text-base-700">자동 싱크</span>
           </label>
         </div>
-      </div>
+      </Panel>
 
       {/* 프로필 새로고침 */}
-      <div className="bg-white border border-base-200 rounded p-4">
-        <h3 className="text-xs font-semibold text-base-600 mb-2">프로필</h3>
+      <Panel variant="card">
+        <SectionTitle as="h3" size="sm" className="mb-2">
+          프로필
+        </SectionTitle>
         <div className="flex items-center gap-3 flex-wrap">
           <Button
             onClick={() => profileRefreshMutation.mutate()}
@@ -356,13 +362,15 @@ export default function SyncTab() {
             <span className="text-xs text-base-700">자동 새로고침</span>
           </label>
         </div>
-      </div>
+      </Panel>
 
       {/* 테코톡 */}
-      <div className="bg-white border border-base-200 rounded p-4 space-y-3">
+      <Panel variant="card" className="space-y-3">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h3 className="text-xs font-semibold text-base-600">테코톡</h3>
+            <SectionTitle as="h3" size="sm">
+              테코톡
+            </SectionTitle>
             <p className="text-[11px] text-base-400 mt-1">
               최신 업로드:{' '}
               {latestTecoTalk ? `${latestTecoTalk.title} · ${formatDate(latestTecoTalk.uploadedAt)}` : '없음'}
@@ -403,20 +411,23 @@ export default function SyncTab() {
             <p className="font-semibold text-danger-900">{tecoTalkStatusCounts.unmatched}</p>
           </div>
         </div>
-      </div>
+      </Panel>
 
       {/* 컨트롤 */}
-      <div className="bg-white border border-base-200 rounded p-4 space-y-3">
-        <h3 className="text-xs font-semibold text-base-600">미션 싱크</h3>
+      <Panel variant="card" className="space-y-3">
+        <SectionTitle as="h3" size="sm">
+          미션 싱크
+        </SectionTitle>
         <div className="flex items-center gap-3 flex-wrap">
           <div>
-            <label className="text-xs text-base-500 block mb-1">기수 (선택)</label>
-            <input
+            <FieldLabel>기수 (선택)</FieldLabel>
+            <TextInput
               type="number"
               value={cohortInput}
               onChange={(e) => setCohortInput(e.target.value)}
               placeholder="예: 9"
-              className="border border-base-300 rounded px-2 py-1.5 text-sm w-20"
+              size="sm"
+              className="w-20"
               disabled={!!running}
             />
           </div>
@@ -442,11 +453,13 @@ export default function SyncTab() {
             )}
           </div>
         </div>
-      </div>
+      </Panel>
 
       {activeQueueJobs.length > 0 && (
-        <div className="bg-white border border-base-200 rounded p-4">
-          <h3 className="text-xs font-semibold text-base-600 mb-3">현재 싱크 작업 ({activeQueueJobs.length})</h3>
+        <Panel variant="card">
+          <SectionTitle as="h3" size="sm" className="mb-3">
+            현재 싱크 작업 ({activeQueueJobs.length})
+          </SectionTitle>
           <div className="max-h-64 overflow-y-auto rounded border border-base-200">
             <Table size="xs">
               <THead>
@@ -500,7 +513,7 @@ export default function SyncTab() {
               </TBody>
             </Table>
           </div>
-        </div>
+        </Panel>
       )}
 
       {/* 로그 */}

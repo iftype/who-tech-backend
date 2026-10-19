@@ -5,6 +5,8 @@ import { showToast } from '../components/ui/Toast.js';
 import { adminApi } from '../lib/admin-api.js';
 import { queryKeys } from '../lib/query-keys.js';
 import { Button } from '../components/ui/Button.js';
+import { Select, TextInput } from '../components/ui/Field.js';
+import { EmptyState, Panel, SectionTitle } from '../components/ui/Section.js';
 
 export default function PersonTab() {
   const queryClient = useQueryClient();
@@ -64,25 +66,20 @@ export default function PersonTab() {
   const unlinkedMembers = members.filter((m) => !persons.some((p) => p.members.some((pm) => pm.id === m.id)));
 
   if (isLoading) {
-    return <div className="py-12 text-center text-base-400 text-sm">로딩 중...</div>;
+    return <EmptyState>로딩 중...</EmptyState>;
   }
 
   return (
     <div className="space-y-6">
       <section>
-        <h2 className="text-sm font-semibold text-base-700 mb-3">Person 생성</h2>
+        <SectionTitle className="mb-3">Person 생성</SectionTitle>
         <div className="flex gap-2 flex-wrap">
-          <input
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            placeholder="표시 이름"
-            className="border border-base-300 rounded px-3 py-1.5 text-sm"
-          />
-          <input
+          <TextInput value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="표시 이름" />
+          <TextInput
             value={newNote}
             onChange={(e) => setNewNote(e.target.value)}
             placeholder="메모 (선택)"
-            className="border border-base-300 rounded px-3 py-1.5 text-sm flex-1 min-w-[200px]"
+            className="flex-1 min-w-[200px]"
           />
           <Button onClick={() => createMutation.mutate()} disabled={!newName.trim() || createMutation.isPending}>
             생성
@@ -91,10 +88,10 @@ export default function PersonTab() {
       </section>
 
       <section>
-        <h2 className="text-sm font-semibold text-base-700 mb-3">Person 목록 ({persons.length})</h2>
+        <SectionTitle className="mb-3">Person 목록 ({persons.length})</SectionTitle>
         <div className="space-y-3">
           {persons.map((p) => (
-            <div key={p.id} className="bg-white border border-base-200 rounded p-4 space-y-2">
+            <Panel key={p.id} variant="card" className="space-y-2">
               <div className="flex items-center justify-between">
                 <div>
                   <span className="font-medium text-base-900">{p.displayName ?? '(이름 없음)'}</span>
@@ -140,18 +137,14 @@ export default function PersonTab() {
 
               {linkingPersonId === p.id && (
                 <div className="flex gap-2 items-center">
-                  <select
-                    value={linkMemberId}
-                    onChange={(e) => setLinkMemberId(e.target.value)}
-                    className="border border-base-300 rounded px-2 py-1 text-sm"
-                  >
+                  <Select value={linkMemberId} onChange={(e) => setLinkMemberId(e.target.value)} size="xs">
                     <option value="">멤버 선택</option>
                     {unlinkedMembers.map((m) => (
                       <option key={m.id} value={m.id}>
                         {m.nickname ?? m.githubId} ({m.githubId})
                       </option>
                     ))}
-                  </select>
+                  </Select>
                   <button
                     onClick={() => {
                       const mid = Number(linkMemberId);
@@ -164,9 +157,9 @@ export default function PersonTab() {
                   </button>
                 </div>
               )}
-            </div>
+            </Panel>
           ))}
-          {persons.length === 0 && <div className="py-8 text-center text-base-400 text-sm">Person 없음</div>}
+          {persons.length === 0 && <EmptyState size="md">Person 없음</EmptyState>}
         </div>
       </section>
     </div>

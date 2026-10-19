@@ -6,6 +6,7 @@ import { adminApi } from '../lib/admin-api.js';
 import { queryKeys } from '../lib/query-keys.js';
 import { Table, TableFrame, TBody, THead, Td, Th } from '../components/ui/Table.js';
 import { Badge, type BadgeTone } from '../components/ui/Badge.js';
+import { EmptyState, SectionTitle } from '../components/ui/Section.js';
 
 type StatusFilter = '' | 'open' | 'merged' | 'closed';
 
@@ -46,9 +47,9 @@ export default function PRTab() {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-sm font-semibold text-base-700 mb-2">
+        <SectionTitle className="mb-2">
           멤버 선택 {!membersLoading && <span className="text-base-400 font-normal">({members.length}명)</span>}
-        </h2>
+        </SectionTitle>
         {membersLoading ? (
           <div className="py-4 text-center text-base-400 text-sm">로딩 중...</div>
         ) : (
@@ -94,10 +95,10 @@ export default function PRTab() {
       {selectedMemberId && (
         <div>
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-sm font-semibold text-base-700">
+            <SectionTitle>
               {memberDetail?.nickname ?? memberDetail?.githubId}의 PR{' '}
               {!detailLoading && <span className="text-base-400 font-normal">({filteredSubmissions.length}개)</span>}
-            </h2>
+            </SectionTitle>
             <div className="flex gap-1">
               {(['', 'open', 'merged', 'closed'] as StatusFilter[]).map((s) => (
                 <button
@@ -116,9 +117,9 @@ export default function PRTab() {
           </div>
 
           {detailLoading ? (
-            <div className="py-8 text-center text-base-400 text-sm">로딩 중...</div>
+            <EmptyState size="md">로딩 중...</EmptyState>
           ) : filteredSubmissions.length === 0 ? (
-            <div className="py-8 text-center text-base-400 text-sm">PR 없음</div>
+            <EmptyState size="md">PR 없음</EmptyState>
           ) : (
             <TableFrame>
               <Table>

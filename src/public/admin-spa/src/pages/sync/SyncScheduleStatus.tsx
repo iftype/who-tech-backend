@@ -1,5 +1,6 @@
 import type { AdminStatus, MissionRepo, Workspace } from '../../lib/types.js';
 import { Table, TBody, THead, Td, Th } from '../../components/ui/Table.js';
+import { Panel, SectionTitle } from '../../components/ui/Section.js';
 
 export function SyncScheduleStatus({
   workspace,
@@ -13,10 +14,12 @@ export function SyncScheduleStatus({
   continuousRepos: MissionRepo[];
 }) {
   return (
-    <div className="bg-white border border-base-200 rounded p-4 space-y-3">
-      <h3 className="text-xs font-semibold text-base-600">싱크 스케줄 상태</h3>
+    <Panel variant="card" className="space-y-3">
+      <SectionTitle as="h3" size="sm">
+        싱크 스케줄 상태
+      </SectionTitle>
       <div className="grid grid-cols-3 gap-3">
-        <div className="bg-base-50 border border-base-200 rounded p-3">
+        <Panel>
           <div className="flex items-center justify-between">
             <span className="text-xs text-base-500">블로그 RSS 자동 싱크</span>
             <span
@@ -30,8 +33,8 @@ export function SyncScheduleStatus({
           {workspace?.blogSyncEnabled && (
             <p className="text-[10px] text-base-400 mt-1">다음 싱크까지 {remainingTime}</p>
           )}
-        </div>
-        <div className="bg-base-50 border border-base-200 rounded p-3">
+        </Panel>
+        <Panel>
           <div className="flex items-center justify-between">
             <span className="text-xs text-base-500">프로필 자동 새로고침</span>
             <span
@@ -56,13 +59,13 @@ export function SyncScheduleStatus({
               })}
             </p>
           )}
-        </div>
-        <div className="bg-base-50 border border-base-200 rounded p-3">
+        </Panel>
+        <Panel>
           <div className="flex items-center justify-between">
             <span className="text-xs text-base-500">연속 싱크 대상 레포</span>
             <span className="text-xs font-semibold text-base-900">{continuousRepos.length}개</span>
           </div>
-        </div>
+        </Panel>
       </div>
       {continuousRepos.length > 0 && (
         <div className="max-h-40 overflow-y-auto rounded border border-base-200">
@@ -92,6 +95,6 @@ export function SyncScheduleStatus({
           </Table>
         </div>
       )}
-    </div>
+    </Panel>
   );
 }

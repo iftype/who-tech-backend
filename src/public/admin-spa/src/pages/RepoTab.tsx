@@ -17,6 +17,7 @@ import {
 import { adminApi } from '../lib/admin-api.js';
 import { queryKeys } from '../lib/query-keys.js';
 import { Badge } from '../components/ui/Badge.js';
+import { EmptyState } from '../components/ui/Section.js';
 
 export default function RepoTab() {
   const [status, setStatus] = useState<StatusFilter>('');
@@ -418,7 +419,7 @@ export default function RepoTab() {
       )}
 
       {isLoading ? (
-        <div className="py-12 text-center text-base-400 text-sm">로딩 중...</div>
+        <EmptyState>로딩 중...</EmptyState>
       ) : (
         <>
           <RepoTable

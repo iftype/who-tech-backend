@@ -9,6 +9,7 @@ import MemberTable from '../components/members/MemberTable.js';
 import type { Member } from '../lib/types.js';
 import { adminApi } from '../lib/admin-api.js';
 import { queryKeys } from '../lib/query-keys.js';
+import { EmptyState, SectionTitle } from '../components/ui/Section.js';
 
 export default function MemberTab() {
   const [filters, setFilters] = useState<MemberFilters>({});
@@ -29,9 +30,9 @@ export default function MemberTab() {
     <div className="space-y-4">
       <StatCards />
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-base-700">
+        <SectionTitle>
           멤버 목록 {!loading && <span className="text-base-400 font-normal">({members.length}명)</span>}
-        </h2>
+        </SectionTitle>
       </div>
       <MemberAddForm onAdded={handleAdded} />
 
@@ -66,7 +67,7 @@ export default function MemberTab() {
         <div className="text-sm text-danger-500 bg-danger-50 border border-danger-200 rounded p-3">{error}</div>
       )}
       {loading ? (
-        <div className="py-12 text-center text-base-400 text-sm">로딩 중...</div>
+        <EmptyState>로딩 중...</EmptyState>
       ) : (
         <MemberTable members={members} onRefresh={() => void refetch()} />
       )}

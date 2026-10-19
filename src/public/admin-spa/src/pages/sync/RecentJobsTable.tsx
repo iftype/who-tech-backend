@@ -2,13 +2,16 @@ import type { SyncQueueJob } from '../../lib/types.js';
 import type { RecentSyncJob } from '../../lib/types.js';
 import { Table, TBody, THead, Td, Th } from '../../components/ui/Table.js';
 import { Badge, type BadgeTone } from '../../components/ui/Badge.js';
+import { Panel, SectionTitle } from '../../components/ui/Section.js';
 
 const JOB_STATUS_TONE: Record<string, BadgeTone> = { completed: 'success', failed: 'danger', running: 'primary' };
 
 export function RecentJobsTable({ jobs }: { jobs: (SyncQueueJob | RecentSyncJob)[] }) {
   return (
-    <div className="bg-white border border-base-200 rounded p-4">
-      <h3 className="text-xs font-semibold text-base-600 mb-3">최근 싱크 작업 ({jobs.length})</h3>
+    <Panel variant="card">
+      <SectionTitle as="h3" size="sm" className="mb-3">
+        최근 싱크 작업 ({jobs.length})
+      </SectionTitle>
       <div className="max-h-64 overflow-y-auto rounded border border-base-200">
         <Table size="xs">
           <THead>
@@ -63,6 +66,6 @@ export function RecentJobsTable({ jobs }: { jobs: (SyncQueueJob | RecentSyncJob)
           </TBody>
         </Table>
       </div>
-    </div>
+    </Panel>
   );
 }

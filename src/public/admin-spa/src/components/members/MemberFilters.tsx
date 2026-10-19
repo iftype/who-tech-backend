@@ -1,5 +1,6 @@
 import type { ChangeEvent } from 'react';
 import type { MemberFilters } from '../../hooks/useMembers.js';
+import { Select, TextInput } from '../ui/Field.js';
 
 interface Props {
   filters: MemberFilters;
@@ -11,34 +12,26 @@ export default function MemberFiltersBar({ filters, onChange }: Props) {
 
   return (
     <div className="flex flex-wrap gap-2 mb-4">
-      <input
+      <TextInput
         type="text"
         placeholder="검색 (닉네임/깃허브ID)"
         value={filters.q ?? ''}
         onChange={(e: ChangeEvent<HTMLInputElement>) => set('q', e.target.value)}
-        className="border border-base-300 rounded px-3 py-1.5 text-sm w-48"
+        className="w-48"
       />
-      <select
-        value={filters.role ?? ''}
-        onChange={(e) => set('role', e.target.value)}
-        className="border border-base-300 rounded px-3 py-1.5 text-sm"
-      >
+      <Select value={filters.role ?? ''} onChange={(e) => set('role', e.target.value)}>
         <option value="">전체 역할</option>
         <option value="crew">크루</option>
         <option value="coach">코치</option>
         <option value="reviewer">리뷰어</option>
-      </select>
-      <select
-        value={filters.track ?? ''}
-        onChange={(e) => set('track', e.target.value)}
-        className="border border-base-300 rounded px-3 py-1.5 text-sm"
-      >
+      </Select>
+      <Select value={filters.track ?? ''} onChange={(e) => set('track', e.target.value)}>
         <option value="">전체 트랙</option>
         <option value="frontend">프론트엔드</option>
         <option value="backend">백엔드</option>
         <option value="android">안드로이드</option>
-      </select>
-      <select
+      </Select>
+      <Select
         value={filters.hasBlog === undefined ? '' : String(filters.hasBlog)}
         onChange={(e) =>
           onChange({
@@ -46,12 +39,11 @@ export default function MemberFiltersBar({ filters, onChange }: Props) {
             hasBlog: e.target.value === '' ? undefined : e.target.value === 'true',
           })
         }
-        className="border border-base-300 rounded px-3 py-1.5 text-sm"
       >
         <option value="">블로그 전체</option>
         <option value="true">있음</option>
         <option value="false">없음</option>
-      </select>
+      </Select>
       <button onClick={() => onChange({})} className="text-xs text-base-400 hover:text-base-600 px-2">
         초기화
       </button>

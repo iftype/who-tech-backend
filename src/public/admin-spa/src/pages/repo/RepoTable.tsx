@@ -10,6 +10,7 @@ import {
 } from './repo-options.js';
 import { Table, TBody, THead, Td, Th } from '../../components/ui/Table.js';
 import { Badge, badgeVariants, type BadgeTone } from '../../components/ui/Badge.js';
+import { EmptyState, SectionTitle } from '../../components/ui/Section.js';
 
 const REPO_STATUS_TONE: Record<string, BadgeTone> = { active: 'success', candidate: 'highlight', excluded: 'danger' };
 // 제외(excluded)는 강조 없이 기본 회색 배지로 둔다
@@ -99,19 +100,19 @@ export function RepoTable({
   if (repos.length === 0) {
     return (
       <div className="space-y-2">
-        <h3 className="text-sm font-semibold text-base-700">{title}</h3>
-        <div className="py-8 text-center text-base-400 text-sm bg-white/90 backdrop-blur-sm border border-console-200/60 rounded-2xl">
+        <SectionTitle as="h3">{title}</SectionTitle>
+        <EmptyState size="md" className="bg-white/90 backdrop-blur-sm border border-console-200/60 rounded-2xl">
           {emptyMessage}
-        </div>
+        </EmptyState>
       </div>
     );
   }
 
   return (
     <div className="space-y-2">
-      <h3 className="text-sm font-semibold text-base-700">
+      <SectionTitle as="h3">
         {title} <span className="text-base-400 font-normal">({repos.length}개)</span>
-      </h3>
+      </SectionTitle>
       <div className="overflow-x-auto rounded-2xl border border-console-200/60">
         <Table>
           <THead>

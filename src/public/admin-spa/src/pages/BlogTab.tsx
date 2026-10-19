@@ -6,6 +6,8 @@ import { showToast } from '../components/ui/Toast.js';
 import { adminApi } from '../lib/admin-api.js';
 import { queryKeys } from '../lib/query-keys.js';
 import { Button } from '../components/ui/Button.js';
+import { EmptyState, SectionTitle } from '../components/ui/Section.js';
+import { Select, TextInput } from '../components/ui/Field.js';
 
 export default function BlogTab() {
   const [sinceMinutes, setSinceMinutes] = useState(65);
@@ -78,16 +80,12 @@ export default function BlogTab() {
         </Button>
         <div className="ml-auto flex items-center gap-2">
           <label className="text-xs text-base-500">최근</label>
-          <select
-            value={sinceMinutes}
-            onChange={(e) => setSinceMinutes(Number(e.target.value))}
-            className="border border-base-300 rounded px-2 py-1 text-sm"
-          >
+          <Select value={sinceMinutes} onChange={(e) => setSinceMinutes(Number(e.target.value))} size="xs">
             <option value={65}>65분</option>
             <option value={360}>6시간</option>
             <option value={1440}>24시간</option>
             <option value={10080}>7일</option>
-          </select>
+          </Select>
           <span className="text-xs text-base-400">새 글</span>
         </div>
       </div>
@@ -133,24 +131,26 @@ export default function BlogTab() {
 
       {teamBlog && (
         <section className="border border-base-200 rounded-lg p-4 bg-white">
-          <h3 className="mb-3 text-xs font-semibold text-base-600">팀 블로그 설정</h3>
+          <SectionTitle as="h3" size="sm" className="mb-3">
+            팀 블로그 설정
+          </SectionTitle>
           <div className="grid gap-2 sm:grid-cols-3">
-            <input
+            <TextInput
               value={teamForm.name}
               onChange={(e) => setTeamForm((v) => ({ ...v, name: e.target.value }))}
-              className="border border-base-300 rounded px-2 py-1.5 text-sm"
+              size="sm"
               placeholder="팀 이름"
             />
-            <input
+            <TextInput
               value={teamForm.blogUrl}
               onChange={(e) => setTeamForm((v) => ({ ...v, blogUrl: e.target.value }))}
-              className="border border-base-300 rounded px-2 py-1.5 text-sm"
+              size="sm"
               placeholder="블로그 URL"
             />
-            <input
+            <TextInput
               value={teamForm.rssUrl}
               onChange={(e) => setTeamForm((v) => ({ ...v, rssUrl: e.target.value }))}
-              className="border border-base-300 rounded px-2 py-1.5 text-sm"
+              size="sm"
               placeholder="RSS URL"
             />
           </div>
@@ -165,13 +165,13 @@ export default function BlogTab() {
       )}
 
       {isLoading ? (
-        <div className="py-12 text-center text-base-400 text-sm">로딩 중...</div>
+        <EmptyState>로딩 중...</EmptyState>
       ) : (
         <>
           <p className="text-xs text-base-500">{posts.length}개 포스트</p>
           <div className="space-y-2">
             {posts.length === 0 ? (
-              <div className="py-12 text-center text-base-400 text-sm">새 포스트 없음</div>
+              <EmptyState>새 포스트 없음</EmptyState>
             ) : (
               posts.map((p) => (
                 <div key={p.id} className="border border-base-200 rounded p-3">

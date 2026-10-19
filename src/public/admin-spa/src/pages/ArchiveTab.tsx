@@ -9,6 +9,8 @@ import { adminApi } from '../lib/admin-api.js';
 import { queryKeys } from '../lib/query-keys.js';
 import { Table, TableFrame, TBody, THead, Td, Th } from '../components/ui/Table.js';
 import { Button } from '../components/ui/Button.js';
+import { EmptyState, Panel, SectionTitle } from '../components/ui/Section.js';
+import { FieldLabel, Select, TextInput } from '../components/ui/Field.js';
 
 export default function ArchiveTab() {
   const queryClient = useQueryClient();
@@ -309,36 +311,33 @@ export default function ArchiveTab() {
     <div className="space-y-6">
       <div className="flex items-center gap-3 flex-wrap">
         <div>
-          <label className="text-xs text-base-500 block mb-1">기수 (필수)</label>
-          <input
+          <FieldLabel>기수 (필수)</FieldLabel>
+          <TextInput
             type="number"
             value={cohort}
             onChange={(e) => setCohort(e.target.value)}
             placeholder="예: 8"
-            className="border border-base-300 rounded px-2 py-1.5 text-sm w-20"
+            size="sm"
+            className="w-20"
           />
         </div>
         <div>
-          <label className="text-xs text-base-500 block mb-1">트랙 (선택)</label>
-          <select
-            value={track}
-            onChange={(e) => setTrack(e.target.value)}
-            className="border border-base-300 rounded px-2 py-1.5 text-sm"
-          >
+          <FieldLabel>트랙 (선택)</FieldLabel>
+          <Select value={track} onChange={(e) => setTrack(e.target.value)} size="sm">
             <option value="">전체</option>
             <option value="frontend">frontend</option>
             <option value="backend">backend</option>
             <option value="android">android</option>
-          </select>
+          </Select>
         </div>
       </div>
 
       {Number.isFinite(cohortNum) && cohortNum > 0 && (
-        <div className="bg-white border border-base-200 rounded p-4 space-y-4">
+        <Panel variant="card" className="space-y-4">
           <div className="flex items-center justify-between flex-wrap gap-2">
-            <h3 className="text-sm font-semibold text-base-700">
+            <SectionTitle as="h3">
               기수별 레포 순서 <span className="text-base-400 font-normal">({filteredRepos.length}개)</span>
-            </h3>
+            </SectionTitle>
             <div className="flex items-center gap-2 flex-wrap">
               <Button
                 onClick={() => autoFillMutation.mutate()}
@@ -360,7 +359,7 @@ export default function ArchiveTab() {
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
-            <input
+            <TextInput
               type="text"
               value={searchQuery}
               onChange={(e) => {
@@ -368,12 +367,14 @@ export default function ArchiveTab() {
                 setSelectedRepoId('');
               }}
               placeholder="레포 검색..."
-              className="border border-base-300 rounded px-2 py-1.5 text-sm w-40"
+              size="sm"
+              className="w-40"
             />
-            <select
+            <Select
               value={selectedRepoId}
               onChange={(e) => setSelectedRepoId(e.target.value)}
-              className="border border-base-300 rounded px-2 py-1.5 text-sm min-w-[200px]"
+              size="sm"
+              className="min-w-[200px]"
             >
               <option value="">레포 선택 ({availableRepos.length}개)</option>
               {availableRepos.map((r) => (
@@ -381,7 +382,7 @@ export default function ArchiveTab() {
                   {r.name} {r.track ? `(${r.track})` : ''}
                 </option>
               ))}
-            </select>
+            </Select>
             <Button
               onClick={handleAddRepo}
               disabled={addRepoMutation.isPending || !selectedRepoId}
@@ -393,7 +394,7 @@ export default function ArchiveTab() {
           </div>
 
           {reposLoading ? (
-            <div className="py-8 text-center text-base-400 text-sm">로딩 중...</div>
+            <EmptyState size="md">로딩 중...</EmptyState>
           ) : (
             <>
               {trackRepos.length > 0 && (
@@ -435,9 +436,7 @@ export default function ArchiveTab() {
                 </div>
               )}
               {filteredRepos.length === 0 && (
-                <div className="py-8 text-center text-base-400 text-sm">
-                  등록된 레포가 없습니다. 자동 채우기를 사용하거나 직접 추가하세요.
-                </div>
+                <EmptyState size="md">등록된 레포가 없습니다. 자동 채우기를 사용하거나 직접 추가하세요.</EmptyState>
               )}
 
               {filteredRepos.length > 0 && (
@@ -469,7 +468,7 @@ export default function ArchiveTab() {
               )}
             </>
           )}
-        </div>
+        </Panel>
       )}
 
       {logs.length > 0 && (

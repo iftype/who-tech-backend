@@ -10,6 +10,7 @@ import { queryKeys } from '../../lib/query-keys.js';
 import { Badge } from '../ui/Badge.js';
 import { Table, TableFrame, TBody, THead, Td, Th } from '../ui/Table.js';
 import { Button } from '../ui/Button.js';
+import { EmptyState } from '../ui/Section.js';
 
 type SortKey = 'nickname' | 'cohort' | 'githubId' | '_count.submissions' | '_count.blogPosts';
 
@@ -521,7 +522,7 @@ export default function MemberTable({ members, onRefresh }: Props) {
             ))}
           </TBody>
         </Table>
-        {sorted.length === 0 && <div className="py-12 text-center text-base-400 text-sm">멤버 없음</div>}
+        {sorted.length === 0 && <EmptyState>멤버 없음</EmptyState>}
       </TableFrame>
 
       <Modal

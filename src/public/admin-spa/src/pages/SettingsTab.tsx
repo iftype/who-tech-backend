@@ -6,6 +6,8 @@ import { showToast } from '../components/ui/Toast.js';
 import { adminApi } from '../lib/admin-api.js';
 import { queryKeys } from '../lib/query-keys.js';
 import { Button } from '../components/ui/Button.js';
+import { FieldLabel, TextInput } from '../components/ui/Field.js';
+import { EmptyState, SectionTitle } from '../components/ui/Section.js';
 
 export default function SettingsTab() {
   const queryClient = useQueryClient();
@@ -111,13 +113,13 @@ export default function SettingsTab() {
   };
 
   if (workspaceLoading) {
-    return <div className="py-12 text-center text-base-400 text-sm">로딩 중...</div>;
+    return <EmptyState>로딩 중...</EmptyState>;
   }
 
   return (
     <div className="space-y-6 max-w-2xl">
       <section>
-        <h2 className="text-sm font-semibold text-base-700 mb-3">워크스페이스</h2>
+        <SectionTitle className="mb-3">워크스페이스</SectionTitle>
         <form onSubmit={saveWorkspace} className="space-y-3 bg-base-50 border border-base-200 rounded p-4">
           <label className="flex items-center gap-2 cursor-pointer">
             <input
@@ -131,7 +133,7 @@ export default function SettingsTab() {
             {saveWorkspaceMutation.isPending && <span className="text-xs text-base-400">저장 중...</span>}
           </label>
           <div>
-            <label className="text-xs text-base-500 block mb-1">기수 규칙 (JSON)</label>
+            <FieldLabel>기수 규칙 (JSON)</FieldLabel>
             <textarea
               value={cohortRulesText}
               onChange={(e) => setCohortRulesText(e.target.value)}
@@ -146,13 +148,13 @@ export default function SettingsTab() {
       </section>
 
       <section>
-        <h2 className="text-sm font-semibold text-base-700 mb-3">금지어 ({bannedWords.length})</h2>
+        <SectionTitle className="mb-3">금지어 ({bannedWords.length})</SectionTitle>
         <form onSubmit={addBannedWord} className="flex gap-2 mb-3">
-          <input
+          <TextInput
             value={newWord}
             onChange={(e) => setNewWord(e.target.value)}
             placeholder="추가할 금지어"
-            className="border border-base-300 rounded px-3 py-1.5 text-sm flex-1"
+            className="flex-1"
           />
           <Button type="submit" disabled={addBannedWordMutation.isPending || !newWord.trim()} tone="neutral" size="md">
             추가
@@ -174,13 +176,13 @@ export default function SettingsTab() {
       </section>
 
       <section>
-        <h2 className="text-sm font-semibold text-base-700 mb-3">무시 도메인 ({ignoredDomains.length})</h2>
+        <SectionTitle className="mb-3">무시 도메인 ({ignoredDomains.length})</SectionTitle>
         <form onSubmit={addIgnoredDomain} className="flex gap-2 mb-3">
-          <input
+          <TextInput
             value={newDomain}
             onChange={(e) => setNewDomain(e.target.value)}
             placeholder="예: example.com"
-            className="border border-base-300 rounded px-3 py-1.5 text-sm flex-1"
+            className="flex-1"
           />
           <Button
             type="submit"
