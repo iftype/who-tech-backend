@@ -3,8 +3,13 @@
 
 export type SyncProgress = { total: number; processed: number; synced: number; percent: number; phase: string };
 
+export type RepoSyncFailure = { prNumber: number; prUrl: string; error: string };
+
 export interface RepoSyncRunner {
-  executeRepoSync(repoId: number, onProgress?: (progress: SyncProgress) => void): Promise<{ synced: number }>;
+  executeRepoSync(
+    repoId: number,
+    onProgress?: (progress: SyncProgress) => void,
+  ): Promise<{ synced: number; failures?: RepoSyncFailure[] }>;
 }
 
 export type BlogSyncSource = 'manual' | 'github-actions' | 'scheduler';

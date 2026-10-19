@@ -82,8 +82,8 @@ export function createSyncAdminService(deps: {
       return syncService.syncCohortRepoList(octokit, workspace.id, cohort, onProgress);
     },
 
-    createJob: (type: SyncJobType, cohort?: number, repoId?: number, blogSource?: string): string => {
-      return queue.enqueue(type, cohort, repoId, blogSource);
+    createJob: (type: SyncJobType, cohort?: number, repoId?: number, blogSource?: string, label?: string): string => {
+      return queue.enqueue(type, cohort, repoId, blogSource, label);
     },
 
     getJobs: () => queue.getJobs(),

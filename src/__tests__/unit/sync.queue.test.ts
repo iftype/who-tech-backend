@@ -79,3 +79,63 @@ describe('createSyncQueue', () => {
     await waitDone(queue, nextId);
   });
 });
+
+describe('createSyncQueue repo jobs', () => {
+  it('should keep the label, step progress and PR failures of a repo job', async () => {
+    const executeRepoSync = jest.fn(async (_id: number, onProgress?: (p: unknown) => void) => {
+      await new Promise((r) => setImmediate(r)); // 구독할 틈을 준다
+      onProgress?.({ total: 4, processed: 2, synced: 1, percent: 50, phase: 'PR 처리 중' });
+      return { synced: 3, failures: [{ prNumber: 7, prUrl: 'u', error: 'boom' }] };
+    });
+    const queue = createSyncQueue({
+      syncService: {} as never,
+      activityLogService: { addLog: jest.fn(async () => undefined) } as never,
+      workspaceService: { getOrThrow: jest.fn(async () => ({ id: 1 })) } as never,
+      octokit: {} as never,
+      repoService: { executeRepoSync } as never,
+      blogAdminService: {} as never,
+    });
+    const progress: unknown[] = [];
+
+    const id = queue.enqueue('repo', undefined, 10, undefined, 'java-racingcar');
+    queue.subscribeProgress(id, (p) => progress.push(p));
+    for (let i = 0; i < 50 && queue.getJob(id)?.status !== 'completed'; i++) {
+      await new Promise((r) => setImmediate(r));
+    }
+
+    expect(executeRepoSync).toHaveBeenCalledWith(10, expect.any(Function));
+    expect(queue.getJob(id)).toMatchObject({
+      label: 'java-racingcar',
+      status: 'completed',
+      step: { total: 4, processed: 2, synced: 1, percent: 50, phase: 'PR 처리 중' },
+      result: { totalSynced: 3, reposSynced: 1 },
+      repoResult: { synced: 3, failures: [{ prNumber: 7, prUrl: 'u', error: 'boom' }] },
+    });
+    expect(progress).toEqual([{ repo: 'PR 처리 중', done: 2, total: 4, synced: 1 }]);
+  });
+
+  it('should mark the job failed when its handler throws', async () => {
+    const { queue } = makeQueue();
+    const id = queue.enqueue('cohort-repos');
+    await waitDone(queue, id);
+    expect(queue.getJob(id)).toMatchObject({ status: 'failed', error: 'cohort is required for cohort-repos job' });
+  });
+
+  it('should cancel a queued job without running it', async () => {
+    const { queue, syncService } = makeQueue();
+    let release: (v: { totalSynced: number; reposSynced: number }) => void = () => undefined;
+    syncService.syncWorkspace.mockImplementationOnce(() => new Promise((r) => (release = r)));
+    const first = queue.enqueue('workspace');
+    const second = queue.enqueue('continuous');
+
+    expect(queue.cancel(second)).toBe(true);
+    for (let i = 0; i < 50 && syncService.syncWorkspace.mock.calls.length === 0; i++) {
+      await new Promise((r) => setImmediate(r));
+    }
+    release({ totalSynced: 0, reposSynced: 0 });
+    await waitDone(queue, first);
+
+    expect(queue.getJob(second)?.status).toBe('cancelled');
+    expect(syncService.syncContinuousRepos).not.toHaveBeenCalled();
+  });
+});

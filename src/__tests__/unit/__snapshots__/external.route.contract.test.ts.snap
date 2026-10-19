@@ -30,22 +30,6 @@ exports[`external-service routes contract GET /admin/github-status null 1`] = `
 }
 `;
 
-exports[`external-service routes contract GET /admin/repos/sync-jobs/job-1 null 1`] = `
-{
-  "body": {
-    "from": "repo.getRepoSyncJob",
-  },
-  "calls": {
-    "repo.getRepoSyncJob": [
-      [
-        "job-1",
-      ],
-    ],
-  },
-  "status": 200,
-}
-`;
-
 exports[`external-service routes contract POST /admin/blog/backfill {} 1`] = `
 {
   "body": {
@@ -180,11 +164,20 @@ exports[`external-service routes contract POST /admin/repos/1/sync {} 1`] = `
 {
   "body": {},
   "calls": {
+    "repo.findRepoName": [
+      [
+        1,
+      ],
+    ],
     "sync.createJob": [
       [
         "repo",
         undefined,
         1,
+        undefined,
+        {
+          "from": "repo.findRepoName",
+        },
       ],
     ],
     "sync.getJob": [
