@@ -232,3 +232,35 @@ describe('scoreTopNicknameMatch 검색어 정제', () => {
     expect(scoreTopNicknameMatch(stats, ' 건형 ')).toBe(4);
   });
 });
+
+describe('computeNicknameStats', () => {
+  it('should be the same no matter how often or in which order submissions are counted', async () => {
+    const { computeNicknameStats } = await import('../../shared/nickname.js');
+    const subs = [
+      { title: '[2단계] 콘티 리뷰 요청', submittedAt: new Date('2026-03-09T00:00:00Z') },
+      { title: '[1단계] 콘티 제출', submittedAt: new Date('2026-03-02T00:00:00Z') },
+    ];
+    const a = computeNicknameStats(subs, new Set(['단계']));
+    const b = computeNicknameStats([...subs].reverse(), new Set(['단계']));
+    expect(a).toBe(b);
+    const stats = JSON.parse(a ?? '[]') as { nickname: string; count: number; lastSeenAt: string }[];
+    expect(stats[0]).toEqual({ nickname: '콘티', count: 2, lastSeenAt: '2026-03-09T00:00:00.000Z' });
+    expect(stats.some((s) => s.nickname === '단계')).toBe(false);
+  });
+
+  it('should keep the current nickname when it ties with the top token', async () => {
+    const { resolveDisplayNickname } = await import('../../shared/nickname.js');
+    const tie = JSON.stringify([
+      { nickname: '양수빈', count: 32, lastSeenAt: '2026-03-09T00:00:00.000Z' },
+      { nickname: '수양', count: 32, lastSeenAt: '2026-03-09T00:00:00.000Z' },
+    ]);
+    expect(resolveDisplayNickname(null, tie, '수양')).toBe('수양');
+    expect(resolveDisplayNickname(null, tie, null)).toBe('양수빈');
+    expect(resolveDisplayNickname('수동', tie, '수양')).toBe('수동');
+    const clearWinner = JSON.stringify([
+      { nickname: '양수빈', count: 33, lastSeenAt: '2026-03-09T00:00:00.000Z' },
+      { nickname: '수양', count: 32, lastSeenAt: '2026-03-09T00:00:00.000Z' },
+    ]);
+    expect(resolveDisplayNickname(null, clearWinner, '수양')).toBe('양수빈');
+  });
+});

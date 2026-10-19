@@ -67,6 +67,7 @@ function makeRepo(member: ReturnType<typeof makeMember> | null) {
   let state = member ? { ...member } : null;
   const repo = {
     findByIdWithRelations: jest.fn<(...args: unknown[]) => Promise<unknown>>().mockResolvedValue(member),
+    findSubmissionTitles: jest.fn<(...args: unknown[]) => Promise<unknown>>(async () => member?.submissions ?? []),
     update: jest.fn<(id: number, data: Record<string, unknown>) => Promise<unknown>>(async (_id, data) => {
       state = { ...state!, ...data };
       return state;
@@ -95,6 +96,18 @@ describe('refreshMemberProfileById', () => {
   });
 
   describe('nickname', () => {
+    it('should count every submission, not only the 50 most recent ones', async () => {
+      const member = makeMember({ submissions: [sub('콘티')] });
+      const { repo, memberRepo } = makeRepo(member);
+      // 상세 include는 최근 50건만 싣는다. 전체 제목은 따로 읽는다
+      repo.findSubmissionTitles.mockResolvedValue(Array.from({ length: 60 }, () => sub('콘티')));
+
+      await refreshMemberProfileById(10, NO_BANNED, false, memberRepo, octokit);
+
+      const data = repo.update.mock.calls[0]?.[1] as { nicknameStats: string };
+      expect(JSON.parse(data.nicknameStats)[0]).toMatchObject({ nickname: '콘티', count: 60 });
+    });
+
     it('should rebuild nickname stats from PR titles without banned words', async () => {
       const { repo, memberRepo } = makeRepo(makeMember({ submissions: [sub('가람 봇'), sub('가람'), sub('봇')] }));
 
