@@ -34,7 +34,7 @@ paths:
 ## 주의사항
 
 - `syncMode=once` 레포는 초기 수집 후 재실행 안 함
-- maxPages 설정으로 대형 레포 수집량 제한 (현재 30)
+- 수집량 상한: 전체 싱크 30페이지, 증분 싱크는 오래된 PR을 만날 때까지 최대 10페이지
 - 전체 싱크 시 `sort: 'created', direction: 'asc'` → 오래된 PR부터 수집
 - `lastSyncAt` 초기화 시 해당 레포 전체 재수집
 - 자세한 내용: `.claude/docs/sync.md`

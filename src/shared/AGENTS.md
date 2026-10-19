@@ -44,13 +44,24 @@ Tracks GitHub username history and decides when to refresh cached profile data.
 - `mergePreviousGithubIds(raw, current, next)` — accumulates previous IDs into a JSON string while deduplicating and removing the current active ID
 - `shouldRefreshProfile(profileFetchedAt, staleHours?)` — returns `true` if the cached profile is older than the given threshold (default 24 hours)
 
+### `blog.ts` guards
+
+- `matchesDomain(host, domain)` — ignored domains match only on a dot boundary (`x.com` no longer drops `netflix.com`)
+- `isPublicHostname(host)` — blog URLs come from GitHub profiles (outside input). Loopback, private, link-local (cloud metadata), CGNAT, multicast, single-label and numeric-IP hosts are rejected; `infra/rss/safe-fetch.ts` re-checks every redirect hop
+
 ### `http.ts`
 
-Error class and Express route wrapper for async handlers.
+HTTP error class.
 
 - `HttpError(statusCode, message)` — throwable error that carries an HTTP status code
 - `badRequest(message)` — throws `HttpError(400, message)`
-- `asyncHandler(handler)` — wraps an async Express handler so rejected promises are forwarded to `next()`
+
+### `errors.ts`
+
+Domain errors compared by type, never by message string.
+
+- `CancelledError` (message `'cancelled'`) and `throwIfCancelled(signal)` — sync cancellation
+- `NotFoundError(message)` — `HttpError(404)`; admin answers `404 { message }`, the public refresh route answers `404 { error }`
 
 ### `member-cohort.ts`
 
@@ -68,8 +79,9 @@ Nickname extraction, normalization, frequency tracking, and display resolution.
 - `normalizeNickname(nickname)` — strips brackets, special characters, and trailing punctuation
 - `parseNicknameStats(value)` / `stringifyNicknameStats(stats)` — JSON serialization helpers for the `nicknameStats` column
 - `isValidNickname(nickname)` — basic length guard (max 20 characters)
-- `mergeNicknameStat(existingValue, nickname, submittedAt)` — increments the count for an existing nickname or appends a new one, then re-sorts by frequency and recency
-- `resolveDisplayNickname(manual, stats, fallback)` — picks the best display name in this order: manual override, most frequent nickname from stats, normalized fallback
+- `mergeNicknameStat(existingValue, nickname, submittedAt)` — adds one occurrence (building block)
+- `computeNicknameStats(submissions, bannedWords)` — recounts from all submission titles; idempotent. Used by sync and profile refresh
+- `resolveDisplayNickname(manual, stats, current)` — manual override, then the most frequent token (the current nickname wins a tie), then the normalized fallback
 
 ### `prisma-error.ts`
 
@@ -130,7 +142,7 @@ Shared TypeScript interfaces and type aliases used by multiple features.
 Every protected Express route follows this order:
 
 ```
-adminAuth → route handler (wrapped in asyncHandler) → errorHandler
+adminAuth → async route handler → errorHandler
 ```
 
 1. `adminAuth` intercepts unauthenticated requests before they reach business logic
@@ -139,23 +151,9 @@ adminAuth → route handler (wrapped in asyncHandler) → errorHandler
 
 ---
 
-## AsyncHandler Pattern
+## Async Route Handlers
 
-All async route handlers must be wrapped with `asyncHandler` so that unhandled promise rejections are passed to Express error middleware instead of crashing the process.
-
-Example usage:
-
-```typescript
-router.get(
-  '/items',
-  asyncHandler(async (req, res) => {
-    const items = await service.findAll();
-    res.json(items);
-  }),
-);
-```
-
-Without the wrapper, a rejected promise inside the handler would produce an unhandled rejection. With the wrapper, the same rejection is forwarded as `next(error)` and handled by `errorHandler`.
+Express 5 forwards a rejected promise from an async handler to `next(error)`, so handlers are plain `async (req, res) => {}` — the old `asyncHandler` wrapper was removed (75 call sites). Throw `HttpError`/`NotFoundError` (or call `badRequest`) and `errorHandler` formats the JSON response.
 
 ---
 

@@ -57,12 +57,12 @@ fetchRepoPRs(octokit, org, repo)
   → syncRepo(octokit, workspaceId, org, repo, cohortRules)
     → fetchAndParse()         # fetch PRs + load banned words / ignored domains
     → for each submission:
-      → find existing member
+      → syncWriteRepo.findTarget()   # slim select: member fields + previous ids + submission titles
       → skip if common mission + unknown member
-      → mergeNicknameStat()   # update nickname frequency stats
-      → resolveDisplayNickname()
-      → resolveProfile()      # fetch blog candidates + RSS probe
-      → upsertMemberAndSubmission()
+      → computeNicknameStats()       # recount from ALL submission titles (idempotent)
+      → resolveDisplayNickname()     # ties keep the current nickname
+      → resolveProfile()             # fetch blog candidates + RSS probe
+      → syncWriteRepo.applyPullRequest()  # ONE transaction: member, previous ids, participation, submission
     → missionRepoRepo.touch()  # update lastSyncAt
 ```
 
@@ -70,10 +70,10 @@ fetchRepoPRs(octokit, org, repo)
 
 `fetchRepoPRs` uses two modes depending on `lastSyncAt`:
 
-| Mode        | Condition           | Behavior                                                            |
-| ----------- | ------------------- | ------------------------------------------------------------------- |
-| Incremental | `lastSyncAt` exists | Fetch 1 page, filter by `updated_at > since` (with 5-minute buffer) |
-| Full        | No `lastSyncAt`     | Fetch up to `maxPages` (30), sorted by `created_at asc`             |
+| Mode        | Condition           | Behavior                                                                  |
+| ----------- | ------------------- | ------------------------------------------------------------------------- |
+| Incremental | `lastSyncAt` exists | Page until a PR older than `since` (5-minute buffer), safety cap 10 pages |
+| Full        | No `lastSyncAt`     | Fetch up to `maxPages` (30), sorted by `created_at asc`                   |
 
 All PR states are collected: `open`, `merged`, and `closed`.
 
@@ -197,9 +197,9 @@ The module uses `@octokit/plugin-throttling` to handle GitHub rate limits automa
 
 ### Throttling Configuration
 
-- `onRateLimit` and `onSecondaryRateLimit` both return `true`, enabling automatic retry
-- Retry wait time is provided by the plugin based on GitHub's `Retry-After` headers
-- Warnings are logged via `octokit.log.warn`
+- `shouldRetryRateLimit(retryAfter, retryCount)`: retry at most twice and only when the wait is ≤ 60s
+- Otherwise the request fails, the repo is recorded as failed (activity log) and the loop moves on — the single queue worker never sleeps until the hourly reset
+- Warnings (`retrying` / `giving up`) are logged via `octokit.log.warn`
 
 ### AbortSignal Integration
 
@@ -207,7 +207,8 @@ All GitHub API calls accept an optional `AbortSignal`:
 
 - Passed via `request: { signal }` in Octokit options
 - When a sync job is cancelled, the abort signal stops in-flight HTTP requests immediately
-- The sync loop checks `signal.aborted` between repos and between PRs
+- The sync loop calls `throwIfCancelled(signal)` between repos and between PRs, which throws `CancelledError` (`shared/errors.ts`, message `'cancelled'`)
+- Every repo loop rethrows `CancelledError` instead of recording it as a repo failure; a GitHub request cut by the abort is reported as a cancel, not as `repo sync fetch failed`
 
 ---
 
@@ -261,21 +262,23 @@ PR titles are split on non-Korean characters (`[^가-힣]+`). Each Korean token 
 ]
 ```
 
-### Merging Rules
+### Counting Rules
 
-`mergeNicknameStat(existingStats, token, submittedAt)`:
+`computeNicknameStats(submissions, bannedWords)` recounts from scratch:
 
-- If the token already exists, increments `count` and updates `lastSeenAt`
-- If new, appends with `count: 1`
-- Invalid nicknames (length > 20) are skipped
+- Every submission title of the member (including the PR being processed) is tokenized; each token adds 1
+- Re-processing the same PR (5-minute overlap, resync) gives the same result — the old incremental `+1` inflated counts
+- Oldest submissions first, so `lastSeenAt` is the latest occurrence
+- Invalid nicknames (length > 20) and banned words are skipped
 - Stats are sorted by `count` desc, then `lastSeenAt` desc
+- Profile refresh uses the same function over **all** submissions (it used to see only the latest 50)
 
 ### Display Nickname Resolution
 
 `resolveDisplayNickname(manualNickname, statsValue, fallbackNickname)`:
 
 1. If a `manualNickname` is set, use it
-2. Otherwise, use the highest-frequency nickname from stats
+2. Otherwise, use the highest-frequency nickname from stats — but if the current nickname ties with the top count, keep it (PR titles often contain both the crew nickname and the real name the same number of times)
 3. Otherwise, normalize and use the `fallbackNickname`
 
 ### Banned Words
@@ -292,10 +295,12 @@ Tokens matching banned words (from `BannedWordRepository`) are excluded from sta
 - `touch(id)` — updates `lastSyncAt` after a repo finishes syncing
 - Also provides `count`, `create`, `update`, and bulk deletion with cascade
 
-### SubmissionRepository
+### SyncWriteRepository (`db/repositories/sync-write.repository.ts`)
 
-- `upsert(args)` — the only method; upserts submissions by unique key `(prNumber, missionRepoId)`
-- On update, refreshes `memberId`, `title`, `prUrl`, and `status`
+- `findTarget(githubUserId, githubId, workspaceId)` — by user id first, then login; slim `select` with previous ids and submission titles
+- `applyPullRequest(input, participationIds)` — one `$transaction`: member upsert by `(githubUserId, workspaceId)`, previous-id sync, crew participation, submission upsert by `(prNumber, missionRepoId)`. A failure rolls everything back
+- Cohort/role ids are cached per sync run and only after the transaction commits (a rolled-back id never leaks)
+- 5 PRs of fresh members: 153 queries before → 64 now (integration test bound)
 
 ### CohortRepoRepository
 
@@ -305,9 +310,7 @@ Tokens matching banned words (from `BannedWordRepository`) are excluded from sta
 
 ### MemberRepository
 
-- `findByGithubUserId` / `findByGithubId` — look up existing members
-- `upsert(workspaceId, githubUserId, data)` — race-condition-safe upsert by `(githubUserId, workspaceId)`
-- `upsertParticipation(memberId, cohortNumber, roleName)` — links a member to a cohort with a role
+- Not used by the repo syncer any more (see `SyncWriteRepository`). Profile refresh still uses it, plus `findSubmissionTitles(memberId)` for nickname stats
 
 ---
 
