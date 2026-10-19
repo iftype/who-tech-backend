@@ -5,7 +5,6 @@ import { dirname, join } from 'path';
 import { existsSync, readFileSync } from 'fs';
 import { execSync } from 'child_process';
 import { adminAuth, bearerToken, isAdminToken } from './shared/middleware/auth.js';
-import { createAuthFailureLimiter } from './shared/middleware/rate-limit.js';
 import { errorHandler } from './shared/middleware/error.js';
 import { createContainer } from './container.js';
 
@@ -105,7 +104,6 @@ app.use(
     service: createDeployService({ scriptPath: join(__dirname, '..', 'scripts', 'deploy.sh') }),
     isAuthorized: isAdminToken,
     bearerToken,
-    limiter: createAuthFailureLimiter(),
   }),
 );
 

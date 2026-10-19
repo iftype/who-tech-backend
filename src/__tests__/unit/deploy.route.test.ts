@@ -7,13 +7,12 @@ import { join } from 'path';
 import { createDeployRouter } from '../../features/deploy/deploy.route.js';
 import { createDeployService, type DeployService } from '../../features/deploy/deploy.service.js';
 import { bearerToken, isAdminToken } from '../../shared/middleware/auth.js';
-import { createAuthFailureLimiter } from '../../shared/middleware/rate-limit.js';
 
 const ORIGINAL = process.env['ADMIN_SECRET'];
 
-function makeApp(service: DeployService, limiter = createAuthFailureLimiter({ limit: 100 })) {
+function makeApp(service: DeployService, failureLimit = 100) {
   const app = express();
-  app.use('/admin', createDeployRouter({ service, isAuthorized: isAdminToken, bearerToken, limiter }));
+  app.use('/admin', createDeployRouter({ service, isAuthorized: isAdminToken, bearerToken, failureLimit }));
   return app;
 }
 
@@ -58,7 +57,7 @@ describe('deploy router', () => {
   it('should block an IP after repeated wrong tokens but not count successful deploys', async () => {
     process.env['ADMIN_SECRET'] = 'secret';
     const service = fakeService();
-    const app = makeApp(service, createAuthFailureLimiter({ limit: 3 }));
+    const app = makeApp(service, 3);
 
     for (let i = 0; i < 5; i++) {
       expect((await request(app).post('/admin/deploy').set('Authorization', 'Bearer secret')).status).toBe(200);
