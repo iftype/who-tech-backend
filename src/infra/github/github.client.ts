@@ -11,17 +11,33 @@ export function detectCohort(submittedAt: Date, cohortRules: CohortRule[]): numb
   return cohortRules.find((rule) => rule.year === year)?.cohort ?? null;
 }
 
+const MAX_RATE_LIMIT_RETRIES = 2;
+const MAX_RATE_LIMIT_WAIT_SECONDS = 60;
+
+// GitHub 레이트리밋에 걸렸을 때 기다렸다 다시 할지. 예전에는 항상 재시도해서 시간당 한도를 다 쓰면
+// 리셋(최대 1시간)까지 싱크 큐의 단일 작업자가 멈췄다 → 짧게 기다리면 되는 경우만 2번까지 재시도하고,
+// 아니면 요청을 실패시켜 그 레포는 실패로 기록(활동 로그)하고 다음 레포로 넘어간다
+export function shouldRetryRateLimit(retryAfterSeconds: number, retryCount: number): boolean {
+  return retryCount < MAX_RATE_LIMIT_RETRIES && retryAfterSeconds <= MAX_RATE_LIMIT_WAIT_SECONDS;
+}
+
 export function createOctokit(token?: string): Octokit {
   return new ThrottledOctokit({
     auth: token,
     throttle: {
-      onRateLimit: (retryAfter, options, octokit) => {
-        octokit.log.warn(`rate limit: ${options.method} ${options.url} — retry after ${retryAfter}s`);
-        return true;
+      onRateLimit: (retryAfter, options, octokit, retryCount) => {
+        const retry = shouldRetryRateLimit(retryAfter, retryCount);
+        octokit.log.warn(
+          `rate limit: ${options.method} ${options.url} — retry after ${retryAfter}s (${retry ? 'retrying' : 'giving up'})`,
+        );
+        return retry;
       },
-      onSecondaryRateLimit: (retryAfter, options, octokit) => {
-        octokit.log.warn(`secondary rate limit: ${options.method} ${options.url} — retry after ${retryAfter}s`);
-        return true;
+      onSecondaryRateLimit: (retryAfter, options, octokit, retryCount) => {
+        const retry = shouldRetryRateLimit(retryAfter, retryCount);
+        octokit.log.warn(
+          `secondary rate limit: ${options.method} ${options.url} — retry after ${retryAfter}s (${retry ? 'retrying' : 'giving up'})`,
+        );
+        return retry;
       },
     },
   }) as unknown as Octokit;

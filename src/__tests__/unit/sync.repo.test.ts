@@ -125,6 +125,22 @@ function makeDeps(overrides: Record<string, Record<string, jest.Mock>> = {}) {
 // ─── syncRepo ────────────────────────────────────────────────────────────────
 
 describe('syncRepo', () => {
+  it('증분 싱크는 오래된 PR을 만날 때까지 여러 페이지(최대 10)를 본다 (한 창에 100건 넘게 바뀌어도 놓치지 않게)', async () => {
+    mockFetchRepoPRs.mockResolvedValue([] as never);
+    const deps = makeDeps();
+    const service = createSyncService(deps as never);
+    const lastSyncAt = new Date('2026-03-10T00:00:00Z');
+
+    await service.syncRepo({} as never, 1, 'woowacourse', makeRepo({ lastSyncAt }), COHORT_RULES);
+
+    expect(mockFetchRepoPRs).toHaveBeenCalledWith(
+      expect.anything(),
+      'woowacourse',
+      'java-racingcar',
+      expect.objectContaining({ since: new Date(lastSyncAt.getTime() - 5 * 60 * 1000), maxPages: 10 }),
+    );
+  });
+
   beforeEach(() => {
     jest.clearAllMocks();
     mockFetchRepoPRs.mockResolvedValue([] as never);
