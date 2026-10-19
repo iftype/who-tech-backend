@@ -17,6 +17,9 @@ import { parsePRsToSubmissions } from './sync.pr-parser.js';
 import type { CohortRule } from '../../shared/types/index.js';
 import { CancelledError, throwIfCancelled } from '../../shared/errors.js';
 
+const INCREMENTAL_MAX_PAGES = 10;
+const FULL_SYNC_MAX_PAGES = 30;
+
 type ProfileCacheEntry = {
   githubUserId: number | null;
   githubId: string;
@@ -52,7 +55,9 @@ export function createRepoSyncer(deps: {
     signal?: AbortSignal,
   ) => {
     const since = repo.lastSyncAt ? new Date(repo.lastSyncAt.getTime() - 5 * 60 * 1000) : undefined;
-    const maxPages = since ? 1 : 30;
+    // 증분: 마지막 싱크 이후 바뀐 PR을 오래된 PR을 만날 때까지 본다(안전 상한 10페이지 = 1,000건).
+    // 예전에는 1페이지(100건)만 봐서 마감일처럼 한 창에 100건 넘게 바뀌면 나머지를 놓쳤다
+    const maxPages = since ? INCREMENTAL_MAX_PAGES : FULL_SYNC_MAX_PAGES;
 
     const [bannedWordRows, ignoredDomainRows] = await Promise.all([
       bannedWordRepo.findAll(workspaceId),
