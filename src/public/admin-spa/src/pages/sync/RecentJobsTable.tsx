@@ -24,7 +24,8 @@ export function RecentJobsTable({ jobs }: { jobs: (SyncQueueJob | RecentSyncJob)
           </THead>
           <TBody>
             {jobs.map((j) => {
-              const isQueueJob = !('repoName' in j);
+              // 레포·블로그 작업에는 type이 없다 (블로그 작업은 repoName도 없어 그것으로는 가를 수 없음)
+              const isQueueJob = 'type' in j;
               const queueJob = j as SyncQueueJob;
               const repoJob = j as RecentSyncJob;
               return (
