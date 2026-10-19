@@ -24,7 +24,7 @@ export function useCohortRepoEditor() {
       showToast('삭제 완료');
       invalidate();
     },
-    onError: (e) => showToast(e instanceof Error ? e.message : '삭제 실패', 'error'),
+    meta: { errorMessage: '삭제 실패' },
   });
 
   const updateOrderMutation = useMutation({
@@ -33,8 +33,8 @@ export function useCohortRepoEditor() {
       setEditingOrderId(null);
       invalidate();
     },
-    onError: (e) => {
-      showToast(e instanceof Error ? e.message : '순서 변경 실패', 'error');
+    meta: { errorMessage: '순서 변경 실패' },
+    onError: () => {
       setEditingOrderId(null);
     },
   });
@@ -45,8 +45,8 @@ export function useCohortRepoEditor() {
       setEditingLevelId(null);
       invalidate();
     },
-    onError: (e) => {
-      showToast(e instanceof Error ? e.message : '레벨 변경 실패', 'error');
+    meta: { errorMessage: '레벨 변경 실패' },
+    onError: () => {
       setEditingLevelId(null);
     },
   });

@@ -45,7 +45,7 @@ export default function ArchiveTab() {
       showToast(`${result.added}개 레포 자동 추가 완료`);
       void queryClient.invalidateQueries({ queryKey: queryKeys.cohortRepos.all() });
     },
-    onError: (e) => showToast(e instanceof Error ? e.message : '자동 채우기 실패', 'error'),
+    meta: { errorMessage: '자동 채우기 실패' },
   });
 
   const runCohortReposSync = () => {

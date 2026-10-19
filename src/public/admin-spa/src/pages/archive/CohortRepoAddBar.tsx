@@ -27,7 +27,7 @@ export function CohortRepoAddBar({ cohort, cohortRepos, allRepos }: Props) {
       setSelectedRepoId('');
       void queryClient.invalidateQueries({ queryKey: queryKeys.cohortRepos.all() });
     },
-    onError: (e) => showToast(e instanceof Error ? e.message : '추가 실패', 'error'),
+    meta: { errorMessage: '추가 실패' },
   });
 
   const handleAddRepo = () => {

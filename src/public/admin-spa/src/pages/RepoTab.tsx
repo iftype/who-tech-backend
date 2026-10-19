@@ -76,7 +76,7 @@ export default function RepoTab() {
       showToast(`탐색 완료 — ${result.discovered}개 발견, ${result.created}개 생성, ${result.updated}개 갱신`);
       invalidateRepos();
     },
-    onError: (e) => showToast(e instanceof Error ? e.message : '탐색 실패', 'error'),
+    meta: { errorMessage: '탐색 실패' },
   });
 
   const continuousSyncMutation = useMutation({
@@ -85,7 +85,7 @@ export default function RepoTab() {
       showToast(`연속 싱크 완료 — ${result.totalSynced}건, ${result.reposSynced}개 레포`);
       invalidateRepos();
     },
-    onError: (e) => showToast(e instanceof Error ? e.message : '연속 싱크 실패', 'error'),
+    meta: { errorMessage: '연속 싱크 실패' },
   });
 
   const tableProps = { editing, sync, selection };

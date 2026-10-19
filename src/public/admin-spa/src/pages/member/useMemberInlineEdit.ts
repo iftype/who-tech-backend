@@ -25,7 +25,7 @@ export function useMemberInlineEdit() {
       showToast('수정 완료');
       setEditCell(null);
     },
-    onError: (e) => showToast(e instanceof Error ? e.message : '수정 실패', 'error'),
+    meta: { errorMessage: '수정 실패' },
   });
 
   const startEdit = useCallback((member: Member, field: EditableMemberField) => {

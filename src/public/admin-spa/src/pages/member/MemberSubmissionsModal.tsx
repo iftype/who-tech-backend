@@ -7,6 +7,7 @@ import type { Member, Submission } from '../../lib/types.js';
 import { adminApi } from '../../lib/admin-api.js';
 import { queryKeys } from '../../lib/query-keys.js';
 import { TextLink } from '../../components/ui/TextLink.js';
+import { toErrorMessage } from '../../lib/query-client.js';
 
 export interface SubmissionsModalState {
   member: Member;
@@ -32,7 +33,7 @@ export function MemberSubmissionsModal({ state, onChange, onRefresh }: Props) {
         void queryClient.invalidateQueries({ queryKey: queryKeys.members.all() });
         onRefresh();
       })
-      .catch((e) => showToast(e instanceof Error ? e.message : '삭제 실패', 'error'));
+      .catch((e) => showToast(toErrorMessage(e, '삭제 실패'), 'error'));
   };
 
   return (

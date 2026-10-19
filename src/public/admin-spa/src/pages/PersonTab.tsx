@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
-import { showToast } from '../components/ui/Toast.js';
 import { adminApi } from '../lib/admin-api.js';
 import { queryKeys } from '../lib/query-keys.js';
 import { Button } from '../components/ui/Button.js';
@@ -32,7 +31,7 @@ export default function PersonTab() {
       setNewNote('');
       void queryClient.invalidateQueries({ queryKey: queryKeys.persons() });
     },
-    onError: (e) => showToast(e instanceof Error ? e.message : '생성 실패', 'error'),
+    meta: { errorMessage: '생성 실패' },
   });
 
   const deleteMutation = useMutation({
@@ -40,7 +39,7 @@ export default function PersonTab() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.persons() });
     },
-    onError: (e) => showToast(e instanceof Error ? e.message : '삭제 실패', 'error'),
+    meta: { errorMessage: '삭제 실패' },
   });
 
   const linkMutation = useMutation({
@@ -51,7 +50,7 @@ export default function PersonTab() {
       setLinkMemberId('');
       void queryClient.invalidateQueries({ queryKey: queryKeys.persons() });
     },
-    onError: (e) => showToast(e instanceof Error ? e.message : '연결 실패', 'error'),
+    meta: { errorMessage: '연결 실패' },
   });
 
   const unlinkMutation = useMutation({
@@ -60,7 +59,7 @@ export default function PersonTab() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.persons() });
     },
-    onError: (e) => showToast(e instanceof Error ? e.message : '해제 실패', 'error'),
+    meta: { errorMessage: '해제 실패' },
   });
 
   const unlinkedMembers = members.filter((m) => !persons.some((p) => p.members.some((pm) => pm.id === m.id)));

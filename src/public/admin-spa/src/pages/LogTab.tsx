@@ -26,7 +26,7 @@ export default function LogTab() {
       showToast('로그 삭제 완료');
       void queryClient.invalidateQueries({ queryKey: queryKeys.activityLogs() });
     },
-    onError: (e) => showToast(e instanceof Error ? e.message : '삭제 실패', 'error'),
+    meta: { errorMessage: '삭제 실패' },
   });
 
   const filtered = logs

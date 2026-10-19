@@ -22,7 +22,7 @@ export function TecoTalkPanel({ tecoTalks }: { tecoTalks: TecoTalkAdminItem[] })
         `테코톡 싱크 완료 — ${result.matched}/${result.total} 매칭, ambiguous ${result.ambiguous}, unmatched ${result.unmatched}`,
       );
     },
-    onError: (e) => showToast(e instanceof Error ? e.message : '테코톡 싱크 실패', 'error'),
+    meta: { errorMessage: '테코톡 싱크 실패' },
   });
 
   return (

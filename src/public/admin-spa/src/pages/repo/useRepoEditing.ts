@@ -6,6 +6,7 @@ import type { MissionRepo } from '../../lib/types.js';
 import { adminApi } from '../../lib/admin-api.js';
 import { queryKeys } from '../../lib/query-keys.js';
 import { STATUS_CYCLE, type EditableField, type EditingCell } from './repo-options.js';
+import { toErrorMessage } from '../../lib/query-client.js';
 
 // 입력값을 저장할 값으로 바꾼다. 기수 목록이 숫자가 아니면 null
 function parseFieldValue(field: EditableField, rawValue: string): string | number[] | null | undefined {
@@ -36,9 +37,7 @@ export function useRepoEditing() {
       showToast('수정 완료');
       invalidate();
     },
-    onError: (e) => {
-      showToast(e instanceof Error ? e.message : '수정 실패', 'error');
-    },
+    meta: { errorMessage: '수정 실패' },
     onSettled: () => {
       setSavingField(null);
       setEditingCell(null);
@@ -51,9 +50,7 @@ export function useRepoEditing() {
       showToast('lastSyncAt 초기화 완료');
       invalidate();
     },
-    onError: (e) => {
-      showToast(e instanceof Error ? e.message : '초기화 실패', 'error');
-    },
+    meta: { errorMessage: '초기화 실패' },
   });
 
   const save = useCallback(
@@ -79,7 +76,7 @@ export function useRepoEditing() {
       await adminApi.repos.update(repo.id, data);
       invalidate();
     } catch (e) {
-      showToast(e instanceof Error ? e.message : '수정 실패', 'error');
+      showToast(toErrorMessage(e, '수정 실패'), 'error');
     }
   };
 
@@ -91,7 +88,7 @@ export function useRepoEditing() {
       showToast('삭제 완료');
       invalidate();
     } catch (e) {
-      showToast(e instanceof Error ? e.message : '삭제 실패', 'error');
+      showToast(toErrorMessage(e, '삭제 실패'), 'error');
     } finally {
       setDeleting(null);
     }

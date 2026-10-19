@@ -7,6 +7,7 @@ import { pollSyncJob } from '../../lib/api.js';
 import type { MissionRepo, SyncJob } from '../../lib/types.js';
 import { adminApi } from '../../lib/admin-api.js';
 import { queryKeys } from '../../lib/query-keys.js';
+import { toErrorMessage } from '../../lib/query-client.js';
 
 const without = <T>(set: Set<T>, value: T) => {
   const next = new Set(set);
@@ -64,7 +65,7 @@ export function useRepoSync() {
       stopPollFns.current.set(repo.id, stop);
     } catch (e) {
       addLog('err', `[${repo.name}] 싱크 요청 실패`);
-      showToast(e instanceof Error ? e.message : '싱크 실패', 'error');
+      showToast(toErrorMessage(e, '싱크 실패'), 'error');
       setSyncingRepos((prev) => without(prev, repo.id));
     }
   };

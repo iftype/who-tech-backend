@@ -21,9 +21,7 @@ export function useRepoSelection() {
       setBatchTrackValue('');
       void queryClient.invalidateQueries({ queryKey: queryKeys.repos.all() });
     },
-    onError: (e) => {
-      showToast(e instanceof Error ? e.message : '일괄 변경 실패', 'error');
-    },
+    meta: { errorMessage: '일괄 변경 실패' },
   });
 
   const toggle = useCallback((repoId: number) => {
