@@ -170,6 +170,25 @@ describe('MemberTable', () => {
     expect(screen.getByPlaceholderText('예: 9')).toHaveValue(null);
   });
 
+  it('should show saved roles in the cohort modal without reopening it', async () => {
+    apiFetch.mockImplementation(async (path: string, init?: RequestInit) =>
+      path === '/admin/members/2' && init?.method === 'PATCH'
+        ? { ...MEMBERS[1], cohorts: [{ cohort: 8, roles: ['crew', 'coach'] }] }
+        : {},
+    );
+    renderTable();
+    await userEvent.click(screen.getAllByTitle('기수/역할 편집')[0]);
+    const dialog = screen.getByText('crew2 기수/역할').closest('div')!.parentElement!;
+    expect(within(dialog).getByRole('button', { name: '코치' })).toHaveAttribute('aria-pressed', 'false');
+
+    await userEvent.click(within(dialog).getByRole('button', { name: '코치' }));
+
+    await waitFor(() =>
+      expect(within(dialog).getByRole('button', { name: '코치' })).toHaveAttribute('aria-pressed', 'true'),
+    );
+    expect(within(dialog).getByRole('button', { name: '크루' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
   it('should open submissions and blog posts, and delete a submission', async () => {
     renderTable();
     await userEvent.click(screen.getAllByTitle('PR 확인')[2]);

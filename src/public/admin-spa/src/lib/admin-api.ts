@@ -37,10 +37,11 @@ export const adminApi = {
     list: (query?: string) => apiFetch<Member[]>(query === undefined ? '/admin/members' : `/admin/members?${query}`),
     detail: (id: number) => apiFetch<Member>(`/admin/members/${id}`),
     create: (body: { githubId?: string; cohort?: number }) => apiFetch<Member>('/admin/members', json('POST', body)),
-    update: (id: number, data: object) => apiFetch(`/admin/members/${id}`, json('PATCH', data)),
+    update: (id: number, data: object) => apiFetch<Member>(`/admin/members/${id}`, json('PATCH', data)),
     remove: (id: number) => apiFetch(`/admin/members/${id}`, json('DELETE')),
     cohorts: () => apiFetch<number[]>('/admin/members/cohorts'),
-    removeCohort: (id: number, cohort: number) => apiFetch(`/admin/members/${id}/cohorts/${cohort}`, json('DELETE')),
+    removeCohort: (id: number, cohort: number) =>
+      apiFetch<Member>(`/admin/members/${id}/cohorts/${cohort}`, json('DELETE')),
     removeSubmission: (id: number, submissionId: number) =>
       apiFetch(`/admin/members/${id}/submissions/${submissionId}`, json('DELETE')),
     refreshProfile: (id: number) => apiFetch(`/admin/members/${id}/refresh-profile`, json('POST')),

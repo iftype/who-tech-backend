@@ -13,7 +13,8 @@ export function StatCards() {
 
   const cards = [
     { label: '멤버', value: status?.memberCount ?? '—' },
-    { label: '활성 레포', value: status?.activeRepoCount ?? '—' },
+    // 상태 API는 repoCount만 준다 (싱크 탭 카드와 같은 값)
+    { label: '활성 레포', value: status?.activeRepoCount ?? status?.repoCount ?? '—' },
     {
       label: '마지막 싱크',
       value: status?.lastSyncAt ? new Date(status.lastSyncAt).toLocaleString('ko-KR') : '—',

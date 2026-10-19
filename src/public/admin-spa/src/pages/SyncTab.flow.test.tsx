@@ -92,6 +92,7 @@ function mockApi() {
             message: '블로그 실패',
             startedAt: '2026-08-01T00:00:00.000Z',
             finishedAt: null,
+            source: 'manual',
           },
         ];
       default:
@@ -133,10 +134,15 @@ describe('SyncTab flow', () => {
     expect(await screen.findByText('현재 싱크 작업 (1)')).toBeInTheDocument();
     expect(screen.getByText('java-chess (2/5)')).toBeInTheDocument();
     expect(screen.getByText('기수레포 (8기)')).toBeInTheDocument();
-    // 최근 작업은 완료(없으면 시작) 시각 최신순. 블로그 작업은 repoName이 없어 큐 작업처럼 보인다(기존 동작 그대로)
+    // 최근 작업은 완료(없으면 시작) 시각 최신순. 블로그 작업은 종류·메시지를 그대로 보여 준다
     const recent = (await screen.findByText('최근 싱크 작업 (3)')).parentElement!;
     const rows = within(recent).getAllByRole('row').slice(1);
-    expect(rows.map((r) => r.lastElementChild?.textContent)).toEqual(['java-lotto — 레포 완료', '✓ 7개', '—']);
+    expect(rows.map((r) => r.lastElementChild?.textContent)).toEqual([
+      'java-lotto — 레포 완료',
+      '✓ 7개',
+      '블로그 실패',
+    ]);
+    expect(within(rows[2]!).getByText('블로그')).toBeInTheDocument();
   });
 
   it('should enqueue a cohort sync, stream its logs, and refresh status when done', async () => {

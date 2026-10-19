@@ -20,7 +20,13 @@ export function MemberCohortModal({ member, onChange, onRefresh }: Props) {
   const queryClient = useQueryClient();
   const [newCohortInput, setNewCohortInput] = useState('');
 
-  const afterChange = (message: string) => {
+  // 창은 열 때 받은 멤버를 들고 있으므로 저장 응답의 기수·역할로 바로 바꿔 보여 준다
+  const applyCohorts = (updated: Member | undefined) => {
+    if (updated?.cohorts) onChange({ ...member, cohorts: updated.cohorts });
+  };
+
+  const afterChange = (message: string, updated: Member | undefined) => {
+    applyCohorts(updated);
     void queryClient.invalidateQueries({ queryKey: queryKeys.members.all() });
     onRefresh();
     showToast(message);
@@ -29,21 +35,22 @@ export function MemberCohortModal({ member, onChange, onRefresh }: Props) {
   const updateCohortRolesMutation = useMutation({
     mutationFn: ({ memberId, cohort, roles }: { memberId: number; cohort: number; roles: string[] }) =>
       adminApi.members.update(memberId, { cohort, roles }),
-    onSuccess: () => afterChange('역할 수정 완료'),
+    onSuccess: (updated) => afterChange('역할 수정 완료', updated),
     onError: (e) => showToast(e instanceof Error ? e.message : '역할 수정 실패', 'error'),
   });
 
   const deleteCohortMutation = useMutation({
     mutationFn: ({ memberId, cohort }: { memberId: number; cohort: number }) =>
       adminApi.members.removeCohort(memberId, cohort),
-    onSuccess: () => afterChange('기수 삭제 완료'),
+    onSuccess: (updated) => afterChange('기수 삭제 완료', updated),
     onError: (e) => showToast(e instanceof Error ? e.message : '기수 삭제 실패', 'error'),
   });
 
   const addCohortMutation = useMutation({
     mutationFn: ({ memberId, cohort }: { memberId: number; cohort: number }) =>
       adminApi.members.update(memberId, { cohort }),
-    onSuccess: () => {
+    onSuccess: (updated) => {
+      applyCohorts(updated);
       void queryClient.invalidateQueries({ queryKey: queryKeys.members.all() });
       onRefresh();
       setNewCohortInput('');
@@ -108,6 +115,7 @@ export function MemberCohortModal({ member, onChange, onRefresh }: Props) {
                         key={role}
                         onClick={() => toggleCohortRole(c.cohort, c.roles, role)}
                         disabled={updateCohortRolesMutation.isPending}
+                        aria-pressed={c.roles.includes(role)}
                         className={`text-[10px] px-1.5 py-0.5 rounded border transition-colors ${c.roles.includes(role) ? 'bg-primary-100 text-primary-700 border-primary-300' : 'bg-white text-base-500 border-base-200 hover:bg-base-100'}`}
                       >
                         {ROLE_LABELS[role]}

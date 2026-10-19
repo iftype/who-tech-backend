@@ -66,6 +66,8 @@ const app = express();
 app.use(compression());
 app.use(express.json());
 app.use('/admin/ui', express.static(publicDir));
+// 사이트 루트 경로로 주는 파일. 팀 블로그 기본 아바타 '/rilog-avatar.png'는 웹 기준 경로라 어드민(이 서버)에서도 같은 경로로 준다
+app.use(express.static(join(publicDir, 'site-root'), { index: false }));
 
 app.get('/admin', (_req, res) => {
   res.redirect('/admin/ui/admin-dist/');
