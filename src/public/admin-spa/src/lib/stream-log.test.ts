@@ -35,9 +35,9 @@ describe('formatDate', () => {
 
 describe('logColor', () => {
   it('should color by log type', () => {
-    expect(logColor('done')).toBe('text-green-400');
-    expect(logColor('error')).toBe('text-red-400');
-    expect(logColor('info')).toBe('text-blue-400');
-    expect(logColor('progress')).toBe('text-gray-300');
+    expect(logColor('done')).toBe('text-success-400');
+    expect(logColor('error')).toBe('text-danger-400');
+    expect(logColor('info')).toBe('text-primary-400');
+    expect(logColor('progress')).toBe('text-base-300');
   });
 });

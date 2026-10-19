@@ -14,8 +14,8 @@ const LogTab = lazy(() => import('./pages/LogTab.js'));
 const SettingsTab = lazy(() => import('./pages/SettingsTab.js'));
 
 const PageLoader = () => (
-  <div className="flex items-center justify-center h-64 text-sm text-slate-400">
-    <div className="animate-spin h-5 w-5 border-2 border-slate-300 border-t-teal-700 rounded-full mr-2" />
+  <div className="flex items-center justify-center h-64 text-sm text-console-400">
+    <div className="animate-spin h-5 w-5 border-2 border-console-300 border-t-teal-700 rounded-full mr-2" />
     로딩 중...
   </div>
 );

@@ -5,6 +5,8 @@ import { showToast } from '../components/ui/Toast.js';
 
 import { adminApi } from '../lib/admin-api.js';
 import { queryKeys } from '../lib/query-keys.js';
+import { EmptyState } from '../components/ui/Section.js';
+import { TextInput } from '../components/ui/Field.js';
 
 type LogCategory = 'all' | 'repo' | 'blog' | 'refresh';
 
@@ -40,24 +42,24 @@ export default function LogTab() {
     });
 
   const logColor = (type: string) => {
-    if (type.includes('error')) return 'text-red-400';
-    if (type.includes('sync') && !type.includes('blog')) return 'text-blue-400';
-    if (type.includes('blog')) return 'text-green-400';
-    if (type.includes('refresh')) return 'text-purple-400';
-    if (type.includes('rate_limit')) return 'text-yellow-400';
-    return 'text-gray-300';
+    if (type.includes('error')) return 'text-danger-400';
+    if (type.includes('sync') && !type.includes('blog')) return 'text-primary-400';
+    if (type.includes('blog')) return 'text-success-400';
+    if (type.includes('refresh')) return 'text-accent-400';
+    if (type.includes('rate_limit')) return 'text-highlight-400';
+    return 'text-base-300';
   };
 
   const tabClass = (active: boolean) =>
     `px-3 py-1.5 text-xs font-medium rounded transition-colors cursor-pointer ${
-      active ? 'bg-blue-100 text-blue-700' : 'text-gray-500 hover:bg-gray-100'
+      active ? 'bg-primary-100 text-primary-700' : 'text-base-500 hover:bg-base-100'
     }`;
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1 bg-gray-50 rounded p-0.5">
+          <div className="flex items-center gap-1 bg-base-50 rounded p-0.5">
             <button onClick={() => setCategory('all')} className={tabClass(category === 'all')}>
               전체
             </button>
@@ -71,35 +73,30 @@ export default function LogTab() {
               프로필 새로고침
             </button>
           </div>
-          <input
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            placeholder="타입/메시지 필터"
-            className="border border-gray-300 rounded px-3 py-1.5 text-sm"
-          />
-          <span className="text-xs text-gray-400">{filtered.length}개</span>
+          <TextInput value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="타입/메시지 필터" />
+          <span className="text-xs text-base-400">{filtered.length}개</span>
         </div>
         <button
           onClick={() => {
             if (confirm('전체 로그를 삭제하시겠습니까?')) clearMutation.mutate();
           }}
-          className="text-xs text-red-500 hover:text-red-600 border border-red-200 rounded px-3 py-1.5 hover:bg-red-50"
+          className="text-xs text-danger-500 hover:text-danger-600 border border-danger-200 rounded px-3 py-1.5 hover:bg-danger-50"
         >
           전체 삭제
         </button>
       </div>
 
       {isLoading ? (
-        <div className="py-12 text-center text-gray-400 text-sm">로딩 중...</div>
+        <EmptyState>로딩 중...</EmptyState>
       ) : (
-        <div className="bg-gray-900 rounded border border-gray-700 p-4 font-mono text-xs max-h-[70vh] overflow-y-auto">
+        <div className="bg-base-900 rounded border border-base-700 p-4 font-mono text-xs max-h-[70vh] overflow-y-auto">
           {filtered.length === 0 ? (
-            <div className="text-gray-500 py-4">로그 없음</div>
+            <div className="text-base-500 py-4">로그 없음</div>
           ) : (
             filtered.map((l) => (
               <div key={l.id} className={`${logColor(l.type)} leading-5`}>
-                <span className="text-gray-600 mr-2">{new Date(l.createdAt).toLocaleString('ko-KR')}</span>
-                <span className="text-gray-500 mr-2">[{l.type}]</span>
+                <span className="text-base-600 mr-2">{new Date(l.createdAt).toLocaleString('ko-KR')}</span>
+                <span className="text-base-500 mr-2">[{l.type}]</span>
                 {l.message}
               </div>
             ))

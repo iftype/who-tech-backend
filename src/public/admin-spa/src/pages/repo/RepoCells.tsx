@@ -31,7 +31,7 @@ export function EditableSelectCell({
       onKeyDown={(e) => {
         if (e.key === 'Escape') onCancel();
       }}
-      className="text-xs border border-blue-300 rounded px-1 py-0.5 bg-white focus:outline-none focus:ring-1 focus:ring-blue-400 w-full disabled:opacity-50"
+      className="text-xs border border-primary-300 rounded px-1 py-0.5 bg-white focus:outline-none focus:ring-1 focus:ring-primary-400 w-full disabled:opacity-50"
     >
       {options.map((o) => (
         <option key={o.value} value={o.value}>
@@ -87,7 +87,7 @@ export function EditableTextCell({
           onCancel();
         }
       }}
-      className="text-xs border border-blue-300 rounded px-1 py-0.5 bg-white focus:outline-none focus:ring-1 focus:ring-blue-400 w-full disabled:opacity-50"
+      className="text-xs border border-primary-300 rounded px-1 py-0.5 bg-white focus:outline-none focus:ring-1 focus:ring-primary-400 w-full disabled:opacity-50"
     />
   );
 }
@@ -97,12 +97,12 @@ export function SyncProgress({ job }: { job: SyncJob }) {
   const phase = job.progress?.phase ?? job.message ?? '';
   return (
     <div className="mt-1">
-      <div className="text-[11px] text-slate-500 mb-0.5">
+      <div className="text-[11px] text-console-500 mb-0.5">
         {pct}% — {phase}
       </div>
-      <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+      <div className="w-full h-1.5 bg-console-200 rounded-full overflow-hidden">
         <div
-          className="h-full bg-gradient-to-r from-teal-700 to-sky-700 rounded-full transition-all duration-300"
+          className="h-full bg-gradient-to-r from-brand-teal to-brand-sky rounded-full transition-all duration-300"
           style={{ width: `${pct}%` }}
         />
       </div>

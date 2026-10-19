@@ -54,17 +54,17 @@ export default function LogPanel() {
   };
 
   const tagColors: Record<string, string> = {
-    ok: 'text-green-400',
-    err: 'text-red-400',
-    run: 'text-blue-400',
-    info: 'text-gray-500',
+    ok: 'text-success-400',
+    err: 'text-danger-400',
+    run: 'text-primary-400',
+    info: 'text-base-500',
   };
 
   const msgColors: Record<string, string> = {
-    ok: 'text-green-300',
-    err: 'text-red-300',
-    run: 'text-blue-300',
-    info: 'text-gray-400',
+    ok: 'text-success-300',
+    err: 'text-danger-300',
+    run: 'text-primary-300',
+    info: 'text-base-400',
   };
 
   const tagLabels: Record<string, string> = {
@@ -77,25 +77,25 @@ export default function LogPanel() {
   return (
     <div
       style={{ zoom: 'var(--admin-zoom, 1)' }}
-      className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-800 bg-slate-900 text-slate-200 font-mono text-xs shadow-[0_-4px_24px_rgba(0,0,0,0.3)]"
+      className="fixed bottom-0 left-0 right-0 z-50 border-t border-console-800 bg-console-900 text-console-200 font-mono text-xs shadow-[0_-4px_24px_rgba(0,0,0,0.3)]"
     >
       <div
-        className="flex items-center justify-between px-4 py-1.5 bg-slate-800 cursor-pointer select-none"
+        className="flex items-center justify-between px-4 py-1.5 bg-console-800 cursor-pointer select-none"
         onClick={() => setCollapsed((c) => !c)}
       >
-        <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+        <span className="text-[11px] font-semibold text-console-500 uppercase tracking-wider">
           Activity Log ({entries.length})
         </span>
         <div className="flex gap-1.5" onClick={(e) => e.stopPropagation()}>
           <button
             onClick={clear}
-            className="text-[11px] px-2 py-0.5 rounded border border-slate-700 text-slate-500 hover:bg-slate-700 hover:text-slate-200 transition-colors"
+            className="text-[11px] px-2 py-0.5 rounded border border-console-700 text-console-500 hover:bg-console-700 hover:text-console-200 transition-colors"
           >
             Clear
           </button>
           <button
             onClick={() => setCollapsed((c) => !c)}
-            className="text-[11px] px-2 py-0.5 rounded border border-slate-700 text-slate-500 hover:bg-slate-700 hover:text-slate-200 transition-colors"
+            className="text-[11px] px-2 py-0.5 rounded border border-console-700 text-console-500 hover:bg-console-700 hover:text-console-200 transition-colors"
           >
             {collapsed ? '▲' : '▼'}
           </button>
@@ -105,14 +105,14 @@ export default function LogPanel() {
         <div ref={bodyRef} className="max-h-40 overflow-y-auto py-1">
           {entries.length === 0 && (
             <div className="flex items-baseline gap-2.5 px-4 py-0.5">
-              <span className="text-slate-700 shrink-0">--:--:--</span>
-              <span className="text-slate-600 font-bold shrink-0">INF</span>
-              <span className="text-slate-500">로그 대기 중...</span>
+              <span className="text-console-700 shrink-0">--:--:--</span>
+              <span className="text-console-600 font-bold shrink-0">INF</span>
+              <span className="text-console-500">로그 대기 중...</span>
             </div>
           )}
           {entries.map((e, i) => (
-            <div key={i} className="flex items-baseline gap-2.5 px-4 py-0.5 hover:bg-slate-800/50">
-              <span className="text-slate-700 shrink-0">{formatTs(e.ts)}</span>
+            <div key={i} className="flex items-baseline gap-2.5 px-4 py-0.5 hover:bg-console-800/50">
+              <span className="text-console-700 shrink-0">{formatTs(e.ts)}</span>
               <span className={`font-bold shrink-0 ${tagColors[e.tag]}`}>{tagLabels[e.tag]}</span>
               <span className={msgColors[e.tag]}>{e.msg}</span>
             </div>

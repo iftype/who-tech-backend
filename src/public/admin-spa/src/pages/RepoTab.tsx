@@ -16,6 +16,8 @@ import {
 } from './repo/repo-options.js';
 import { adminApi } from '../lib/admin-api.js';
 import { queryKeys } from '../lib/query-keys.js';
+import { Badge } from '../components/ui/Badge.js';
+import { EmptyState } from '../components/ui/Section.js';
 
 export default function RepoTab() {
   const [status, setStatus] = useState<StatusFilter>('');
@@ -300,25 +302,25 @@ export default function RepoTab() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white/90 backdrop-blur-sm border border-slate-200/60 rounded-2xl px-4 py-3 text-xs text-slate-600">
-        <div className="font-semibold text-slate-700 mb-1.5">상태 설명</div>
+      <div className="bg-white/90 backdrop-blur-sm border border-console-200/60 rounded-2xl px-4 py-3 text-xs text-console-600">
+        <div className="font-semibold text-console-700 mb-1.5">상태 설명</div>
         <div className="flex flex-wrap gap-x-4 gap-y-1">
           <span>
-            <span className="inline-block px-1.5 py-0.5 rounded font-medium border bg-green-100 text-green-700 border-green-200 mr-1">
+            <Badge tone="success" className="inline-block mr-1">
               active
-            </span>{' '}
+            </Badge>{' '}
             전체 싱크 대상에 포함됨
           </span>
           <span>
-            <span className="inline-block px-1.5 py-0.5 rounded font-medium border bg-yellow-100 text-yellow-700 border-yellow-200 mr-1">
+            <Badge tone="highlight" className="inline-block mr-1">
               candidate
-            </span>{' '}
+            </Badge>{' '}
             후보 상태, 수동으로 active로 승인 필요
           </span>
           <span>
-            <span className="inline-block px-1.5 py-0.5 rounded font-medium border bg-red-100 text-red-700 border-red-200 mr-1">
+            <Badge tone="danger" className="inline-block mr-1">
               excluded
-            </span>{' '}
+            </Badge>{' '}
             싱크 대상에서 제외됨
           </span>
         </div>
@@ -331,7 +333,7 @@ export default function RepoTab() {
               key={s}
               onClick={() => setStatus(s)}
               className={`rounded-lg px-4 py-2 text-sm font-semibold ${
-                status === s ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                status === s ? 'bg-console-900 text-white' : 'bg-console-100 text-console-500 hover:bg-console-200'
               }`}
             >
               {s || '전체 상태'}
@@ -345,7 +347,7 @@ export default function RepoTab() {
               key={c}
               onClick={() => setTabCategory(c)}
               className={`rounded-lg px-4 py-2 text-sm font-semibold ${
-                tabCategory === c ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                tabCategory === c ? 'bg-console-900 text-white' : 'bg-console-100 text-console-500 hover:bg-console-200'
               }`}
             >
               {c || '전체 카테고리'}
@@ -358,28 +360,28 @@ export default function RepoTab() {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="레포 검색..."
-          className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm w-48 focus:outline-none focus:ring-1 focus:ring-blue-400"
+          className="border border-base-300 rounded-lg px-3 py-1.5 text-sm w-48 focus:outline-none focus:ring-1 focus:ring-primary-400"
         />
-        <span className="text-xs text-gray-400">{filteredRepos.length}개</span>
+        <span className="text-xs text-base-400">{filteredRepos.length}개</span>
         <div className="ml-auto flex gap-2">
           <button
             onClick={() => void continuousSyncMutation.mutate()}
             disabled={continuousSyncMutation.isPending || syncingRepos.size > 0}
-            className="bg-purple-600 text-white rounded-xl px-3 py-1.5 text-sm hover:bg-purple-700 disabled:opacity-40"
+            className="bg-accent-600 text-white rounded-xl px-3 py-1.5 text-sm hover:bg-accent-700 disabled:opacity-40"
           >
             {continuousSyncMutation.isPending ? '연속 싱크 중...' : '연속 싱크'}
           </button>
           <button
             onClick={() => void syncAllBase()}
             disabled={syncingRepos.size > 0}
-            className="bg-gradient-to-br from-teal-700 to-sky-700 text-white rounded-xl px-3 py-1.5 text-sm hover:opacity-90 disabled:opacity-40"
+            className="bg-gradient-to-br from-brand-teal to-brand-sky text-white rounded-xl px-3 py-1.5 text-sm hover:opacity-90 disabled:opacity-40"
           >
             Base 전체 싱크
           </button>
           <button
             onClick={() => discoverMutation.mutate()}
             disabled={discoverMutation.isPending}
-            className="bg-gradient-to-br from-teal-700 to-sky-700 text-white rounded-xl px-3 py-1.5 text-sm hover:opacity-90 disabled:opacity-40"
+            className="bg-gradient-to-br from-brand-teal to-brand-sky text-white rounded-xl px-3 py-1.5 text-sm hover:opacity-90 disabled:opacity-40"
           >
             {discoverMutation.isPending ? '탐색 중...' : '레포 탐색'}
           </button>
@@ -387,12 +389,12 @@ export default function RepoTab() {
       </div>
 
       {selectedRepoIds.size > 0 && (
-        <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-xl px-4 py-2.5">
-          <span className="text-sm font-medium text-blue-700">{selectedRepoIds.size}개 선택됨</span>
+        <div className="flex items-center gap-3 bg-primary-50 border border-primary-200 rounded-xl px-4 py-2.5">
+          <span className="text-sm font-medium text-primary-700">{selectedRepoIds.size}개 선택됨</span>
           <select
             value={batchTrackValue}
             onChange={(e) => setBatchTrackValue(e.target.value)}
-            className="text-sm border border-blue-300 rounded-lg px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-blue-400"
+            className="text-sm border border-primary-300 rounded-lg px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-primary-400"
           >
             {TRACK_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>
@@ -403,13 +405,13 @@ export default function RepoTab() {
           <button
             onClick={handleBatchTrackUpdate}
             disabled={batchTrackMutation.isPending}
-            className="text-sm px-3 py-1 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40"
+            className="text-sm px-3 py-1 rounded-lg bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-40"
           >
             {batchTrackMutation.isPending ? '변경 중...' : '일괄 변경'}
           </button>
           <button
             onClick={() => setSelectedRepoIds(new Set())}
-            className="text-sm px-3 py-1 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50"
+            className="text-sm px-3 py-1 rounded-lg border border-base-300 text-base-600 hover:bg-base-50"
           >
             선택 해제
           </button>
@@ -417,7 +419,7 @@ export default function RepoTab() {
       )}
 
       {isLoading ? (
-        <div className="py-12 text-center text-gray-400 text-sm">로딩 중...</div>
+        <EmptyState>로딩 중...</EmptyState>
       ) : (
         <>
           <RepoTable

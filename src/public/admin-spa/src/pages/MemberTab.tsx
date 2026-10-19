@@ -9,6 +9,7 @@ import MemberTable from '../components/members/MemberTable.js';
 import type { Member } from '../lib/types.js';
 import { adminApi } from '../lib/admin-api.js';
 import { queryKeys } from '../lib/query-keys.js';
+import { EmptyState, SectionTitle } from '../components/ui/Section.js';
 
 export default function MemberTab() {
   const [filters, setFilters] = useState<MemberFilters>({});
@@ -29,9 +30,9 @@ export default function MemberTab() {
     <div className="space-y-4">
       <StatCards />
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700">
-          멤버 목록 {!loading && <span className="text-gray-400 font-normal">({members.length}명)</span>}
-        </h2>
+        <SectionTitle>
+          멤버 목록 {!loading && <span className="text-base-400 font-normal">({members.length}명)</span>}
+        </SectionTitle>
       </div>
       <MemberAddForm onAdded={handleAdded} />
 
@@ -40,8 +41,8 @@ export default function MemberTab() {
           onClick={() => setCohortFilter(undefined)}
           className={`text-xs px-3 py-1 rounded border whitespace-nowrap transition-colors ${
             cohortFilter === undefined
-              ? 'bg-gray-800 text-white border-gray-800'
-              : 'border-gray-300 text-gray-600 hover:bg-gray-50'
+              ? 'bg-base-800 text-white border-base-800'
+              : 'border-base-300 text-base-600 hover:bg-base-50'
           }`}
         >
           전체
@@ -52,8 +53,8 @@ export default function MemberTab() {
             onClick={() => setCohortFilter(c)}
             className={`text-xs px-3 py-1 rounded border whitespace-nowrap transition-colors ${
               cohortFilter === c
-                ? 'bg-blue-600 text-white border-blue-600'
-                : 'border-gray-300 text-gray-600 hover:bg-gray-50'
+                ? 'bg-primary-600 text-white border-primary-600'
+                : 'border-base-300 text-base-600 hover:bg-base-50'
             }`}
           >
             {c}기
@@ -62,9 +63,11 @@ export default function MemberTab() {
       </div>
 
       <MemberFiltersBar filters={filters} onChange={setFilters} />
-      {error && <div className="text-sm text-red-500 bg-red-50 border border-red-200 rounded p-3">{error}</div>}
+      {error && (
+        <div className="text-sm text-danger-500 bg-danger-50 border border-danger-200 rounded p-3">{error}</div>
+      )}
       {loading ? (
-        <div className="py-12 text-center text-gray-400 text-sm">로딩 중...</div>
+        <EmptyState>로딩 중...</EmptyState>
       ) : (
         <MemberTable members={members} onRefresh={() => void refetch()} />
       )}

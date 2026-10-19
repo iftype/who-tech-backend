@@ -4,6 +4,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { showToast } from '../components/ui/Toast.js';
 import { adminApi } from '../lib/admin-api.js';
 import { queryKeys } from '../lib/query-keys.js';
+import { Button } from '../components/ui/Button.js';
+import { Select, TextInput } from '../components/ui/Field.js';
+import { EmptyState, Panel, SectionTitle } from '../components/ui/Section.js';
 
 export default function PersonTab() {
   const queryClient = useQueryClient();
@@ -63,51 +66,42 @@ export default function PersonTab() {
   const unlinkedMembers = members.filter((m) => !persons.some((p) => p.members.some((pm) => pm.id === m.id)));
 
   if (isLoading) {
-    return <div className="py-12 text-center text-gray-400 text-sm">로딩 중...</div>;
+    return <EmptyState>로딩 중...</EmptyState>;
   }
 
   return (
     <div className="space-y-6">
       <section>
-        <h2 className="text-sm font-semibold text-gray-700 mb-3">Person 생성</h2>
+        <SectionTitle className="mb-3">Person 생성</SectionTitle>
         <div className="flex gap-2 flex-wrap">
-          <input
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            placeholder="표시 이름"
-            className="border border-gray-300 rounded px-3 py-1.5 text-sm"
-          />
-          <input
+          <TextInput value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="표시 이름" />
+          <TextInput
             value={newNote}
             onChange={(e) => setNewNote(e.target.value)}
             placeholder="메모 (선택)"
-            className="border border-gray-300 rounded px-3 py-1.5 text-sm flex-1 min-w-[200px]"
+            className="flex-1 min-w-[200px]"
           />
-          <button
-            onClick={() => createMutation.mutate()}
-            disabled={!newName.trim() || createMutation.isPending}
-            className="bg-blue-600 text-white text-sm rounded px-4 py-1.5 hover:bg-blue-700 disabled:opacity-40"
-          >
+          <Button onClick={() => createMutation.mutate()} disabled={!newName.trim() || createMutation.isPending}>
             생성
-          </button>
+          </Button>
         </div>
       </section>
 
       <section>
-        <h2 className="text-sm font-semibold text-gray-700 mb-3">Person 목록 ({persons.length})</h2>
+        <SectionTitle className="mb-3">Person 목록 ({persons.length})</SectionTitle>
         <div className="space-y-3">
           {persons.map((p) => (
-            <div key={p.id} className="bg-white border border-gray-200 rounded p-4 space-y-2">
+            <Panel key={p.id} variant="card" className="space-y-2">
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="font-medium text-gray-900">{p.displayName ?? '(이름 없음)'}</span>
-                  {p.note && <span className="text-xs text-gray-500 ml-2">{p.note}</span>}
+                  <span className="font-medium text-base-900">{p.displayName ?? '(이름 없음)'}</span>
+                  {p.note && <span className="text-xs text-base-500 ml-2">{p.note}</span>}
                 </div>
                 <button
                   onClick={() => {
                     if (confirm('삭제하시겠습니까?')) deleteMutation.mutate(p.id);
                   }}
-                  className="text-xs text-gray-400 hover:text-red-500"
+                  className="text-xs text-base-400 hover:text-danger-500"
                 >
                   삭제
                 </button>
@@ -117,13 +111,13 @@ export default function PersonTab() {
                 {p.members.map((m) => (
                   <span
                     key={m.id}
-                    className="inline-flex items-center gap-1 bg-blue-50 border border-blue-200 text-blue-700 text-xs rounded px-2 py-1"
+                    className="inline-flex items-center gap-1 bg-primary-50 border border-primary-200 text-primary-700 text-xs rounded px-2 py-1"
                   >
                     {m.avatarUrl && <img src={m.avatarUrl} className="w-4 h-4 rounded-full" alt="" />}
                     {m.nickname ?? m.githubId}
                     <button
                       onClick={() => unlinkMutation.mutate({ personId: p.id, memberId: m.id })}
-                      className="hover:text-red-500 ml-0.5"
+                      className="hover:text-danger-500 ml-0.5"
                       title="연결 해제"
                     >
                       ✕
@@ -135,7 +129,7 @@ export default function PersonTab() {
                     setLinkingPersonId(linkingPersonId === p.id ? null : p.id);
                     setLinkMemberId('');
                   }}
-                  className="text-xs text-blue-600 hover:underline"
+                  className="text-xs text-primary-600 hover:underline"
                 >
                   + 멤버 연결
                 </button>
@@ -143,33 +137,29 @@ export default function PersonTab() {
 
               {linkingPersonId === p.id && (
                 <div className="flex gap-2 items-center">
-                  <select
-                    value={linkMemberId}
-                    onChange={(e) => setLinkMemberId(e.target.value)}
-                    className="border border-gray-300 rounded px-2 py-1 text-sm"
-                  >
+                  <Select value={linkMemberId} onChange={(e) => setLinkMemberId(e.target.value)} size="xs">
                     <option value="">멤버 선택</option>
                     {unlinkedMembers.map((m) => (
                       <option key={m.id} value={m.id}>
                         {m.nickname ?? m.githubId} ({m.githubId})
                       </option>
                     ))}
-                  </select>
+                  </Select>
                   <button
                     onClick={() => {
                       const mid = Number(linkMemberId);
                       if (mid) linkMutation.mutate({ personId: p.id, memberId: mid });
                     }}
                     disabled={!linkMemberId}
-                    className="bg-blue-600 text-white text-xs rounded px-3 py-1 hover:bg-blue-700 disabled:opacity-40"
+                    className="bg-primary-600 text-white text-xs rounded px-3 py-1 hover:bg-primary-700 disabled:opacity-40"
                   >
                     연결
                   </button>
                 </div>
               )}
-            </div>
+            </Panel>
           ))}
-          {persons.length === 0 && <div className="py-8 text-center text-gray-400 text-sm">Person 없음</div>}
+          {persons.length === 0 && <EmptyState size="md">Person 없음</EmptyState>}
         </div>
       </section>
     </div>
