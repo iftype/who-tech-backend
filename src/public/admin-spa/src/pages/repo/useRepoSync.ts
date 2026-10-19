@@ -56,6 +56,9 @@ export function useRepoSync() {
           addLog('err', `[${repo.name}] 싱크 실패: ${updated.error ?? updated.message}`);
           showToast(`${repo.name} 싱크 실패`, 'error');
           finish(repo.id);
+        } else if (updated.status === 'cancelled') {
+          addLog('err', `[${repo.name}] 싱크 취소됨`);
+          finish(repo.id);
         }
       });
       stopPollFns.current.set(repo.id, stop);

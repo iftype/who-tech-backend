@@ -51,7 +51,7 @@ export function MemberTable({ members, onRefresh }: Props) {
     initialDir: 'desc',
     getValue: getSortValue,
   });
-  const edit = useMemberInlineEdit(onRefresh);
+  const edit = useMemberInlineEdit();
   const actions = useMemberActions(onRefresh);
   const [blogModal, setBlogModal] = useState<BlogPostsModalState | null>(null);
   const [prModal, setPrModal] = useState<SubmissionsModalState | null>(null);

@@ -125,7 +125,8 @@ describe('MemberTable', () => {
     await waitFor(() => expect(calls('PATCH')).toEqual([['/admin/members/1', '{"manualNickname":"수동"}']]));
     await waitFor(() => expect(screen.queryByPlaceholderText('닉네임')).toBeNull());
     expect(showToast).toHaveBeenCalledWith('수정 완료');
-    expect(onRefresh).toHaveBeenCalled();
+    // 목록 재요청은 invalidateQueries 한 번이 맡는다 (onRefresh까지 부르면 같은 목록을 두 번 받는다)
+    expect(onRefresh).not.toHaveBeenCalled();
   });
 
   it('should save the blog when clicking outside and the track as soon as it is picked', async () => {

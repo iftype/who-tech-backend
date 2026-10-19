@@ -9,7 +9,7 @@ import { queryKeys } from '../../lib/query-keys.js';
 export type EditableMemberField = 'manualNickname' | 'blog' | 'track';
 
 // 멤버 표의 칸 단위 편집. 한 번에 한 칸만 편집하고, 칸 밖을 누르거나 Enter면 저장, Esc면 취소
-export function useMemberInlineEdit(onRefresh: () => void) {
+export function useMemberInlineEdit() {
   const queryClient = useQueryClient();
   const [editCell, setEditCell] = useState<{ memberId: number; field: EditableMemberField } | null>(null);
   const [editValue, setEditValue] = useState('');
@@ -22,7 +22,6 @@ export function useMemberInlineEdit(onRefresh: () => void) {
       adminApi.members.update(memberId, data),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.members.all() });
-      onRefresh();
       showToast('수정 완료');
       setEditCell(null);
     },
