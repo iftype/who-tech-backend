@@ -2,6 +2,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { SyncJob } from '../../lib/types.js';
 import type { SelectOption } from './repo-options.js';
 
+// 표 칸 안에서 바로 고치는 입력칸·선택칸
+const INLINE_EDIT_CLASS =
+  'text-xs border border-primary-300 rounded px-1 py-0.5 bg-white focus:outline-none focus:ring-1 focus:ring-primary-400 w-full disabled:opacity-50';
+
 export function EditableSelectCell({
   value,
   options,
@@ -31,7 +35,7 @@ export function EditableSelectCell({
       onKeyDown={(e) => {
         if (e.key === 'Escape') onCancel();
       }}
-      className="text-xs border border-primary-300 rounded px-1 py-0.5 bg-white focus:outline-none focus:ring-1 focus:ring-primary-400 w-full disabled:opacity-50"
+      className={INLINE_EDIT_CLASS}
     >
       {options.map((o) => (
         <option key={o.value} value={o.value}>
@@ -87,7 +91,7 @@ export function EditableTextCell({
           onCancel();
         }
       }}
-      className="text-xs border border-primary-300 rounded px-1 py-0.5 bg-white focus:outline-none focus:ring-1 focus:ring-primary-400 w-full disabled:opacity-50"
+      className={INLINE_EDIT_CLASS}
     />
   );
 }

@@ -1,7 +1,18 @@
+import type { ReactNode } from 'react';
+
 import type { AdminStatus, GithubStatus, TecoTalkAdminItem } from '../../lib/types.js';
 import { Panel } from '../../components/ui/Section.js';
 import { formatDate } from './sync-format.js';
 import { countTecoTalkMatches } from './tecotalk-counts.js';
+
+// 상태 카드의 이름과 큰 숫자
+function StatLabel({ children }: { children: ReactNode }) {
+  return <p className="text-xs text-base-500">{children}</p>;
+}
+
+function StatValue({ children }: { children: ReactNode }) {
+  return <p className="text-xl font-semibold text-base-900">{children}</p>;
+}
 
 interface Props {
   status: AdminStatus;
@@ -16,20 +27,20 @@ export function SyncStatusCards({ status, githubStatus, tecoTalks }: Props) {
   return (
     <div className="grid grid-cols-1 gap-3 md:grid-cols-3 xl:grid-cols-5">
       <Panel>
-        <p className="text-xs text-base-500">멤버 수</p>
-        <p className="text-xl font-semibold text-base-900">{status.memberCount}</p>
+        <StatLabel>멤버 수</StatLabel>
+        <StatValue>{status.memberCount}</StatValue>
       </Panel>
       <Panel>
-        <p className="text-xs text-base-500">활성 레포</p>
-        <p className="text-xl font-semibold text-base-900">{repoCount ?? '—'}</p>
+        <StatLabel>활성 레포</StatLabel>
+        <StatValue>{repoCount ?? '—'}</StatValue>
       </Panel>
       <Panel>
-        <p className="text-xs text-base-500">마지막 싱크</p>
+        <StatLabel>마지막 싱크</StatLabel>
         <p className="text-sm font-medium text-base-700">{formatDate(status.lastSyncAt)}</p>
       </Panel>
       <Panel>
         <div className="flex items-center justify-between gap-2">
-          <p className="text-xs text-base-500">GitHub API</p>
+          <StatLabel>GitHub API</StatLabel>
           <span
             className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
               !githubStatus
@@ -44,16 +55,14 @@ export function SyncStatusCards({ status, githubStatus, tecoTalks }: Props) {
             {!githubStatus ? '확인 중' : githubStatus.ok ? '정상' : '오류'}
           </span>
         </div>
-        <p className="text-xl font-semibold text-base-900">
-          {githubStatus?.ok ? `${githubStatus.remaining}/${githubStatus.limit}` : '—'}
-        </p>
+        <StatValue>{githubStatus?.ok ? `${githubStatus.remaining}/${githubStatus.limit}` : '—'}</StatValue>
         {githubStatus?.resetAt && <p className="text-[10px] text-base-400">reset {formatDate(githubStatus.resetAt)}</p>}
       </Panel>
       <Panel>
-        <p className="text-xs text-base-500">테코톡 매칭</p>
-        <p className="text-xl font-semibold text-base-900">
+        <StatLabel>테코톡 매칭</StatLabel>
+        <StatValue>
           {counts.matched}/{tecoTalks.length}
-        </p>
+        </StatValue>
         <p className="text-[10px] text-base-400">
           ambiguous {counts.ambiguous} · unmatched {counts.unmatched}
         </p>

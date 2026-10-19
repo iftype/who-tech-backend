@@ -1,5 +1,5 @@
 import type { Member } from '../../lib/types.js';
-import { Td } from '../../components/ui/Table.js';
+import { Td, Tr } from '../../components/ui/Table.js';
 import { ROLE_LABELS, TRACK_OPTIONS } from './member-labels.js';
 import type { MemberActions } from './useMemberActions.js';
 import type { MemberInlineEdit } from './useMemberInlineEdit.js';
@@ -17,7 +17,7 @@ export function MemberRow({ member: m, edit, actions, onOpenCohorts, onOpenSubmi
   const { cooldowns, refreshing, resyncing, recalculating } = actions;
 
   return (
-    <tr className="hover:bg-base-50">
+    <Tr>
       <Td density="compact">
         <div className="flex items-center gap-1.5">
           {m.avatarUrl && (
@@ -207,6 +207,6 @@ export function MemberRow({ member: m, edit, actions, onOpenCohorts, onOpenSubmi
           </button>
         </div>
       </Td>
-    </tr>
+    </Tr>
   );
 }

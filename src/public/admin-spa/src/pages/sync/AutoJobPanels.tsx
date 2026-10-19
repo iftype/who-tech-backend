@@ -6,6 +6,7 @@ import { Panel, SectionTitle } from '../../components/ui/Section.js';
 import type { Workspace } from '../../lib/types.js';
 import { adminApi } from '../../lib/admin-api.js';
 import { queryKeys } from '../../lib/query-keys.js';
+import { Checkbox } from '../../components/ui/Field.js';
 
 // 블로그 RSS 싱크와 프로필 새로고침: 지금 한 번 실행하는 버튼 + 정기 실행 켜기/끄기
 function AutoToggle({
@@ -21,13 +22,7 @@ function AutoToggle({
 }) {
   return (
     <label className="flex items-center gap-2 bg-base-50 border border-base-200 rounded px-3 py-1.5 cursor-pointer">
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-        disabled={disabled}
-        className="rounded"
-      />
+      <Checkbox checked={checked} onChange={(e) => onChange(e.target.checked)} disabled={disabled} />
       <span className="text-xs text-base-700">{label}</span>
     </label>
   );

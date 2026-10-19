@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { showToast } from '../../components/ui/Toast.js';
 import { Badge } from '../../components/ui/Badge.js';
 import { Panel, SectionTitle } from '../../components/ui/Section.js';
-import { Table, TBody, THead, Td, Th } from '../../components/ui/Table.js';
+import { Table, TableFrame, TBody, Td, Th, THead, Tr } from '../../components/ui/Table.js';
 import type { SyncQueueJob } from '../../lib/types.js';
 import { adminApi } from '../../lib/admin-api.js';
 import { queryKeys } from '../../lib/query-keys.js';
@@ -25,7 +25,7 @@ export function ActiveQueueJobs({ jobs }: { jobs: SyncQueueJob[] }) {
       <SectionTitle as="h3" size="sm" className="mb-3">
         현재 싱크 작업 ({jobs.length})
       </SectionTitle>
-      <div className="max-h-64 overflow-y-auto rounded border border-base-200">
+      <TableFrame className="max-h-64 overflow-y-auto">
         <Table size="xs">
           <THead>
             <tr>
@@ -39,7 +39,7 @@ export function ActiveQueueJobs({ jobs }: { jobs: SyncQueueJob[] }) {
           </THead>
           <TBody>
             {jobs.map((j) => (
-              <tr key={j.id} className="hover:bg-base-50">
+              <Tr key={j.id}>
                 <Td className="text-base-500 whitespace-nowrap">
                   {new Date(j.status === 'running' && j.startedAt ? j.startedAt : j.createdAt).toLocaleString('ko-KR')}
                 </Td>
@@ -71,11 +71,11 @@ export function ActiveQueueJobs({ jobs }: { jobs: SyncQueueJob[] }) {
                     취소
                   </button>
                 </Td>
-              </tr>
+              </Tr>
             ))}
           </TBody>
         </Table>
-      </div>
+      </TableFrame>
     </Panel>
   );
 }
