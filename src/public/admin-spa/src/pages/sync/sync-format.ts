@@ -1,6 +1,4 @@
-// SyncTab 공용 타입과 표시 포맷
-
-export type JobType = 'sync' | 'continuous' | 'cohort-repos';
+// SyncTab 표시 포맷
 
 export function formatDate(value: string | null | undefined): string {
   return value ? new Date(value).toLocaleString('ko-KR') : '없음';

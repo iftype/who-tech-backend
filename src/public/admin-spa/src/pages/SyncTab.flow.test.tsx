@@ -2,6 +2,7 @@ import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { FakeEventSource } from '../test/fake-event-source';
 
 // 싱크 탭 전체 흐름: 상태 카드, 작업 큐 추가와 진행 로그(SSE), 취소, 테코톡·블로그 실행
 const apiFetch = vi.fn();
@@ -11,24 +12,6 @@ vi.mock('../lib/api.js', () => ({
   pollSyncJob: vi.fn(() => () => {}),
 }));
 
-type Listener = (e: MessageEvent) => void;
-class FakeEventSource {
-  static CLOSED = 2;
-  readyState = 1;
-  listeners = new Map<string, Listener>();
-  closed = false;
-  onerror: (() => void) | null = null;
-  constructor(public url: string) {}
-  addEventListener(type: string, fn: Listener) {
-    this.listeners.set(type, fn);
-  }
-  emit(type: string, data: unknown) {
-    this.listeners.get(type)?.({ data: typeof data === 'string' ? data : JSON.stringify(data) } as MessageEvent);
-  }
-  close() {
-    this.closed = true;
-  }
-}
 const sources: FakeEventSource[] = [];
 vi.mock('../lib/sse.js', () => ({
   createEventSource: (url: string) => {

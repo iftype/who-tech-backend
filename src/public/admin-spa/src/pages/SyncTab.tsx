@@ -5,7 +5,7 @@ import { BlogSyncPanel, ProfileRefreshPanel } from './sync/AutoJobPanels.js';
 import { TecoTalkPanel } from './sync/TecoTalkPanel.js';
 import { MissionSyncPanel } from './sync/MissionSyncPanel.js';
 import { ActiveQueueJobs } from './sync/ActiveQueueJobs.js';
-import { SyncLogConsole } from './sync/SyncLogConsole.js';
+import { StreamLogConsole } from '../components/StreamLogConsole.js';
 import { useSyncCountdown } from './sync/useSyncCountdown.js';
 import { useSyncDashboard } from './sync/useSyncDashboard.js';
 import { useSyncJobStream } from './sync/useSyncJobStream.js';
@@ -31,7 +31,7 @@ export default function SyncTab() {
       <TecoTalkPanel tecoTalks={tecoTalks} />
       <MissionSyncPanel stream={stream} />
       {activeQueueJobs.length > 0 && <ActiveQueueJobs jobs={activeQueueJobs} />}
-      {stream.logs.length > 0 && <SyncLogConsole logs={stream.logs} endRef={stream.logEndRef} />}
+      {stream.logs.length > 0 && <StreamLogConsole logs={stream.logs} endRef={stream.logEndRef} className="max-h-96" />}
       {recentJobs.length > 0 && <RecentJobsTable jobs={recentJobs} />}
     </div>
   );
