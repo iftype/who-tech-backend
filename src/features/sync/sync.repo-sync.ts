@@ -1,7 +1,11 @@
 import type { Octokit } from '@octokit/rest';
-import type { MemberRepository } from '../../db/repositories/member.repository.js';
 import type { MissionRepoRepository } from '../../db/repositories/mission-repo.repository.js';
-import type { SubmissionRepository } from '../../db/repositories/submission.repository.js';
+import {
+  createParticipationIdCache,
+  type ParticipationIdCache,
+  type SyncTarget,
+  type SyncWriteRepository,
+} from '../../db/repositories/sync-write.repository.js';
 import type { BannedWordRepository } from '../../db/repositories/banned-word.repository.js';
 import type { IgnoredDomainRepository } from '../../db/repositories/ignored-domain.repository.js';
 import { mergePreviousGithubIds, shouldRefreshProfile } from '../../shared/github-profile.js';
@@ -28,27 +32,15 @@ type ResolvedProfile = {
   profileRefreshError: string | null;
 };
 
-type ExistingMember = {
-  id?: number;
-  blog?: string | null;
-  avatarUrl?: string | null;
-  profileFetchedAt?: Date | null;
-  profileRefreshError?: string | null;
-  githubUserId?: number | null;
-  githubId?: string;
-  manualNickname?: string | null;
-  nickname?: string | null;
-  nicknameStats?: string | null;
-} | null;
+type ExistingMember = SyncTarget | null;
 
 export function createRepoSyncer(deps: {
-  memberRepo: MemberRepository;
+  syncWriteRepo: SyncWriteRepository;
   missionRepoRepo: MissionRepoRepository;
-  submissionRepo: SubmissionRepository;
   bannedWordRepo: BannedWordRepository;
   ignoredDomainRepo: IgnoredDomainRepository;
 }) {
-  const { memberRepo, missionRepoRepo, submissionRepo, bannedWordRepo, ignoredDomainRepo } = deps;
+  const { syncWriteRepo, missionRepoRepo, bannedWordRepo, ignoredDomainRepo } = deps;
 
   const fetchAndParse = async (
     octokit: Octokit,
@@ -149,43 +141,43 @@ export function createRepoSyncer(deps: {
     statsValue: string | null,
     displayNickname: string | null,
     existingMember: ExistingMember,
+    ids: ParticipationIdCache,
   ): Promise<void> => {
     const { githubId, githubUserId, blog, avatarUrl, profileFetchedAt, profileRefreshError } = profile;
-    const existingPreviousIds =
-      existingMember?.id != null ? await memberRepo.findPreviousGithubIds(existingMember.id) : [];
-    const previousGithubIds = mergePreviousGithubIds(existingPreviousIds, existingMember?.githubId, githubId);
+    const previousGithubIds = mergePreviousGithubIds(
+      existingMember?.previousGithubIds ?? [],
+      existingMember?.githubId,
+      githubId,
+    );
 
     if (!githubUserId) throw new Error(`githubUserId is missing for user: ${s.githubId}`);
 
-    const member = await memberRepo.upsert(workspaceId, githubUserId, {
-      githubId,
-      githubUserId,
-      nickname: displayNickname,
-      avatarUrl: avatarUrl ?? null,
-      nicknameStats: statsValue,
-      profileFetchedAt: profileFetchedAt ?? null,
-      profileRefreshError: profileRefreshError ?? null,
-      blog: blog ?? null,
-      workspaceId,
-    });
-
-    await memberRepo.replacePreviousGithubIds(member.id, previousGithubIds);
-
-    if (s.cohort) await memberRepo.upsertParticipation(member.id, s.cohort, 'crew');
-
-    await submissionRepo.upsert({
-      where: { prNumber_missionRepoId: { prNumber: s.prNumber, missionRepoId: repo.id } },
-      create: {
-        prNumber: s.prNumber,
-        prUrl: s.prUrl,
-        title: s.title,
-        status: s.status,
-        submittedAt: s.submittedAt,
-        memberId: member.id,
-        missionRepoId: repo.id,
+    await syncWriteRepo.applyPullRequest(
+      {
+        workspaceId,
+        githubUserId,
+        member: {
+          githubId,
+          nickname: displayNickname,
+          avatarUrl: avatarUrl ?? null,
+          nicknameStats: statsValue,
+          profileFetchedAt: profileFetchedAt ?? null,
+          profileRefreshError: profileRefreshError ?? null,
+          blog: blog ?? null,
+        },
+        previousGithubIds,
+        cohort: s.cohort ? s.cohort : null,
+        submission: {
+          prNumber: s.prNumber,
+          prUrl: s.prUrl,
+          title: s.title,
+          status: s.status,
+          submittedAt: s.submittedAt,
+          missionRepoId: repo.id,
+        },
       },
-      update: { memberId: member.id, title: s.title, prUrl: s.prUrl, status: s.status },
-    });
+      ids,
+    );
   };
 
   const syncRepo = async (
@@ -211,6 +203,7 @@ export function createRepoSyncer(deps: {
 
     const total = submissions.length;
     const profileCache = new Map<string, ProfileCacheEntry>();
+    const participationIds = createParticipationIdCache();
     let synced = 0;
     let processed = 0;
     const failures: { prNumber: number; prUrl: string; error: string }[] = [];
@@ -220,9 +213,7 @@ export function createRepoSyncer(deps: {
     for (const s of submissions) {
       if (signal?.aborted) throw new Error('cancelled');
       try {
-        const existingMember =
-          (s.githubUserId != null ? await memberRepo.findByGithubUserId(s.githubUserId, workspaceId) : null) ??
-          (await memberRepo.findByGithubId(s.githubId, workspaceId));
+        const existingMember = await syncWriteRepo.findTarget(s.githubUserId ?? null, s.githubId, workspaceId);
 
         // 공통 미션: 이미 알려진 멤버에만 submission 연결
         if (isCommonMission && !existingMember) continue;
@@ -239,7 +230,16 @@ export function createRepoSyncer(deps: {
           existingMember?.nickname ?? null,
         );
         const profile = await resolveProfile(octokit, s, existingMember, profileCache, ignoredDomains, signal);
-        await upsertMemberAndSubmission(workspaceId, s, profile, repo, statsValue, displayNickname, existingMember);
+        await upsertMemberAndSubmission(
+          workspaceId,
+          s,
+          profile,
+          repo,
+          statsValue,
+          displayNickname,
+          existingMember,
+          participationIds,
+        );
         synced++;
       } catch (err) {
         failures.push({

@@ -1,7 +1,6 @@
 import type { Octokit } from '@octokit/rest';
-import type { MemberRepository } from '../../db/repositories/member.repository.js';
+import type { SyncWriteRepository } from '../../db/repositories/sync-write.repository.js';
 import type { MissionRepoRepository } from '../../db/repositories/mission-repo.repository.js';
-import type { SubmissionRepository } from '../../db/repositories/submission.repository.js';
 import type { WorkspaceRepository } from '../../db/repositories/workspace.repository.js';
 import type { BannedWordRepository } from '../../db/repositories/banned-word.repository.js';
 import type { IgnoredDomainRepository } from '../../db/repositories/ignored-domain.repository.js';
@@ -14,9 +13,8 @@ import { parseCohortRules } from '../../shared/cohort-rules.js';
 export { parsePRsToSubmissions } from './sync.pr-parser.js';
 
 export function createSyncService(deps: {
-  memberRepo: MemberRepository;
+  syncWriteRepo: SyncWriteRepository;
   missionRepoRepo: MissionRepoRepository;
-  submissionRepo: SubmissionRepository;
   workspaceRepo: WorkspaceRepository;
   bannedWordRepo: BannedWordRepository;
   ignoredDomainRepo: IgnoredDomainRepository;
@@ -24,9 +22,8 @@ export function createSyncService(deps: {
   activityLogService: ActivityLogService;
 }) {
   const {
-    memberRepo,
+    syncWriteRepo,
     missionRepoRepo,
-    submissionRepo,
     workspaceRepo,
     bannedWordRepo,
     ignoredDomainRepo,
@@ -35,9 +32,8 @@ export function createSyncService(deps: {
   } = deps;
 
   const { syncRepo } = createRepoSyncer({
-    memberRepo,
+    syncWriteRepo,
     missionRepoRepo,
-    submissionRepo,
     bannedWordRepo,
     ignoredDomainRepo,
   });

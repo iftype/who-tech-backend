@@ -5,6 +5,7 @@ import { createWorkspaceRepository } from './db/repositories/workspace.repositor
 import { createMemberRepository } from './db/repositories/member.repository.js';
 import { createMissionRepoRepository } from './db/repositories/mission-repo.repository.js';
 import { createSubmissionRepository } from './db/repositories/submission.repository.js';
+import { createSyncWriteRepository } from './db/repositories/sync-write.repository.js';
 import { createBlogPostRepository } from './db/repositories/blog-post.repository.js';
 import { createTeamBlogRepository } from './db/repositories/team-blog.repository.js';
 import { createCohortRepoRepository } from './db/repositories/cohort-repo.repository.js';
@@ -39,6 +40,7 @@ export function createContainer() {
   const memberRepo = createMemberRepository(db);
   const missionRepoRepo = createMissionRepoRepository(db);
   const submissionRepo = createSubmissionRepository(db);
+  const syncWriteRepo = createSyncWriteRepository(db);
   const blogPostRepo = createBlogPostRepository(db);
   const teamBlogRepo = createTeamBlogRepository(db);
   const cohortRepoRepo = createCohortRepoRepository(db);
@@ -51,9 +53,8 @@ export function createContainer() {
   const workspaceService = createWorkspaceService({ workspaceRepo });
   const activityLogService = createActivityLogService({ activityLogRepo, workspaceService });
   const syncService = createSyncService({
-    memberRepo,
+    syncWriteRepo,
     missionRepoRepo,
-    submissionRepo,
     workspaceRepo,
     bannedWordRepo,
     ignoredDomainRepo,
