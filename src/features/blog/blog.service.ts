@@ -149,9 +149,13 @@ export function createBlogService(deps: {
       await blogPostRepo.deleteByMember(member.id);
     }
 
+    // 최근 90일 안의 글 중 피드에서 사라진 것은 지운다(작성자가 지운 글). 단 글이 하나도 없는 피드는
+    // 블로그 쪽 일시 오류일 가능성이 커서 지우지 않는다 (예전에는 빈 피드 한 번에 최근 90일 글이 모두 사라졌다)
     const feedUrls = result.items.map((item) => item.link).filter((url): url is string => !!url);
-    const feedDeleteResult = await blogPostRepo.deleteByMemberNotInUrls(member.id, feedUrls, cutoff);
-    deleted += feedDeleteResult.count;
+    if (feedUrls.length > 0) {
+      const feedDeleteResult = await blogPostRepo.deleteByMemberNotInUrls(member.id, feedUrls, cutoff);
+      deleted += feedDeleteResult.count;
+    }
 
     for (const item of result.items) {
       if (!item.link || !item.title || !item.pubDate) continue;
