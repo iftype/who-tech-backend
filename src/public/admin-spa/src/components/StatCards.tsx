@@ -1,11 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
-import { apiFetch } from '../lib/api.js';
-import type { AdminStatus } from '../lib/types.js';
+
+import { adminApi } from '../lib/admin-api.js';
+import { queryKeys } from '../lib/query-keys.js';
 
 export default function StatCards() {
   const { data: status } = useQuery({
-    queryKey: ['admin-status'],
-    queryFn: () => apiFetch<AdminStatus>('/admin/status'),
+    queryKey: queryKeys.adminStatus(),
+    queryFn: () => adminApi.status(),
     staleTime: 60_000,
   });
 

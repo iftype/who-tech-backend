@@ -1,4 +1,4 @@
-import type { SyncJob } from '../../lib/api.js';
+import type { SyncJob } from '../../lib/types.js';
 import type { MissionRepo } from '../../lib/types.js';
 import { EditableSelectCell, EditableTextCell, SyncProgress } from './RepoCells.js';
 import {

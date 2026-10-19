@@ -1,8 +1,10 @@
 import { useState, type FormEvent } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiFetch } from '../lib/api.js';
+
 import { showToast } from '../components/ui/Toast.js';
-import type { Workspace, BannedWord, IgnoredDomain } from '../lib/types.js';
+
+import { adminApi } from '../lib/admin-api.js';
+import { queryKeys } from '../lib/query-keys.js';
 
 export default function SettingsTab() {
   const queryClient = useQueryClient();
@@ -13,8 +15,8 @@ export default function SettingsTab() {
   const [newDomain, setNewDomain] = useState('');
 
   const { data: workspace, isLoading: workspaceLoading } = useQuery({
-    queryKey: ['workspace'],
-    queryFn: () => apiFetch<Workspace>('/admin/workspace'),
+    queryKey: queryKeys.workspace(),
+    queryFn: () => adminApi.workspace.get(),
     staleTime: 300_000,
   });
 
@@ -27,24 +29,21 @@ export default function SettingsTab() {
   }
 
   const { data: bannedWords = [] } = useQuery({
-    queryKey: ['banned-words'],
-    queryFn: () => apiFetch<BannedWord[]>('/admin/banned-words'),
+    queryKey: queryKeys.bannedWords(),
+    queryFn: () => adminApi.bannedWords.list(),
   });
 
   const { data: ignoredDomains = [] } = useQuery({
-    queryKey: ['ignored-domains'],
-    queryFn: () => apiFetch<IgnoredDomain[]>('/admin/ignored-domains'),
+    queryKey: queryKeys.ignoredDomains(),
+    queryFn: () => adminApi.ignoredDomains.list(),
   });
 
   const saveWorkspaceMutation = useMutation({
     mutationFn: (payload: { cohortRules?: Record<string, number>; blogSyncEnabled?: boolean }) =>
-      apiFetch<Workspace>('/admin/workspace', {
-        method: 'PUT',
-        body: JSON.stringify(payload),
-      }),
+      adminApi.workspace.update(payload),
     onSuccess: () => {
       showToast('저장 완료');
-      void queryClient.invalidateQueries({ queryKey: ['workspace'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.workspace() });
     },
     onError: (e) => showToast(e instanceof Error ? e.message : '저장 실패', 'error'),
   });
@@ -55,43 +54,35 @@ export default function SettingsTab() {
   };
 
   const addBannedWordMutation = useMutation({
-    mutationFn: (word: string) =>
-      apiFetch<BannedWord>('/admin/banned-words', {
-        method: 'POST',
-        body: JSON.stringify({ word }),
-      }),
+    mutationFn: (word: string) => adminApi.bannedWords.create(word),
     onSuccess: () => {
       setNewWord('');
-      void queryClient.invalidateQueries({ queryKey: ['banned-words'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.bannedWords() });
     },
     onError: (e) => showToast(e instanceof Error ? e.message : '추가 실패', 'error'),
   });
 
   const deleteBannedWordMutation = useMutation({
-    mutationFn: (id: number) => apiFetch(`/admin/banned-words/${id}`, { method: 'DELETE' }),
+    mutationFn: (id: number) => adminApi.bannedWords.remove(id),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['banned-words'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.bannedWords() });
     },
     onError: (e) => showToast(e instanceof Error ? e.message : '삭제 실패', 'error'),
   });
 
   const addIgnoredDomainMutation = useMutation({
-    mutationFn: (domain: string) =>
-      apiFetch<IgnoredDomain>('/admin/ignored-domains', {
-        method: 'POST',
-        body: JSON.stringify({ domain }),
-      }),
+    mutationFn: (domain: string) => adminApi.ignoredDomains.create(domain),
     onSuccess: () => {
       setNewDomain('');
-      void queryClient.invalidateQueries({ queryKey: ['ignored-domains'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.ignoredDomains() });
     },
     onError: (e) => showToast(e instanceof Error ? e.message : '추가 실패', 'error'),
   });
 
   const deleteIgnoredDomainMutation = useMutation({
-    mutationFn: (id: number) => apiFetch(`/admin/ignored-domains/${id}`, { method: 'DELETE' }),
+    mutationFn: (id: number) => adminApi.ignoredDomains.remove(id),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['ignored-domains'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.ignoredDomains() });
     },
     onError: (e) => showToast(e instanceof Error ? e.message : '삭제 실패', 'error'),
   });

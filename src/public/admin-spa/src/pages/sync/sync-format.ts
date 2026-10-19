@@ -7,12 +7,3 @@ export function formatDate(value: string | null | undefined): string {
 }
 
 // 레포·블로그 싱크 작업 목록 항목
-export interface RecentSyncJob {
-  id: string;
-  status: string;
-  message: string;
-  startedAt: string;
-  finishedAt: string | null;
-  repoName?: string;
-  source?: string;
-}

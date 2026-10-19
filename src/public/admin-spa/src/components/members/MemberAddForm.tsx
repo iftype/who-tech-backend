@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from 'react';
-import { apiFetch } from '../../lib/api.js';
+
 import { showToast } from '../ui/Toast.js';
 import type { Member } from '../../lib/types.js';
+import { adminApi } from '../../lib/admin-api.js';
 
 interface Props {
   onAdded: (m: Member) => void;
@@ -17,12 +18,9 @@ export default function MemberAddForm({ onAdded }: Props) {
     e.preventDefault();
     setLoading(true);
     try {
-      const member = await apiFetch<Member>('/admin/members', {
-        method: 'POST',
-        body: JSON.stringify({
-          githubId: githubId.trim() || undefined,
-          cohort: cohort ? Number(cohort) : undefined,
-        }),
+      const member = await adminApi.members.create({
+        githubId: githubId.trim() || undefined,
+        cohort: cohort ? Number(cohort) : undefined,
       });
       onAdded(member);
       setGithubId('');

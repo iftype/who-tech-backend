@@ -3,8 +3,9 @@ import { useQuery } from '@tanstack/react-query';
 import TabNav from './TabNav.js';
 import LogPanel from './LogPanel.js';
 import { useAuth } from '../context/AuthContext.js';
-import { apiFetch } from '../lib/api.js';
-import type { GithubStatus } from '../lib/types.js';
+
+import { adminApi } from '../lib/admin-api.js';
+import { queryKeys } from '../lib/query-keys.js';
 
 declare const __APP_VERSION__: string;
 
@@ -12,8 +13,8 @@ export default function Layout({ children }: { children: ReactNode }) {
   const { logout } = useAuth();
 
   const { data: githubStatus } = useQuery({
-    queryKey: ['github-status'],
-    queryFn: () => apiFetch<GithubStatus>('/admin/github-status'),
+    queryKey: queryKeys.githubStatus(),
+    queryFn: () => adminApi.githubStatus(),
     refetchInterval: 30_000,
     staleTime: 30_000,
   });

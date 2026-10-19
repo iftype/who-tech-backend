@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useMembers, type MemberFilters } from '../hooks/useMembers.js';
-import { apiFetch } from '../lib/api.js';
+
 import StatCards from '../components/StatCards.js';
 import MemberFiltersBar from '../components/members/MemberFilters.js';
 import MemberAddForm from '../components/members/MemberAddForm.js';
 import MemberTable from '../components/members/MemberTable.js';
 import type { Member } from '../lib/types.js';
+import { adminApi } from '../lib/admin-api.js';
+import { queryKeys } from '../lib/query-keys.js';
 
 export default function MemberTab() {
   const [filters, setFilters] = useState<MemberFilters>({});
@@ -14,8 +16,8 @@ export default function MemberTab() {
   const { members, loading, error, refetch } = useMembers({ ...filters, cohort: cohortFilter });
 
   const { data: allCohorts = [] } = useQuery({
-    queryKey: ['member-cohorts'],
-    queryFn: () => apiFetch<number[]>('/admin/members/cohorts'),
+    queryKey: queryKeys.members.cohorts(),
+    queryFn: () => adminApi.members.cohorts(),
     staleTime: 300_000,
   });
 

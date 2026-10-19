@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { apiFetch } from '../lib/api.js';
-import type { Member } from '../lib/types.js';
+
+import { adminApi } from '../lib/admin-api.js';
+import { queryKeys } from '../lib/query-keys.js';
 
 export interface MemberFilters {
   q?: string;
@@ -19,8 +20,8 @@ export function useMembers(filters: MemberFilters = {}) {
   if (filters.role) params.set('role', filters.role);
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['members', filters],
-    queryFn: () => apiFetch<Member[]>(`/admin/members?${params}`),
+    queryKey: queryKeys.members.list(filters),
+    queryFn: () => adminApi.members.list(String(params)),
     staleTime: 60_000,
   });
 

@@ -1,16 +1,18 @@
 import { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiFetch } from '../lib/api.js';
+
 import { showToast } from '../components/ui/Toast.js';
-import type { NewBlogPost, TeamBlogStatus } from '../lib/types.js';
+
+import { adminApi } from '../lib/admin-api.js';
+import { queryKeys } from '../lib/query-keys.js';
 
 export default function BlogTab() {
   const [sinceMinutes, setSinceMinutes] = useState(65);
   const queryClient = useQueryClient();
 
   const { data: teamBlogs = [] } = useQuery({
-    queryKey: ['team-blog-status'],
-    queryFn: () => apiFetch<TeamBlogStatus[]>('/admin/blog/team'),
+    queryKey: queryKeys.blog.teamStatus(),
+    queryFn: () => adminApi.blog.teamStatus(),
   });
   const teamBlog = teamBlogs[0];
   const [teamForm, setTeamForm] = useState({ name: '', blogUrl: '', rssUrl: '' });
@@ -21,41 +23,40 @@ export default function BlogTab() {
   }, [teamBlog]);
 
   const updateTeamBlogMutation = useMutation({
-    mutationFn: () => apiFetch(`/admin/blog/team/${teamBlog?.id}`, { method: 'PATCH', body: JSON.stringify(teamForm) }),
+    mutationFn: () => adminApi.blog.updateTeam(teamBlog?.id, teamForm),
     onSuccess: () => {
       showToast('팀 블로그 설정을 저장했습니다.');
-      void queryClient.invalidateQueries({ queryKey: ['team-blog-status'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.blog.teamStatus() });
     },
     onError: (e) => showToast(e instanceof Error ? e.message : '팀 블로그 설정 저장 실패', 'error'),
   });
 
   const teamSyncMutation = useMutation({
-    mutationFn: () =>
-      apiFetch<{ synced: number; deleted: number; failures: unknown[] }>('/admin/blog/team/sync', { method: 'POST' }),
+    mutationFn: () => adminApi.blog.syncTeam(),
     onSuccess: (result) => {
       showToast(`팀 블로그 새로고침 완료 — ${result.synced}건 수집`);
-      void queryClient.invalidateQueries({ queryKey: ['team-blog-status'] });
-      void queryClient.invalidateQueries({ queryKey: ['blog-new-posts'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.blog.teamStatus() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.blog.newPostsAll() });
     },
     onError: (e) => showToast(e instanceof Error ? e.message : '팀 블로그 새로고침 실패', 'error'),
   });
 
   const { data: posts = [], isLoading } = useQuery({
-    queryKey: ['blog-new-posts', sinceMinutes],
-    queryFn: () => apiFetch<NewBlogPost[]>(`/admin/blog/new-posts?sinceMinutes=${sinceMinutes}`),
+    queryKey: queryKeys.blog.newPosts(sinceMinutes),
+    queryFn: () => adminApi.blog.newPosts(sinceMinutes),
   });
 
   const syncMutation = useMutation({
-    mutationFn: () => apiFetch<{ id: string; status: string }>('/admin/blog/sync', { method: 'POST' }),
+    mutationFn: () => adminApi.blog.sync(),
     onSuccess: () => {
       showToast('RSS 싱크 작업이 큐에 추가되었습니다. 진행 상황은 싱크 탭에서 확인할 수 있습니다.');
-      void queryClient.invalidateQueries({ queryKey: ['blog-new-posts'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.blog.newPostsAll() });
     },
     onError: (e) => showToast(e instanceof Error ? e.message : '싱크 실패', 'error'),
   });
 
   const backfillMutation = useMutation({
-    mutationFn: () => apiFetch<{ updated: number }>('/admin/blog/backfill', { method: 'POST' }),
+    mutationFn: () => adminApi.blog.backfill(),
     onSuccess: (result) => {
       showToast(`백필 완료 — ${result.updated}명 업데이트`);
     },

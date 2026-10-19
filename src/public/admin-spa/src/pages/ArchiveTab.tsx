@@ -1,10 +1,12 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiFetch } from '../lib/api.js';
+
 import { showToast } from '../components/ui/Toast.js';
 import { createEventSource } from '../lib/sse.js';
-import type { CohortRepo, MissionRepo } from '../lib/types.js';
+import type { CohortRepo } from '../lib/types.js';
 import { formatStep, logColor, type StreamLogEntry } from '../lib/stream-log.js';
+import { adminApi } from '../lib/admin-api.js';
+import { queryKeys } from '../lib/query-keys.js';
 
 export default function ArchiveTab() {
   const queryClient = useQueryClient();
@@ -26,14 +28,14 @@ export default function ArchiveTab() {
   const cohortNum = cohort ? Number(cohort) : NaN;
 
   const { data: cohortRepos = [], isLoading: reposLoading } = useQuery({
-    queryKey: ['cohort-repos', cohortNum],
-    queryFn: () => apiFetch<CohortRepo[]>(`/admin/cohort-repos?cohort=${cohortNum}`),
+    queryKey: queryKeys.cohortRepos.byCohort(cohortNum),
+    queryFn: () => adminApi.cohortRepos.list(cohortNum),
     enabled: Number.isFinite(cohortNum) && cohortNum > 0,
   });
 
   const { data: allRepos = [] } = useQuery({
-    queryKey: ['repos'],
-    queryFn: () => apiFetch<MissionRepo[]>('/admin/repos'),
+    queryKey: queryKeys.repos.all(),
+    queryFn: () => adminApi.repos.list(),
   });
 
   const filteredRepos = track ? cohortRepos.filter((cr) => cr.missionRepo.track === track) : cohortRepos;
@@ -107,50 +109,38 @@ export default function ArchiveTab() {
   }, [syncRunning, cohortNum, addLog, stopSync]);
 
   const autoFillMutation = useMutation({
-    mutationFn: () =>
-      apiFetch<{ added: number }>('/admin/cohort-repos/auto-fill', {
-        method: 'POST',
-        body: JSON.stringify({ cohort: cohortNum }),
-      }),
+    mutationFn: () => adminApi.cohortRepos.autoFill(cohortNum),
     onSuccess: (result) => {
       showToast(`${result.added}개 레포 자동 추가 완료`);
-      void queryClient.invalidateQueries({ queryKey: ['cohort-repos'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.cohortRepos.all() });
     },
     onError: (e) => showToast(e instanceof Error ? e.message : '자동 채우기 실패', 'error'),
   });
 
   const addRepoMutation = useMutation({
-    mutationFn: (missionRepoId: number) =>
-      apiFetch<CohortRepo>('/admin/cohort-repos', {
-        method: 'POST',
-        body: JSON.stringify({ cohort: cohortNum, missionRepoId }),
-      }),
+    mutationFn: (missionRepoId: number) => adminApi.cohortRepos.create(cohortNum, missionRepoId),
     onSuccess: () => {
       showToast('레포 추가 완료');
       setSelectedRepoId('');
-      void queryClient.invalidateQueries({ queryKey: ['cohort-repos'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.cohortRepos.all() });
     },
     onError: (e) => showToast(e instanceof Error ? e.message : '추가 실패', 'error'),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => apiFetch(`/admin/cohort-repos/${id}`, { method: 'DELETE' }),
+    mutationFn: (id: number) => adminApi.cohortRepos.remove(id),
     onSuccess: () => {
       showToast('삭제 완료');
-      void queryClient.invalidateQueries({ queryKey: ['cohort-repos'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.cohortRepos.all() });
     },
     onError: (e) => showToast(e instanceof Error ? e.message : '삭제 실패', 'error'),
   });
 
   const updateOrderMutation = useMutation({
-    mutationFn: ({ id, order }: { id: number; order: number }) =>
-      apiFetch<CohortRepo>(`/admin/cohort-repos/${id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ order }),
-      }),
+    mutationFn: ({ id, order }: { id: number; order: number }) => adminApi.cohortRepos.update(id, { order }),
     onSuccess: () => {
       setEditingOrderId(null);
-      void queryClient.invalidateQueries({ queryKey: ['cohort-repos'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.cohortRepos.all() });
     },
     onError: (e) => {
       showToast(e instanceof Error ? e.message : '순서 변경 실패', 'error');
@@ -159,14 +149,10 @@ export default function ArchiveTab() {
   });
 
   const updateLevelMutation = useMutation({
-    mutationFn: ({ id, level }: { id: number; level: number | null }) =>
-      apiFetch<CohortRepo>(`/admin/cohort-repos/${id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ level }),
-      }),
+    mutationFn: ({ id, level }: { id: number; level: number | null }) => adminApi.cohortRepos.update(id, { level }),
     onSuccess: () => {
       setEditingLevelId(null);
-      void queryClient.invalidateQueries({ queryKey: ['cohort-repos'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.cohortRepos.all() });
     },
     onError: (e) => {
       showToast(e instanceof Error ? e.message : '레벨 변경 실패', 'error');

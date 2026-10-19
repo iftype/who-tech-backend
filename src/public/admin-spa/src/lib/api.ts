@@ -1,3 +1,5 @@
+import type { SyncJob } from './types.js';
+
 const BASE = '';
 
 export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
@@ -31,25 +33,6 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
     throw err;
   }
   return res.json() as Promise<T>;
-}
-
-export interface SyncJob {
-  id: string;
-  repoId: number;
-  repoName: string;
-  status: 'queued' | 'running' | 'completed' | 'failed';
-  message: string;
-  startedAt: string;
-  finishedAt: string | null;
-  progress: {
-    total: number;
-    processed: number;
-    synced: number;
-    percent: number;
-    phase: string;
-  };
-  result: { synced: number; failures: unknown[] } | null;
-  error: string | null;
 }
 
 export function pollSyncJob(jobId: string, onUpdate: (job: SyncJob) => void): () => void {

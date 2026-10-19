@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiFetch } from '../lib/api.js';
+
 import { showToast } from '../components/ui/Toast.js';
-import type { ActivityLog } from '../lib/types.js';
+
+import { adminApi } from '../lib/admin-api.js';
+import { queryKeys } from '../lib/query-keys.js';
 
 type LogCategory = 'all' | 'repo' | 'blog' | 'refresh';
 
@@ -12,15 +14,15 @@ export default function LogTab() {
   const [category, setCategory] = useState<LogCategory>('all');
 
   const { data: logs = [], isLoading } = useQuery({
-    queryKey: ['activity-logs'],
-    queryFn: () => apiFetch<ActivityLog[]>('/admin/logs'),
+    queryKey: queryKeys.activityLogs(),
+    queryFn: () => adminApi.logs.list(),
   });
 
   const clearMutation = useMutation({
-    mutationFn: () => apiFetch('/admin/logs', { method: 'DELETE' }),
+    mutationFn: () => adminApi.logs.clear(),
     onSuccess: () => {
       showToast('로그 삭제 완료');
-      void queryClient.invalidateQueries({ queryKey: ['activity-logs'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.activityLogs() });
     },
     onError: (e) => showToast(e instanceof Error ? e.message : '삭제 실패', 'error'),
   });

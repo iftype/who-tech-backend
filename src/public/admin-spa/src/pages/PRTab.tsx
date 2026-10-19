@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { apiFetch } from '../lib/api.js';
-import type { Member, Submission } from '../lib/types.js';
+
+import type { Submission } from '../lib/types.js';
+import { adminApi } from '../lib/admin-api.js';
+import { queryKeys } from '../lib/query-keys.js';
 
 type StatusFilter = '' | 'open' | 'merged' | 'closed';
 
@@ -21,13 +23,14 @@ export default function PRTab() {
   }, [selectedMemberId]);
 
   const { data: members = [], isLoading: membersLoading } = useQuery({
-    queryKey: ['members', 'prs'],
-    queryFn: () => apiFetch<Member[]>('/admin/members'),
+    queryKey: queryKeys.members.prs(),
+    queryFn: () => adminApi.members.list(),
   });
 
   const { data: memberDetail, isLoading: detailLoading } = useQuery({
-    queryKey: ['member-detail', selectedMemberId],
-    queryFn: () => apiFetch<Member>(`/admin/members/${selectedMemberId}`),
+    queryKey: queryKeys.members.detail(selectedMemberId),
+    // enabled 조건으로 selectedMemberId가 있을 때만 실행된다
+    queryFn: () => adminApi.members.detail(selectedMemberId!),
     enabled: selectedMemberId !== null,
   });
 

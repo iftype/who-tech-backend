@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
 import { getToken, setToken, clearToken } from '../lib/auth.js';
-import { apiFetch } from '../lib/api.js';
+
+import { adminApi } from '../lib/admin-api.js';
 
 interface AuthContextValue {
   token: string | null;
@@ -17,7 +18,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (secret: string) => {
     setToken(secret);
     setTokenState(secret);
-    await apiFetch('/admin/status');
+    await adminApi.status();
   }, []);
 
   const logout = useCallback(() => {

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { SyncJob } from '../../lib/api.js';
+import type { SyncJob } from '../../lib/types.js';
 import type { SelectOption } from './repo-options.js';
 
 export function EditableSelectCell({
