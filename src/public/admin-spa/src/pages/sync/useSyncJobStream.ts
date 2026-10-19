@@ -23,7 +23,7 @@ export function useSyncJobStream(onDone: () => void) {
         invalidateQueue();
       });
     },
-    onError: (e) => showToast(e instanceof Error ? e.message : '큐 추가 실패', 'error'),
+    meta: { errorMessage: '큐 추가 실패' },
   });
 
   return {

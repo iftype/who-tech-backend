@@ -5,6 +5,7 @@ import type { Member } from '../../lib/types.js';
 import { adminApi } from '../../lib/admin-api.js';
 import { Button } from '../../components/ui/Button.js';
 import { FieldLabel, TextInput } from '../../components/ui/Field.js';
+import { toErrorMessage } from '../../lib/query-client.js';
 
 interface Props {
   onAdded: (m: Member) => void;
@@ -30,7 +31,7 @@ export function MemberAddForm({ onAdded }: Props) {
       setOpen(false);
       showToast('멤버 추가 완료');
     } catch (e) {
-      showToast(e instanceof Error ? e.message : '추가 실패', 'error');
+      showToast(toErrorMessage(e, '추가 실패'), 'error');
     } finally {
       setLoading(false);
     }

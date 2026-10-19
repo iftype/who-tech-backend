@@ -35,7 +35,7 @@ function useWorkspaceToggle(field: 'blogSyncEnabled' | 'profileRefreshEnabled') 
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.workspace() });
     },
-    onError: (e) => showToast(e instanceof Error ? e.message : '변경 실패', 'error'),
+    meta: { errorMessage: '변경 실패' },
   });
 }
 
@@ -48,7 +48,7 @@ export function BlogSyncPanel({ workspace }: { workspace: Workspace | undefined 
       showToast('블로그 싱크 작업이 큐에 추가되었습니다');
       void queryClient.invalidateQueries({ queryKey: queryKeys.blog.syncJobs() });
     },
-    onError: (e) => showToast(e instanceof Error ? e.message : '블로그 싱크 실패', 'error'),
+    meta: { errorMessage: '블로그 싱크 실패' },
   });
 
   return (
@@ -78,7 +78,7 @@ export function ProfileRefreshPanel({ workspace }: { workspace: Workspace | unde
     onSuccess: (result) => {
       showToast(`프로필 새로고침 완료 — ${result.refreshed}/${result.checked}명, 실패 ${result.failed}명`);
     },
-    onError: (e) => showToast(e instanceof Error ? e.message : '프로필 새로고침 실패', 'error'),
+    meta: { errorMessage: '프로필 새로고침 실패' },
   });
 
   return (

@@ -32,7 +32,7 @@ export default function BlogTab() {
       showToast('팀 블로그 설정을 저장했습니다.');
       void queryClient.invalidateQueries({ queryKey: queryKeys.blog.teamStatus() });
     },
-    onError: (e) => showToast(e instanceof Error ? e.message : '팀 블로그 설정 저장 실패', 'error'),
+    meta: { errorMessage: '팀 블로그 설정 저장 실패' },
   });
 
   const teamSyncMutation = useMutation({
@@ -42,7 +42,7 @@ export default function BlogTab() {
       void queryClient.invalidateQueries({ queryKey: queryKeys.blog.teamStatus() });
       void queryClient.invalidateQueries({ queryKey: queryKeys.blog.newPostsAll() });
     },
-    onError: (e) => showToast(e instanceof Error ? e.message : '팀 블로그 새로고침 실패', 'error'),
+    meta: { errorMessage: '팀 블로그 새로고침 실패' },
   });
 
   const { data: posts = [], isLoading } = useQuery({
@@ -56,7 +56,7 @@ export default function BlogTab() {
       showToast('RSS 싱크 작업이 큐에 추가되었습니다. 진행 상황은 싱크 탭에서 확인할 수 있습니다.');
       void queryClient.invalidateQueries({ queryKey: queryKeys.blog.newPostsAll() });
     },
-    onError: (e) => showToast(e instanceof Error ? e.message : '싱크 실패', 'error'),
+    meta: { errorMessage: '싱크 실패' },
   });
 
   const backfillMutation = useMutation({
@@ -64,7 +64,7 @@ export default function BlogTab() {
     onSuccess: (result) => {
       showToast(`백필 완료 — ${result.updated}명 업데이트`);
     },
-    onError: (e) => showToast(e instanceof Error ? e.message : '백필 실패', 'error'),
+    meta: { errorMessage: '백필 실패' },
   });
 
   return (

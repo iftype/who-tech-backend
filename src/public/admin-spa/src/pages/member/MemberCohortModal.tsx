@@ -35,14 +35,14 @@ export function MemberCohortModal({ member, onChange, onRefresh }: Props) {
     mutationFn: ({ memberId, cohort, roles }: { memberId: number; cohort: number; roles: string[] }) =>
       adminApi.members.update(memberId, { cohort, roles }),
     onSuccess: (updated) => afterChange('역할 수정 완료', updated),
-    onError: (e) => showToast(e instanceof Error ? e.message : '역할 수정 실패', 'error'),
+    meta: { errorMessage: '역할 수정 실패' },
   });
 
   const deleteCohortMutation = useMutation({
     mutationFn: ({ memberId, cohort }: { memberId: number; cohort: number }) =>
       adminApi.members.removeCohort(memberId, cohort),
     onSuccess: (updated) => afterChange('기수 삭제 완료', updated),
-    onError: (e) => showToast(e instanceof Error ? e.message : '기수 삭제 실패', 'error'),
+    meta: { errorMessage: '기수 삭제 실패' },
   });
 
   const addCohortMutation = useMutation({
@@ -54,7 +54,7 @@ export function MemberCohortModal({ member, onChange, onRefresh }: Props) {
       setNewCohortInput('');
       showToast('기수 추가 완료');
     },
-    onError: (e) => showToast(e instanceof Error ? e.message : '기수 추가 실패', 'error'),
+    meta: { errorMessage: '기수 추가 실패' },
   });
 
   const handleAddCohort = () => {

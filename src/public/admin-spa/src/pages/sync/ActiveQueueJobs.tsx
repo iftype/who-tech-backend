@@ -17,7 +17,7 @@ export function ActiveQueueJobs({ jobs }: { jobs: SyncQueueJob[] }) {
       void queryClient.invalidateQueries({ queryKey: queryKeys.syncQueueJobs() });
       showToast('작업이 취소되었습니다');
     },
-    onError: (e) => showToast(e instanceof Error ? e.message : '취소 실패', 'error'),
+    meta: { errorMessage: '취소 실패' },
   });
 
   return (

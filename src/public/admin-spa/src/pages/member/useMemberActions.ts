@@ -6,6 +6,7 @@ import { useRefreshCooldowns } from '../../hooks/useRefreshCooldowns.js';
 import type { Member } from '../../lib/types.js';
 import { adminApi } from '../../lib/admin-api.js';
 import { queryKeys } from '../../lib/query-keys.js';
+import { toErrorMessage } from '../../lib/query-client.js';
 
 // 멤버 목록 캐시만 고른다: ['members', filters]. ['members', 'prs'] 같은 다른 모양은 건드리지 않는다
 const memberListFilter = {
@@ -83,7 +84,7 @@ export function useMemberActions(onRefresh: () => void) {
       showToast('기수 재계산 완료');
       onRefresh();
     } catch (e) {
-      showToast(e instanceof Error ? e.message : '기수 재계산 실패', 'error');
+      showToast(toErrorMessage(e, '기수 재계산 실패'), 'error');
     } finally {
       setRecalculating(null);
     }
@@ -97,7 +98,7 @@ export function useMemberActions(onRefresh: () => void) {
       showToast(`${member.githubId} PR 재수집 완료 (${result.totalSynced}개)`);
       onRefresh();
     } catch (e) {
-      showToast(e instanceof Error ? e.message : 'PR 재수집 실패', 'error');
+      showToast(toErrorMessage(e, 'PR 재수집 실패'), 'error');
     } finally {
       setResyncing(null);
     }

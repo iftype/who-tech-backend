@@ -48,7 +48,7 @@ export default function SettingsTab() {
       showToast('저장 완료');
       void queryClient.invalidateQueries({ queryKey: queryKeys.workspace() });
     },
-    onError: (e) => showToast(e instanceof Error ? e.message : '저장 실패', 'error'),
+    meta: { errorMessage: '저장 실패' },
   });
 
   const toggleBlogSync = (enabled: boolean) => {
@@ -62,7 +62,7 @@ export default function SettingsTab() {
       setNewWord('');
       void queryClient.invalidateQueries({ queryKey: queryKeys.bannedWords() });
     },
-    onError: (e) => showToast(e instanceof Error ? e.message : '추가 실패', 'error'),
+    meta: { errorMessage: '추가 실패' },
   });
 
   const deleteBannedWordMutation = useMutation({
@@ -70,7 +70,7 @@ export default function SettingsTab() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.bannedWords() });
     },
-    onError: (e) => showToast(e instanceof Error ? e.message : '삭제 실패', 'error'),
+    meta: { errorMessage: '삭제 실패' },
   });
 
   const addIgnoredDomainMutation = useMutation({
@@ -79,7 +79,7 @@ export default function SettingsTab() {
       setNewDomain('');
       void queryClient.invalidateQueries({ queryKey: queryKeys.ignoredDomains() });
     },
-    onError: (e) => showToast(e instanceof Error ? e.message : '추가 실패', 'error'),
+    meta: { errorMessage: '추가 실패' },
   });
 
   const deleteIgnoredDomainMutation = useMutation({
@@ -87,7 +87,7 @@ export default function SettingsTab() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.ignoredDomains() });
     },
-    onError: (e) => showToast(e instanceof Error ? e.message : '삭제 실패', 'error'),
+    meta: { errorMessage: '삭제 실패' },
   });
 
   const saveWorkspace = (e: FormEvent) => {
