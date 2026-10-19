@@ -1,5 +1,5 @@
 import type { AdminStatus, MissionRepo, Workspace } from '../../lib/types.js';
-import { Table, TBody, THead, Td, Th } from '../../components/ui/Table.js';
+import { Table, TableFrame, TBody, Td, Th, THead, Tr } from '../../components/ui/Table.js';
 import { Panel, SectionTitle } from '../../components/ui/Section.js';
 
 export function SyncScheduleStatus({
@@ -68,7 +68,7 @@ export function SyncScheduleStatus({
         </Panel>
       </div>
       {continuousRepos.length > 0 && (
-        <div className="max-h-40 overflow-y-auto rounded border border-base-200">
+        <TableFrame className="max-h-40 overflow-y-auto">
           <Table size="xs">
             <THead>
               <tr>
@@ -82,18 +82,18 @@ export function SyncScheduleStatus({
             </THead>
             <TBody>
               {continuousRepos.map((r) => (
-                <tr key={r.id} className="hover:bg-base-50">
+                <Tr key={r.id}>
                   <Td density="tight" className="font-medium text-base-700 truncate max-w-[200px]">
                     {r.name}
                   </Td>
                   <Td density="tight" className="text-base-500">
                     {r.track ?? '—'}
                   </Td>
-                </tr>
+                </Tr>
               ))}
             </TBody>
           </Table>
-        </div>
+        </TableFrame>
       )}
     </Panel>
   );

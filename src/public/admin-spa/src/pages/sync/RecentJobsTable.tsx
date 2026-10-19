@@ -1,6 +1,6 @@
 import type { SyncQueueJob } from '../../lib/types.js';
 import type { RecentSyncJob } from '../../lib/types.js';
-import { Table, TBody, THead, Td, Th } from '../../components/ui/Table.js';
+import { Table, TableFrame, TBody, Td, Th, THead, Tr } from '../../components/ui/Table.js';
 import { Badge, type BadgeTone } from '../../components/ui/Badge.js';
 import { Panel, SectionTitle } from '../../components/ui/Section.js';
 
@@ -12,7 +12,7 @@ export function RecentJobsTable({ jobs }: { jobs: (SyncQueueJob | RecentSyncJob)
       <SectionTitle as="h3" size="sm" className="mb-3">
         최근 싱크 작업 ({jobs.length})
       </SectionTitle>
-      <div className="max-h-64 overflow-y-auto rounded border border-base-200">
+      <TableFrame className="max-h-64 overflow-y-auto">
         <Table size="xs">
           <THead>
             <tr>
@@ -28,7 +28,7 @@ export function RecentJobsTable({ jobs }: { jobs: (SyncQueueJob | RecentSyncJob)
               const queueJob = j as SyncQueueJob;
               const repoJob = j as RecentSyncJob;
               return (
-                <tr key={j.id} className="hover:bg-base-50">
+                <Tr key={j.id}>
                   <Td className="text-base-500 whitespace-nowrap">
                     {isQueueJob
                       ? new Date(queueJob.completedAt ?? queueJob.createdAt).toLocaleString('ko-KR')
@@ -60,12 +60,12 @@ export function RecentJobsTable({ jobs }: { jobs: (SyncQueueJob | RecentSyncJob)
                         : (queueJob.error ?? '—')
                       : `${repoJob.repoName ? `${repoJob.repoName} — ` : ''}${repoJob.message}`}
                   </Td>
-                </tr>
+                </Tr>
               );
             })}
           </TBody>
         </Table>
-      </div>
+      </TableFrame>
     </Panel>
   );
 }

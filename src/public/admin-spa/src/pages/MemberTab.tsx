@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useMembers, type MemberFilters } from '../hooks/useMembers.js';
 
-import StatCards from '../components/StatCards.js';
-import MemberFiltersBar from '../components/members/MemberFilters.js';
-import MemberAddForm from '../components/members/MemberAddForm.js';
-import MemberTable from '../components/members/MemberTable.js';
+import { StatCards } from './member/StatCards.js';
+import { MemberFiltersBar } from './member/MemberFiltersBar.js';
+import { MemberAddForm } from './member/MemberAddForm.js';
+import { MemberTable } from './member/MemberTable.js';
 import type { Member } from '../lib/types.js';
 import { adminApi } from '../lib/admin-api.js';
 import { queryKeys } from '../lib/query-keys.js';

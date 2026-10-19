@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { useAuth } from '../context/AuthContext.js';
 
-export default function LoginPage() {
+export function LoginPage() {
   const { login } = useAuth();
   const [secret, setSecret] = useState('');
   const [error, setError] = useState('');

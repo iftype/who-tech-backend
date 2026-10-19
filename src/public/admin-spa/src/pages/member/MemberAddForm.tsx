@@ -1,16 +1,16 @@
 import { useState, type FormEvent } from 'react';
 
-import { showToast } from '../ui/Toast.js';
+import { showToast } from '../../components/ui/Toast.js';
 import type { Member } from '../../lib/types.js';
 import { adminApi } from '../../lib/admin-api.js';
-import { Button } from '../ui/Button.js';
-import { FieldLabel, TextInput } from '../ui/Field.js';
+import { Button } from '../../components/ui/Button.js';
+import { FieldLabel, TextInput } from '../../components/ui/Field.js';
 
 interface Props {
   onAdded: (m: Member) => void;
 }
 
-export default function MemberAddForm({ onAdded }: Props) {
+export function MemberAddForm({ onAdded }: Props) {
   const [open, setOpen] = useState(false);
   const [githubId, setGithubId] = useState('');
   const [cohort, setCohort] = useState('');

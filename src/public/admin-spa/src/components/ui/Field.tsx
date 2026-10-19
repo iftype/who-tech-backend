@@ -1,6 +1,8 @@
 import type { ComponentProps } from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 
+import { cn } from '../../lib/cn.js';
+
 // 폼 입력 요소. size는 놓이는 자리(툴바 sm·폼 md, 표 안 xs)에 맞춰 고른다.
 export const fieldVariants = cva('border border-base-300 rounded text-sm', {
   variants: {
@@ -30,4 +32,8 @@ export function FieldLabel({
   ...props
 }: ComponentProps<'label'> & VariantProps<typeof labelVariants>) {
   return <label className={labelVariants({ tone, className })} {...props} />;
+}
+
+export function Checkbox({ className, ...props }: Omit<ComponentProps<'input'>, 'type'>) {
+  return <input type="checkbox" className={cn('rounded', className)} {...props} />;
 }

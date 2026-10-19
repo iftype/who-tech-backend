@@ -6,8 +6,9 @@ import { showToast } from '../components/ui/Toast.js';
 import { adminApi } from '../lib/admin-api.js';
 import { queryKeys } from '../lib/query-keys.js';
 import { Button } from '../components/ui/Button.js';
-import { EmptyState, SectionTitle } from '../components/ui/Section.js';
+import { EmptyState, panelVariants, SectionTitle } from '../components/ui/Section.js';
 import { Select, TextInput } from '../components/ui/Field.js';
+import { TextLink } from '../components/ui/TextLink.js';
 
 export default function BlogTab() {
   const [sinceMinutes, setSinceMinutes] = useState(65);
@@ -90,7 +91,7 @@ export default function BlogTab() {
         </div>
       </div>
 
-      <section className="border border-base-200 rounded-lg p-4 bg-white">
+      <section className={panelVariants({ variant: 'cardLg' })}>
         <div className="flex items-start gap-3">
           <img
             src={teamBlog?.avatarUrl ?? '/rilog-avatar.png'}
@@ -118,19 +119,14 @@ export default function BlogTab() {
               </div>
             )}
           </div>
-          <a
-            href={teamBlog?.blogUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-primary-600 hover:underline shrink-0"
-          >
+          <TextLink href={teamBlog?.blogUrl} target="_blank" rel="noopener noreferrer" className="shrink-0">
             블로그 열기
-          </a>
+          </TextLink>
         </div>
       </section>
 
       {teamBlog && (
-        <section className="border border-base-200 rounded-lg p-4 bg-white">
+        <section className={panelVariants({ variant: 'cardLg' })}>
           <SectionTitle as="h3" size="sm" className="mb-3">
             팀 블로그 설정
           </SectionTitle>
@@ -175,14 +171,9 @@ export default function BlogTab() {
             ) : (
               posts.map((p) => (
                 <div key={p.id} className="border border-base-200 rounded p-3">
-                  <a
-                    href={p.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-primary-600 hover:underline block truncate"
-                  >
+                  <TextLink href={p.url} target="_blank" rel="noopener noreferrer" size="sm" className="block truncate">
                     {p.title}
-                  </a>
+                  </TextLink>
                   <p className="text-xs text-base-500 mt-0.5">
                     {p.member.nickname ?? p.member.githubId} · {new Date(p.publishedAt).toLocaleString('ko-KR')}
                   </p>

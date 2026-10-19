@@ -49,7 +49,6 @@ export async function seedContractData(prisma: PrismaClient) {
       ...memberDefaults,
       githubUserId: 1001,
       githubId: 'fe-crew',
-      previousGithubIds: JSON.stringify(['fe-crew-old']),
       nickname: '하루',
       nicknameStats: JSON.stringify([
         { nickname: '하루', count: 3, lastSeenAt: '2026-03-12T10:00:00.000Z' },
