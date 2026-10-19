@@ -7,12 +7,13 @@ import { join } from 'path';
 import { createDeployRouter } from '../../features/deploy/deploy.route.js';
 import { createDeployService, type DeployService } from '../../features/deploy/deploy.service.js';
 import { bearerToken, isAdminToken } from '../../shared/middleware/auth.js';
+import { createAuthFailureLimiter } from '../../shared/middleware/rate-limit.js';
 
 const ORIGINAL = process.env['ADMIN_SECRET'];
 
-function makeApp(service: DeployService) {
+function makeApp(service: DeployService, limiter = createAuthFailureLimiter({ limit: 100 })) {
   const app = express();
-  app.use('/admin', createDeployRouter({ service, isAuthorized: isAdminToken, bearerToken }));
+  app.use('/admin', createDeployRouter({ service, isAuthorized: isAdminToken, bearerToken, limiter }));
   return app;
 }
 
@@ -52,6 +53,22 @@ describe('deploy router', () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ ok: true, message: 'deploy started', logFile: '/tmp/who-tech-deploy-1.log' });
     expect(service.start).toHaveBeenCalledTimes(1);
+  });
+
+  it('should block an IP after repeated wrong tokens but not count successful deploys', async () => {
+    process.env['ADMIN_SECRET'] = 'secret';
+    const service = fakeService();
+    const app = makeApp(service, createAuthFailureLimiter({ limit: 3 }));
+
+    for (let i = 0; i < 5; i++) {
+      expect((await request(app).post('/admin/deploy').set('Authorization', 'Bearer secret')).status).toBe(200);
+    }
+    for (let i = 0; i < 3; i++) {
+      expect((await request(app).post('/admin/deploy').set('Authorization', 'Bearer wrong')).status).toBe(401);
+    }
+    const blocked = await request(app).post('/admin/deploy').set('Authorization', 'Bearer secret');
+    expect(blocked.status).toBe(429);
+    expect(service.start).toHaveBeenCalledTimes(5);
   });
 
   it('should protect the logs endpoint too', async () => {

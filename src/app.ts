@@ -5,6 +5,7 @@ import { dirname, join } from 'path';
 import { existsSync, readFileSync } from 'fs';
 import { execSync } from 'child_process';
 import { adminAuth, bearerToken, isAdminToken } from './shared/middleware/auth.js';
+import { createAuthFailureLimiter } from './shared/middleware/rate-limit.js';
 import { errorHandler } from './shared/middleware/error.js';
 import { createContainer } from './container.js';
 
@@ -65,6 +66,8 @@ const {
 
 // --- Express App ---
 const app = express();
+// nginx(같은 서버)가 넘긴 X-Forwarded-For로 클라이언트 IP를 읽는다 (횟수 제한 기준)
+app.set('trust proxy', 'loopback');
 app.use(compression());
 app.use(express.json());
 app.use('/admin/ui', express.static(publicDir));
@@ -102,6 +105,7 @@ app.use(
     service: createDeployService({ scriptPath: join(__dirname, '..', 'scripts', 'deploy.sh') }),
     isAuthorized: isAdminToken,
     bearerToken,
+    limiter: createAuthFailureLimiter(),
   }),
 );
 
