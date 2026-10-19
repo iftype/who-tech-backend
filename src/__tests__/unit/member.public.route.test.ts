@@ -206,4 +206,25 @@ describe('member public routes', () => {
       expect(weird.body).toEqual({ error: 'weird' });
     });
   });
+
+  describe('POST /members/:githubId/refresh overall limit', () => {
+    it('should cap refreshes of many different members (GitHub quota)', async () => {
+      const service = { refreshMemberProfile: jest.fn(async () => ({ member: { githubId: 'x' } })) };
+      const app = express();
+      app.use('/members', createMemberPublicRouter(service as never, { refreshLimit: 2 }));
+
+      expect((await request(app).post('/members/a/refresh')).status).toBe(200);
+      expect((await request(app).post('/members/b/refresh')).status).toBe(200);
+      const blocked = await request(app).post('/members/c/refresh');
+
+      // 웹은 429 본문의 remainingSeconds·message로 카운트다운을 띄운다 → 아이디별 제한과 같은 모양
+      expect(blocked.status).toBe(429);
+      expect(blocked.body).toMatchObject({
+        error: 'Rate limited',
+        message: expect.stringContaining('초 후에 다시 시도해주세요'),
+      });
+      expect(blocked.body.remainingSeconds).toBeGreaterThan(0);
+      expect(service.refreshMemberProfile).toHaveBeenCalledTimes(2);
+    });
+  });
 });
