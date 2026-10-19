@@ -7,6 +7,13 @@ import type { Member } from '../../lib/types.js';
 import { adminApi } from '../../lib/admin-api.js';
 import { queryKeys } from '../../lib/query-keys.js';
 
+// 멤버 목록 캐시만 고른다: ['members', filters]. ['members', 'prs'] 같은 다른 모양은 건드리지 않는다
+const memberListFilter = {
+  queryKey: queryKeys.members.all(),
+  predicate: (query: { queryKey: readonly unknown[] }) =>
+    typeof query.queryKey[1] === 'object' && query.queryKey[1] !== null,
+};
+
 // 멤버 한 명에 대한 작업(프로필 새로고침·PR 재수집·기수 재계산·삭제)과 진행 상태
 export function useMemberActions(onRefresh: () => void) {
   const queryClient = useQueryClient();
@@ -42,24 +49,21 @@ export function useMemberActions(onRefresh: () => void) {
 
   const deleteMemberMutation = useMutation({
     mutationFn: (memberId: number) => adminApi.members.remove(memberId),
+    // 목록은 필터마다 ['members', filters] 로 캐시된다. setQueryData는 키가 정확히 같아야 해서
+    // ['members'] 에 쓰면 화면 목록이 안 바뀐다 → 앞부분이 같은 목록 캐시 전부를 setQueriesData로 고친다
     onMutate: async (memberId) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.members.all() });
-      const previousMembers = queryClient.getQueryData<Member[]>(queryKeys.members.all());
-      queryClient.setQueryData(
-        queryKeys.members.all(),
-        (old: Member[] | undefined) => old?.filter((m) => m.id !== memberId) ?? [],
-      );
-      return { previousMembers };
+      const previous = queryClient.getQueriesData<Member[]>(memberListFilter);
+      queryClient.setQueriesData<Member[]>(memberListFilter, (old) => old?.filter((m) => m.id !== memberId));
+      return { previous };
     },
     onError: (_err, _memberId, context) => {
-      if (context?.previousMembers) {
-        queryClient.setQueryData(queryKeys.members.all(), context.previousMembers);
-      }
+      context?.previous.forEach(([key, data]) => queryClient.setQueryData(key, data));
       showToast('삭제 실패', 'error');
     },
+    // 재요청은 onSettled의 invalidate 한 번으로 충분하다 (onRefresh까지 부르면 같은 목록을 두 번 받는다)
     onSuccess: () => {
       showToast('삭제 완료');
-      onRefresh();
     },
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.members.all() });

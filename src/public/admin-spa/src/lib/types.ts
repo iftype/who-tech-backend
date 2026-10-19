@@ -194,7 +194,7 @@ export interface SyncJob {
   id: string;
   repoId: number;
   repoName: string;
-  status: 'queued' | 'running' | 'completed' | 'failed';
+  status: 'queued' | 'running' | 'completed' | 'failed' | 'cancelled';
   message: string;
   startedAt: string;
   finishedAt: string | null;

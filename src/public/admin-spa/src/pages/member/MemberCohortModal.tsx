@@ -28,7 +28,6 @@ export function MemberCohortModal({ member, onChange, onRefresh }: Props) {
   const afterChange = (message: string, updated: Member | undefined) => {
     applyCohorts(updated);
     void queryClient.invalidateQueries({ queryKey: queryKeys.members.all() });
-    onRefresh();
     showToast(message);
   };
 
@@ -52,7 +51,6 @@ export function MemberCohortModal({ member, onChange, onRefresh }: Props) {
     onSuccess: (updated) => {
       applyCohorts(updated);
       void queryClient.invalidateQueries({ queryKey: queryKeys.members.all() });
-      onRefresh();
       setNewCohortInput('');
       showToast('기수 추가 완료');
     },
