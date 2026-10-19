@@ -8,6 +8,7 @@ import { toMemberResponse } from './member.response.js';
 import { applyDominantCohort } from './member.cohort-recalc.js';
 import { computeDominantTrack } from '../../shared/member-track.js';
 import type { CohortRule } from '../../shared/types/index.js';
+import { NotFoundError } from '../../shared/errors.js';
 
 export async function refreshMemberProfileById(
   id: number,
@@ -18,7 +19,7 @@ export async function refreshMemberProfileById(
   cohortRules?: CohortRule[],
 ) {
   const member = await memberRepo.findByIdWithRelations(id);
-  if (!member) throw new Error('member not found');
+  if (!member) throw new NotFoundError('member not found');
 
   let statsValue: string | null = null;
   for (const submission of member.submissions) {

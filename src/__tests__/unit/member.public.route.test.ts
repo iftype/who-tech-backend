@@ -4,6 +4,7 @@ import request from 'supertest';
 import { createMemberPublicRouter } from '../../features/member/member.public.route.js';
 import { errorHandler } from '../../shared/middleware/error.js';
 import type { MemberPublicService } from '../../features/member/member.public.service.js';
+import { NotFoundError } from '../../shared/errors.js';
 
 type AsyncMock = ReturnType<typeof jest.fn<(...args: unknown[]) => Promise<unknown>>>;
 const asyncMock = (value: unknown): AsyncMock =>
@@ -191,7 +192,7 @@ describe('member public routes', () => {
 
     it('should map a missing member to 404 and other failures to 500', async () => {
       const { app, service } = makeApp();
-      service.refreshMemberProfile.mockRejectedValueOnce(new Error('Member not found'));
+      service.refreshMemberProfile.mockRejectedValueOnce(new NotFoundError('Member not found'));
       service.refreshMemberProfile.mockRejectedValueOnce(new Error('github down'));
       service.refreshMemberProfile.mockRejectedValueOnce('weird');
 

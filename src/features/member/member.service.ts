@@ -15,6 +15,7 @@ import { applyDominantCohort } from './member.cohort-recalc.js';
 import type { SubmissionRepository } from '../../db/repositories/submission.repository.js';
 import type { SyncService } from '../sync/index.js';
 import { parseCohortRules } from '../../shared/cohort-rules.js';
+import { NotFoundError } from '../../shared/errors.js';
 
 export function createMemberService(deps: {
   memberRepo: MemberRepository;
@@ -167,7 +168,7 @@ export function createMemberService(deps: {
 
     changeMemberCohort: async (id: number, oldCohort: number, newCohort: number) => {
       const member = await memberRepo.findByIdWithRelations(id);
-      if (!member) throw new Error('member not found');
+      if (!member) throw new NotFoundError('member not found');
       const existing = buildCohortList(member.memberCohorts).find((c) => c.cohort === oldCohort);
       const roles = existing?.roles ?? ['crew'];
       await memberRepo.deleteParticipationsByCohort(id, oldCohort);
@@ -287,16 +288,17 @@ export function createMemberService(deps: {
 
     deleteSubmission: async (memberId: number, submissionId: number) => {
       const member = await memberRepo.findByIdWithRelations(memberId);
-      if (!member) throw new Error('member not found');
-      const submission = member.submissions.find((s) => s.id === submissionId);
-      if (!submission) throw new Error('submission not found');
+      if (!member) throw new NotFoundError('member not found');
+      // 상세 include는 최근 50건만 실으므로 id로 직접 찾는다 (예전에는 오래된 제출을 지울 수 없었다)
+      const submission = await submissionRepo.findById(submissionId);
+      if (!submission || submission.memberId !== memberId) throw new NotFoundError('submission not found');
       await submissionRepo.deleteById(submissionId);
       return { success: true };
     },
 
     resyncMemberPRs: async (id: number) => {
       const member = await memberRepo.findByIdWithRelations(id);
-      if (!member) throw new Error('member not found');
+      if (!member) throw new NotFoundError('member not found');
       const workspace = await workspaceService.getOrThrow();
       const result = await syncService.syncMemberPRs(octokit, workspace.id, member.githubId);
       return result;
@@ -304,7 +306,7 @@ export function createMemberService(deps: {
 
     recalculateMemberCohorts: async (id: number) => {
       const member = await memberRepo.findByIdWithRelations(id);
-      if (!member) throw new Error('member not found');
+      if (!member) throw new NotFoundError('member not found');
 
       if (member.cohortLocked) {
         return toMemberResponse(member);

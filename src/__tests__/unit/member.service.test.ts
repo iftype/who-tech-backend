@@ -86,7 +86,7 @@ function makeDeps(cohortRules: unknown = WORKSPACE.cohortRules) {
     getOrThrow: asyncMock({ id: 1, cohortRules }),
     touchProfileRefresh: asyncMock(undefined),
   };
-  const submissionRepo = { deleteById: asyncMock({}) };
+  const submissionRepo = { deleteById: asyncMock({}), findById: asyncMock(null) };
   const syncService = { syncMemberPRs: asyncMock({ synced: 2 }) };
   const octokit = {} as Octokit;
 
@@ -347,13 +347,42 @@ describe('MemberService', () => {
     it('should delete a submission only when it belongs to the member', async () => {
       const { deps, memberRepo, submissionRepo } = makeDeps();
       memberRepo.findByIdWithRelations.mockResolvedValue(makeMember({ submissions: [{ id: 5 }] }));
+      submissionRepo.findById.mockImplementation(async (id: number) =>
+        id === 5 ? { id: 5, memberId: 10 } : id === 6 ? { id: 6, memberId: 99 } : null,
+      );
       const service = createMemberService(deps);
 
       await expect(service.deleteSubmission(10, 6)).rejects.toThrow('submission not found');
+      await expect(service.deleteSubmission(10, 7)).rejects.toThrow('submission not found');
       expect(submissionRepo.deleteById).not.toHaveBeenCalled();
 
       await expect(service.deleteSubmission(10, 5)).resolves.toEqual({ success: true });
       expect(submissionRepo.deleteById).toHaveBeenCalledWith(5);
+    });
+
+    it('should delete an old submission beyond the 50 most recent ones', async () => {
+      const { deps, memberRepo, submissionRepo } = makeDeps();
+      // 상세 include는 최근 50건만 싣는다 → 예전에는 오래된 제출을 찾지 못해 삭제할 수 없었다
+      memberRepo.findByIdWithRelations.mockResolvedValue(makeMember({ submissions: [{ id: 900 }] }));
+      submissionRepo.findById.mockResolvedValue({ id: 3, memberId: 10 });
+
+      await expect(createMemberService(deps).deleteSubmission(10, 3)).resolves.toEqual({ success: true });
+      expect(submissionRepo.deleteById).toHaveBeenCalledWith(3);
+    });
+
+    it('should answer 404 (NotFoundError) for missing members and submissions', async () => {
+      const { NotFoundError } = await import('../../shared/errors.js');
+      const service = createMemberService(makeDeps().deps);
+      for (const call of [
+        () => service.deleteSubmission(1, 5),
+        () => service.resyncMemberPRs(1),
+        () => service.recalculateMemberCohorts(1),
+        () => service.changeMemberCohort(1, 7, 8),
+      ]) {
+        const error = await call().catch((e: unknown) => e);
+        expect(error).toBeInstanceOf(NotFoundError);
+        expect((error as { statusCode: number }).statusCode).toBe(404);
+      }
     });
 
     it('should throw when deleting a submission of an unknown member', async () => {
