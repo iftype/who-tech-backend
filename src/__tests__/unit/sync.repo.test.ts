@@ -61,7 +61,6 @@ const makeMember = (overrides: Record<string, unknown> = {}) => ({
   avatarUrl: null,
   profileFetchedAt: null,
   profileRefreshError: null,
-  previousGithubIds: null,
   ...overrides,
 });
 

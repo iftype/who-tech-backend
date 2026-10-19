@@ -42,7 +42,6 @@ model Member {
   id                  Int                @id @default(autoincrement())
   githubUserId        Int?
   githubId            String
-  previousGithubIds   String?
   nickname            String?
   manualNickname      String?
   nicknameStats       String?
