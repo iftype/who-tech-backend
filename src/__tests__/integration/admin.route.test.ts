@@ -30,6 +30,14 @@ afterAll(async () => {
   await prisma.$disconnect();
 });
 
+describe('GET /rilog-avatar.png', () => {
+  it('팀 블로그 기본 아바타를 인증 없이 PNG로 준다', async () => {
+    const res = await request(app).get('/rilog-avatar.png');
+    expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toBe('image/png');
+  });
+});
+
 describe('GET /admin/status', () => {
   it('인증 없이 접근하면 401을 반환한다', async () => {
     const res = await request(app).get('/admin/status');

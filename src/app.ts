@@ -79,6 +79,11 @@ app.get('/guide', (_req, res) => {
   res.sendFile(join(publicDir, 'guide.html'));
 });
 
+// 팀 블로그 기본 아바타. DB 값 '/rilog-avatar.png'는 웹 기준 경로라 어드민(이 서버)에서도 같은 경로로 준다
+app.get('/rilog-avatar.png', (_req, res) => {
+  res.sendFile(join(publicDir, 'rilog-avatar.png'));
+});
+
 app.use(
   '/health',
   createHealthRouter({
