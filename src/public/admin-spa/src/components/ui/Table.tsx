@@ -46,6 +46,11 @@ export function TBody({ className, ...props }: ComponentProps<'tbody'>) {
   return <tbody className={cn('divide-y divide-base-100', className)} {...props} />;
 }
 
+// 마우스를 올리면 옅게 칠해지는 표의 한 줄
+export function Tr({ className, ...props }: ComponentProps<'tr'>) {
+  return <tr className={cn('hover:bg-base-50', className)} {...props} />;
+}
+
 export function Th({ className, density, size, ...props }: ComponentProps<'th'> & VariantProps<typeof thVariants>) {
   return <th className={thVariants({ density, size, className })} {...props} />;
 }

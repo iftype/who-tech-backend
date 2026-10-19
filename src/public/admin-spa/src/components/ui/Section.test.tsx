@@ -41,3 +41,38 @@ describe('Section and Field', () => {
     );
   });
 });
+
+describe('Tr, TextLink, Checkbox and panels', () => {
+  it('should render the same classes the hand-written elements used', async () => {
+    const { Tr } = await import('./Table');
+    const { TextLink } = await import('./TextLink');
+    const { Checkbox } = await import('./Field');
+    const { panelVariants } = await import('./Section');
+    const { container } = render(
+      <>
+        <table>
+          <tbody>
+            <Tr>
+              <td>a</td>
+            </Tr>
+          </tbody>
+        </table>
+        <TextLink href="#" className="font-medium">
+          링크
+        </TextLink>
+        <TextLink href="#" size="sm">
+          큰 링크
+        </TextLink>
+        <Checkbox className="border-base-300" readOnly />
+      </>,
+    );
+    const [small, large] = container.querySelectorAll('a');
+
+    expect(classSet(container.querySelector('tr'))).toEqual(set('hover:bg-base-50'));
+    expect(classSet(small)).toEqual(set('text-xs text-primary-600 hover:underline font-medium'));
+    expect(classSet(large)).toEqual(set('text-sm text-primary-600 hover:underline'));
+    expect(container.querySelector('input')?.getAttribute('type')).toBe('checkbox');
+    expect(classSet(container.querySelector('input'))).toEqual(set('rounded border-base-300'));
+    expect(set(panelVariants({ variant: 'cardLg' }))).toEqual(set('border border-base-200 rounded-lg p-4 bg-white'));
+  });
+});

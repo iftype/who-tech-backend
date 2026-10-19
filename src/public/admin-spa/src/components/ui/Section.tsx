@@ -7,10 +7,10 @@ const sectionTitleVariants = cva('font-semibold', {
   defaultVariants: { size: 'md' },
 });
 
-const panelVariants = cva('border border-base-200 rounded', {
+export const panelVariants = cva('border border-base-200', {
   variants: {
-    // inset: 화면 안에 들어간 회색 묶음, card: 흰 바탕 카드
-    variant: { inset: 'bg-base-50 p-3', card: 'bg-white p-4' },
+    // inset: 화면 안에 들어간 회색 묶음, card: 흰 바탕 카드, cardLg: 모서리가 더 둥근 카드(블로그 탭)
+    variant: { inset: 'rounded bg-base-50 p-3', card: 'rounded bg-white p-4', cardLg: 'rounded-lg bg-white p-4' },
   },
   defaultVariants: { variant: 'inset' },
 });
