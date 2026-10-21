@@ -670,7 +670,7 @@ exports[`API contract admin GET GET /admin/members/1/blog-posts 1`] = `
 exports[`API contract admin GET GET /admin/members/999 1`] = `
 {
   "body": {
-    "error": "member not found",
+    "message": "member not found",
   },
   "location": undefined,
   "status": 404,
@@ -1194,7 +1194,7 @@ exports[`API contract admin GET GET /admin/status 1`] = `
 exports[`API contract admin GET GET /admin/status without token is 401 1`] = `
 {
   "body": {
-    "error": "Unauthorized",
+    "message": "Unauthorized",
   },
   "status": 401,
 }
@@ -1384,7 +1384,7 @@ exports[`API contract mutations (sequential) 04 POST /admin/banned-words 1`] = `
 exports[`API contract mutations (sequential) 05 POST /admin/banned-words 1`] = `
 {
   "body": {
-    "error": "word already exists",
+    "message": "word already exists",
   },
   "location": undefined,
   "status": 409,
@@ -1394,7 +1394,7 @@ exports[`API contract mutations (sequential) 05 POST /admin/banned-words 1`] = `
 exports[`API contract mutations (sequential) 06 POST /admin/banned-words 1`] = `
 {
   "body": {
-    "error": "word required",
+    "message": "word required",
   },
   "location": undefined,
   "status": 400,
@@ -1440,7 +1440,7 @@ exports[`API contract mutations (sequential) 09 POST /admin/ignored-domains 1`] 
 exports[`API contract mutations (sequential) 10 POST /admin/ignored-domains 1`] = `
 {
   "body": {
-    "error": "domain required",
+    "message": "domain required",
   },
   "location": undefined,
   "status": 400,
@@ -1770,7 +1770,7 @@ exports[`API contract mutations (sequential) 19 POST /admin/cohort-repos 1`] = `
 exports[`API contract mutations (sequential) 20 POST /admin/cohort-repos 1`] = `
 {
   "body": {
-    "error": "cohort and missionRepoId required",
+    "message": "cohort and missionRepoId required",
   },
   "location": undefined,
   "status": 400,
@@ -1893,7 +1893,7 @@ exports[`API contract mutations (sequential) 26 POST /admin/cohort-repos/auto-fi
 exports[`API contract mutations (sequential) 27 POST /admin/cohort-repos/auto-fill 1`] = `
 {
   "body": {
-    "error": "cohort required",
+    "message": "cohort required",
   },
   "location": undefined,
   "status": 400,
@@ -2096,7 +2096,7 @@ exports[`API contract mutations (sequential) 30 GET /admin/members/2 1`] = `
 exports[`API contract mutations (sequential) 31 PATCH /admin/members/1/cohorts/8 1`] = `
 {
   "body": {
-    "error": "newCohort required",
+    "message": "newCohort required",
   },
   "location": undefined,
   "status": 400,
@@ -3034,7 +3034,7 @@ exports[`API contract mutations (sequential) 55 GET /members/fe-crew/blog-posts 
 exports[`API contract mutations (sequential) 56 DELETE /admin/sync/jobs/no-such-job 1`] = `
 {
   "body": {
-    "error": "job not found or already completed",
+    "message": "job not found or already completed",
   },
   "location": undefined,
   "status": 404,

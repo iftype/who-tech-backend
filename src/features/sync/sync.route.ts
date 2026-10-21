@@ -4,7 +4,8 @@ import type { Response } from 'express';
 import { startSse, runSseJob } from '../../shared/sse-handler.js';
 import { parseNumberQuery, parseOptionalNumberQuery } from '../../shared/validation.js';
 import type { SyncAdminService, SyncOutcome } from './sync.admin.service.js';
-import { CancelledError } from '../../shared/errors.js';
+import { CancelledError, NotFoundError } from '../../shared/errors.js';
+import { badRequest } from '../../shared/http.js';
 
 // 기다리는 동안 끝났으면 예전과 같은 200 + 결과, 아직이면 202 + 작업 (GET /admin/sync/jobs/:id/stream 으로 이어 볼 수 있다)
 function sendOutcome(res: Response, outcome: SyncOutcome): void {
@@ -53,10 +54,7 @@ export function createSyncRouter(service: SyncAdminService) {
 
   router.post('/sync/cohort-repos', async (req, res) => {
     const cohort = typeof req.body?.cohort === 'number' ? req.body.cohort : NaN;
-    if (Number.isNaN(cohort)) {
-      res.status(400).json({ error: 'cohort required' });
-      return;
-    }
+    if (Number.isNaN(cohort)) badRequest('cohort required');
     sendOutcome(res, await service.requestSync('cohort-repos', cohort));
   });
 
@@ -90,18 +88,15 @@ export function createSyncRouter(service: SyncAdminService) {
       type !== 'repo' &&
       type !== 'blog'
     ) {
-      res.status(400).json({ error: 'type must be workspace, continuous, cohort-repos, repo, or blog' });
-      return;
+      badRequest('type must be workspace, continuous, cohort-repos, repo, or blog');
     }
 
     if (type === 'cohort-repos' && cohort == null) {
-      res.status(400).json({ error: 'cohort is required for cohort-repos job' });
-      return;
+      badRequest('cohort is required for cohort-repos job');
     }
 
     if (type === 'repo' && repoId == null) {
-      res.status(400).json({ error: 'repoId is required for repo job' });
-      return;
+      badRequest('repoId is required for repo job');
     }
 
     const id = service.createJob(type, cohort, repoId, blogSource);
@@ -115,10 +110,7 @@ export function createSyncRouter(service: SyncAdminService) {
 
   router.delete('/sync/jobs/:id', async (req, res) => {
     const success = service.cancelJob(String(req.params['id'] ?? ''));
-    if (!success) {
-      res.status(404).json({ error: 'job not found or already completed' });
-      return;
-    }
+    if (!success) throw new NotFoundError('job not found or already completed');
     res.json({ success: true });
   });
 
@@ -126,10 +118,7 @@ export function createSyncRouter(service: SyncAdminService) {
     const jobId = String(req.params['id'] ?? '');
     const job = service.getJob(jobId);
 
-    if (!job) {
-      res.status(404).json({ error: 'job not found' });
-      return;
-    }
+    if (!job) throw new NotFoundError('job not found');
 
     const send = startSse(res);
 

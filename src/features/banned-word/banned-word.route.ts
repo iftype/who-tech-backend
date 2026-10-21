@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { HttpError, badRequest } from '../../shared/http.js';
 
 import { parseId } from '../../shared/validation.js';
 import { isUniqueConstraintError } from '../../shared/prisma-error.js';
@@ -19,19 +20,13 @@ export function createBannedWordRouter(deps: {
 
   router.post('/', async (req, res) => {
     const { word } = req.body as { word?: string };
-    if (!word?.trim()) {
-      res.status(400).json({ error: 'word required' });
-      return;
-    }
+    if (!word?.trim()) badRequest('word required');
     const workspace = await workspaceService.getOrThrow();
     try {
       const created = await bannedWordRepo.create(workspace.id, word.trim());
       res.status(201).json(created);
     } catch (error) {
-      if (isUniqueConstraintError(error)) {
-        res.status(409).json({ error: 'word already exists' });
-        return;
-      }
+      if (isUniqueConstraintError(error)) throw new HttpError(409, 'word already exists');
       throw error;
     }
   });
