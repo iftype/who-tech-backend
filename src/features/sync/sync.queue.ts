@@ -4,6 +4,7 @@ import type { SyncService } from './sync.service.js';
 import type { ActivityLogService } from '../activity-log/index.js';
 import type { WorkspaceService } from '../workspace/index.js';
 import { CancelledError } from '../../shared/errors.js';
+import type { SyncJobRecordData, SyncJobRepository } from '../../db/repositories/sync-job.repository.js';
 import type {
   BlogSyncResult,
   BlogSyncSource,
@@ -102,8 +103,11 @@ export function createSyncQueue(deps: {
   octokit: Octokit;
   repoService: RepoSyncRunner;
   blogAdminService: WorkspaceBlogSyncRunner;
+  /** 있으면 작업 상태를 DB에 적어 재시작 뒤에도 남긴다. 없으면(테스트) 메모리만 */
+  syncJobRepo?: SyncJobRepository;
 }) {
-  const { syncService, activityLogService, workspaceService, octokit, repoService, blogAdminService } = deps;
+  const { syncService, activityLogService, workspaceService, octokit, repoService, blogAdminService, syncJobRepo } =
+    deps;
 
   const jobs: SyncJob[] = [];
   const processing: Record<SyncLane, boolean> = { github: false, blog: false };
@@ -139,7 +143,26 @@ export function createSyncQueue(deps: {
     }
   };
 
+  // 활동 로그도 실행을 막지 않는다. 로그 쓰기가 실패하면(DB가 닫혔거나 워크스페이스가 없는 테스트 끝자락)
+  // processLoop 밖으로 거부가 새어 나가 unhandledRejection이 됐다 → 여기서 삼키고 콘솔에만 남긴다
+  const log = async (type: string, message: string): Promise<void> => {
+    try {
+      await activityLogService.addLog(type, message);
+    } catch (error) {
+      console.error('[sync-queue] 활동 로그 기록 실패', error);
+    }
+  };
+
+  // 기록은 실행을 막지 않는다: 적지 못해도 작업은 돌고, 로그만 남긴다
+  const persist = (job: SyncJob): void => {
+    if (!syncJobRepo) return;
+    syncJobRepo.upsert(toRecord(job)).catch((error: unknown) => console.error('[sync-queue] 작업 기록 실패', error));
+  };
+
   const pruneFinished = (now: number): void => {
+    syncJobRepo
+      ?.deleteCompletedBefore(new Date(now - FINISHED_JOB_TTL_MS))
+      .catch((error: unknown) => console.error('[sync-queue] 작업 기록 정리 실패', error));
     for (let i = jobs.length - 1; i >= 0; i--) {
       const job = jobs[i];
       if (job?.completedAt && now - job.completedAt.getTime() > FINISHED_JOB_TTL_MS) {
@@ -198,6 +221,7 @@ export function createSyncQueue(deps: {
       abortController: new AbortController(),
     };
     jobs.push(job);
+    persist(job);
     if (!quiet) {
       const detail = [
         cohort != null ? ` cohort=${cohort}` : '',
@@ -205,7 +229,7 @@ export function createSyncQueue(deps: {
         githubId != null ? ` githubId=${githubId}` : '',
         blogSource != null ? ` source=${blogSource}` : '',
       ].join('');
-      void activityLogService.addLog('sync', `Job queued: ${type}${detail} (id=${id})`);
+      void log('sync', `Job queued: ${type}${detail} (id=${id})`);
     }
     processLoop(LANE_OF[type]);
     return id;
@@ -232,6 +256,7 @@ export function createSyncQueue(deps: {
     if (job.status === 'queued') {
       job.status = 'cancelled';
       job.completedAt = new Date();
+      persist(job);
       emitDone(job);
     }
     return true;
@@ -314,12 +339,14 @@ export function createSyncQueue(deps: {
         if (job.abortController.signal.aborted) {
           job.status = 'cancelled';
           job.completedAt = new Date();
+          persist(job);
           emitDone(job);
           continue;
         }
 
         job.status = 'running';
         job.startedAt = new Date();
+        persist(job);
 
         const onProgress = (step: SyncJobProgress): void => {
           job.progress = step;
@@ -338,7 +365,7 @@ export function createSyncQueue(deps: {
           job.result = result;
           job.completedAt = new Date();
           if (!job.quiet) {
-            await activityLogService.addLog(
+            await log(
               'sync',
               `Job completed: ${job.type}${job.cohort != null ? ` cohort=${job.cohort}` : ''} — synced ${result.totalSynced} items across ${result.reposSynced} repos`,
             );
@@ -347,16 +374,17 @@ export function createSyncQueue(deps: {
           if (job.abortController.signal.aborted) {
             job.status = 'cancelled';
             job.completedAt = new Date();
-            await activityLogService.addLog('sync', `Job cancelled: ${job.type} (id=${job.id})`);
+            await log('sync', `Job cancelled: ${job.type} (id=${job.id})`);
           } else {
             job.status = 'failed';
             job.error = err instanceof Error ? err.message : String(err);
             failures.set(job.id, err);
             job.completedAt = new Date();
-            await activityLogService.addLog('sync_error', `Job failed: ${job.type} — ${job.error}`);
+            await log('sync_error', `Job failed: ${job.type} — ${job.error}`);
           }
         }
 
+        persist(job);
         emitDone(job);
       }
     } finally {
@@ -364,7 +392,72 @@ export function createSyncQueue(deps: {
     }
   };
 
-  return { enqueue, getJobs, getJob, findActive, waitFor, cancel, subscribeProgress, subscribeDone };
+  /**
+   * 부팅 때 한 번: 끝을 못 적은 기록(대기·실행 중)은 "서버 재시작"으로 실패 처리하고,
+   * TTL 안의 기록을 목록 앞에 되살린다(실행하지 않는다 — 어드민이 재시작 전 작업을 볼 수 있게)
+   */
+  const restore = async (): Promise<number> => {
+    if (!syncJobRepo) return 0;
+    const now = new Date();
+    await syncJobRepo.closeUnfinished('server restarted', now);
+    const rows = await syncJobRepo.findRecent(new Date(now.getTime() - FINISHED_JOB_TTL_MS));
+    const known = new Set(jobs.map((j) => j.id));
+    const restored = rows.filter((row) => !known.has(row.id)).map(fromRecord);
+    jobs.unshift(...restored);
+    return restored.length;
+  };
+
+  return { enqueue, getJobs, getJob, findActive, waitFor, cancel, subscribeProgress, subscribeDone, restore };
+}
+
+function toRecord(job: SyncJob): SyncJobRecordData {
+  const detail =
+    job.step || job.repoResult || job.blogResult
+      ? JSON.stringify({ step: job.step, repoResult: job.repoResult, blogResult: job.blogResult })
+      : null;
+  return {
+    id: job.id,
+    type: job.type,
+    lane: LANE_OF[job.type],
+    status: job.status,
+    cohort: job.cohort ?? null,
+    repoId: job.repoId ?? null,
+    githubId: job.githubId ?? null,
+    blogSource: job.blogSource ?? null,
+    label: job.label ?? null,
+    quiet: job.quiet ?? false,
+    error: job.error ?? null,
+    result: job.result ? JSON.stringify(job.result) : null,
+    detail,
+    createdAt: job.createdAt,
+    startedAt: job.startedAt ?? null,
+    completedAt: job.completedAt ?? null,
+  };
+}
+
+// 기록에서 되살린 작업. 이미 끝난 것만 되살리므로 abortController는 쓰이지 않는다
+function fromRecord(row: SyncJobRecordData): SyncJob {
+  const detail = row.detail ? (JSON.parse(row.detail) as Pick<SyncJob, 'step' | 'repoResult' | 'blogResult'>) : {};
+  return {
+    id: row.id,
+    type: row.type as SyncJobType,
+    status: row.status as SyncJobStatus,
+    createdAt: row.createdAt,
+    ...(row.cohort != null ? { cohort: row.cohort } : {}),
+    ...(row.repoId != null ? { repoId: row.repoId } : {}),
+    ...(row.githubId != null ? { githubId: row.githubId } : {}),
+    ...(row.blogSource != null ? { blogSource: row.blogSource as BlogSyncSource } : {}),
+    ...(row.label != null ? { label: row.label } : {}),
+    ...(row.quiet ? { quiet: true } : {}),
+    ...(row.error != null ? { error: row.error } : {}),
+    ...(row.result != null ? { result: JSON.parse(row.result) as SyncJobResult } : {}),
+    ...(row.startedAt != null ? { startedAt: row.startedAt } : {}),
+    ...(row.completedAt != null ? { completedAt: row.completedAt } : {}),
+    ...(detail.step ? { step: detail.step } : {}),
+    ...(detail.repoResult ? { repoResult: detail.repoResult } : {}),
+    ...(detail.blogResult ? { blogResult: detail.blogResult } : {}),
+    abortController: new AbortController(),
+  };
 }
 
 export type SyncQueue = ReturnType<typeof createSyncQueue>;

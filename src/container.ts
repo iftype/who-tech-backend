@@ -10,6 +10,7 @@ import { createBlogPostRepository } from './db/repositories/blog-post.repository
 import { createTeamBlogRepository } from './db/repositories/team-blog.repository.js';
 import { createCohortRepoRepository } from './db/repositories/cohort-repo.repository.js';
 import { createActivityLogRepository } from './db/repositories/activity-log.repository.js';
+import { createSyncJobRepository } from './db/repositories/sync-job.repository.js';
 import { createPersonRepository } from './db/repositories/person.repository.js';
 import { createBannedWordRepository } from './db/repositories/banned-word.repository.js';
 import { createIgnoredDomainRepository } from './db/repositories/ignored-domain.repository.js';
@@ -45,6 +46,7 @@ export function createContainer() {
   const teamBlogRepo = createTeamBlogRepository(db);
   const cohortRepoRepo = createCohortRepoRepository(db);
   const activityLogRepo = createActivityLogRepository(db);
+  const syncJobRepo = createSyncJobRepository(db);
   const personRepo = createPersonRepository(db);
   const bannedWordRepo = createBannedWordRepository(db);
   const ignoredDomainRepo = createIgnoredDomainRepository(db);
@@ -103,6 +105,7 @@ export function createContainer() {
     octokit,
     repoService,
     blogAdminService,
+    syncJobRepo,
   });
 
   return {

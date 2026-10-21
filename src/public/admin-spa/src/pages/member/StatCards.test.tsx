@@ -18,6 +18,7 @@ describe('StatCards', () => {
     );
 
     expect(await screen.findByText('884')).toBeInTheDocument();
-    expect(screen.getByText('활성 레포').nextElementSibling).toHaveTextContent('45');
+    // StatCard: 이름은 배지와 한 줄(div) 안, 값은 그 줄의 다음 형제
+    expect(screen.getByText('활성 레포').parentElement!.nextElementSibling).toHaveTextContent('45');
   });
 });

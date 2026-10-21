@@ -63,6 +63,9 @@ const {
   syncAdminService,
 } = createContainer();
 
+// 재시작 전 작업 기록을 되살린다 (실행 중이던 것은 실패로 닫힘). 못 되살려도 서버는 뜬다
+void syncAdminService.restoreJobs().catch((error: unknown) => console.error('[sync-queue] 작업 기록 복원 실패', error));
+
 // --- Express App ---
 const app = express();
 // nginx(같은 서버)가 넘긴 X-Forwarded-For로 클라이언트 IP를 읽는다 (횟수 제한 기준)

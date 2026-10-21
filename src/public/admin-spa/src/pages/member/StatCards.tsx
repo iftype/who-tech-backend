@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 
 import { adminApi } from '../../lib/admin-api.js';
 import { queryKeys } from '../../lib/query-keys.js';
-import { Panel } from '../../components/ui/Section.js';
+import { StatCard, StatGrid } from '../../components/ui/StatCard.js';
 
 export function StatCards() {
   const { data: status } = useQuery({
@@ -22,13 +22,10 @@ export function StatCards() {
   ];
 
   return (
-    <div className="grid grid-cols-3 gap-4 mb-6">
+    <StatGrid columns={3} className="mb-6">
       {cards.map((c) => (
-        <Panel key={c.label} variant="cardLg" className="shadow-sm">
-          <p className="text-xs text-base-500 mb-1">{c.label}</p>
-          <p className="text-xl font-bold text-base-900">{c.value}</p>
-        </Panel>
+        <StatCard key={c.label} label={c.label} value={c.value} />
       ))}
-    </div>
+    </StatGrid>
   );
 }

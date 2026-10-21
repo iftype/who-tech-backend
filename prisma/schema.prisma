@@ -224,6 +224,30 @@ model ActivityLog {
   @@index([createdAt])
 }
 
+// 싱크 큐 작업의 기록. 큐는 메모리에서 돌고 상태가 바뀔 때마다 여기 적는다 → 재시작 뒤에도 최근 작업이 어드민에 남고,
+// 재시작 때 실행 중이던 작업은 실패로 닫힌다 (라운드 5 B5-2)
+model SyncJobRecord {
+  id          String    @id
+  type        String
+  lane        String
+  status      String
+  cohort      Int?
+  repoId      Int?
+  githubId    String?
+  blogSource  String?
+  label       String?
+  quiet       Boolean   @default(false)
+  error       String?
+  result      String?   // JSON: SyncJobResult
+  detail      String?   // JSON: { step?, repoResult?, blogResult? }
+  createdAt   DateTime
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  @@index([status])
+  @@index([createdAt])
+}
+
 model NicknameBannedWord {
   id          Int       @id @default(autoincrement())
   word        String

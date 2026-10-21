@@ -1,4 +1,5 @@
 import { useHashLocation } from '../hooks/useHashLocation.js';
+import { tabVariants } from './ui/Tabs.js';
 
 const TABS = [
   { path: '/members', label: '멤버' },
@@ -11,20 +12,20 @@ const TABS = [
   { path: '/settings', label: '설정' },
 ] as const;
 
+// 좁은 화면에서는 탭이 줄을 바꾸지 않고 가로로 넘어간다
 export function TabNav() {
   const [location, navigate] = useHashLocation();
 
   return (
-    <nav className="flex border-b border-base-200 bg-white px-4">
+    <nav aria-label="어드민 탭" className="flex overflow-x-auto border-b border-base-200 bg-white px-4">
       {TABS.map((tab) => {
         const active = location === tab.path || (location === '/' && tab.path === '/members');
         return (
           <button
             key={tab.path}
             onClick={() => navigate(tab.path)}
-            className={`px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors ${
-              active ? 'border-primary-600 text-primary-600' : 'border-transparent text-base-500 hover:text-base-700'
-            }`}
+            aria-current={active ? 'page' : undefined}
+            className={tabVariants({ active })}
           >
             {tab.label}
           </button>
