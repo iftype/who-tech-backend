@@ -29,7 +29,10 @@ POST /admin/repos/:id/sync            — 단건 레포 sync
 ### Sync
 
 ```
+# 직접 싱크(POST·SSE)도 작업 큐를 거친다. 같은 종류·기수가 대기·실행 중이면 그 작업에 붙는다.
+# POST는 240초까지 기다려 끝나면 200 + 결과, 아니면 202 + 작업 (GET /admin/sync/jobs/:id/stream 으로 이어 보기)
 POST /admin/sync                      — once+미수집 레포만 대상으로 전체 sync (?cohort= 기수 필터)
+POST /admin/sync/continuous           — syncMode=continuous 레포만 sync (10분 cron)
 GET  /admin/sync/stream               — sync 진행 SSE (?token= 인증, ?cohort= 기수 필터, progress/done/error 이벤트)
 POST /admin/sync/cohort-repos         — CohortRepo에 등록된 레포만 전체 재sync (body: {cohort})
 GET  /admin/sync/cohort-repos/stream  — 기수 목록 전체 재sync SSE (?token= 인증, ?cohort= 필수)

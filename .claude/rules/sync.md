@@ -30,6 +30,7 @@ paths:
 - `cancel(id)` → queued/running 작업 취소
 - `subscribeProgress(id, cb)` / `subscribeDone(id, cb)` → SSE용
 - Worker는 순차 처리 (한 번에 하나의 job만 running)
+- 직접 싱크 라우트(`POST /sync`·`/sync/continuous`·`/sync/cohort-repos`, SSE 3개)도 큐를 거친다: `findActive`로 같은 작업에 붙고 `waitFor`로 기다린다. POST는 `REQUEST_WAIT_MS`(240초, nginx 300초보다 짧게)까지만 기다리고 202
 
 ## 주의사항
 
