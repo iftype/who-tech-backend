@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.3.0](https://github.com/iftype/who-tech-backend/compare/v1.2.4...v1.3.0) (2026-10-21)
+
+
+### 기능
+
+* 싱크 작업 기록을 DB에 남겨 재시작 뒤에도 보이게 (SyncJobRecord) ([#220](https://github.com/iftype/who-tech-backend/issues/220)) ([5b04d2f](https://github.com/iftype/who-tech-backend/commit/5b04d2f31ce9a9222e6207a9cbe2e7b436274236))
+
+
+### 버그 수정
+
+* **sync:** 활동 로그 쓰기 실패가 큐 루프 밖으로 새지 않게 ([#225](https://github.com/iftype/who-tech-backend/issues/225)) ([ff06adc](https://github.com/iftype/who-tech-backend/commit/ff06adc65329630a9fec612418d62342177b68d5))
+
+
+### 리팩토링
+
+* **admin:** 헤더·탭 고정과 가로 스크롤, 상태 카드 하나(StatCard), 탭 variant ([#221](https://github.com/iftype/who-tech-backend/issues/221)) ([a392953](https://github.com/iftype/who-tech-backend/commit/a39295316c34857befa312774c05ab6a28bbdeca))
+* 공개 API 에러도 { message } 하나로 — 라우트는 던지고 미들웨어가 모양을 정한다 ([#219](https://github.com/iftype/who-tech-backend/issues/219)) ([cc1c492](https://github.com/iftype/who-tech-backend/commit/cc1c492703a62ab140b44327a0e83b04f4e5fe41))
+
 ## [1.2.4](https://github.com/iftype/who-tech-backend/compare/v1.2.3...v1.2.4) (2026-10-21)
 
 
