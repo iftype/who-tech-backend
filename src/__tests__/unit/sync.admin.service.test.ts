@@ -27,19 +27,20 @@ function makeService(requestWaitMs?: number) {
       reposSynced: 2,
     })),
   };
+  const addLog = jest.fn(async (..._args: unknown[]) => undefined);
   const service = createSyncAdminService({
     cohortRepoRepo: {} as never,
     memberRepo: { count: jest.fn() } as never,
     missionRepoRepo: { count: jest.fn() } as never,
     workspaceService: { getOrThrow: jest.fn(async () => ({ id: 7 })) } as never,
     syncService: syncService as never,
-    activityLogService: { addLog: jest.fn(async () => undefined) } as never,
+    activityLogService: { addLog } as never,
     octokit: {} as never,
     repoService: { executeRepoSync: jest.fn() } as never,
     blogAdminService: { executeWorkspaceBlogSync: jest.fn() } as never,
     ...(requestWaitMs != null ? { requestWaitMs } : {}),
   });
-  return { service, syncService };
+  return { service, syncService, addLog };
 }
 
 describe('createSyncAdminService — 직접 싱크도 큐를 거친다', () => {
@@ -145,5 +146,26 @@ describe('createSyncAdminService — 직접 싱크도 큐를 거친다', () => {
     running.resolve({ totalSynced: 1, reposSynced: 1 });
 
     await expect(waiting).rejects.toBeInstanceOf(CancelledError);
+  });
+
+  it('should not add queued or completed logs for direct syncs, but keep failure logs', async () => {
+    const { service, syncService, addLog } = makeService();
+
+    await service.requestSync('continuous');
+    expect(addLog).not.toHaveBeenCalled();
+
+    syncService.syncContinuousRepos.mockRejectedValueOnce(new Error('github timeout'));
+    await expect(service.requestSync('continuous')).rejects.toThrow('github timeout');
+    expect(addLog).toHaveBeenCalledWith('sync_error', 'Job failed: continuous — github timeout');
+  });
+
+  it('should keep logging jobs created from the admin queue panel', async () => {
+    const { service, addLog } = makeService();
+
+    const id = service.createJob('continuous');
+    await expect(service.getQueue().waitFor(id)).resolves.toEqual({ totalSynced: 2, reposSynced: 1 });
+
+    expect(addLog).toHaveBeenCalledWith('sync', expect.stringContaining('Job queued: continuous'));
+    expect(addLog).toHaveBeenCalledWith('sync', expect.stringContaining('Job completed: continuous'));
   });
 });

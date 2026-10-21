@@ -41,6 +41,8 @@ export type SyncJob = {
   step?: SyncProgress;
   /** 레포 작업 결과: 실패한 PR 목록까지 */
   repoResult?: { synced: number; failures: RepoSyncFailure[] };
+  /** 대기·완료 활동 로그를 남기지 않는다 (10분 cron처럼 자주 오는 직접 요청이 로그를 덮지 않게). 실패·취소는 남긴다 */
+  quiet?: boolean;
   abortController: AbortController;
 };
 
@@ -147,6 +149,7 @@ export function createSyncQueue(deps: {
     repoId?: number,
     blogSource?: string,
     label?: string,
+    quiet?: boolean,
   ): string => {
     pruneFinished(Date.now());
     const id = randomUUID();
@@ -157,15 +160,18 @@ export function createSyncQueue(deps: {
       ...(repoId != null ? { repoId } : {}),
       ...(blogSource != null ? { blogSource } : {}),
       ...(label != null ? { label } : {}),
+      ...(quiet ? { quiet } : {}),
       status: 'queued',
       createdAt: new Date(),
       abortController: new AbortController(),
     };
     jobs.push(job);
-    void activityLogService.addLog(
-      'sync',
-      `Job queued: ${type}${cohort != null ? ` cohort=${cohort}` : ''}${repoId != null ? ` repoId=${repoId}` : ''}${blogSource != null ? ` source=${blogSource}` : ''} (id=${id})`,
-    );
+    if (!quiet) {
+      void activityLogService.addLog(
+        'sync',
+        `Job queued: ${type}${cohort != null ? ` cohort=${cohort}` : ''}${repoId != null ? ` repoId=${repoId}` : ''}${blogSource != null ? ` source=${blogSource}` : ''} (id=${id})`,
+      );
+    }
     processLoop();
     return id;
   };
@@ -293,10 +299,12 @@ export function createSyncQueue(deps: {
           job.status = 'completed';
           job.result = result;
           job.completedAt = new Date();
-          await activityLogService.addLog(
-            'sync',
-            `Job completed: ${job.type}${job.cohort != null ? ` cohort=${job.cohort}` : ''} — synced ${result.totalSynced} items across ${result.reposSynced} repos`,
-          );
+          if (!job.quiet) {
+            await activityLogService.addLog(
+              'sync',
+              `Job completed: ${job.type}${job.cohort != null ? ` cohort=${job.cohort}` : ''} — synced ${result.totalSynced} items across ${result.reposSynced} repos`,
+            );
+          }
         } catch (err) {
           if (job.abortController.signal.aborted) {
             job.status = 'cancelled';

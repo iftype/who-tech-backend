@@ -58,7 +58,7 @@ export function createSyncAdminService(deps: {
     onProgress: ((step: SyncJobProgress) => void) | undefined,
     waitMs?: number,
   ): Promise<SyncOutcome> => {
-    const id = queue.findActive(type, cohort)?.id ?? queue.enqueue(type, cohort);
+    const id = queue.findActive(type, cohort)?.id ?? queue.enqueue(type, cohort, undefined, undefined, undefined, true);
     const unsubscribe = onProgress ? queue.subscribeProgress(id, onProgress) : undefined;
     try {
       const result = await queue.waitFor(id, waitMs);
