@@ -15,6 +15,7 @@ import type {
   SyncJobType,
 } from './sync.queue.js';
 import { createSyncQueue } from './sync.queue.js';
+import type { SyncJobRepository } from '../../db/repositories/sync-job.repository.js';
 
 // 운영 nginx의 proxy_read_timeout(300초)보다 짧게: 그 전에 응답해야 cron이 504로 실패하지 않는다
 export const REQUEST_WAIT_MS = 240_000;
@@ -33,6 +34,7 @@ export function createSyncAdminService(deps: {
   octokit: Octokit;
   repoService: RepoSyncRunner;
   blogAdminService: WorkspaceBlogSyncRunner;
+  syncJobRepo?: SyncJobRepository;
   requestWaitMs?: number;
 }) {
   const { requestWaitMs = REQUEST_WAIT_MS } = deps;
@@ -45,6 +47,7 @@ export function createSyncAdminService(deps: {
     octokit,
     repoService,
     blogAdminService,
+    syncJobRepo,
   } = deps;
 
   const queue: SyncQueue = createSyncQueue({
@@ -54,6 +57,7 @@ export function createSyncAdminService(deps: {
     octokit,
     repoService,
     blogAdminService,
+    ...(syncJobRepo ? { syncJobRepo } : {}),
   });
 
   // 직접 부르던 싱크도 큐를 거친다: 큐 작업과 같은 레포를 동시에 쓰지 않게 하고,
@@ -121,6 +125,9 @@ export function createSyncAdminService(deps: {
       runInQueue('member', { githubId }, undefined, requestWaitMs),
 
     createJob: (type: SyncJobType, options?: EnqueueOptions): string => queue.enqueue(type, options),
+
+    /** 부팅 때 한 번: 재시작 전 작업 기록을 되살린다 (실행 중이던 것은 실패로 닫힘) */
+    restoreJobs: (): Promise<number> => queue.restore(),
 
     /** 같은 종류로 대기·실행 중인 작업 (블로그 싱크처럼 하나만 돌아야 하는 작업의 dedupe) */
     findActiveJob: (type: SyncJobType, key?: JobKey) => queue.findActive(type, key),
