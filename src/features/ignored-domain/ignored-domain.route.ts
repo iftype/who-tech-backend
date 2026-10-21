@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { badRequest } from '../../shared/http.js';
 
 import { parseId } from '../../shared/validation.js';
 import type { IgnoredDomainRepository } from '../../db/repositories/ignored-domain.repository.js';
@@ -18,10 +19,7 @@ export function createIgnoredDomainRouter(deps: {
 
   router.post('/', async (req, res) => {
     const { domain } = req.body as { domain?: string };
-    if (!domain?.trim()) {
-      res.status(400).json({ error: 'domain required' });
-      return;
-    }
+    if (!domain?.trim()) badRequest('domain required');
     const workspace = await workspaceService.getOrThrow();
     const created = await ignoredDomainRepo.create(workspace.id, domain.trim());
     res.status(201).json(created);

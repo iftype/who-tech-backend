@@ -31,7 +31,7 @@ describe('adminAuth', () => {
     process.env['ADMIN_SECRET'] = 'secret';
     const res = await request(makeApp()).get('/admin/ping').set('Authorization', 'Bearer nope');
     expect(res.status).toBe(401);
-    expect(res.body).toEqual({ error: 'Unauthorized' });
+    expect(res.body).toEqual({ message: 'Unauthorized' });
   });
 
   it('should reject a token that only shares a prefix', () => {

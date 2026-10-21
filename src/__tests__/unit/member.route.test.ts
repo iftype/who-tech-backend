@@ -58,7 +58,7 @@ describe('admin member routes', () => {
       const res = await request(app).post('/admin/members').send({ nickname: 'x' });
 
       expect(res.status).toBe(400);
-      expect(res.body).toEqual({ error: 'githubId or githubUserId required' });
+      expect(res.body).toEqual({ message: 'githubId or githubUserId required' });
       expect(service.createMember).not.toHaveBeenCalled();
     });
 
@@ -92,7 +92,7 @@ describe('admin member routes', () => {
 
       expect(ok.body).toEqual({ id: 1 });
       expect(missing.status).toBe(404);
-      expect(missing.body).toEqual({ error: 'member not found' });
+      expect(missing.body).toEqual({ message: 'member not found' });
       expect(invalid.status).toBe(400);
       expect(invalid.body).toEqual({ message: 'invalid id' });
     });
@@ -132,7 +132,7 @@ describe('admin member routes', () => {
 
       expect(ok.status).toBe(200);
       expect(failed.status).toBe(500);
-      expect(failed.body).toEqual({ error: 'Not Found', member: { id: 1, profileRefreshError: 'Not Found' } });
+      expect(failed.body).toEqual({ message: 'Not Found', member: { id: 1, profileRefreshError: 'Not Found' } });
     });
   });
 
@@ -152,7 +152,7 @@ describe('admin member routes', () => {
       const ok = await request(app).patch('/admin/members/1/cohorts/7').send({ newCohort: 8 });
 
       expect(missing.status).toBe(400);
-      expect(missing.body).toEqual({ error: 'newCohort required' });
+      expect(missing.body).toEqual({ message: 'newCohort required' });
       expect(ok.body).toEqual({ id: 1, cohort: 8 });
       expect(service.changeMemberCohort).toHaveBeenCalledWith(1, 7, 8);
     });

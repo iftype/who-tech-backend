@@ -22,13 +22,13 @@ export function createDeployRouter(deps: {
       skipSuccessfulRequests: true,
       standardHeaders: 'draft-8',
       legacyHeaders: false,
-      message: { error: 'Too many requests' },
+      message: { message: 'Too many requests' },
     }),
   );
 
   router.post('/deploy', (req, res): void => {
     if (!isAuthorized(bearerToken(req))) {
-      res.status(401).json({ error: 'Unauthorized' });
+      res.status(401).json({ message: 'Unauthorized' });
       return;
     }
     const { logFile } = service.start();
@@ -37,7 +37,7 @@ export function createDeployRouter(deps: {
 
   router.get('/deploy/logs', (req, res): void => {
     if (!isAuthorized(bearerToken(req))) {
-      res.status(401).json({ error: 'Unauthorized' });
+      res.status(401).json({ message: 'Unauthorized' });
       return;
     }
     res.json(service.readRecentLogs());

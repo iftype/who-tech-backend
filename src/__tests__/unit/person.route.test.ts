@@ -119,7 +119,7 @@ describe('admin person routes', () => {
       memberRepo.findByIdWithRelations.mockResolvedValueOnce(null);
       const noMember = await request(app).post('/admin/persons/5/members/99');
 
-      expect([invalid.status, noPerson.status, noMember.status]).toEqual([400, 400, 400]);
+      expect([invalid.status, noPerson.status, noMember.status]).toEqual([400, 404, 404]);
       expect(noPerson.body).toEqual({ message: 'person not found' });
       expect(noMember.body).toEqual({ message: 'member not found' });
       expect(personRepo.linkMember).not.toHaveBeenCalled();

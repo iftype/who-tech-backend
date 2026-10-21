@@ -62,4 +62,18 @@ describe('errorHandler', () => {
     expect(res.status).toBe(409);
     expect(res.body).toEqual({ message: 'conflict' });
   });
+
+  it('should answer 404 when Prisma reports a missing row (P2025) instead of 500', async () => {
+    const app = express();
+    app.get('/x', () => {
+      const error = Object.assign(new Error('Record to update not found.'), { code: 'P2025' });
+      throw error;
+    });
+    app.use(errorHandler);
+
+    const res = await request(app).get('/x');
+
+    expect(res.status).toBe(404);
+    expect(res.body).toEqual({ message: 'not found' });
+  });
 });

@@ -1,9 +1,16 @@
 import type { ErrorRequestHandler } from 'express';
 import { HttpError } from '../http.js';
+import { isRecordNotFoundError } from '../prisma-error.js';
 
 export const errorHandler: ErrorRequestHandler = (error, _req, res, _next) => {
   if (error instanceof HttpError) {
     res.status(error.statusCode).json({ message: error.message });
+    return;
+  }
+
+  // 없는 id로 갱신·삭제하면 Prisma가 P2025를 던진다 → 500이 아니라 404
+  if (isRecordNotFoundError(error)) {
+    res.status(404).json({ message: 'not found' });
     return;
   }
 

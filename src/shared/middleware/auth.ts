@@ -19,7 +19,7 @@ export function adminAuth(req: Request, res: Response, next: NextFunction): void
   const headerToken = bearerToken(req);
   const queryToken = typeof req.query['token'] === 'string' ? req.query['token'] : undefined;
   if (!isAdminToken(headerToken ?? queryToken)) {
-    res.status(401).json({ error: 'Unauthorized' });
+    res.status(401).json({ message: 'Unauthorized' });
     return;
   }
   next();

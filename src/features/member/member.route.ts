@@ -1,5 +1,7 @@
 import { Router } from 'express';
+import { NotFoundError } from '../../shared/errors.js';
 
+import { badRequest } from '../../shared/http.js';
 import { parseId, parseOptionalNumberQuery } from '../../shared/validation.js';
 import type { MemberService } from './member.service.js';
 
@@ -35,8 +37,7 @@ export function createMemberRouter(service: MemberService) {
     };
     // githubId 또는 githubUserId 중 하나는 필수
     if (!body.githubId && body.githubUserId == null) {
-      res.status(400).json({ error: 'githubId or githubUserId required' });
-      return;
+      badRequest('githubId or githubUserId required');
     }
     res.status(201).json(await service.createMember({ ...body, githubId: body.githubId ?? '' }));
   });
@@ -47,10 +48,7 @@ export function createMemberRouter(service: MemberService) {
 
   router.get('/:id', async (req, res) => {
     const member = await service.get(parseId(req.params['id']));
-    if (!member) {
-      res.status(404).json({ error: 'member not found' });
-      return;
-    }
+    if (!member) throw new NotFoundError('member not found');
     res.json(member);
   });
 
@@ -75,7 +73,7 @@ export function createMemberRouter(service: MemberService) {
   router.post('/:id/refresh-profile', async (req, res) => {
     const result = await service.refreshMemberProfile(parseId(req.params['id']));
     if (result.profileRefreshError) {
-      res.status(500).json({ error: result.profileRefreshError, member: result });
+      res.status(500).json({ message: result.profileRefreshError, member: result });
     } else {
       res.json(result);
     }
@@ -98,10 +96,7 @@ export function createMemberRouter(service: MemberService) {
     const id = parseId(req.params['id']);
     const cohort = parseId(req.params['cohort']);
     const body = req.body as { newCohort: number };
-    if (!body.newCohort) {
-      res.status(400).json({ error: 'newCohort required' });
-      return;
-    }
+    if (!body.newCohort) badRequest('newCohort required');
     res.json(await service.changeMemberCohort(id, cohort, body.newCohort));
   });
 
