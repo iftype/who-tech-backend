@@ -97,7 +97,7 @@ gh workflow run deploy.yml -R iftype/who-tech-backend   # main 최신 커밋 재
 | `deploy.yml`          | CI 성공(main) | 자동 배포 + `/health` 확인                  |
 | `release-please.yml`  | main push     | 릴리즈 PR·태그·CHANGELOG                    |
 | `continuous-sync.yml` | 10분 cron     | `POST /admin/sync/continuous`               |
-| `blog-check.yml`      | 매시간        | `POST /admin/blog/sync`                     |
+| `blog-check.yml`      | 30분마다      | `POST /admin/blog/sync` (큐 blog 레인)      |
 
 ### 주의
 

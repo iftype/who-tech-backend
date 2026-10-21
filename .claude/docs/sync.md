@@ -2,6 +2,18 @@
 
 ---
 
+## 2026-10-21
+
+**큐 하나에 레인 2개, 블로그·멤버 재싱크도 큐로 (리팩토링 라운드 4, #215 · #216 · #217 — [ADR 0007](../../docs/adr/0007-queue-lanes-and-admin-error-envelope.md))**
+
+- **레인**: `LANE_OF`로 github(workspace·continuous·cohort-repos·repo·member) / blog. 레인마다 `processLoop` 하나 → 블로그 cron이 긴 GitHub 싱크 뒤에서 기다리지 않는다. 잡 모델·TTL·취소·구독은 공유
+- **블로그**: `blog.admin.service`의 사설 잡 저장소 삭제. `POST /admin/blog/sync`는 큐 blog 작업(대기·실행 중이면 그 작업), `GET /admin/blog/sync-jobs(/:id)`는 `blog.sync-jobs.ts`가 큐 작업을 예전 응답 모양으로. `blog-check.yml` 수정 0
+- **멤버 재수집**: `POST /admin/members/:id/resync-submissions`가 큐 `member` 작업(`syncMemberPRs`). 240초 안 200, 아니면 202 + 작업. 같은 멤버는 합류
+- **진행률 타입**: `sync.ports.ts`의 `SyncProgress`·`SyncJobProgress`·`BlogSyncResult` 하나로
+- **어드민 에러**: 라우트 `{error}` 25곳 → `{message}`(공개 API는 그대로), Prisma P2025 → 404, person 링크 없는 대상 404
+
+---
+
 ## 2026-10-20
 
 **PR 처리 단위·레이트리밋·닉네임 통계 (리팩토링 라운드 2, #203 · #205 · #206 · #209 · #210 · #211)**
