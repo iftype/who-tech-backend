@@ -82,6 +82,10 @@ export default function RepoTab() {
   const continuousSyncMutation = useMutation({
     mutationFn: () => adminApi.sync.continuous(),
     onSuccess: (result) => {
+      if ('status' in result) {
+        showToast('연속 싱크가 큐에서 실행 대기 중입니다 — 싱크 탭에서 확인하세요');
+        return;
+      }
       showToast(`연속 싱크 완료 — ${result.totalSynced}건, ${result.reposSynced}개 레포`);
       invalidateRepos();
     },

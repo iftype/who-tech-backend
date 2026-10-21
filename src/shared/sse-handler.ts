@@ -11,9 +11,17 @@ export function startSse(res: Response): (event: string, data: unknown) => void 
   };
 }
 
+// 큐에서 기다리는 동안에도 바이트가 오가게 한다 (nginx proxy_read_timeout 300초에 끊기지 않게). 주석 줄이라 EventSource는 무시한다
+export const SSE_HEARTBEAT_MS = 25_000;
+
 /** SSE job을 실행하고 done/error 이벤트로 종료 */
 export function runSseJob(res: Response, send: (event: string, data: unknown) => void, job: Promise<unknown>): void {
+  const heartbeat = setInterval(() => {
+    if (!res.writableEnded && !res.destroyed) res.write(': ping\n\n');
+  }, SSE_HEARTBEAT_MS);
+
   job
+    .finally(() => clearInterval(heartbeat))
     .then((result) => {
       send('done', result);
       if (!res.writableEnded) res.end();

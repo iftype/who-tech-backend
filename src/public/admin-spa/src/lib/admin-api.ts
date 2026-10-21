@@ -116,7 +116,9 @@ export const adminApi = {
   },
 
   sync: {
-    continuous: () => apiFetch<{ totalSynced: number; reposSynced: number }>('/admin/sync/continuous', json('POST')),
+    // 240초 안에 끝나면 결과, 앞선 작업 때문에 아직이면 큐에 남은 작업(202)
+    continuous: () =>
+      apiFetch<{ totalSynced: number; reposSynced: number } | SyncQueueJob>('/admin/sync/continuous', json('POST')),
     jobs: () => apiFetch<SyncQueueJob[]>('/admin/sync/jobs'),
     createJob: (params: object) =>
       apiFetch<{ id: string; status: string; createdAt: string }>('/admin/sync/jobs', json('POST', params)),
