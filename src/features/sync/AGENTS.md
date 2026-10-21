@@ -143,6 +143,7 @@ processLoop(lane) picks next queued job of that lane → running
 ### Cancellation
 
 - `findActive(type, { cohort?, githubId? })` — the queued/running job with the same key, so direct requests join it instead of queueing twice
+- `restore()` — called once at boot (`app.ts`): closes queued/running `SyncJobRecord` rows as failed (`server restarted`) and reloads records within the TTL into the list without running them. Every status change is upserted to `SyncJobRecord` (fire-and-forget; a failed write never blocks the job)
 - `cancel(id)` aborts the job's `AbortController`
 - If the job is `queued`, it immediately transitions to `cancelled`
 - If `running`, the abort signal propagates to GitHub API requests, causing them to throw
