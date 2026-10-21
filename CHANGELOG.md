@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/iftype/who-tech-backend/compare/v1.3.0...v1.4.0) (2026-10-21)
+
+
+### 기능
+
+* **admin:** 탭 요청 실패를 ErrorState(다시 시도)로 ([#226](https://github.com/iftype/who-tech-backend/issues/226)) ([7da837f](https://github.com/iftype/who-tech-backend/commit/7da837f5fcd9b5098909c34897ca71df89b246ca))
+
 ## [1.3.0](https://github.com/iftype/who-tech-backend/compare/v1.2.4...v1.3.0) (2026-10-21)
 
 
