@@ -3000,7 +3000,7 @@ exports[`API contract mutations (sequential) 53 GET /members/blog-posts/1/visit 
 exports[`API contract mutations (sequential) 54 GET /members/blog-posts/999/visit 1`] = `
 {
   "body": {
-    "error": "Blog post not found",
+    "message": "Blog post not found",
   },
   "location": undefined,
   "status": 404,
@@ -3503,7 +3503,7 @@ exports[`API contract public GET GET /members/fe-crew/blog-posts 1`] = `
 exports[`API contract public GET GET /members/fe-crew-old 1`] = `
 {
   "body": {
-    "error": "Member not found",
+    "message": "Member not found",
   },
   "location": undefined,
   "status": 404,
@@ -3786,7 +3786,7 @@ exports[`API contract public GET GET /members/feed?limit=2 1`] = `
 exports[`API contract public GET GET /members/no-such-member 1`] = `
 {
   "body": {
-    "error": "Member not found",
+    "message": "Member not found",
   },
   "location": undefined,
   "status": 404,
@@ -3796,7 +3796,7 @@ exports[`API contract public GET GET /members/no-such-member 1`] = `
 exports[`API contract public GET GET /members/no-such-member/blog-posts 1`] = `
 {
   "body": {
-    "error": "Member not found",
+    "message": "Member not found",
   },
   "location": undefined,
   "status": 404,
