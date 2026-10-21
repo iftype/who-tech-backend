@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll, jest } from '@jest/globals';
 import request from 'supertest';
 import app from '../../app.js';
 import prisma from '../../db/prisma.js';
-import { seedContractData } from '../fixtures/contract-seed.js';
+import { SEED_NOW, seedContractData } from '../fixtures/contract-seed.js';
 
 // API 계약 테스트 (ARCHITECTURE_PLAN A-3): 구조 리팩토링 전후로 API 응답이 같아야 한다.
 // 고정 시드 데이터에서 각 엔드포인트의 상태 코드와 응답 본문 전체를 스냅샷으로 고정한다.
@@ -32,10 +32,40 @@ function normalize(value: unknown): unknown {
   return value;
 }
 
+// 기간 필터(days=)는 요청 시각 기준이라, 실제 시각으로 보내면 날이 갈수록 시드 글이 창 밖으로 밀린다.
+// 그 요청만 Date를 시드 기준 시각으로 고정한다 (타이머는 진짜 그대로 — Prisma·supertest가 쓴다)
+const AT_SEED_TIME = /[?&]days=/;
+const ONLY_DATE: Parameters<typeof jest.useFakeTimers>[0] = {
+  now: SEED_NOW,
+  doNotFake: [
+    'hrtime',
+    'nextTick',
+    'performance',
+    'queueMicrotask',
+    'requestAnimationFrame',
+    'cancelAnimationFrame',
+    'requestIdleCallback',
+    'cancelIdleCallback',
+    'setImmediate',
+    'clearImmediate',
+    'setInterval',
+    'clearInterval',
+    'setTimeout',
+    'clearTimeout',
+  ],
+};
+
 async function snapshot(method: 'get' | 'post' | 'put' | 'patch' | 'delete', path: string, body?: object) {
   let req = request(app)[method](path);
   if (path.startsWith('/admin')) req = req.set(auth);
-  const res = body ? await req.send(body) : await req;
+  if (AT_SEED_TIME.test(path)) jest.useFakeTimers(ONLY_DATE);
+  let res: Awaited<typeof req>;
+  try {
+    res = body ? await req.send(body) : await req;
+  } finally {
+    jest.useRealTimers();
+  }
+  // normalize는 실제 시각으로 (시드 시각 근처의 고정 날짜가 '<now>'로 바뀌지 않게)
   return { status: res.status, body: normalize(res.body), location: res.headers['location'] };
 }
 
