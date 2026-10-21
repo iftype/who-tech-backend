@@ -5,6 +5,7 @@ import { Badge } from '../../components/ui/Badge.js';
 import { Panel, SectionTitle } from '../../components/ui/Section.js';
 import { Table, TableFrame, TBody, Td, Th, THead, Tr } from '../../components/ui/Table.js';
 import type { SyncQueueJob } from '../../lib/types.js';
+import { JOB_TYPE_LABEL } from './job-labels.js';
 import { adminApi } from '../../lib/admin-api.js';
 import { queryKeys } from '../../lib/query-keys.js';
 
@@ -45,7 +46,7 @@ export function ActiveQueueJobs({ jobs }: { jobs: SyncQueueJob[] }) {
                 </Td>
                 <Td>
                   <Badge emphasis="subtle" tone="primary">
-                    {j.type === 'workspace' ? '전체' : j.type === 'continuous' ? '연속' : '기수레포'}
+                    {JOB_TYPE_LABEL[j.type]}
                     {j.cohort != null ? ` (${j.cohort}기)` : ''}
                   </Badge>
                 </Td>

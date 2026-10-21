@@ -122,9 +122,11 @@ export interface BlogPost {
   publishedAt: string;
 }
 
+export type SyncJobType = 'workspace' | 'continuous' | 'cohort-repos' | 'repo' | 'blog';
+
 export interface SyncQueueJob {
   id: string;
-  type: 'workspace' | 'continuous' | 'cohort-repos';
+  type: SyncJobType;
   cohort?: number;
   status: 'queued' | 'running' | 'completed' | 'failed' | 'cancelled';
   createdAt: string;
