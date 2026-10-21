@@ -443,7 +443,6 @@ exports[`external-service routes contract POST /members/fe-crew/refresh null 1`]
 exports[`external-service routes contract POST /members/fe-crew/refresh null 2`] = `
 {
   "body": {
-    "error": "Rate limited",
     "message": "42초 후에 다시 시도해주세요",
     "remainingSeconds": 42,
   },
@@ -461,7 +460,7 @@ exports[`external-service routes contract POST /members/fe-crew/refresh null 2`]
 exports[`external-service routes contract POST /members/fe-crew/refresh null 3`] = `
 {
   "body": {
-    "error": "GitHub down",
+    "message": "internal server error",
   },
   "calls": {
     "memberPublic.refreshMemberProfile": [
@@ -477,7 +476,7 @@ exports[`external-service routes contract POST /members/fe-crew/refresh null 3`]
 exports[`external-service routes contract POST /members/ghost/refresh null 1`] = `
 {
   "body": {
-    "error": "Member not found",
+    "message": "Member not found",
   },
   "calls": {
     "memberPublic.refreshMemberProfile": [
