@@ -6,7 +6,7 @@ import { showToast } from '../components/ui/Toast.js';
 import { adminApi } from '../lib/admin-api.js';
 import { queryKeys } from '../lib/query-keys.js';
 import { Button } from '../components/ui/Button.js';
-import { EmptyState, panelVariants, SectionTitle } from '../components/ui/Section.js';
+import { EmptyState, ErrorState, panelVariants, SectionTitle } from '../components/ui/Section.js';
 import { Select, TextInput } from '../components/ui/Field.js';
 import { TextLink } from '../components/ui/TextLink.js';
 
@@ -45,7 +45,12 @@ export default function BlogTab() {
     meta: { errorMessage: '팀 블로그 새로고침 실패' },
   });
 
-  const { data: posts = [], isLoading } = useQuery({
+  const {
+    data: posts = [],
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
     queryKey: queryKeys.blog.newPosts(sinceMinutes),
     queryFn: () => adminApi.blog.newPosts(sinceMinutes),
   });
@@ -160,7 +165,9 @@ export default function BlogTab() {
         </section>
       )}
 
-      {isLoading ? (
+      {isError ? (
+        <ErrorState onRetry={() => void refetch()} />
+      ) : isLoading ? (
         <EmptyState>로딩 중...</EmptyState>
       ) : (
         <>

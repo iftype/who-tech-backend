@@ -9,7 +9,7 @@ import { MemberTable } from './member/MemberTable.js';
 import type { Member } from '../lib/types.js';
 import { adminApi } from '../lib/admin-api.js';
 import { queryKeys } from '../lib/query-keys.js';
-import { EmptyState, SectionTitle } from '../components/ui/Section.js';
+import { EmptyState, ErrorState, SectionTitle } from '../components/ui/Section.js';
 
 export default function MemberTab() {
   const [filters, setFilters] = useState<MemberFilters>({});
@@ -63,10 +63,9 @@ export default function MemberTab() {
       </div>
 
       <MemberFiltersBar filters={filters} onChange={setFilters} />
-      {error && (
-        <div className="text-sm text-danger-500 bg-danger-50 border border-danger-200 rounded p-3">{error}</div>
-      )}
-      {loading ? (
+      {error ? (
+        <ErrorState onRetry={() => void refetch()} />
+      ) : loading ? (
         <EmptyState>로딩 중...</EmptyState>
       ) : (
         <MemberTable members={members} onRefresh={() => void refetch()} />

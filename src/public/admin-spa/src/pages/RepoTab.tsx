@@ -11,7 +11,7 @@ import { useRepoSync } from './repo/useRepoSync.js';
 import { adminApi } from '../lib/admin-api.js';
 import { queryKeys } from '../lib/query-keys.js';
 import { Badge } from '../components/ui/Badge.js';
-import { EmptyState } from '../components/ui/Section.js';
+import { EmptyState, ErrorState } from '../components/ui/Section.js';
 
 const STATUS_FILTERS: StatusFilter[] = ['', 'active', 'candidate', 'excluded'];
 const TAB_CATEGORY_FILTERS: TabCategoryFilter[] = ['', 'base', 'common', 'precourse', 'excluded'];
@@ -59,7 +59,12 @@ export default function RepoTab() {
   const sync = useRepoSync();
   const selection = useRepoSelection();
 
-  const { data: repos = [], isLoading } = useQuery({
+  const {
+    data: repos = [],
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
     queryKey: queryKeys.repos.byStatus(status),
     queryFn: () => adminApi.repos.list(status ? `?status=${status}` : ''),
   });
@@ -146,7 +151,9 @@ export default function RepoTab() {
 
       {selection.selectedRepoIds.size > 0 && <RepoBatchBar selection={selection} />}
 
-      {isLoading ? (
+      {isError ? (
+        <ErrorState onRetry={() => void refetch()} />
+      ) : isLoading ? (
         <EmptyState>로딩 중...</EmptyState>
       ) : (
         <>
