@@ -58,12 +58,15 @@ GET  /admin/members/:id/blog-posts    — 블로그 글 목록 (archive 30일 + 
 PATCH /admin/members/:id              — manualNickname, blog, roles 수정
 DELETE /admin/members                 — 전체 멤버 + submissions + blogPosts 삭제
 DELETE /admin/members/:id             — 멤버 + submissions + blogPosts 삭제
+POST /admin/members/:id/resync-submissions — 싱크 큐 member 작업. 240초 안에 끝나면 200 결과, 아니면 202 작업
 ```
 
 ### 블로그
 
 ```
-POST /admin/blog/sync                 — 블로그 RSS 전체 sync (blogSyncEnabled 체크)
+POST /admin/blog/sync                 — 싱크 큐 blog 레인에 등록 (202). 대기·실행 중이면 그 작업 (X-Sync-Source)
+GET  /admin/blog/sync-jobs            — blog 작업 목록 (큐 작업을 예전 응답 모양으로)
+GET  /admin/blog/sync-jobs/:jobId     — blog 작업 하나 (status·message·progress·result)
 POST /admin/blog/backfill             — GitHub profile blog 백필 (?limit=30&cohort= 기수 필터)
 GET  /admin/blog/new-posts            — 최근 수집된 새 블로그 글 (?sinceMinutes=65)
 ```
