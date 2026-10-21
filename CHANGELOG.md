@@ -1,5 +1,30 @@
 # Changelog
 
+## [1.2.4](https://github.com/iftype/who-tech-backend/compare/v1.2.3...v1.2.4) (2026-10-21)
+
+
+### 버그 수정
+
+* **admin:** 기수 추가가 실제로 저장되게, 최근 작업 목록의 중복 행 제거 ([#216](https://github.com/iftype/who-tech-backend/issues/216)) ([e9e4e94](https://github.com/iftype/who-tech-backend/commit/e9e4e94480bb5e8b3cee63952cdd8619b17316e4))
+* **admin:** 토스트 마운트, 401 로그아웃 동기화, 에러 본문 한 번만 읽기, SSE 정리, 낙관적 삭제 키 ([#201](https://github.com/iftype/who-tech-backend/issues/201)) ([b9f96ac](https://github.com/iftype/who-tech-backend/commit/b9f96ac59c4b5c6dad9ffa2968d5787591a64361))
+* GitHub 레이트리밋은 짧은 대기만 재시도하고, 증분 싱크는 10페이지까지 본다 ([#210](https://github.com/iftype/who-tech-backend/issues/210)) ([c3a279e](https://github.com/iftype/who-tech-backend/commit/c3a279e946a04e6a0d871305d72760284daf7eb9))
+* 공개 프로필 새로고침에 전체 횟수 상한(10분 30회)을 둔다 ([#208](https://github.com/iftype/who-tech-backend/issues/208)) ([baabdaa](https://github.com/iftype/who-tech-backend/commit/baabdaaa2e1a0bf96e993e8e69980eb83613a00e))
+* 글이 하나도 없는 RSS 피드면 최근 90일 글을 지우지 않는다 ([#209](https://github.com/iftype/who-tech-backend/issues/209)) ([b2b04de](https://github.com/iftype/who-tech-backend/commit/b2b04de5a65dbcee1a7bcd610fd4e0644b220531))
+* 닉네임 통계를 모든 제출에서 다시 계산한다 (같은 PR을 다시 처리하면 횟수가 부풀던 문제) ([#211](https://github.com/iftype/who-tech-backend/issues/211)) ([0e2cdf9](https://github.com/iftype/who-tech-backend/commit/0e2cdf95e2d7293c89d067bcbbf5e8d29b552271))
+* 레포 싱크 작업을 싱크 큐에서 조회한다 (어드민 폴링이 항상 404이던 문제) ([#203](https://github.com/iftype/who-tech-backend/issues/203)) ([6b48866](https://github.com/iftype/who-tech-backend/commit/6b48866686e1dbfb51fa61edb1ae184f49a0fd3f))
+* 배포 인증 fail-closed, 셸 문자열 제거, SSRF 차단, 도메인 경계, 끝난 싱크 작업 정리 ([#200](https://github.com/iftype/who-tech-backend/issues/200)) ([de8fd8f](https://github.com/iftype/who-tech-backend/commit/de8fd8ffe8e4758348bbaf82caf8c7ecf1cf3234))
+* 어드민 에러 응답을 {message} 하나로, 없는 대상은 404 ([#215](https://github.com/iftype/who-tech-backend/issues/215)) ([91bfdd1](https://github.com/iftype/who-tech-backend/commit/91bfdd17cf5dcfd03cbcbeb9fc2cf43d31c34ae4))
+* 없는 멤버·제출은 500 대신 404, 제출 삭제는 id로 찾는다 ([#207](https://github.com/iftype/who-tech-backend/issues/207)) ([9169f5d](https://github.com/iftype/who-tech-backend/commit/9169f5d9c0e2e2c77257391c7729e7ef2568e5ef))
+* 직접 싱크 요청도 작업 큐를 거치게 (cron 202 대비) ([#214](https://github.com/iftype/who-tech-backend/issues/214)) ([87d21ce](https://github.com/iftype/who-tech-backend/commit/87d21cee26b23a5aab1cf9d5b3e0a80e9cec343e))
+
+
+### 리팩토링
+
+* **admin:** 뮤테이션 실패 토스트를 MutationCache 한곳으로, 멤버 검색 디바운스 ([#204](https://github.com/iftype/who-tech-backend/issues/204)) ([285cd5d](https://github.com/iftype/who-tech-backend/commit/285cd5d681ab6d6bf6faa9ae276ba31c5dffdef9))
+* 레포 싱크의 PR 처리 단위 (슬림 조회, 기수·역할 id 캐시, 트랜잭션) ([#205](https://github.com/iftype/who-tech-backend/issues/205)) ([3901ce0](https://github.com/iftype/who-tech-backend/commit/3901ce061b8c5f3685b6c74c4870dea70395ac0c))
+* 싱크 큐 하나에 레인 2개(github·blog), 블로그·멤버 싱크도 큐로 ([#217](https://github.com/iftype/who-tech-backend/issues/217)) ([39e681a](https://github.com/iftype/who-tech-backend/commit/39e681a0024af3f73638f12b31bda98fbb9570c8))
+* 에러 모델 정리 (CancelledError, Express 5 네이티브 async 핸들러) ([#206](https://github.com/iftype/who-tech-backend/issues/206)) ([04878ec](https://github.com/iftype/who-tech-backend/commit/04878eca77e2798b17709a705b88303e4492b011))
+
 ## [1.2.3](https://github.com/iftype/who-tech-backend/compare/v1.2.2...v1.2.3) (2026-10-19)
 
 
