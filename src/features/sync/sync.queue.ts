@@ -143,6 +143,16 @@ export function createSyncQueue(deps: {
     }
   };
 
+  // 활동 로그도 실행을 막지 않는다. 로그 쓰기가 실패하면(DB가 닫혔거나 워크스페이스가 없는 테스트 끝자락)
+  // processLoop 밖으로 거부가 새어 나가 unhandledRejection이 됐다 → 여기서 삼키고 콘솔에만 남긴다
+  const log = async (type: string, message: string): Promise<void> => {
+    try {
+      await activityLogService.addLog(type, message);
+    } catch (error) {
+      console.error('[sync-queue] 활동 로그 기록 실패', error);
+    }
+  };
+
   // 기록은 실행을 막지 않는다: 적지 못해도 작업은 돌고, 로그만 남긴다
   const persist = (job: SyncJob): void => {
     if (!syncJobRepo) return;
@@ -219,7 +229,7 @@ export function createSyncQueue(deps: {
         githubId != null ? ` githubId=${githubId}` : '',
         blogSource != null ? ` source=${blogSource}` : '',
       ].join('');
-      void activityLogService.addLog('sync', `Job queued: ${type}${detail} (id=${id})`);
+      void log('sync', `Job queued: ${type}${detail} (id=${id})`);
     }
     processLoop(LANE_OF[type]);
     return id;
@@ -355,7 +365,7 @@ export function createSyncQueue(deps: {
           job.result = result;
           job.completedAt = new Date();
           if (!job.quiet) {
-            await activityLogService.addLog(
+            await log(
               'sync',
               `Job completed: ${job.type}${job.cohort != null ? ` cohort=${job.cohort}` : ''} — synced ${result.totalSynced} items across ${result.reposSynced} repos`,
             );
@@ -364,13 +374,13 @@ export function createSyncQueue(deps: {
           if (job.abortController.signal.aborted) {
             job.status = 'cancelled';
             job.completedAt = new Date();
-            await activityLogService.addLog('sync', `Job cancelled: ${job.type} (id=${job.id})`);
+            await log('sync', `Job cancelled: ${job.type} (id=${job.id})`);
           } else {
             job.status = 'failed';
             job.error = err instanceof Error ? err.message : String(err);
             failures.set(job.id, err);
             job.completedAt = new Date();
-            await activityLogService.addLog('sync_error', `Job failed: ${job.type} — ${job.error}`);
+            await log('sync_error', `Job failed: ${job.type} — ${job.error}`);
           }
         }
 

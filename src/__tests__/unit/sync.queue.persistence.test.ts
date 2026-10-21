@@ -139,4 +139,29 @@ describe('createSyncQueue persistence', () => {
     });
     await expect(queue.restore()).resolves.toBe(0);
   });
+
+  // 로그 DB가 닫힌 뒤(테스트 끝자락·DB 장애)에도 작업은 끝나고 거부가 밖으로 새지 않는다
+  it('should finish the job and swallow activity-log failures', async () => {
+    const repo = makeRepo();
+    const addLog = jest.fn(async () => {
+      throw new Error('no workspace');
+    });
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    const syncService = { syncWorkspace: jest.fn(async () => ({ totalSynced: 1, reposSynced: 1 })) };
+    const queue = createSyncQueue({
+      syncService: syncService as never,
+      activityLogService: { addLog } as never,
+      workspaceService: { getOrThrow: jest.fn(async () => ({ id: 1 })) } as never,
+      octokit: {} as never,
+      repoService: {} as never,
+      blogAdminService: {} as never,
+      syncJobRepo: repo as never,
+    });
+
+    const id = queue.enqueue('workspace');
+    await waitDone(queue, id);
+
+    expect(queue.getJob(id)?.status).toBe('completed');
+    expect(addLog).toHaveBeenCalledTimes(2);
+  });
 });
