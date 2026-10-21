@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { badRequest } from '../../shared/http.js';
 
 import { parseId, parseNumberQuery } from '../../shared/validation.js';
 import type { CohortRepoService } from './cohort-repo.service.js';
@@ -12,19 +13,13 @@ export function createCohortRepoRouter(service: CohortRepoService) {
 
   router.get('/', async (req, res) => {
     const cohort = parseNumberQuery(req.query['cohort']);
-    if (Number.isNaN(cohort)) {
-      res.status(400).json({ error: 'cohort required' });
-      return;
-    }
+    if (Number.isNaN(cohort)) badRequest('cohort required');
     res.json(await service.listByCohort(cohort));
   });
 
   router.post('/auto-fill', async (req, res) => {
     const cohort = typeof req.body?.cohort === 'number' ? req.body.cohort : NaN;
-    if (Number.isNaN(cohort)) {
-      res.status(400).json({ error: 'cohort required' });
-      return;
-    }
+    if (Number.isNaN(cohort)) badRequest('cohort required');
     res.json(await service.autoFill(cohort));
   });
 
@@ -35,10 +30,7 @@ export function createCohortRepoRouter(service: CohortRepoService) {
       order?: number;
       level?: number | null;
     };
-    if (!cohort || !missionRepoId) {
-      res.status(400).json({ error: 'cohort and missionRepoId required' });
-      return;
-    }
+    if (!cohort || !missionRepoId) badRequest('cohort and missionRepoId required');
     res.status(201).json(await service.create({ cohort, missionRepoId, order: order ?? 0, level: level ?? null }));
   });
 

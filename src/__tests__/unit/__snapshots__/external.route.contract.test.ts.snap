@@ -103,7 +103,7 @@ exports[`external-service routes contract POST /admin/members {"githubId":"new-c
 exports[`external-service routes contract POST /admin/members {"nickname":"no-id"} 1`] = `
 {
   "body": {
-    "error": "githubId or githubUserId required",
+    "message": "githubId or githubUserId required",
   },
   "calls": {},
   "status": 400,
@@ -271,7 +271,7 @@ exports[`external-service routes contract POST /admin/sync/cohort-repos {"cohort
 exports[`external-service routes contract POST /admin/sync/cohort-repos {} 1`] = `
 {
   "body": {
-    "error": "cohort required",
+    "message": "cohort required",
   },
   "calls": {},
   "status": 400,
@@ -316,7 +316,7 @@ exports[`external-service routes contract POST /admin/sync/continuous {} 2`] = `
 exports[`external-service routes contract POST /admin/sync/jobs {"cohort":8} 1`] = `
 {
   "body": {
-    "error": "type must be workspace, continuous, cohort-repos, repo, or blog",
+    "message": "type must be workspace, continuous, cohort-repos, repo, or blog",
   },
   "calls": {},
   "status": 400,
@@ -370,7 +370,7 @@ exports[`external-service routes contract POST /admin/sync/jobs {"type":"workspa
 exports[`external-service routes contract POST /admin/sync/jobs {} 1`] = `
 {
   "body": {
-    "error": "type must be workspace, continuous, cohort-repos, repo, or blog",
+    "message": "type must be workspace, continuous, cohort-repos, repo, or blog",
   },
   "calls": {},
   "status": 400,

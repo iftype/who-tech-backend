@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { NotFoundError } from '../../shared/errors.js';
 import { badRequest } from '../../shared/http.js';
 import type { PersonRepository } from '../../db/repositories/person.repository.js';
 import type { MemberRepository } from '../../db/repositories/member.repository.js';
@@ -73,16 +74,10 @@ export function createPersonRouter(deps: {
     }
 
     const person = await personRepo.findById(personId);
-    if (!person) {
-      badRequest('person not found');
-      return;
-    }
+    if (!person) throw new NotFoundError('person not found');
 
     const member = await memberRepo.findByIdWithRelations(memberId);
-    if (!member) {
-      badRequest('member not found');
-      return;
-    }
+    if (!member) throw new NotFoundError('member not found');
 
     await personRepo.linkMember(personId, memberId);
     res.json(await personRepo.findById(personId));
