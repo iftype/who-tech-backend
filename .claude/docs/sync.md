@@ -2,6 +2,14 @@
 
 ---
 
+## 2026-10-22
+
+**큐 작업 기록 영속화 (라운드 5, #220 — [ADR 0008](../../docs/adr/0008-public-errors-job-records-admin-ui.md))**
+
+- `SyncJobRecord` 테이블(추가만). 큐는 메모리에서 돌고 전이마다 upsert(실패해도 실행은 계속). 부팅 때 `restore()`가 끝을 못 적은 기록을 `'server restarted'`로 닫고 6시간 안 기록을 목록 앞에 되살린다(실행 안 함)
+
+---
+
 ## 2026-10-21
 
 **큐 하나에 레인 2개, 블로그·멤버 재싱크도 큐로 (리팩토링 라운드 4, #215 · #216 · #217 — [ADR 0007](../../docs/adr/0007-queue-lanes-and-admin-error-envelope.md))**

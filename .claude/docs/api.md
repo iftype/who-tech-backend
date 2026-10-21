@@ -61,6 +61,8 @@ DELETE /admin/members/:id             — 멤버 + submissions + blogPosts 삭�
 POST /admin/members/:id/resync-submissions — 싱크 큐 member 작업. 240초 안에 끝나면 200 결과, 아니면 202 작업
 ```
 
+에러 응답은 공개·어드민 모두 `{ message }` (라운드 5 #219). 429만 `remainingSeconds`를 더 싣는다.
+
 ### 블로그
 
 ```
