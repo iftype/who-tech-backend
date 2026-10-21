@@ -6,8 +6,16 @@ import type { WorkspaceService } from '../workspace/index.js';
 import type { ActivityLogService } from '../activity-log/index.js';
 import type { SyncService } from './sync.service.js';
 import type { RepoSyncRunner, WorkspaceBlogSyncRunner } from './sync.ports.js';
-import type { SyncQueue, SyncJobType } from './sync.queue.js';
+import type { SyncQueue, SyncJob, SyncJobProgress, SyncJobResult, SyncJobType } from './sync.queue.js';
 import { createSyncQueue } from './sync.queue.js';
+
+// 운영 nginx의 proxy_read_timeout(300초)보다 짧게: 그 전에 응답해야 cron이 504로 실패하지 않는다
+export const REQUEST_WAIT_MS = 240_000;
+
+type DirectSyncType = Extract<SyncJobType, 'workspace' | 'continuous' | 'cohort-repos'>;
+
+export type SyncOutcome =
+  { done: true; result: SyncJobResult } | { done: false; job: Omit<SyncJob, 'abortController'> };
 
 export function createSyncAdminService(deps: {
   cohortRepoRepo: CohortRepoRepository;
@@ -19,7 +27,9 @@ export function createSyncAdminService(deps: {
   octokit: Octokit;
   repoService: RepoSyncRunner;
   blogAdminService: WorkspaceBlogSyncRunner;
+  requestWaitMs?: number;
 }) {
+  const { requestWaitMs = REQUEST_WAIT_MS } = deps;
   const {
     memberRepo,
     missionRepoRepo,
@@ -40,6 +50,33 @@ export function createSyncAdminService(deps: {
     blogAdminService,
   });
 
+  // 직접 부르던 싱크도 큐를 거친다: 큐 작업과 같은 레포를 동시에 쓰지 않게 하고,
+  // 같은 싱크가 이미 대기·실행 중이면 새로 쌓지 않고 그 작업에 붙는다 (10분 cron이 긴 작업 뒤에 쌓이지 않게)
+  const runInQueue = async (
+    type: DirectSyncType,
+    cohort: number | undefined,
+    onProgress: ((step: SyncJobProgress) => void) | undefined,
+    waitMs?: number,
+  ): Promise<SyncOutcome> => {
+    const id = queue.findActive(type, cohort)?.id ?? queue.enqueue(type, cohort, undefined, undefined, undefined, true);
+    const unsubscribe = onProgress ? queue.subscribeProgress(id, onProgress) : undefined;
+    try {
+      const result = await queue.waitFor(id, waitMs);
+      if (result) return { done: true, result };
+      const job = queue.getJob(id);
+      if (!job) throw new Error(`job not found: ${id}`);
+      return { done: false, job };
+    } finally {
+      unsubscribe?.();
+    }
+  };
+
+  const waitResult = async (outcome: Promise<SyncOutcome>): Promise<SyncJobResult> => {
+    const settled = await outcome;
+    if (!settled.done) throw new Error('sync did not finish');
+    return settled.result;
+  };
+
   return {
     getAdminStatus: async (): Promise<{
       memberCount: number;
@@ -59,28 +96,19 @@ export function createSyncAdminService(deps: {
       };
     },
 
-    syncWorkspace: async (
-      onProgress?: (step: { repo: string; done: number; total: number; synced: number }) => void,
-      cohort?: number,
-    ) => {
-      const workspace = await workspaceService.getOrThrow();
-      return syncService.syncWorkspace(octokit, workspace.id, onProgress, cohort);
-    },
+    // SSE 스트림용: 끝날 때까지 기다린다 (진행 이벤트가 오가므로 프록시 시간 제한에 걸리지 않는다)
+    syncWorkspace: async (onProgress?: (step: SyncJobProgress) => void, cohort?: number) =>
+      waitResult(runInQueue('workspace', cohort, onProgress)),
 
-    syncContinuous: async (
-      onProgress?: (step: { repo: string; done: number; total: number; synced: number }) => void,
-    ) => {
-      const workspace = await workspaceService.getOrThrow();
-      return syncService.syncContinuousRepos(octokit, workspace.id, onProgress);
-    },
+    syncContinuous: async (onProgress?: (step: SyncJobProgress) => void) =>
+      waitResult(runInQueue('continuous', undefined, onProgress)),
 
-    syncCohortRepoList: async (
-      cohort: number,
-      onProgress?: (step: { repo: string; done: number; total: number; synced: number }) => void,
-    ) => {
-      const workspace = await workspaceService.getOrThrow();
-      return syncService.syncCohortRepoList(octokit, workspace.id, cohort, onProgress);
-    },
+    syncCohortRepoList: async (cohort: number, onProgress?: (step: SyncJobProgress) => void) =>
+      waitResult(runInQueue('cohort-repos', cohort, onProgress)),
+
+    // POST 요청용: requestWaitMs까지만 기다리고, 그때까지 안 끝나면 작업 정보를 돌려준다 (라우트가 202로 응답)
+    requestSync: (type: DirectSyncType, cohort?: number): Promise<SyncOutcome> =>
+      runInQueue(type, cohort, undefined, requestWaitMs),
 
     createJob: (type: SyncJobType, cohort?: number, repoId?: number, blogSource?: string, label?: string): string => {
       return queue.enqueue(type, cohort, repoId, blogSource, label);

@@ -165,6 +165,22 @@ describe('RepoTab flow', () => {
     expect(showToast).toHaveBeenCalledWith('java-chess 싱크 실패', 'error');
   });
 
+  it('should tell the continuous sync is still queued when the server answers with the job', async () => {
+    apiFetch.mockImplementation(async (path: string) => {
+      if (path === '/admin/sync/continuous') return { id: 'job-9', type: 'continuous', status: 'queued' };
+      if (path.startsWith('/admin/repos')) return REPOS;
+      return [];
+    });
+    renderRepoTab();
+    await screen.findByText('java-racingcar');
+
+    await userEvent.click(screen.getByRole('button', { name: '연속 싱크' }));
+
+    await waitFor(() =>
+      expect(showToast).toHaveBeenCalledWith('연속 싱크가 큐에서 실행 대기 중입니다 — 싱크 탭에서 확인하세요'),
+    );
+  });
+
   it('should sync all active base repos, discover, and run continuous sync', async () => {
     const { unmount } = renderRepoTab();
     await screen.findByText('java-racingcar');

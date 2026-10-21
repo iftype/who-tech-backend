@@ -217,12 +217,13 @@ exports[`external-service routes contract POST /admin/repos/discover null 1`] = 
 exports[`external-service routes contract POST /admin/sync {"cohort":8} 1`] = `
 {
   "body": {
-    "from": "sync.syncWorkspace",
+    "reposSynced": 1,
+    "totalSynced": 3,
   },
   "calls": {
-    "sync.syncWorkspace": [
+    "sync.requestSync": [
       [
-        undefined,
+        "workspace",
         8,
       ],
     ],
@@ -234,12 +235,13 @@ exports[`external-service routes contract POST /admin/sync {"cohort":8} 1`] = `
 exports[`external-service routes contract POST /admin/sync {} 1`] = `
 {
   "body": {
-    "from": "sync.syncWorkspace",
+    "reposSynced": 1,
+    "totalSynced": 3,
   },
   "calls": {
-    "sync.syncWorkspace": [
+    "sync.requestSync": [
       [
-        undefined,
+        "workspace",
         undefined,
       ],
     ],
@@ -251,11 +253,13 @@ exports[`external-service routes contract POST /admin/sync {} 1`] = `
 exports[`external-service routes contract POST /admin/sync/cohort-repos {"cohort":8} 1`] = `
 {
   "body": {
-    "from": "sync.syncCohortRepoList",
+    "reposSynced": 1,
+    "totalSynced": 3,
   },
   "calls": {
-    "sync.syncCohortRepoList": [
+    "sync.requestSync": [
       [
+        "cohort-repos",
         8,
       ],
     ],
@@ -277,14 +281,35 @@ exports[`external-service routes contract POST /admin/sync/cohort-repos {} 1`] =
 exports[`external-service routes contract POST /admin/sync/continuous {} 1`] = `
 {
   "body": {
-    "from": "sync.syncContinuous",
+    "reposSynced": 1,
+    "totalSynced": 3,
   },
   "calls": {
-    "sync.syncContinuous": [
-      [],
+    "sync.requestSync": [
+      [
+        "continuous",
+      ],
     ],
   },
   "status": 200,
+}
+`;
+
+exports[`external-service routes contract POST /admin/sync/continuous {} 2`] = `
+{
+  "body": {
+    "id": "job-1",
+    "status": "queued",
+    "type": "continuous",
+  },
+  "calls": {
+    "sync.requestSync": [
+      [
+        "continuous",
+      ],
+    ],
+  },
+  "status": 202,
 }
 `;
 

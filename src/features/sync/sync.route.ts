@@ -1,9 +1,16 @@
 import { Router } from 'express';
+import type { Response } from 'express';
 
 import { startSse, runSseJob } from '../../shared/sse-handler.js';
 import { parseNumberQuery, parseOptionalNumberQuery } from '../../shared/validation.js';
-import type { SyncAdminService } from './sync.admin.service.js';
+import type { SyncAdminService, SyncOutcome } from './sync.admin.service.js';
 import { CancelledError } from '../../shared/errors.js';
+
+// 기다리는 동안 끝났으면 예전과 같은 200 + 결과, 아직이면 202 + 작업 (GET /admin/sync/jobs/:id/stream 으로 이어 볼 수 있다)
+function sendOutcome(res: Response, outcome: SyncOutcome): void {
+  if (outcome.done) res.json(outcome.result);
+  else res.status(202).json(outcome.job);
+}
 
 export function createSyncRouter(service: SyncAdminService) {
   const router = Router();
@@ -18,11 +25,11 @@ export function createSyncRouter(service: SyncAdminService) {
 
   router.post('/sync', async (req, res) => {
     const cohort = typeof req.body?.cohort === 'number' ? req.body.cohort : undefined;
-    res.json(await service.syncWorkspace(undefined, cohort));
+    sendOutcome(res, await service.requestSync('workspace', cohort));
   });
 
   router.post('/sync/continuous', async (_req, res) => {
-    res.json(await service.syncContinuous());
+    sendOutcome(res, await service.requestSync('continuous'));
   });
 
   router.get('/sync/continuous/stream', (_req, res) => {
@@ -50,7 +57,7 @@ export function createSyncRouter(service: SyncAdminService) {
       res.status(400).json({ error: 'cohort required' });
       return;
     }
-    res.json(await service.syncCohortRepoList(cohort));
+    sendOutcome(res, await service.requestSync('cohort-repos', cohort));
   });
 
   router.get('/sync/cohort-repos/stream', (req, res) => {

@@ -185,6 +185,7 @@ The sync route exposes SSE endpoints that stream real-time progress:
 - Creates and owns the `SyncQueue`
 - Resolves the current workspace automatically via `workspaceService`
 - Exposes job management methods: `createJob`, `getJobs`, `cancelJob`, `subscribeProgress`, `subscribeDone`
+- Direct sync routes also go through the queue: `syncWorkspace` / `syncContinuous` / `syncCohortRepoList` (SSE, wait until done) and `requestSync` (POST, waits up to `REQUEST_WAIT_MS` = 240s, then returns the queued job so the route answers 202). A queued or running job of the same type and cohort is joined instead of queued twice
 - Provides admin dashboard status: member count, repo count, last sync time, profile refresh settings
 
 **Rule of thumb:** `SyncService` is for programmatic use. `SyncAdminService` is for the HTTP layer and admin UI.

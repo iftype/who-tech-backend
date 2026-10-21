@@ -22,7 +22,8 @@ jobs:
 
           echo "Response: $response"
 
-          if [ "$response" != "200" ]; then
+          # 200: 끝까지 실행됨, 202: 앞선 작업 뒤에서 큐에 남아 있음 (서버가 240초까지만 기다리고 응답)
+          if [ "$response" != "200" ] && [ "$response" != "202" ]; then
             echo "Continuous sync failed with status $response"
             exit 1
           fi

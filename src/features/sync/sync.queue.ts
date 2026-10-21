@@ -3,6 +3,7 @@ import type { Octokit } from '@octokit/rest';
 import type { SyncService } from './sync.service.js';
 import type { ActivityLogService } from '../activity-log/index.js';
 import type { WorkspaceService } from '../workspace/index.js';
+import { CancelledError } from '../../shared/errors.js';
 import type { RepoSyncFailure, RepoSyncRunner, SyncProgress, WorkspaceBlogSyncRunner } from './sync.ports.js';
 
 export type SyncJobType = 'workspace' | 'continuous' | 'cohort-repos' | 'repo' | 'blog';
@@ -40,6 +41,8 @@ export type SyncJob = {
   step?: SyncProgress;
   /** 레포 작업 결과: 실패한 PR 목록까지 */
   repoResult?: { synced: number; failures: RepoSyncFailure[] };
+  /** 대기·완료 활동 로그를 남기지 않는다 (10분 cron처럼 자주 오는 직접 요청이 로그를 덮지 않게). 실패·취소는 남긴다 */
+  quiet?: boolean;
   abortController: AbortController;
 };
 
@@ -69,6 +72,8 @@ export function createSyncQueue(deps: {
 
   const jobs: SyncJob[] = [];
   let processing = false;
+  // 실패한 작업의 원래 에러. 기다리던 요청이 같은 에러(같은 상태 코드)로 실패하도록 문자열과 따로 보관한다
+  const failures = new Map<string, unknown>();
 
   const progressSubs = new Map<string, Set<ProgressSubscriber>>();
   const doneSubs = new Map<string, Set<DoneSubscriber>>();
@@ -106,6 +111,7 @@ export function createSyncQueue(deps: {
         jobs.splice(i, 1);
         progressSubs.delete(job.id);
         doneSubs.delete(job.id);
+        failures.delete(job.id);
       }
     }
   };
@@ -143,6 +149,7 @@ export function createSyncQueue(deps: {
     repoId?: number,
     blogSource?: string,
     label?: string,
+    quiet?: boolean,
   ): string => {
     pruneFinished(Date.now());
     const id = randomUUID();
@@ -153,15 +160,18 @@ export function createSyncQueue(deps: {
       ...(repoId != null ? { repoId } : {}),
       ...(blogSource != null ? { blogSource } : {}),
       ...(label != null ? { label } : {}),
+      ...(quiet ? { quiet } : {}),
       status: 'queued',
       createdAt: new Date(),
       abortController: new AbortController(),
     };
     jobs.push(job);
-    void activityLogService.addLog(
-      'sync',
-      `Job queued: ${type}${cohort != null ? ` cohort=${cohort}` : ''}${repoId != null ? ` repoId=${repoId}` : ''}${blogSource != null ? ` source=${blogSource}` : ''} (id=${id})`,
-    );
+    if (!quiet) {
+      void activityLogService.addLog(
+        'sync',
+        `Job queued: ${type}${cohort != null ? ` cohort=${cohort}` : ''}${repoId != null ? ` repoId=${repoId}` : ''}${blogSource != null ? ` source=${blogSource}` : ''} (id=${id})`,
+      );
+    }
     processLoop();
     return id;
   };
@@ -208,6 +218,50 @@ export function createSyncQueue(deps: {
     };
   };
 
+  /** 같은 종류·기수로 대기 중이거나 실행 중인 작업 (같은 싱크를 두 번 쌓지 않으려고) */
+  const findActive = (type: SyncJobType, cohort?: number): Omit<SyncJob, 'abortController'> | undefined => {
+    const job = jobs.find(
+      (j) => j.type === type && j.cohort === cohort && (j.status === 'queued' || j.status === 'running'),
+    );
+    return job ? getJob(job.id) : undefined;
+  };
+
+  /**
+   * 작업이 끝날 때까지 기다린다. 완료면 결과, 실패면 원래 에러, 취소면 CancelledError로 끝난다.
+   * timeoutMs가 지나도 안 끝나면 undefined (작업은 큐에서 계속 돈다)
+   */
+  const waitFor = (id: string, timeoutMs?: number): Promise<SyncJobResult | undefined> =>
+    new Promise((resolve, reject) => {
+      const settle = (job: SyncJob): void => {
+        if (job.status === 'completed') resolve(job.result);
+        else if (job.status === 'cancelled') reject(new CancelledError());
+        else reject(failures.get(job.id) ?? new Error(job.error ?? 'sync failed'));
+      };
+
+      const job = jobs.find((j) => j.id === id);
+      if (!job) {
+        reject(new Error(`job not found: ${id}`));
+        return;
+      }
+      if (job.status === 'completed' || job.status === 'failed' || job.status === 'cancelled') {
+        settle(job);
+        return;
+      }
+
+      const timer =
+        timeoutMs != null
+          ? setTimeout(() => {
+              unsubscribe();
+              resolve(undefined);
+            }, timeoutMs)
+          : undefined;
+      const unsubscribe = subscribeDone(id, (done) => {
+        unsubscribe();
+        clearTimeout(timer);
+        settle(done);
+      });
+    });
+
   const processLoop = async (): Promise<void> => {
     if (processing) return;
     processing = true;
@@ -245,10 +299,12 @@ export function createSyncQueue(deps: {
           job.status = 'completed';
           job.result = result;
           job.completedAt = new Date();
-          await activityLogService.addLog(
-            'sync',
-            `Job completed: ${job.type}${job.cohort != null ? ` cohort=${job.cohort}` : ''} — synced ${result.totalSynced} items across ${result.reposSynced} repos`,
-          );
+          if (!job.quiet) {
+            await activityLogService.addLog(
+              'sync',
+              `Job completed: ${job.type}${job.cohort != null ? ` cohort=${job.cohort}` : ''} — synced ${result.totalSynced} items across ${result.reposSynced} repos`,
+            );
+          }
         } catch (err) {
           if (job.abortController.signal.aborted) {
             job.status = 'cancelled';
@@ -257,6 +313,7 @@ export function createSyncQueue(deps: {
           } else {
             job.status = 'failed';
             job.error = err instanceof Error ? err.message : String(err);
+            failures.set(job.id, err);
             job.completedAt = new Date();
             await activityLogService.addLog('sync_error', `Job failed: ${job.type} — ${job.error}`);
           }
@@ -269,7 +326,7 @@ export function createSyncQueue(deps: {
     }
   };
 
-  return { enqueue, getJobs, getJob, cancel, subscribeProgress, subscribeDone };
+  return { enqueue, getJobs, getJob, findActive, waitFor, cancel, subscribeProgress, subscribeDone };
 }
 
 export type SyncQueue = ReturnType<typeof createSyncQueue>;

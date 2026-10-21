@@ -34,7 +34,7 @@
 ### continuous-sync.yml
 
 - 트리거: 10분마다 cron
-- 실행: `POST /admin/sync/continuous` — syncMode=continuous 레포만 수집
+- 실행: `POST /admin/sync/continuous` — syncMode=continuous 레포만 수집. 작업 큐를 거치며, 240초 안에 끝나면 200, 앞선 작업 때문에 아직이면 202(둘 다 성공 처리). 이미 대기·실행 중인 연속 싱크가 있으면 새로 쌓지 않고 그 작업에 붙는다
 
 ### tecotalk-sync.yml
 

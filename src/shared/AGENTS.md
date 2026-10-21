@@ -102,7 +102,7 @@ Inspects a sample of PR titles to guess which regex pattern extracts the nicknam
 Utilities for Server-Sent Events responses.
 
 - `startSse(res)` — sets SSE headers (`text/event-stream`, no cache, keep-alive) and returns a `send(event, data)` function
-- `runSseJob(res, send, job)` — runs a promise and automatically emits `done` or `error` events before closing the response
+- `runSseJob(res, send, job)` — runs a promise and automatically emits `done` or `error` events before closing the response; writes a `: ping` comment every 25s meanwhile so the nginx 300s read timeout does not cut a stream waiting in the queue
 
 ### `validation.ts`
 

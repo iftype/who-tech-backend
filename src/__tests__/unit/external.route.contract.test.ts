@@ -58,6 +58,9 @@ function makeApp(overrides: Overrides) {
 type Step = [method: 'get' | 'post' | 'delete', path: string, body?: object, overrides?: Overrides];
 
 const REFRESH = 'memberPublic.refreshMemberProfile';
+const REQUEST_SYNC = 'sync.requestSync';
+const SYNC_DONE = { done: true, result: { totalSynced: 3, reposSynced: 1 } };
+const SYNC_QUEUED = { done: false, job: { id: 'job-1', type: 'continuous', status: 'queued' } };
 
 const steps: Step[] = [
   ['post', '/members/fe-crew/refresh', undefined, { [REFRESH]: { member: { githubId: 'fe-crew' } } }],
@@ -65,10 +68,12 @@ const steps: Step[] = [
   ['post', '/members/ghost/refresh', undefined, { [REFRESH]: new NotFoundError('Member not found') }],
   ['post', '/members/fe-crew/refresh', undefined, { [REFRESH]: new Error('GitHub down') }],
   ['get', '/admin/github-status'],
-  ['post', '/admin/sync', {}],
-  ['post', '/admin/sync', { cohort: 8 }],
-  ['post', '/admin/sync/continuous', {}],
-  ['post', '/admin/sync/cohort-repos', { cohort: 8 }],
+  // 직접 싱크 POST는 큐를 거친다: 기다리는 동안 끝나면 200 + 결과, 아직이면 202 + 작업
+  ['post', '/admin/sync', {}, { [REQUEST_SYNC]: SYNC_DONE }],
+  ['post', '/admin/sync', { cohort: 8 }, { [REQUEST_SYNC]: SYNC_DONE }],
+  ['post', '/admin/sync/continuous', {}, { [REQUEST_SYNC]: SYNC_DONE }],
+  ['post', '/admin/sync/continuous', {}, { [REQUEST_SYNC]: SYNC_QUEUED }],
+  ['post', '/admin/sync/cohort-repos', { cohort: 8 }, { [REQUEST_SYNC]: SYNC_DONE }],
   ['post', '/admin/sync/cohort-repos', {}],
   ['post', '/admin/sync/jobs', { cohort: 8 }],
   ['post', '/admin/sync/jobs', {}],
