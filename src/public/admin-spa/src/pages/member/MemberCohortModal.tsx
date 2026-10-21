@@ -45,9 +45,10 @@ export function MemberCohortModal({ member, onChange, onRefresh }: Props) {
     meta: { errorMessage: '기수 삭제 실패' },
   });
 
+  // 서버는 cohort와 roles가 함께 와야 참여를 쓴다 (cohort만 보내면 성공 응답에 아무것도 안 바뀐다). 새 기수는 크루로 시작
   const addCohortMutation = useMutation({
     mutationFn: ({ memberId, cohort }: { memberId: number; cohort: number }) =>
-      adminApi.members.update(memberId, { cohort }),
+      adminApi.members.update(memberId, { cohort, roles: ['crew'] }),
     onSuccess: (updated) => {
       applyCohorts(updated);
       void queryClient.invalidateQueries({ queryKey: queryKeys.members.all() });

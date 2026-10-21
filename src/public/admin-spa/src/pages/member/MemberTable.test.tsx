@@ -157,7 +157,7 @@ describe('MemberTable', () => {
 
     await waitFor(() =>
       expect(calls('PATCH')).toEqual([
-        ['/admin/members/2', '{"cohort":9}'],
+        ['/admin/members/2', '{"cohort":9,"roles":["crew"]}'],
         ['/admin/members/2', '{"cohort":8,"roles":["crew","coach"]}'],
         ['/admin/members/2', '{"cohortLocked":true}'],
       ]),
