@@ -4,8 +4,9 @@ import { NotFoundError } from '../../shared/errors.js';
 import { badRequest } from '../../shared/http.js';
 import { parseId, parseOptionalNumberQuery } from '../../shared/validation.js';
 import type { MemberService } from './member.service.js';
+import type { SyncAdminService } from '../sync/index.js';
 
-export function createMemberRouter(service: MemberService) {
+export function createMemberRouter(service: MemberService, syncAdminService: SyncAdminService) {
   const router = Router();
 
   router.get('/', async (req, res) => {
@@ -127,9 +128,13 @@ export function createMemberRouter(service: MemberService) {
     res.status(204).end();
   });
 
+  // 멤버 한 명의 PR 재수집도 싱크 큐(GitHub 레인)를 거친다. 240초 안에 끝나면 200 + 결과, 아니면 202 + 작업
   router.post('/:id/resync-submissions', async (req, res) => {
-    const result = await service.resyncMemberPRs(parseId(req.params['id']));
-    res.json(result);
+    const member = await service.get(parseId(req.params['id']));
+    if (!member) throw new NotFoundError('member not found');
+    const outcome = await syncAdminService.requestMemberSync(member.githubId);
+    if (outcome.done) res.json(outcome.result);
+    else res.status(202).json(outcome.job);
   });
 
   return router;

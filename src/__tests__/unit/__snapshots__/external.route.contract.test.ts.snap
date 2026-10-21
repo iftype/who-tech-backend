@@ -1,21 +1,5 @@
 // Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
-exports[`external-service routes contract GET /admin/blog/sync-jobs/job-1 null 1`] = `
-{
-  "body": {
-    "from": "blog.getBlogSyncJob",
-  },
-  "calls": {
-    "blog.getBlogSyncJob": [
-      [
-        "job-1",
-      ],
-    ],
-  },
-  "status": 200,
-}
-`;
-
 exports[`external-service routes contract GET /admin/github-status null 1`] = `
 {
   "body": {
@@ -44,22 +28,6 @@ exports[`external-service routes contract POST /admin/blog/backfill {} 1`] = `
     ],
   },
   "status": 200,
-}
-`;
-
-exports[`external-service routes contract POST /admin/blog/sync {} 1`] = `
-{
-  "body": {
-    "from": "blog.enqueueWorkspaceBlogSync",
-  },
-  "calls": {
-    "blog.enqueueWorkspaceBlogSync": [
-      [
-        "manual",
-      ],
-    ],
-  },
-  "status": 202,
 }
 `;
 
@@ -129,16 +97,61 @@ exports[`external-service routes contract POST /admin/members/1/refresh-profile 
 exports[`external-service routes contract POST /admin/members/1/resync-submissions null 1`] = `
 {
   "body": {
-    "from": "member.resyncMemberPRs",
+    "reposSynced": 1,
+    "totalSynced": 3,
   },
   "calls": {
-    "member.resyncMemberPRs": [
+    "member.get": [
+      [
+        1,
+      ],
+    ],
+    "sync.requestMemberSync": [
+      [
+        "crew9",
+      ],
+    ],
+  },
+  "status": 200,
+}
+`;
+
+exports[`external-service routes contract POST /admin/members/1/resync-submissions null 2`] = `
+{
+  "body": {
+    "id": "job-1",
+    "status": "queued",
+    "type": "continuous",
+  },
+  "calls": {
+    "member.get": [
+      [
+        1,
+      ],
+    ],
+    "sync.requestMemberSync": [
+      [
+        "crew9",
+      ],
+    ],
+  },
+  "status": 202,
+}
+`;
+
+exports[`external-service routes contract POST /admin/members/1/resync-submissions null 3`] = `
+{
+  "body": {
+    "message": "member not found",
+  },
+  "calls": {
+    "member.get": [
       [
         1,
       ],
     ],
   },
-  "status": 200,
+  "status": 404,
 }
 `;
 
@@ -172,11 +185,11 @@ exports[`external-service routes contract POST /admin/repos/1/sync {} 1`] = `
     "sync.createJob": [
       [
         "repo",
-        undefined,
-        1,
-        undefined,
         {
-          "from": "repo.findRepoName",
+          "label": {
+            "from": "repo.findRepoName",
+          },
+          "repoId": 1,
         },
       ],
     ],
@@ -330,9 +343,9 @@ exports[`external-service routes contract POST /admin/sync/jobs {"type":"repo","
     "sync.createJob": [
       [
         "repo",
-        undefined,
-        1,
-        undefined,
+        {
+          "repoId": 1,
+        },
       ],
     ],
     "sync.getJob": [
@@ -352,9 +365,7 @@ exports[`external-service routes contract POST /admin/sync/jobs {"type":"workspa
     "sync.createJob": [
       [
         "workspace",
-        undefined,
-        undefined,
-        undefined,
+        {},
       ],
     ],
     "sync.getJob": [

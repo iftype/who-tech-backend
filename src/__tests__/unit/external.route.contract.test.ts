@@ -48,8 +48,8 @@ function makeApp(overrides: Overrides) {
   app.use('/members', createMemberPublicRouter(fake('memberPublic')));
   app.use('/admin/repos', createRepoRouter(fake('repo'), sync));
   app.use('/admin', createSyncRouter(sync));
-  app.use('/admin', createBlogRouter(fake('blog')));
-  app.use('/admin/members', createMemberRouter(fake('member')));
+  app.use('/admin', createBlogRouter(fake('blog'), sync));
+  app.use('/admin/members', createMemberRouter(fake('member'), sync));
   app.use('/admin/tecotalk', createTecoTalkRouter(fake('tecotalk')));
   app.use(errorHandler);
   return { app, calls };
@@ -61,6 +61,8 @@ const REFRESH = 'memberPublic.refreshMemberProfile';
 const REQUEST_SYNC = 'sync.requestSync';
 const SYNC_DONE = { done: true, result: { totalSynced: 3, reposSynced: 1 } };
 const SYNC_QUEUED = { done: false, job: { id: 'job-1', type: 'continuous', status: 'queued' } };
+const MEMBER_SYNC = 'sync.requestMemberSync';
+const MEMBER = { 'member.get': { id: 1, githubId: 'crew9' } };
 
 const steps: Step[] = [
   ['post', '/members/fe-crew/refresh', undefined, { [REFRESH]: { member: { githubId: 'fe-crew' } } }],
@@ -79,8 +81,7 @@ const steps: Step[] = [
   ['post', '/admin/sync/jobs', {}],
   ['post', '/admin/sync/jobs', { type: 'workspace' }],
   ['post', '/admin/sync/jobs', { type: 'repo', repoId: 1 }],
-  ['post', '/admin/blog/sync', {}],
-  ['get', '/admin/blog/sync-jobs/job-1'],
+  // POST /admin/blog/sync · GET /admin/blog/sync-jobs/:id 는 실제 큐로 blog.sync-jobs.route.test.ts 가 고정한다
   ['post', '/admin/blog/team/sync'],
   ['post', '/admin/blog/backfill', {}],
   ['post', '/admin/repos/discover'],
@@ -93,7 +94,10 @@ const steps: Step[] = [
   ['post', '/admin/members', { nickname: 'no-id' }],
   ['post', '/admin/members/refresh-profiles', {}],
   ['post', '/admin/members/1/refresh-profile'],
-  ['post', '/admin/members/1/resync-submissions'],
+  // 멤버 PR 재수집도 큐를 거친다: 기다리는 동안 끝나면 200 + 결과, 아직이면 202 + 작업, 없는 멤버는 404
+  ['post', '/admin/members/1/resync-submissions', undefined, { ...MEMBER, [MEMBER_SYNC]: SYNC_DONE }],
+  ['post', '/admin/members/1/resync-submissions', undefined, { ...MEMBER, [MEMBER_SYNC]: SYNC_QUEUED }],
+  ['post', '/admin/members/1/resync-submissions', undefined, { 'member.get': null }],
 ];
 
 describe('external-service routes contract', () => {

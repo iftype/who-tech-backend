@@ -1,19 +1,25 @@
 import { Router } from 'express';
+import { NotFoundError } from '../../shared/errors.js';
 import { badRequest } from '../../shared/http.js';
+import type { SyncAdminService } from '../sync/index.js';
 import type { BlogAdminService } from './blog.admin.service.js';
+import { listBlogSyncJobs, toBlogSyncJob } from './blog.sync-jobs.js';
 
-export function createBlogRouter(service: BlogAdminService) {
+export function createBlogRouter(service: BlogAdminService, syncAdminService: SyncAdminService) {
   const router = Router();
 
-  // 1. 블로그 동기화 (30일 저장 / 조회는 7일 필터링)
-  router.post('/blog/sync', async (_req, res) => {
-    const source = _req.get('X-Sync-Source') === 'github-actions' ? 'github-actions' : 'manual';
-    const job = await service.enqueueWorkspaceBlogSync(source);
-    res.status(202).json(job);
+  // 1. 블로그 동기화: 싱크 큐(블로그 레인)에 넣는다. 이미 대기·실행 중이면 그 작업을 돌려준다 (30분 cron이 겹쳐도 하나만)
+  router.post('/blog/sync', async (req, res) => {
+    const source = req.get('X-Sync-Source') === 'github-actions' ? 'github-actions' : 'manual';
+    const active = syncAdminService.findActiveJob('blog');
+    const jobId = active?.id ?? syncAdminService.createJob('blog', { blogSource: source });
+    const job = syncAdminService.getJob(jobId);
+    if (!job) throw new NotFoundError('blog sync job not found');
+    res.status(202).json(toBlogSyncJob(job));
   });
 
   router.get('/blog/sync-jobs', async (_req, res) => {
-    res.json(service.listBlogSyncJobs());
+    res.json(listBlogSyncJobs(syncAdminService));
   });
 
   router.get('/blog/sync-jobs/:jobId', async (req, res) => {
@@ -21,7 +27,9 @@ export function createBlogRouter(service: BlogAdminService) {
     if (!jobId || Array.isArray(jobId)) {
       return badRequest('invalid job id');
     }
-    res.json(await service.getBlogSyncJob(jobId));
+    const job = syncAdminService.getJob(jobId);
+    if (!job || job.type !== 'blog') throw new NotFoundError('blog sync job not found');
+    res.json(toBlogSyncJob(job));
   });
 
   // 2. 최근 새 블로그 글 조회 (sinceMinutes 이내 createdAt 기준)

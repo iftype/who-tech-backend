@@ -29,7 +29,7 @@ export function createRepoRouter(service: RepoService, syncAdminService: SyncAdm
   router.post('/:id/sync', async (req, res) => {
     const repoId = parseId(req.params['id']);
     const repoName = await service.findRepoName(repoId);
-    const jobId = syncAdminService.createJob('repo', undefined, repoId, undefined, repoName ?? undefined);
+    const jobId = syncAdminService.createJob('repo', { repoId, ...(repoName ? { label: repoName } : {}) });
     const job = syncAdminService.getJob(jobId);
     res.status(202).json(job);
   });

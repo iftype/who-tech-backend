@@ -26,10 +26,10 @@ function makeService(requestWaitMs?: number) {
       totalSynced: 4,
       reposSynced: 2,
     })),
+    syncMemberPRs: jest.fn<(...args: unknown[]) => Promise<Result>>(async () => ({ totalSynced: 3, reposSynced: 2 })),
   };
   const addLog = jest.fn(async (..._args: unknown[]) => undefined);
   const service = createSyncAdminService({
-    cohortRepoRepo: {} as never,
     memberRepo: { count: jest.fn() } as never,
     missionRepoRepo: { count: jest.fn() } as never,
     workspaceService: { getOrThrow: jest.fn(async () => ({ id: 7 })) } as never,
@@ -167,5 +167,40 @@ describe('createSyncAdminService — 직접 싱크도 큐를 거친다', () => {
 
     expect(addLog).toHaveBeenCalledWith('sync', expect.stringContaining('Job queued: continuous'));
     expect(addLog).toHaveBeenCalledWith('sync', expect.stringContaining('Job completed: continuous'));
+  });
+});
+
+describe('createSyncAdminService — 멤버 PR 재수집', () => {
+  it('should run the member resync as a member job keyed by github id', async () => {
+    const { service, syncService } = makeService();
+
+    const outcome = await service.requestMemberSync('crew9');
+
+    expect(outcome).toEqual({ done: true, result: { totalSynced: 3, reposSynced: 2 } });
+    expect(syncService.syncMemberPRs).toHaveBeenCalledWith(
+      {},
+      7,
+      'crew9',
+      expect.any(Function),
+      expect.any(AbortSignal),
+    );
+    expect(service.getJobs()).toMatchObject([{ type: 'member', githubId: 'crew9', status: 'completed', quiet: true }]);
+  });
+
+  it('should join the active member job of the same member', async () => {
+    const { service, syncService } = makeService(0);
+    const pending = deferred();
+    syncService.syncMemberPRs.mockImplementationOnce(() => pending.promise);
+
+    const first = await service.requestMemberSync('crew9');
+    const second = await service.requestMemberSync('crew9');
+    const other = service.findActiveJob('member', { githubId: 'other' });
+
+    expect(first.done).toBe(false);
+    expect(second).toEqual(first);
+    expect(other).toBeUndefined();
+    expect(syncService.syncMemberPRs).toHaveBeenCalledTimes(1);
+    pending.resolve({ totalSynced: 3, reposSynced: 2 });
+    await new Promise((r) => setImmediate(r));
   });
 });

@@ -13,7 +13,6 @@ import { refreshMemberProfileById } from './member.profile-refresh.js';
 import { applyDominantCohort } from './member.cohort-recalc.js';
 
 import type { SubmissionRepository } from '../../db/repositories/submission.repository.js';
-import type { SyncService } from '../sync/index.js';
 import { parseCohortRules } from '../../shared/cohort-rules.js';
 import { NotFoundError } from '../../shared/errors.js';
 
@@ -24,9 +23,8 @@ export function createMemberService(deps: {
   workspaceService: WorkspaceService;
   octokit: Octokit;
   submissionRepo: SubmissionRepository;
-  syncService: SyncService;
 }) {
-  const { memberRepo, blogPostRepo, bannedWordRepo, workspaceService, octokit, submissionRepo, syncService } = deps;
+  const { memberRepo, blogPostRepo, bannedWordRepo, workspaceService, octokit, submissionRepo } = deps;
 
   return {
     listMembers: async (filters?: {
@@ -294,14 +292,6 @@ export function createMemberService(deps: {
       if (!submission || submission.memberId !== memberId) throw new NotFoundError('submission not found');
       await submissionRepo.deleteById(submissionId);
       return { success: true };
-    },
-
-    resyncMemberPRs: async (id: number) => {
-      const member = await memberRepo.findByIdWithRelations(id);
-      if (!member) throw new NotFoundError('member not found');
-      const workspace = await workspaceService.getOrThrow();
-      const result = await syncService.syncMemberPRs(octokit, workspace.id, member.githubId);
-      return result;
     },
 
     recalculateMemberCohorts: async (id: number) => {

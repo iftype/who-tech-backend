@@ -68,7 +68,6 @@ export function createContainer() {
     workspaceService,
     octokit,
     submissionRepo,
-    syncService,
   });
   const repoService = createRepoService({ missionRepoRepo, workspaceService, syncService, octokit });
   const blogService = createBlogService({ memberRepo, blogPostRepo, teamBlogRepo });
@@ -96,7 +95,6 @@ export function createContainer() {
   const archiveService = createArchiveService({ memberRepo, cohortRepoRepo, workspaceService });
   const tecoTalkService = createTecoTalkService({ tecoTalkRepo, memberRepo, workspaceService });
   const syncAdminService = createSyncAdminService({
-    cohortRepoRepo,
     memberRepo,
     missionRepoRepo,
     workspaceService,

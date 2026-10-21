@@ -95,8 +95,12 @@ export function useMemberActions(onRefresh: () => void) {
     setResyncing(member.id);
     try {
       const result = await adminApi.members.resyncSubmissions(member.id);
-      showToast(`${member.githubId} PR 재수집 완료 (${result.totalSynced}개)`);
-      onRefresh();
+      if ('status' in result) {
+        showToast(`${member.githubId} PR 재수집이 큐에서 실행 대기 중입니다`);
+      } else {
+        showToast(`${member.githubId} PR 재수집 완료 (${result.totalSynced}개)`);
+        onRefresh();
+      }
     } catch (e) {
       showToast(toErrorMessage(e, 'PR 재수집 실패'), 'error');
     } finally {
