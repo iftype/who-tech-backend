@@ -99,7 +99,13 @@ export function createSyncRouter(service: SyncAdminService) {
       badRequest('repoId is required for repo job');
     }
 
-    const id = service.createJob(type, cohort, repoId, blogSource);
+    const id = service.createJob(type, {
+      ...(cohort != null ? { cohort } : {}),
+      ...(repoId != null ? { repoId } : {}),
+      ...(blogSource === 'manual' || blogSource === 'github-actions' || blogSource === 'scheduler'
+        ? { blogSource }
+        : {}),
+    });
     const job = service.getJob(id);
     res.status(201).json(job);
   });

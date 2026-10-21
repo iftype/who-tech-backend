@@ -48,8 +48,12 @@ export const adminApi = {
     refreshProfiles: () =>
       apiFetch<{ checked: number; refreshed: number; failed: number }>('/admin/members/refresh-profiles', json('POST')),
     recalculateCohorts: (id: number) => apiFetch(`/admin/members/${id}/recalculate-cohorts`, json('POST')),
+    /** 240초 안에 끝나면 결과, 아니면 큐 작업(202) */
     resyncSubmissions: (id: number) =>
-      apiFetch<{ totalSynced: number }>(`/admin/members/${id}/resync-submissions`, json('POST')),
+      apiFetch<{ totalSynced: number } | { id: string; status: string }>(
+        `/admin/members/${id}/resync-submissions`,
+        json('POST'),
+      ),
     blogPosts: (id: number) => apiFetch<BlogPostResponse>(`/admin/members/${id}/blog-posts`),
   },
 

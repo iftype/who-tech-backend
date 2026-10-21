@@ -87,7 +87,6 @@ function makeDeps(cohortRules: unknown = WORKSPACE.cohortRules) {
     touchProfileRefresh: asyncMock(undefined),
   };
   const submissionRepo = { deleteById: asyncMock({}), findById: asyncMock(null) };
-  const syncService = { syncMemberPRs: asyncMock({ synced: 2 }) };
   const octokit = {} as Octokit;
 
   const deps = {
@@ -97,10 +96,9 @@ function makeDeps(cohortRules: unknown = WORKSPACE.cohortRules) {
     workspaceService,
     octokit,
     submissionRepo,
-    syncService,
   } as unknown as Deps;
 
-  return { deps, memberRepo, blogPostRepo, workspaceService, submissionRepo, syncService, octokit };
+  return { deps, memberRepo, blogPostRepo, workspaceService, submissionRepo, octokit };
 }
 
 describe('MemberService', () => {
@@ -375,7 +373,6 @@ describe('MemberService', () => {
       const service = createMemberService(makeDeps().deps);
       for (const call of [
         () => service.deleteSubmission(1, 5),
-        () => service.resyncMemberPRs(1),
         () => service.recalculateMemberCohorts(1),
         () => service.changeMemberCohort(1, 7, 8),
       ]) {
@@ -390,19 +387,7 @@ describe('MemberService', () => {
     });
   });
 
-  describe('resyncMemberPRs / listMemberCohorts', () => {
-    it('should resync PRs of the member by GitHub id', async () => {
-      const { deps, memberRepo, syncService, octokit } = makeDeps();
-      memberRepo.findByIdWithRelations.mockResolvedValue(makeMember({ githubId: 'crew9' }));
-
-      await expect(createMemberService(deps).resyncMemberPRs(10)).resolves.toEqual({ synced: 2 });
-      expect(syncService.syncMemberPRs).toHaveBeenCalledWith(octokit, 1, 'crew9');
-    });
-
-    it('should throw when resyncing an unknown member', async () => {
-      await expect(createMemberService(makeDeps().deps).resyncMemberPRs(1)).rejects.toThrow('member not found');
-    });
-
+  describe('listMemberCohorts', () => {
     it('should list member cohorts of the workspace', async () => {
       const { deps, memberRepo } = makeDeps();
       await createMemberService(deps).listMemberCohorts();

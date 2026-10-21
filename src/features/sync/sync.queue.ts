@@ -4,17 +4,35 @@ import type { SyncService } from './sync.service.js';
 import type { ActivityLogService } from '../activity-log/index.js';
 import type { WorkspaceService } from '../workspace/index.js';
 import { CancelledError } from '../../shared/errors.js';
-import type { RepoSyncFailure, RepoSyncRunner, SyncProgress, WorkspaceBlogSyncRunner } from './sync.ports.js';
+import type {
+  BlogSyncResult,
+  BlogSyncSource,
+  RepoSyncFailure,
+  RepoSyncRunner,
+  SyncJobProgress,
+  SyncProgress,
+  WorkspaceBlogSyncRunner,
+} from './sync.ports.js';
 
-export type SyncJobType = 'workspace' | 'continuous' | 'cohort-repos' | 'repo' | 'blog';
+export type { SyncJobProgress } from './sync.ports.js';
+
+export type SyncJobType = 'workspace' | 'continuous' | 'cohort-repos' | 'repo' | 'member' | 'blog';
 
 export type SyncJobStatus = 'queued' | 'running' | 'completed' | 'failed' | 'cancelled';
 
-export type SyncJobProgress = {
-  repo: string;
-  done: number;
-  total: number;
-  synced: number;
+/**
+ * 레인: 같은 레인 안에서는 한 번에 하나만 돈다. GitHub를 쓰는 작업끼리는 같은 레포를 동시에 쓰지 않게 한 줄로,
+ * 블로그(RSS)는 GitHub 작업 뒤에서 기다릴 이유가 없어 자기 줄로 (blog-check cron이 긴 전체 싱크에 막히지 않는다)
+ */
+export type SyncLane = 'github' | 'blog';
+
+export const LANE_OF: Record<SyncJobType, SyncLane> = {
+  workspace: 'github',
+  continuous: 'github',
+  'cohort-repos': 'github',
+  repo: 'github',
+  member: 'github',
+  blog: 'blog',
 };
 
 export type SyncJobResult = {
@@ -27,7 +45,9 @@ export type SyncJob = {
   type: SyncJobType;
   cohort?: number;
   repoId?: number;
-  blogSource?: string;
+  /** member 작업: 어느 멤버의 PR을 다시 모으나 */
+  githubId?: string;
+  blogSource?: BlogSyncSource;
   /** 사람이 읽는 대상 이름 (레포 작업이면 레포 이름) */
   label?: string;
   status: SyncJobStatus;
@@ -41,6 +61,8 @@ export type SyncJob = {
   step?: SyncProgress;
   /** 레포 작업 결과: 실패한 PR 목록까지 */
   repoResult?: { synced: number; failures: RepoSyncFailure[] };
+  /** 블로그 작업 결과: 삭제·실패 목록까지 (blog-check 워크플로가 읽는다) */
+  blogResult?: BlogSyncResult;
   /** 대기·완료 활동 로그를 남기지 않는다 (10분 cron처럼 자주 오는 직접 요청이 로그를 덮지 않게). 실패·취소는 남긴다 */
   quiet?: boolean;
   abortController: AbortController;
@@ -60,6 +82,19 @@ type ProgressSubscriber = (progress: SyncJobProgress) => void;
 export const FINISHED_JOB_TTL_MS = 6 * 60 * 60 * 1000;
 type DoneSubscriber = (job: SyncJob) => void;
 
+export type EnqueueOptions = {
+  cohort?: number | undefined;
+  repoId?: number | undefined;
+  githubId?: string | undefined;
+  blogSource?: BlogSyncSource | undefined;
+  label?: string | undefined;
+  /** 대기·완료 활동 로그를 남기지 않는다 (10분 cron처럼 자주 오는 직접 요청). 실패·취소는 남긴다 */
+  quiet?: boolean;
+};
+
+/** 같은 작업인지 가를 열쇠 (종류 + 기수 또는 멤버) */
+export type JobKey = { cohort?: number | undefined; githubId?: string | undefined };
+
 export function createSyncQueue(deps: {
   syncService: SyncService;
   activityLogService: ActivityLogService;
@@ -71,7 +106,7 @@ export function createSyncQueue(deps: {
   const { syncService, activityLogService, workspaceService, octokit, repoService, blogAdminService } = deps;
 
   const jobs: SyncJob[] = [];
-  let processing = false;
+  const processing: Record<SyncLane, boolean> = { github: false, blog: false };
   // 실패한 작업의 원래 에러. 기다리던 요청이 같은 에러(같은 상태 코드)로 실패하도록 문자열과 따로 보관한다
   const failures = new Map<string, unknown>();
 
@@ -134,23 +169,19 @@ export function createSyncQueue(deps: {
       job.repoResult = { synced: repoResult.synced, failures: repoResult.failures ?? [] };
       return { totalSynced: repoResult.synced, reposSynced: 1 };
     },
+    member: async (job, { signal, onProgress }) => {
+      if (!job.githubId) throw new Error('githubId is required for member job');
+      return syncService.syncMemberPRs(octokit, await workspaceId(), job.githubId, onProgress, signal);
+    },
     blog: async (job, { onStep }) => {
-      const blogResult = await blogAdminService.executeWorkspaceBlogSync(
-        (job.blogSource as 'manual' | 'github-actions' | 'scheduler') ?? 'manual',
-        onStep,
-      );
+      const blogResult = await blogAdminService.executeWorkspaceBlogSync(job.blogSource ?? 'manual', onStep);
+      job.blogResult = blogResult;
       return { totalSynced: blogResult.synced, reposSynced: 1 };
     },
   };
 
-  const enqueue = (
-    type: SyncJobType,
-    cohort?: number,
-    repoId?: number,
-    blogSource?: string,
-    label?: string,
-    quiet?: boolean,
-  ): string => {
+  const enqueue = (type: SyncJobType, options: EnqueueOptions = {}): string => {
+    const { cohort, repoId, githubId, blogSource, label, quiet } = options;
     pruneFinished(Date.now());
     const id = randomUUID();
     const job: SyncJob = {
@@ -158,6 +189,7 @@ export function createSyncQueue(deps: {
       type,
       ...(cohort != null ? { cohort } : {}),
       ...(repoId != null ? { repoId } : {}),
+      ...(githubId != null ? { githubId } : {}),
       ...(blogSource != null ? { blogSource } : {}),
       ...(label != null ? { label } : {}),
       ...(quiet ? { quiet } : {}),
@@ -167,12 +199,15 @@ export function createSyncQueue(deps: {
     };
     jobs.push(job);
     if (!quiet) {
-      void activityLogService.addLog(
-        'sync',
-        `Job queued: ${type}${cohort != null ? ` cohort=${cohort}` : ''}${repoId != null ? ` repoId=${repoId}` : ''}${blogSource != null ? ` source=${blogSource}` : ''} (id=${id})`,
-      );
+      const detail = [
+        cohort != null ? ` cohort=${cohort}` : '',
+        repoId != null ? ` repoId=${repoId}` : '',
+        githubId != null ? ` githubId=${githubId}` : '',
+        blogSource != null ? ` source=${blogSource}` : '',
+      ].join('');
+      void activityLogService.addLog('sync', `Job queued: ${type}${detail} (id=${id})`);
     }
-    processLoop();
+    processLoop(LANE_OF[type]);
     return id;
   };
 
@@ -218,10 +253,14 @@ export function createSyncQueue(deps: {
     };
   };
 
-  /** 같은 종류·기수로 대기 중이거나 실행 중인 작업 (같은 싱크를 두 번 쌓지 않으려고) */
-  const findActive = (type: SyncJobType, cohort?: number): Omit<SyncJob, 'abortController'> | undefined => {
+  /** 같은 종류(그리고 같은 기수·멤버)로 대기 중이거나 실행 중인 작업 (같은 싱크를 두 번 쌓지 않으려고) */
+  const findActive = (type: SyncJobType, key: JobKey = {}): Omit<SyncJob, 'abortController'> | undefined => {
     const job = jobs.find(
-      (j) => j.type === type && j.cohort === cohort && (j.status === 'queued' || j.status === 'running'),
+      (j) =>
+        j.type === type &&
+        j.cohort === key.cohort &&
+        j.githubId === key.githubId &&
+        (j.status === 'queued' || j.status === 'running'),
     );
     return job ? getJob(job.id) : undefined;
   };
@@ -262,13 +301,14 @@ export function createSyncQueue(deps: {
       });
     });
 
-  const processLoop = async (): Promise<void> => {
-    if (processing) return;
-    processing = true;
+  // 레인마다 워커 하나. 같은 레인의 작업은 들어온 순서대로 하나씩
+  const processLoop = async (lane: SyncLane): Promise<void> => {
+    if (processing[lane]) return;
+    processing[lane] = true;
 
     try {
       while (true) {
-        const job = jobs.find((j) => j.status === 'queued');
+        const job = jobs.find((j) => j.status === 'queued' && LANE_OF[j.type] === lane);
         if (!job) break;
 
         if (job.abortController.signal.aborted) {
@@ -292,9 +332,7 @@ export function createSyncQueue(deps: {
         };
 
         try {
-          const handler = handlers[job.type];
-          if (!handler) throw new Error(`Unknown job type: ${job.type}`);
-          const result = await handler(job, { signal: job.abortController.signal, onProgress, onStep });
+          const result = await handlers[job.type](job, { signal: job.abortController.signal, onProgress, onStep });
 
           job.status = 'completed';
           job.result = result;
@@ -322,7 +360,7 @@ export function createSyncQueue(deps: {
         emitDone(job);
       }
     } finally {
-      processing = false;
+      processing[lane] = false;
     }
   };
 

@@ -4,6 +4,7 @@ import request from 'supertest';
 import { createMemberRouter } from '../../features/member/member.route.js';
 import { errorHandler } from '../../shared/middleware/error.js';
 import type { MemberService } from '../../features/member/member.service.js';
+import type { SyncAdminService } from '../../features/sync/index.js';
 
 type AsyncMock = ReturnType<typeof jest.fn<(...args: unknown[]) => Promise<unknown>>>;
 const asyncMock = (value: unknown): AsyncMock =>
@@ -25,13 +26,16 @@ function makeApp() {
     deleteAllMembers: asyncMock({ count: 2 }),
     deleteMember: asyncMock({ id: 1 }),
     deleteSubmission: asyncMock({ success: true }),
-    resyncMemberPRs: asyncMock({ synced: 3 }),
   };
+  const sync = { requestMemberSync: asyncMock({ done: true, result: { totalSynced: 3, reposSynced: 2 } }) };
   const app = express();
   app.use(express.json());
-  app.use('/admin/members', createMemberRouter(service as unknown as MemberService));
+  app.use(
+    '/admin/members',
+    createMemberRouter(service as unknown as MemberService, sync as unknown as SyncAdminService),
+  );
   app.use(errorHandler);
-  return { app, service };
+  return { app, service, sync };
 }
 
 describe('admin member routes', () => {
@@ -182,13 +186,21 @@ describe('admin member routes', () => {
       expect(service.deleteSubmission).toHaveBeenCalledWith(1, 5);
     });
 
-    it('should resync submissions of a member', async () => {
-      const { app, service } = makeApp();
+    // 멤버 PR 재수집은 싱크 큐(GitHub 레인)의 member 작업이다. 240초 안에 끝나면 200, 아니면 202 + 작업
+    it('should resync submissions of a member through the sync queue', async () => {
+      const { app, service, sync } = makeApp();
+      service.get.mockResolvedValue({ id: 1, githubId: 'crew9' });
 
-      const res = await request(app).post('/admin/members/1/resync-submissions');
+      const done = await request(app).post('/admin/members/1/resync-submissions');
+      sync.requestMemberSync.mockResolvedValue({ done: false, job: { id: 'job-1', type: 'member', status: 'queued' } });
+      const queued = await request(app).post('/admin/members/1/resync-submissions');
+      service.get.mockResolvedValue(null);
+      const missing = await request(app).post('/admin/members/2/resync-submissions');
 
-      expect(res.body).toEqual({ synced: 3 });
-      expect(service.resyncMemberPRs).toHaveBeenCalledWith(1);
+      expect([done.status, done.body]).toEqual([200, { totalSynced: 3, reposSynced: 2 }]);
+      expect([queued.status, queued.body]).toEqual([202, { id: 'job-1', type: 'member', status: 'queued' }]);
+      expect([missing.status, missing.body]).toEqual([404, { message: 'member not found' }]);
+      expect(sync.requestMemberSync.mock.calls).toEqual([['crew9'], ['crew9']]);
     });
   });
 });

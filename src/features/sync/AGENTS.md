@@ -111,13 +111,13 @@ Repos with `track === null` are "common missions." During sync:
 
 ### Architecture
 
-`createSyncQueue` provides an in-memory job queue with sequential processing. Only one job runs at a time.
+`createSyncQueue` provides one in-memory job queue with two lanes (`LANE_OF`): `github` (workspace, continuous, cohort-repos, repo, member) and `blog`. One job runs at a time per lane, so a blog sync never waits behind a long GitHub sync. Job model, storage, TTL, cancel and progress are shared.
 
 ### Job Lifecycle
 
 ```
-enqueue(type, cohort?) → queued
-processLoop() picks next queued job → running
+enqueue(type, { cohort?, repoId?, githubId?, blogSource?, label?, quiet? }) → queued
+processLoop(lane) picks next queued job of that lane → running
   on completion → completed + result
   on error → failed + error message
   on cancel() → cancelled
@@ -125,11 +125,14 @@ processLoop() picks next queued job → running
 
 ### Job Types
 
-| Type           | Description                                             |
-| -------------- | ------------------------------------------------------- |
-| `workspace`    | Sync all active repos in the workspace                  |
-| `continuous`   | Sync only repos with `syncMode === 'continuous'`        |
-| `cohort-repos` | Sync repos linked to a specific cohort via `CohortRepo` |
+| Type           | Description                                                                             |
+| -------------- | --------------------------------------------------------------------------------------- |
+| `workspace`    | Sync all active repos in the workspace                                                  |
+| `continuous`   | Sync only repos with `syncMode === 'continuous'`                                        |
+| `cohort-repos` | Sync repos linked to a specific cohort via `CohortRepo`                                 |
+| `repo`         | Sync one repo (`repoId`, `label`), step progress + `repoResult`                         |
+| `member`       | Re-collect one member's PRs (`githubId`) — `POST /admin/members/:id/resync-submissions` |
+| `blog`         | Workspace blog (RSS) sync (`blogSource`), `blogResult` — `POST /admin/blog/sync`        |
 
 ### Progress Subscription
 
@@ -139,6 +142,7 @@ processLoop() picks next queued job → running
 
 ### Cancellation
 
+- `findActive(type, { cohort?, githubId? })` — the queued/running job with the same key, so direct requests join it instead of queueing twice
 - `cancel(id)` aborts the job's `AbortController`
 - If the job is `queued`, it immediately transitions to `cancelled`
 - If `running`, the abort signal propagates to GitHub API requests, causing them to throw

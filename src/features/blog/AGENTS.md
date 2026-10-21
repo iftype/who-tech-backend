@@ -7,7 +7,7 @@
 | 파일                    | 라인 | 책임                                                                      |
 | ----------------------- | ---- | ------------------------------------------------------------------------- |
 | `blog.service.ts`       | 147  | RSS 기반 블로그 동기화 핵심 로직. 90일 저장/100개 롤오버/멤버별 병렬 정리 |
-| `blog.admin.service.ts` | 192  | job 큐잉, 자동/수동 sync 조율, 활동 로그 기록                             |
+| `blog.admin.service.ts` | -    | 블로그 싱크 실행(큐가 부른다), 백필, 활동 로그 기록                       |
 | `infra/rss/rss.ts`      | 177  | RSS fetch, URL 후보 생성, velog/tistory/medium 특화 처리                  |
 | `blog.backfill.ts`      | 91   | GitHub 프로필에서 블로그 후보를 추출해 RSS 검증 후 자동 등록              |
 | `blog.route.ts`         | 71   | sync, backfill, new-posts 엔드포인트                                      |
@@ -19,24 +19,24 @@ createBlogService({ memberRepo, blogPostRepo }): BlogService
 createBlogAdminService({ memberRepo, blogPostRepo, workspaceService, blogService, activityLogService, octokit }): BlogAdminService
 ```
 
-| 메서드                                       | 파일    | 설명                                                                   |
-| -------------------------------------------- | ------- | ---------------------------------------------------------------------- |
-| `syncBlogs(workspaceId, onProgress?)`        | service | 모든 멤버 RSS 수집. 30일 기준 upsert/delete. 실패 목록 반환            |
-| `enqueueWorkspaceBlogSync(source)`           | admin   | 비동기 job 등록. 중복 실행 방지. 6시간 후 클린업                       |
-| `getNewPosts(sinceMinutes)`                  | admin   | 최근 N분 내 생성된 블로그 글 목록                                      |
-| `backfillWorkspaceBlogLinks(limit, cohort?)` | admin   | blog 없는 멤버 대상 GitHub 프로필 → RSS probe → 자동 등록              |
-| `fetchRSSItems(blogUrl)`                     | rss     | URL 단축 해제 → RSS 후보 순회 → 파싱. velog/tistory/medium/brunch 특화 |
-| `resolveRSSUrlsForBlog(blogUrl)`             | rss     | 플랫폼별 RSS URL 후보 생성                                             |
+| 메서드                                          | 파일    | 설명                                                                                                             |
+| ----------------------------------------------- | ------- | ---------------------------------------------------------------------------------------------------------------- |
+| `syncBlogs(workspaceId, onProgress?)`           | service | 모든 멤버 RSS 수집. 30일 기준 upsert/delete. 실패 목록 반환                                                      |
+| `executeWorkspaceBlogSync(source, onProgress?)` | admin   | 싱크 큐(블로그 레인)가 부르는 실행 함수. 작업 상태는 큐가 든다 (`blog.sync-jobs.ts`가 예전 응답 모양으로 바꾼다) |
+| `getNewPosts(sinceMinutes)`                     | admin   | 최근 N분 내 생성된 블로그 글 목록                                                                                |
+| `backfillWorkspaceBlogLinks(limit, cohort?)`    | admin   | blog 없는 멤버 대상 GitHub 프로필 → RSS probe → 자동 등록                                                        |
+| `fetchRSSItems(blogUrl)`                        | rss     | URL 단축 해제 → RSS 후보 순회 → 파싱. velog/tistory/medium/brunch 특화                                           |
+| `resolveRSSUrlsForBlog(blogUrl)`                | rss     | 플랫폼별 RSS URL 후보 생성                                                                                       |
 
 ## API 엔드포인트
 
-| 메서드 | 경로                                  | 설명                              |
-| ------ | ------------------------------------- | --------------------------------- |
-| POST   | `/admin/blog/sync`                    | 블로그 동기화 시작 (202 Accepted) |
-| GET    | `/admin/blog/sync-jobs`               | sync job 목록                     |
-| GET    | `/admin/blog/sync-jobs/:jobId`        | 특정 job 상태 조회                |
-| GET    | `/admin/blog/new-posts?sinceMinutes=` | 최근 새 글 조회 (기본 65분)       |
-| POST   | `/admin/blog/backfill?limit=&cohort=` | 블로그 링크 백필                  |
+| 메서드 | 경로                                  | 설명                                                     |
+| ------ | ------------------------------------- | -------------------------------------------------------- |
+| POST   | `/admin/blog/sync`                    | 싱크 큐에 blog 작업 등록 (202). 대기·실행 중이면 그 작업 |
+| GET    | `/admin/blog/sync-jobs`               | sync job 목록                                            |
+| GET    | `/admin/blog/sync-jobs/:jobId`        | 특정 job 상태 조회                                       |
+| GET    | `/admin/blog/new-posts?sinceMinutes=` | 최근 새 글 조회 (기본 65분)                              |
+| POST   | `/admin/blog/backfill?limit=&cohort=` | 블로그 링크 백필                                         |
 
 ## 의존성
 
@@ -44,6 +44,7 @@ createBlogAdminService({ memberRepo, blogPostRepo, workspaceService, blogService
 - `WorkspaceService` — workspace 설정, id 조회
 - `ActivityLogService` — 자동 sync 결과 로깅
 - `Octokit` — backfill 시 GitHub 프로필 조회
+- `SyncAdminService` — 라우터가 blog 작업을 넣고 읽는 큐 (`createBlogRouter(service, syncAdminService)`)
 
 ## 주요 비즈니스 규칙
 

@@ -3,14 +3,13 @@ import type { MemberRepository } from '../../db/repositories/member.repository.j
 import type { BlogPostRepository } from '../../db/repositories/blog-post.repository.js';
 import type { TeamBlogRepository } from '../../db/repositories/team-blog.repository.js';
 import type { WorkspaceService } from '../workspace/index.js';
-import type { BlogService, BlogSyncFailure } from './blog.service.js';
+import type { BlogService } from './blog.service.js';
 import type { ActivityLogService } from '../activity-log/index.js';
 import { resolveDisplayNickname } from '../../shared/nickname.js';
 import { buildCohortList } from '../../shared/member-cohort.js';
 import { HttpError } from '../../shared/http.js';
-import { randomUUID } from 'crypto';
+import type { BlogSyncResult, BlogSyncSource, SyncProgress } from '../sync/index.js';
 import { backfillMemberBlogLinks } from './blog.backfill.js';
-// blog.admin.service.ts
 
 export function createBlogAdminService(deps: {
   memberRepo: MemberRepository;
@@ -22,45 +21,9 @@ export function createBlogAdminService(deps: {
   octokit: Octokit;
 }) {
   const { memberRepo, blogPostRepo, teamBlogRepo, workspaceService, blogService, activityLogService, octokit } = deps;
-  type BlogSyncSource = 'manual' | 'github-actions' | 'scheduler';
-  type BlogSyncResult = { synced: number; deleted: number; failures: BlogSyncFailure[]; skipped?: boolean };
-  type BlogSyncJob = {
-    id: string;
-    status: 'queued' | 'running' | 'completed' | 'failed';
-    source: BlogSyncSource;
-    message: string;
-    startedAt: Date;
-    finishedAt: Date | null;
-    progress: { total: number; processed: number; synced: number; percent: number; phase: string };
-    result: BlogSyncResult | null;
-    error: string | null;
-  };
-
-  const syncJobs = new Map<string, BlogSyncJob>();
-  let runningJobId: string | null = null;
-
-  const cleanupJobs = () => {
-    const cutoff = Date.now() - 6 * 60 * 60 * 1000;
-    for (const [jobId, job] of syncJobs.entries()) {
-      if (job.finishedAt && job.finishedAt.getTime() < cutoff) syncJobs.delete(jobId);
-    }
-  };
-
-  const serializeJob = (job: BlogSyncJob) => ({
-    id: job.id,
-    status: job.status,
-    source: job.source,
-    message: job.message,
-    startedAt: job.startedAt,
-    finishedAt: job.finishedAt,
-    progress: job.progress,
-    result: job.result,
-    error: job.error,
-  });
-
   const runWorkspaceBlogSync = async (
     source: BlogSyncSource,
-    onProgress?: (progress: BlogSyncJob['progress']) => void,
+    onProgress?: (progress: SyncProgress) => void,
   ): Promise<BlogSyncResult> => {
     const workspace = await workspaceService.getOrThrow();
     const isAutomated = source === 'github-actions' || source === 'scheduler';
@@ -99,8 +62,6 @@ export function createBlogAdminService(deps: {
   };
 
   return {
-    syncWorkspaceBlogs: async (source: BlogSyncSource = 'manual') => runWorkspaceBlogSync(source),
-
     syncTeamBlogs: async () => {
       const workspace = await workspaceService.getOrThrow();
       const result = await blogService.syncTeamBlogs(workspace.id);
@@ -111,71 +72,11 @@ export function createBlogAdminService(deps: {
       return result;
     },
 
+    // 싱크 큐(블로그 레인)가 부르는 실행 함수. 작업 상태·진행·결과는 큐가 들고 있다
     executeWorkspaceBlogSync: async (
       source: BlogSyncSource = 'manual',
-      onProgress?: (progress: BlogSyncJob['progress']) => void,
+      onProgress?: (progress: SyncProgress) => void,
     ) => runWorkspaceBlogSync(source, onProgress),
-
-    enqueueWorkspaceBlogSync: async (source: BlogSyncSource = 'manual') => {
-      cleanupJobs();
-      if (runningJobId) {
-        const runningJob = syncJobs.get(runningJobId);
-        if (runningJob) return serializeJob(runningJob);
-        runningJobId = null;
-      }
-
-      const job: BlogSyncJob = {
-        id: randomUUID(),
-        status: 'queued',
-        source,
-        message: '블로그 sync 대기 중',
-        startedAt: new Date(),
-        finishedAt: null,
-        progress: { total: 0, processed: 0, synced: 0, percent: 0, phase: '대기 중' },
-        result: null,
-        error: null,
-      };
-
-      syncJobs.set(job.id, job);
-      runningJobId = job.id;
-
-      void Promise.resolve().then(async () => {
-        job.status = 'running';
-        job.message = '블로그 sync 실행 중';
-        try {
-          const result = await runWorkspaceBlogSync(source, (progress) => {
-            job.progress = progress;
-            job.message = `블로그 sync ${progress.phase} (${progress.processed}/${progress.total})`;
-          });
-          job.status = 'completed';
-          job.message = result.skipped ? '블로그 sync 스킵됨' : '블로그 sync 완료';
-          job.result = result;
-        } catch (error) {
-          const detail = error instanceof Error ? error.message : String(error);
-          job.status = 'failed';
-          job.message = '블로그 sync 실패';
-          job.error = detail;
-        } finally {
-          job.finishedAt = new Date();
-          runningJobId = null;
-          cleanupJobs();
-        }
-      });
-
-      return serializeJob(job);
-    },
-
-    getBlogSyncJob: async (jobId: string) => {
-      cleanupJobs();
-      const job = syncJobs.get(jobId);
-      if (!job) throw new HttpError(404, 'blog sync job not found');
-      return serializeJob(job);
-    },
-
-    listBlogSyncJobs: () => {
-      cleanupJobs();
-      return [...syncJobs.values()].map(serializeJob).sort((a, b) => b.startedAt.getTime() - a.startedAt.getTime());
-    },
 
     backfillWorkspaceBlogLinks: async (limit = 30, cohort?: number) => {
       const workspace = await workspaceService.getOrThrow();

@@ -6,16 +6,18 @@ function makeQueue() {
     syncWorkspace: jest.fn(async () => ({ totalSynced: 1, reposSynced: 1 })),
     syncContinuousRepos: jest.fn(async () => ({ totalSynced: 0, reposSynced: 0 })),
     syncCohortRepoList: jest.fn(async () => ({ totalSynced: 0, reposSynced: 0 })),
+    syncMemberPRs: jest.fn(async () => ({ totalSynced: 2, reposSynced: 1 })),
   };
+  const blogAdminService = { executeWorkspaceBlogSync: jest.fn(async () => ({ synced: 5, deleted: 1, failures: [] })) };
   const queue = createSyncQueue({
     syncService: syncService as never,
     activityLogService: { addLog: jest.fn(async () => undefined) } as never,
     workspaceService: { getOrThrow: jest.fn(async () => ({ id: 1 })) } as never,
     octokit: {} as never,
     repoService: { executeRepoSync: jest.fn() } as never,
-    blogAdminService: { executeWorkspaceBlogSync: jest.fn() } as never,
+    blogAdminService: blogAdminService as never,
   });
-  return { queue, syncService };
+  return { queue, syncService, blogAdminService };
 }
 
 async function waitDone(queue: ReturnType<typeof makeQueue>['queue'], id: string): Promise<void> {
@@ -97,7 +99,7 @@ describe('createSyncQueue repo jobs', () => {
     });
     const progress: unknown[] = [];
 
-    const id = queue.enqueue('repo', undefined, 10, undefined, 'java-racingcar');
+    const id = queue.enqueue('repo', { repoId: 10, label: 'java-racingcar' });
     queue.subscribeProgress(id, (p) => progress.push(p));
     for (let i = 0; i < 50 && queue.getJob(id)?.status !== 'completed'; i++) {
       await new Promise((r) => setImmediate(r));
@@ -137,5 +139,71 @@ describe('createSyncQueue repo jobs', () => {
 
     expect(queue.getJob(second)?.status).toBe('cancelled');
     expect(syncService.syncContinuousRepos).not.toHaveBeenCalled();
+  });
+});
+
+describe('createSyncQueue lanes', () => {
+  // GitHub 작업(workspace·continuous·cohort-repos·repo·member)은 한 줄, 블로그(RSS)는 자기 줄.
+  // 블로그 30분 cron이 긴 전체 싱크 뒤에서 기다리지 않는다
+  it('should run a blog job while a github job is still running', async () => {
+    const { queue, syncService, blogAdminService } = makeQueue();
+    let release: (v: { totalSynced: number; reposSynced: number }) => void = () => undefined;
+    syncService.syncWorkspace.mockImplementationOnce(() => new Promise((r) => (release = r)));
+
+    const github = queue.enqueue('workspace');
+    const blog = queue.enqueue('blog', { blogSource: 'github-actions' });
+    await waitDone(queue, blog);
+
+    expect(queue.getJob(github)?.status).toBe('running');
+    expect(queue.getJob(blog)).toMatchObject({
+      status: 'completed',
+      blogSource: 'github-actions',
+      result: { totalSynced: 5, reposSynced: 1 },
+      blogResult: { synced: 5, deleted: 1, failures: [] },
+    });
+    expect(blogAdminService.executeWorkspaceBlogSync).toHaveBeenCalledWith('github-actions', expect.any(Function));
+    release({ totalSynced: 0, reposSynced: 0 });
+    await waitDone(queue, github);
+  });
+
+  it('should keep github jobs sequential', async () => {
+    const { queue, syncService } = makeQueue();
+    let release: (v: { totalSynced: number; reposSynced: number }) => void = () => undefined;
+    syncService.syncWorkspace.mockImplementationOnce(() => new Promise((r) => (release = r)));
+
+    const first = queue.enqueue('workspace');
+    const second = queue.enqueue('member', { githubId: 'crew9' });
+    await new Promise((r) => setImmediate(r));
+
+    expect(queue.getJob(second)?.status).toBe('queued');
+    expect(syncService.syncMemberPRs).not.toHaveBeenCalled();
+    release({ totalSynced: 0, reposSynced: 0 });
+    await waitDone(queue, second);
+    expect(queue.getJob(first)?.status).toBe('completed');
+    expect(queue.getJob(second)).toMatchObject({ status: 'completed', githubId: 'crew9' });
+    expect(syncService.syncMemberPRs).toHaveBeenCalledWith(
+      {},
+      1,
+      'crew9',
+      expect.any(Function),
+      expect.any(AbortSignal),
+    );
+  });
+
+  it('should find the active job by cohort or member', async () => {
+    const { queue, syncService } = makeQueue();
+    let release: (v: { totalSynced: number; reposSynced: number }) => void = () => undefined;
+    syncService.syncWorkspace.mockImplementationOnce(() => new Promise((r) => (release = r)));
+
+    const running = queue.enqueue('workspace', { cohort: 8 });
+    const member = queue.enqueue('member', { githubId: 'crew9' });
+
+    expect(queue.findActive('workspace', { cohort: 8 })?.id).toBe(running);
+    expect(queue.findActive('workspace')).toBeUndefined();
+    expect(queue.findActive('member', { githubId: 'crew9' })?.id).toBe(member);
+    expect(queue.findActive('member', { githubId: 'other' })).toBeUndefined();
+    await new Promise((r) => setImmediate(r)); // workspace 작업이 시작돼 release가 잡힐 때까지
+    release({ totalSynced: 0, reposSynced: 0 });
+    await waitDone(queue, member);
   });
 });

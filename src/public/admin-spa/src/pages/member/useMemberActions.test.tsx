@@ -5,12 +5,19 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Member } from '../../lib/types';
 
 const remove = vi.fn();
+const resyncSubmissions = vi.fn();
 vi.mock('../../lib/admin-api.js', () => ({
-  adminApi: { members: { remove: (...args: unknown[]) => remove(...args) } },
+  adminApi: {
+    members: {
+      remove: (...args: unknown[]) => remove(...args),
+      resyncSubmissions: (...args: unknown[]) => resyncSubmissions(...args),
+    },
+  },
 }));
 vi.mock('../../components/ui/Toast.js', () => ({ showToast: vi.fn() }));
 
 const { useMemberActions } = await import('./useMemberActions');
+const { showToast } = await import('../../components/ui/Toast.js');
 
 const members = [
   { id: 1, githubId: 'a' },
@@ -31,6 +38,8 @@ function setup() {
 
 beforeEach(() => {
   remove.mockReset();
+  resyncSubmissions.mockReset();
+  vi.mocked(showToast).mockReset();
   vi.stubGlobal('confirm', () => true);
 });
 
@@ -67,6 +76,30 @@ describe('useMemberActions.deleteMember', () => {
     act(() => result.current.deleteMember(members[0]!));
 
     await waitFor(() => expect(invalidate).toHaveBeenCalledTimes(1));
+    expect(onRefresh).not.toHaveBeenCalled();
+  });
+});
+
+describe('useMemberActions.resyncSubmissions', () => {
+  // 재수집은 싱크 큐를 거친다: 240초 안에 끝나면 결과(200), 아니면 작업(202) — 202면 목록을 다시 읽을 것이 없다
+  it('should report the synced count and refresh when the sync finished', async () => {
+    resyncSubmissions.mockResolvedValue({ totalSynced: 4 });
+    const { onRefresh, result } = setup();
+
+    await act(() => result.current.resyncSubmissions(members[0]!));
+
+    expect(resyncSubmissions).toHaveBeenCalledWith(1);
+    expect(showToast).toHaveBeenCalledWith('a PR 재수집 완료 (4개)');
+    expect(onRefresh).toHaveBeenCalled();
+  });
+
+  it('should say the sync is waiting in the queue when the server answered with a job', async () => {
+    resyncSubmissions.mockResolvedValue({ id: 'job-1', status: 'queued' });
+    const { onRefresh, result } = setup();
+
+    await act(() => result.current.resyncSubmissions(members[0]!));
+
+    expect(showToast).toHaveBeenCalledWith('a PR 재수집이 큐에서 실행 대기 중입니다');
     expect(onRefresh).not.toHaveBeenCalled();
   });
 });
