@@ -5,7 +5,7 @@ import { showToast } from '../components/ui/Toast.js';
 
 import { adminApi } from '../lib/admin-api.js';
 import { queryKeys } from '../lib/query-keys.js';
-import { EmptyState } from '../components/ui/Section.js';
+import { EmptyState, ErrorState } from '../components/ui/Section.js';
 import { TextInput } from '../components/ui/Field.js';
 
 type LogCategory = 'all' | 'repo' | 'blog' | 'refresh';
@@ -15,7 +15,12 @@ export default function LogTab() {
   const [filter, setFilter] = useState('');
   const [category, setCategory] = useState<LogCategory>('all');
 
-  const { data: logs = [], isLoading } = useQuery({
+  const {
+    data: logs = [],
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
     queryKey: queryKeys.activityLogs(),
     queryFn: () => adminApi.logs.list(),
   });
@@ -86,7 +91,9 @@ export default function LogTab() {
         </button>
       </div>
 
-      {isLoading ? (
+      {isError ? (
+        <ErrorState onRetry={() => void refetch()} />
+      ) : isLoading ? (
         <EmptyState>로딩 중...</EmptyState>
       ) : (
         <div className="bg-base-900 rounded border border-base-700 p-4 font-mono text-xs max-h-[70vh] overflow-y-auto">

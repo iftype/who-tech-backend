@@ -5,7 +5,7 @@ import { adminApi } from '../lib/admin-api.js';
 import { queryKeys } from '../lib/query-keys.js';
 import { Button } from '../components/ui/Button.js';
 import { Select, TextInput } from '../components/ui/Field.js';
-import { EmptyState, Panel, SectionTitle } from '../components/ui/Section.js';
+import { EmptyState, ErrorState, Panel, SectionTitle } from '../components/ui/Section.js';
 
 export default function PersonTab() {
   const queryClient = useQueryClient();
@@ -14,7 +14,12 @@ export default function PersonTab() {
   const [linkingPersonId, setLinkingPersonId] = useState<number | null>(null);
   const [linkMemberId, setLinkMemberId] = useState('');
 
-  const { data: persons = [], isLoading } = useQuery({
+  const {
+    data: persons = [],
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
     queryKey: queryKeys.persons(),
     queryFn: () => adminApi.persons.list(),
   });
@@ -64,6 +69,9 @@ export default function PersonTab() {
 
   const unlinkedMembers = members.filter((m) => !persons.some((p) => p.members.some((pm) => pm.id === m.id)));
 
+  if (isError) {
+    return <ErrorState onRetry={() => void refetch()} />;
+  }
   if (isLoading) {
     return <EmptyState>로딩 중...</EmptyState>;
   }

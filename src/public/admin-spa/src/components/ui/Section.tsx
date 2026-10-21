@@ -35,6 +35,22 @@ export function Panel({ className, variant, ...props }: ComponentProps<'div'> & 
   return <div className={panelVariants({ variant, className })} {...props} />;
 }
 
+// 요청 실패 안내. 빈 상태와 같은 틀에 문구와 다시 시도 (예전엔 실패가 "로딩 중..."이나 빈 목록으로 보였다)
+export function ErrorState({
+  onRetry,
+  size,
+  className,
+}: { onRetry: () => void; className?: string } & VariantProps<typeof emptyStateVariants>) {
+  return (
+    <div role="alert" className={emptyStateVariants({ size, className })}>
+      <p className="text-danger-600">불러오지 못했습니다</p>
+      <button type="button" onClick={onRetry} className="mt-2 text-xs text-primary-600 hover:underline">
+        다시 시도
+      </button>
+    </div>
+  );
+}
+
 export function EmptyState({
   className,
   size,
