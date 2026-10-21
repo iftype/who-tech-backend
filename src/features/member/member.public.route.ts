@@ -4,6 +4,7 @@ import { rateLimit } from 'express-rate-limit';
 import { parseOptionalNumberQuery } from '../../shared/validation.js';
 import type { MemberPublicService } from './member.public.service.js';
 import { NotFoundError } from '../../shared/errors.js';
+import { badRequest } from '../../shared/http.js';
 
 // 공개 프로필 새로고침은 한 번에 GitHub API 약 3회 + RSS 검사를 쓴다. 아이디별 1분 제한(서비스)만으로는
 // 아이디를 바꿔 가며 부르면 토큰(5,000회/시간)이 바닥나 싱크가 멈춘다 → 전체 횟수에 상한을 둔다.
@@ -104,15 +105,9 @@ export function createMemberPublicRouter(service: MemberPublicService, options: 
   // GET /members/blog-posts/:id/visit — 클릭(조회)수 +1 후 블로그 글로 리다이렉트
   router.get('/blog-posts/:id/visit', async (req, res) => {
     const id = parseOptionalNumberQuery(req.params['id']);
-    if (id === undefined) {
-      res.status(400).json({ error: 'invalid post id' });
-      return;
-    }
+    if (id === undefined) badRequest('invalid post id');
     const result = await service.visitBlogPost(id);
-    if (!result) {
-      res.status(404).json({ error: 'Blog post not found' });
-      return;
-    }
+    if (!result) throw new NotFoundError('Blog post not found');
     res.redirect(302, result.url);
   });
 
@@ -120,46 +115,30 @@ export function createMemberPublicRouter(service: MemberPublicService, options: 
   router.get('/:githubId', async (req, res) => {
     const githubId = typeof req.params['githubId'] === 'string' ? req.params['githubId'] : '';
     const member = await service.getMemberDetail(githubId);
-    if (!member) {
-      res.status(404).json({ error: 'Member not found' });
-      return;
-    }
+    if (!member) throw new NotFoundError('Member not found');
     res.json(member);
   });
 
   router.get('/:githubId/blog-posts', async (req, res) => {
     const githubId = typeof req.params['githubId'] === 'string' ? req.params['githubId'] : '';
     const posts = await service.getMemberBlogPosts(githubId);
-    if (!posts) {
-      res.status(404).json({ error: 'Member not found' });
-      return;
-    }
+    if (!posts) throw new NotFoundError('Member not found');
     res.json(posts);
   });
 
   // POST /members/:githubId/refresh
   router.post('/:githubId/refresh', refreshLimiter, async (req, res) => {
     const githubId = typeof req.params['githubId'] === 'string' ? req.params['githubId'] : '';
-    try {
-      const result = await service.refreshMemberProfile(githubId);
-      if ('rateLimited' in result && result.rateLimited) {
-        res.status(429).json({
-          error: 'Rate limited',
-          remainingSeconds: result.remainingSeconds,
-          message: `${result.remainingSeconds}초 후에 다시 시도해주세요`,
-        });
-        return;
-      }
-      res.json(result.member);
-    } catch (error) {
-      // 공개 API는 { error } 모양으로 답한다 (어드민의 { message }와 다름 — 계약 유지)
-      if (error instanceof NotFoundError) {
-        res.status(404).json({ error: error.message });
-        return;
-      }
-      const message = error instanceof Error ? error.message : String(error);
-      res.status(500).json({ error: message });
+    // 에러 모양은 어드민과 같이 미들웨어가 정한다({ message }). 429만 웹 카운트다운이 읽는 remainingSeconds를 더 싣는다
+    const result = await service.refreshMemberProfile(githubId);
+    if ('rateLimited' in result && result.rateLimited) {
+      res.status(429).json({
+        remainingSeconds: result.remainingSeconds,
+        message: `${result.remainingSeconds}초 후에 다시 시도해주세요`,
+      });
+      return;
     }
+    res.json(result.member);
   });
 
   return router;

@@ -118,9 +118,9 @@ describe('member public routes', () => {
       const missing = await request(app).get('/members/blog-posts/9/visit');
 
       expect(invalid.status).toBe(400);
-      expect(invalid.body).toEqual({ error: 'invalid post id' });
+      expect(invalid.body).toEqual({ message: 'invalid post id' });
       expect(missing.status).toBe(404);
-      expect(missing.body).toEqual({ error: 'Blog post not found' });
+      expect(missing.body).toEqual({ message: 'Blog post not found' });
     });
   });
 
@@ -137,7 +137,7 @@ describe('member public routes', () => {
       service.getMemberDetail.mockResolvedValue(null);
       const res = await request(app).get('/members/nobody');
       expect(res.status).toBe(404);
-      expect(res.body).toEqual({ error: 'Member not found' });
+      expect(res.body).toEqual({ message: 'Member not found' });
     });
 
     it('should return 500 when the service fails', async () => {
@@ -183,27 +183,26 @@ describe('member public routes', () => {
       const res = await request(app).post('/members/crew1/refresh');
 
       expect(res.status).toBe(429);
-      expect(res.body).toEqual({
-        error: 'Rate limited',
-        remainingSeconds: 37,
-        message: '37초 후에 다시 시도해주세요',
-      });
+      expect(res.body).toEqual({ remainingSeconds: 37, message: '37초 후에 다시 시도해주세요' });
     });
 
-    it('should map a missing member to 404 and other failures to 500', async () => {
+    // 공개 API도 어드민과 같은 모양({ message }). 500의 원인 문구는 밖으로 내보내지 않는다 (미들웨어가 로그에 남긴다)
+    it('should map a missing member to 404 and other failures to a generic 500', async () => {
       const { app, service } = makeApp();
       service.refreshMemberProfile.mockRejectedValueOnce(new NotFoundError('Member not found'));
       service.refreshMemberProfile.mockRejectedValueOnce(new Error('github down'));
       service.refreshMemberProfile.mockRejectedValueOnce('weird');
+      jest.spyOn(console, 'error').mockImplementation(() => {});
 
       const missing = await request(app).post('/members/nobody/refresh');
       const failed = await request(app).post('/members/crew1/refresh');
       const weird = await request(app).post('/members/crew1/refresh');
 
       expect(missing.status).toBe(404);
+      expect(missing.body).toEqual({ message: 'Member not found' });
       expect(failed.status).toBe(500);
-      expect(failed.body).toEqual({ error: 'github down' });
-      expect(weird.body).toEqual({ error: 'weird' });
+      expect(failed.body).toEqual({ message: 'internal server error' });
+      expect(weird.body).toEqual({ message: 'internal server error' });
     });
   });
 
