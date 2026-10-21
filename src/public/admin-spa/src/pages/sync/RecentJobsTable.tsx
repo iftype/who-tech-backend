@@ -1,5 +1,6 @@
 import type { SyncQueueJob } from '../../lib/types.js';
 import type { RecentSyncJob } from '../../lib/types.js';
+import { JOB_TYPE_LABEL } from './job-labels.js';
 import { Table, TableFrame, TBody, Td, Th, THead, Tr } from '../../components/ui/Table.js';
 import { Badge, type BadgeTone } from '../../components/ui/Badge.js';
 import { Panel, SectionTitle } from '../../components/ui/Section.js';
@@ -40,7 +41,7 @@ export function RecentJobsTable({ jobs }: { jobs: (SyncQueueJob | RecentSyncJob)
                   <Td>
                     {isQueueJob ? (
                       <Badge emphasis="subtle" tone="accent">
-                        {queueJob.type === 'workspace' ? '전체' : queueJob.type === 'continuous' ? '연속' : '기수레포'}
+                        {JOB_TYPE_LABEL[queueJob.type]}
                         {queueJob.cohort != null ? ` (${queueJob.cohort}기)` : ''}
                       </Badge>
                     ) : (

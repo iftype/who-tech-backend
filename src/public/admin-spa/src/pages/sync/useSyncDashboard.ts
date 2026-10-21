@@ -57,8 +57,12 @@ export function useSyncDashboard(running: boolean) {
     refetchInterval: 3000,
   });
 
+  // 레포·블로그 작업은 /admin/repos/sync-jobs·/admin/blog/sync-jobs 가 메시지까지 붙여 주므로 큐 목록에서는 뺀다 (같은 작업이 두 줄로 보이지 않게)
   const recentQueueJobs = queueJobs.filter(
-    (j) => j.status === 'completed' || j.status === 'failed' || j.status === 'cancelled',
+    (j) =>
+      (j.status === 'completed' || j.status === 'failed' || j.status === 'cancelled') &&
+      j.type !== 'repo' &&
+      j.type !== 'blog',
   );
   const recentJobs = [...recentQueueJobs, ...repoJobs, ...blogJobs].sort((a, b) => {
     const aDate = new Date((a as SyncQueueJob).completedAt ?? (a as RecentSyncJob).startedAt ?? 0);
