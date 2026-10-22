@@ -5,6 +5,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FakeEventSource } from '../test/fake-event-source';
 import type { CohortRepo } from '../lib/types';
 
+// 확인 창은 ConfirmDialog.test가 따로 검사한다. 여기서는 항상 '확인'
+vi.mock('../components/ui/ConfirmDialog.js', () => ({ confirmAction: vi.fn(async () => true) }));
+
 // 기수별 레포 관리 흐름: 목록·레벨 묶음, 순서·레벨 편집, 추가·삭제·자동 채우기, 목록 재수집 로그
 const apiFetch = vi.fn();
 const showToast = vi.fn();
@@ -79,7 +82,6 @@ describe('ArchiveTab flow', () => {
     apiFetch.mockReset();
     showToast.mockReset();
     sources.length = 0;
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
     apiFetch.mockImplementation(async (path: string, init?: RequestInit) => {
       if (path === '/admin/cohort-repos/auto-fill') return { added: 2 };
       if (init?.method) return {};

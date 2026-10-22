@@ -7,6 +7,7 @@ import { adminApi } from '../../lib/admin-api.js';
 import { queryKeys } from '../../lib/query-keys.js';
 import { STATUS_CYCLE, type EditableField, type EditingCell } from './repo-options.js';
 import { toErrorMessage } from '../../lib/query-client.js';
+import { confirmAction } from '../../components/ui/ConfirmDialog.js';
 
 // 입력값을 저장할 값으로 바꾼다. 기수 목록이 숫자가 아니면 null
 function parseFieldValue(field: EditableField, rawValue: string): string | number[] | null | undefined {
@@ -81,7 +82,13 @@ export function useRepoEditing() {
   };
 
   const remove = async (repo: MissionRepo) => {
-    if (!confirm(`${repo.name} 삭제하시겠습니까? 관련 submission도 삭제됩니다.`)) return;
+    if (
+      !(await confirmAction(`${repo.name} 삭제하시겠습니까? 관련 submission도 삭제됩니다.`, {
+        confirmLabel: '삭제',
+        danger: true,
+      }))
+    )
+      return;
     setDeleting(repo.id);
     try {
       await adminApi.repos.remove(repo.id);

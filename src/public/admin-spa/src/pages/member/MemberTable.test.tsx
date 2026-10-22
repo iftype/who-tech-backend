@@ -4,6 +4,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Member } from '../../lib/types';
 
+// 확인 창은 ConfirmDialog.test가 따로 검사한다. 여기서는 항상 '확인'
+vi.mock('../../components/ui/ConfirmDialog.js', () => ({ confirmAction: vi.fn(async () => true) }));
+
 const apiFetch = vi.fn();
 const showToast = vi.fn();
 vi.mock('../../lib/api.js', () => ({ apiFetch: (...args: unknown[]) => apiFetch(...args) }));
@@ -73,7 +76,6 @@ describe('MemberTable', () => {
     showToast.mockReset();
     onRefresh.mockReset();
     localStorage.clear();
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
     apiFetch.mockImplementation(async (path: string) => {
       if (path === '/admin/members/1')
         return {

@@ -204,7 +204,7 @@ export function MemberRow({ member: m, edit, actions, onOpenCohorts, onOpenSubmi
             {recalculating === m.id ? '⟳' : '⚡'}
           </button>
           <button
-            onClick={() => actions.deleteMember(m)}
+            onClick={() => void actions.deleteMember(m)}
             className="text-2xs text-base-400 hover:text-danger-500 disabled:opacity-40 px-0.5"
             title="삭제"
             aria-label="삭제"
