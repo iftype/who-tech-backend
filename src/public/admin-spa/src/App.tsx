@@ -5,6 +5,7 @@ import { LoginPage } from './components/LoginPage.js';
 import MemberTab from './pages/MemberTab.js';
 import { useHashLocation } from './hooks/useHashLocation.js';
 import { ToastContainer } from './components/ui/Toast.js';
+import { ConfirmHost } from './components/ui/ConfirmDialog.js';
 
 const SyncTab = lazy(() => import('./pages/SyncTab.js'));
 const RepoTab = lazy(() => import('./pages/RepoTab.js'));
@@ -57,6 +58,7 @@ export default function App() {
     <AuthProvider>
       <Router />
       <ToastContainer />
+      <ConfirmHost />
     </AuthProvider>
   );
 }

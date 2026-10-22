@@ -7,6 +7,7 @@ import type { Member } from '../../lib/types.js';
 import { adminApi } from '../../lib/admin-api.js';
 import { queryKeys } from '../../lib/query-keys.js';
 import { toErrorMessage } from '../../lib/query-client.js';
+import { confirmAction } from '../../components/ui/ConfirmDialog.js';
 
 // 멤버 목록 캐시만 고른다: ['members', filters]. ['members', 'prs'] 같은 다른 모양은 건드리지 않는다
 const memberListFilter = {
@@ -71,13 +72,14 @@ export function useMemberActions(onRefresh: () => void) {
     },
   });
 
-  const deleteMember = (member: Member) => {
-    if (!confirm(`${member.githubId} 삭제하시겠습니까?`)) return;
+  const deleteMember = async (member: Member) => {
+    if (!(await confirmAction(`${member.githubId} 삭제하시겠습니까?`, { confirmLabel: '삭제', danger: true }))) return;
     deleteMemberMutation.mutate(member.id);
   };
 
   const recalculateCohorts = async (member: Member) => {
-    if (!confirm(`${member.githubId}의 기수를 submissions 기준으로 재계산합니다. 계속하시겠습니까?`)) return;
+    if (!(await confirmAction(`${member.githubId}의 기수를 submissions 기준으로 재계산합니다. 계속하시겠습니까?`)))
+      return;
     setRecalculating(member.id);
     try {
       await adminApi.members.recalculateCohorts(member.id);
@@ -91,7 +93,7 @@ export function useMemberActions(onRefresh: () => void) {
   };
 
   const resyncSubmissions = async (member: Member) => {
-    if (!confirm(`${member.githubId}의 PR을 모든 레포지토리에서 재수집합니다. 계속하시겠습니까?`)) return;
+    if (!(await confirmAction(`${member.githubId}의 PR을 모든 레포지토리에서 재수집합니다. 계속하시겠습니까?`))) return;
     setResyncing(member.id);
     try {
       const result = await adminApi.members.resyncSubmissions(member.id);

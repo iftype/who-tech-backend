@@ -8,6 +8,7 @@ import type { MissionRepo, SyncJob } from '../../lib/types.js';
 import { adminApi } from '../../lib/admin-api.js';
 import { queryKeys } from '../../lib/query-keys.js';
 import { toErrorMessage } from '../../lib/query-client.js';
+import { confirmAction } from '../../components/ui/ConfirmDialog.js';
 
 const without = <T>(set: Set<T>, value: T) => {
   const next = new Set(set);
@@ -77,7 +78,12 @@ export function useRepoSync() {
       showToast('대상 레포가 없습니다', 'error');
       return;
     }
-    if (!confirm(`base 카테고리의 active 레포 ${targets.length}개를 순차적으로 싱크합니다. 계속하시겠습니까?`)) return;
+    if (
+      !(await confirmAction(
+        `base 카테고리의 active 레포 ${targets.length}개를 순차적으로 싱크합니다. 계속하시겠습니까?`,
+      ))
+    )
+      return;
     addLog('info', `[Batch] base 전체 싱크 시작 — ${targets.length}개`);
     for (const repo of targets) {
       await syncRepo(repo);
