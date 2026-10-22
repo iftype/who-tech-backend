@@ -78,6 +78,8 @@ export default function ArchiveTab() {
         </div>
       </div>
 
+      {!hasCohort && <EmptyState>기수를 입력하면 그 기수의 미션 레포 순서와 아카이브가 여기에 보입니다.</EmptyState>}
+
       {hasCohort && (
         <Panel variant="card" className="space-y-4">
           <div className="flex items-center justify-between flex-wrap gap-2">

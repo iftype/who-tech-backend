@@ -107,7 +107,7 @@ export default function BlogTab() {
             <div className="flex items-center gap-2">
               <h2 className="font-semibold text-sm">{teamBlog?.name ?? 'Rilog'} 팀 블로그</h2>
               <span
-                className={`rounded px-1.5 py-0.5 text-[10px] ${teamBlog?.rssStatus === 'available' ? 'bg-success-100 text-success-700' : 'bg-base-100 text-base-500'}`}
+                className={`rounded px-1.5 py-0.5 text-2xs ${teamBlog?.rssStatus === 'available' ? 'bg-success-100 text-success-700' : 'bg-base-100 text-base-500'}`}
               >
                 {teamBlog?.rssStatus === 'available'
                   ? 'RSS 연결됨'

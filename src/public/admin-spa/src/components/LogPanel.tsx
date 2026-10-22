@@ -4,7 +4,7 @@ import { adminApi } from '../lib/admin-api.js';
 
 // 콘솔 머리의 작은 버튼(지우기·접기)
 const CONSOLE_BUTTON_CLASS =
-  'text-[11px] px-2 py-0.5 rounded border border-console-700 text-console-500 hover:bg-console-700 hover:text-console-200 transition-colors';
+  'text-2xs px-2 py-0.5 rounded border border-console-700 text-console-500 hover:bg-console-700 hover:text-console-200 transition-colors';
 
 export interface LogEntry {
   ts: number;
@@ -13,6 +13,7 @@ export interface LogEntry {
 }
 
 let logListeners: ((entry: LogEntry) => void)[] = [];
+const COLLAPSED_KEY = 'admin_log_collapsed';
 
 export function addLog(tag: LogEntry['tag'], msg: string) {
   const entry: LogEntry = { ts: Date.now(), tag, msg };
@@ -21,7 +22,25 @@ export function addLog(tag: LogEntry['tag'], msg: string) {
 
 export function LogPanel() {
   const [entries, setEntries] = useState<LogEntry[]>([]);
-  const [collapsed, setCollapsed] = useState(false);
+  // 기본은 접힘(내용을 가리지 않게). 펼침 상태는 이 브라우저에 기억한다 — 저장소가 막혀도 동작은 같다
+  const [collapsed, setCollapsedState] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem(COLLAPSED_KEY) !== '0';
+    } catch {
+      return true;
+    }
+  });
+  const setCollapsed = useCallback((next: boolean | ((c: boolean) => boolean)) => {
+    setCollapsedState((c) => {
+      const value = typeof next === 'function' ? next(c) : next;
+      try {
+        localStorage.setItem(COLLAPSED_KEY, value ? '1' : '0');
+      } catch {
+        /* 저장 못 해도 화면 상태는 바뀐다 */
+      }
+      return value;
+    });
+  }, []);
   const bodyRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -81,13 +100,13 @@ export function LogPanel() {
   return (
     <div
       style={{ zoom: 'var(--admin-zoom, 1)' }}
-      className="fixed bottom-0 left-0 right-0 z-50 border-t border-console-800 bg-console-900 text-console-200 font-mono text-xs shadow-[0_-4px_24px_rgba(0,0,0,0.3)]"
+      className="fixed bottom-0 left-0 right-0 md:left-52 z-50 border-t border-console-800 bg-console-900 text-console-200 font-mono text-xs shadow-[0_-4px_24px_rgba(0,0,0,0.3)]"
     >
       <div
         className="flex items-center justify-between px-4 py-1.5 bg-console-800 cursor-pointer select-none"
         onClick={() => setCollapsed((c) => !c)}
       >
-        <span className="text-[11px] font-semibold text-console-500 uppercase tracking-wider">
+        <span className="text-2xs font-semibold text-console-500 uppercase tracking-wider">
           Activity Log ({entries.length})
         </span>
         <div className="flex gap-1.5" onClick={(e) => e.stopPropagation()}>

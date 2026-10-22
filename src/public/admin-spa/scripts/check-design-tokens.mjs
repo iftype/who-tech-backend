@@ -24,6 +24,11 @@ for (const file of sourceFiles(ROOT)) {
     .forEach((line, i) => {
       const match = RAW_PALETTE.exec(line);
       if (match) violations.push(`src/${rel}:${i + 1} 원시 팔레트 색: ${match[0].trim()}`);
+      const size = /(^|[\s:'"`])text-\[\d+(\.\d+)?(px|rem)\]/.exec(line);
+      if (size)
+        violations.push(
+          `src/${rel}:${i + 1} 임의 글자 크기: ${size[0].trim()} (text-2xs·text-xs 등 이름 있는 크기를 쓰세요)`,
+        );
     });
 }
 

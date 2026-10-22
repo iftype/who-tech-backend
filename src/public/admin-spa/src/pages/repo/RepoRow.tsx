@@ -159,14 +159,14 @@ export function RepoRow({ repo: r, editing, sync, selection }: Props) {
           <button
             onClick={() => void sync.syncRepo(r)}
             disabled={isSyncing}
-            className="text-[10px] px-2 py-1 rounded border border-primary-300 text-primary-600 hover:bg-primary-50 disabled:opacity-40"
+            className="text-2xs px-2 py-1 rounded border border-primary-300 text-primary-600 hover:bg-primary-50 disabled:opacity-40"
             title="싱크"
           >
             {isSyncing ? '...' : '싱크'}
           </button>
           <button
             onClick={() => editing.resetLastSyncAt(r.id)}
-            className="text-[10px] px-2 py-1 rounded border border-warning-300 text-warning-600 hover:bg-warning-50"
+            className="text-2xs px-2 py-1 rounded border border-warning-300 text-warning-600 hover:bg-warning-50"
             title="lastSyncAt 초기화 (전체 재싱크)"
           >
             초기화
@@ -174,7 +174,7 @@ export function RepoRow({ repo: r, editing, sync, selection }: Props) {
           <button
             onClick={() => void editing.remove(r)}
             disabled={editing.deleting === r.id}
-            className="text-[10px] px-2 py-1 rounded border border-danger-300 text-danger-500 hover:bg-danger-50 disabled:opacity-40"
+            className="text-2xs px-2 py-1 rounded border border-danger-300 text-danger-500 hover:bg-danger-50 disabled:opacity-40"
             title="삭제"
           >
             삭제

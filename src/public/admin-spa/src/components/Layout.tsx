@@ -32,22 +32,23 @@ export function Layout({ children }: { children: ReactNode }) {
   })();
 
   return (
-    <div className="min-h-screen bg-base-50 flex flex-col">
-      {/* 헤더와 탭은 화면 위에 고정 — 긴 표를 내려가도 탭을 바꿀 수 있다 */}
-      <div className="sticky top-0 z-20">
-        <header className="bg-white border-b border-base-200 px-4 md:px-6 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <h1 className="text-base font-semibold text-base-900">who.tech 어드민</h1>
-            <span className="text-[10px] text-base-400 bg-base-100 px-1.5 py-0.5 rounded">v{__APP_VERSION__}</span>
-            {githubBadge}
-          </div>
+    <div className="min-h-screen bg-base-50 md:flex">
+      {/* 대시보드 사이드바(넓은 화면) / 위쪽 고정 바(좁은 화면). 긴 표를 내려가도 내비가 남는다 */}
+      <aside className="sticky top-0 z-20 border-b border-base-200 bg-white md:flex md:h-screen md:w-52 md:shrink-0 md:flex-col md:border-b-0 md:border-r">
+        <div className="flex items-center justify-between px-4 py-3 md:py-4">
+          <h1 className="text-sm font-semibold text-base-900">who.tech 어드민</h1>
           <button onClick={logout} className="text-xs text-base-400 hover:text-base-600">
             로그아웃
           </button>
-        </header>
+        </div>
         <TabNav />
-      </div>
-      <main className="flex-1 p-4 md:p-6 pb-48">{children}</main>
+        {/* 상태 정보는 사이드바 아래로 — 모든 화면 위에서 시선을 뺏지 않게 */}
+        <div className="mt-auto hidden space-y-1.5 border-t border-base-200 px-4 py-3 md:block">
+          {githubBadge}
+          <p className="text-2xs text-base-400">v{__APP_VERSION__}</p>
+        </div>
+      </aside>
+      <main className="min-w-0 flex-1 p-4 pb-16 md:p-6 md:pb-16">{children}</main>
       <LogPanel />
     </div>
   );

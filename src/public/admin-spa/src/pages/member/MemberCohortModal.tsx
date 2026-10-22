@@ -84,7 +84,7 @@ export function MemberCohortModal({ member, onChange, onRefresh }: Props) {
         <div className="flex items-center justify-between rounded border border-base-200 bg-base-50 px-3 py-2">
           <div>
             <p className="text-xs font-medium text-base-700">자동 산정 잠금</p>
-            <p className="text-[10px] text-base-400">활성화 시 기수 자동 재산정을 건너뜁니다</p>
+            <p className="text-2xs text-base-400">활성화 시 기수 자동 재산정을 건너뜁니다</p>
           </div>
           <button
             onClick={toggleLock}
@@ -115,7 +115,7 @@ export function MemberCohortModal({ member, onChange, onRefresh }: Props) {
                         onClick={() => toggleCohortRole(c.cohort, c.roles, role)}
                         disabled={updateCohortRolesMutation.isPending}
                         aria-pressed={c.roles.includes(role)}
-                        className={`text-[10px] px-1.5 py-0.5 rounded border transition-colors ${c.roles.includes(role) ? 'bg-primary-100 text-primary-700 border-primary-300' : 'bg-white text-base-500 border-base-200 hover:bg-base-100'}`}
+                        className={`text-2xs px-1.5 py-0.5 rounded border transition-colors ${c.roles.includes(role) ? 'bg-primary-100 text-primary-700 border-primary-300' : 'bg-white text-base-500 border-base-200 hover:bg-base-100'}`}
                       >
                         {ROLE_LABELS[role]}
                       </button>
@@ -124,7 +124,7 @@ export function MemberCohortModal({ member, onChange, onRefresh }: Props) {
                   <button
                     onClick={() => deleteCohortMutation.mutate({ memberId: member.id, cohort: c.cohort })}
                     disabled={deleteCohortMutation.isPending}
-                    className="text-[10px] text-base-400 hover:text-danger-500 ml-auto disabled:opacity-40"
+                    className="text-2xs text-base-400 hover:text-danger-500 ml-auto disabled:opacity-40"
                     title="기수 삭제"
                   >
                     ✕
