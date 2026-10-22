@@ -1,4 +1,4 @@
-import { describe, it, expect, jest } from '@jest/globals';
+import { describe, it, expect, jest, afterEach } from '@jest/globals';
 import { createSyncQueue } from '../../features/sync/sync.queue.js';
 import type { SyncJobRecordData } from '../../db/repositories/sync-job.repository.js';
 
@@ -36,6 +36,10 @@ async function waitDone(queue: ReturnType<typeof makeQueue>['queue'], id: string
 }
 
 describe('createSyncQueue persistence', () => {
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   it('should record every status transition of a job', async () => {
     const repo = makeRepo();
     const { queue } = makeQueue(repo);
@@ -64,7 +68,10 @@ describe('createSyncQueue persistence', () => {
   });
 
   it('should close unfinished records and restore recent ones without running them', async () => {
+    // 시계를 고정한다: 복원·TTL 정리가 실제 시각에 따라 달라지면 테스트가 날짜가 지나며 깨진다 (#231)
+    jest.useFakeTimers({ doNotFake: ['setImmediate', 'nextTick', 'queueMicrotask'] });
     const createdAt = new Date('2026-10-22T00:00:00Z');
+    jest.setSystemTime(new Date(createdAt.getTime() + 60 * 60 * 1000));
     const repo = makeRepo([
       {
         id: 'old-1',
