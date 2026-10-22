@@ -26,33 +26,13 @@
     ]
   },
   "hooks": {
-    "UserPromptSubmit": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "cd /Users/iftype/Projects/Side/who-tech-course/backend && echo '=== Git ===' && git status --short && echo \"Branch: $(git branch --show-current)\""
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 -c \"\nimport sys, json, subprocess\ntry:\n    d = json.load(sys.stdin)\n    f = d.get('tool_input', {}).get('file_path', '')\n    if f.endswith('.ts') and 'node_modules' not in f:\n        r = subprocess.run(['npx', 'tsc', '--noEmit', '--skipLibCheck'], capture_output=True, text=True, cwd='/Users/iftype/Projects/Side/who-tech-course/backend')\n        errs = [l for l in (r.stdout + r.stderr).split('\\n') if 'error TS' in l][:8]\n        if errs: print('[tsc] ' + '\\n'.join(errs))\nexcept: pass\n\""
-          }
-        ]
-      }
-    ],
     "Stop": [
       {
         "hooks": [
           {
             "type": "command",
-            "command": "cd /Users/iftype/Projects/Side/who-tech-course/backend && mkdir -p .omc/state && git status --short > .omc/state/git-status.txt 2>/dev/null && git diff --stat HEAD > .omc/state/git-diff-stat.txt 2>/dev/null; true"
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/stop-verify.sh",
+            "timeout": 300
           }
         ]
       }
