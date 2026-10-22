@@ -127,7 +127,7 @@ describe('admin member routes', () => {
   });
 
   describe('POST /admin/members/:id/refresh-profile', () => {
-    it('should return the member or 500 with the profile error', async () => {
+    it('should return the member or 502 with the upstream profile error', async () => {
       const { app, service } = makeApp();
 
       const ok = await request(app).post('/admin/members/1/refresh-profile');
@@ -135,7 +135,7 @@ describe('admin member routes', () => {
       const failed = await request(app).post('/admin/members/1/refresh-profile');
 
       expect(ok.status).toBe(200);
-      expect(failed.status).toBe(500);
+      expect(failed.status).toBe(502);
       expect(failed.body).toEqual({ message: 'Not Found', member: { id: 1, profileRefreshError: 'Not Found' } });
     });
   });
