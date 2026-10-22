@@ -1,0 +1,44 @@
+name: 버그
+description: 버그 기록 (버그 처리 워크플로 ② 기록 단계 — AGENTS.md "버그 처리 워크플로")
+title: 'fix: '
+labels: [bug]
+body:
+  - type: dropdown
+    id: source
+    attributes:
+      label: 발견 경로
+      options: [직접 사용, 운영 점검, CI·크론 실패, 사용자 제보, 코드 감사]
+    validations: { required: true }
+  - type: textarea
+    id: symptom
+    attributes:
+      label: 증상
+      description: 무엇이 기대와 다르게 동작하나
+    validations: { required: true }
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 재현 방법·증거
+      description: 요청·명령·로그·실행 기록. 측정값이면 숫자 그대로
+      render: text
+    validations: { required: true }
+  - type: textarea
+    id: expected
+    attributes:
+      label: 기대 동작
+    validations: { required: true }
+  - type: textarea
+    id: impact
+    attributes:
+      label: 영향 범위
+      description: 누가·어떤 화면/API가·얼마나 영향을 받나
+    validations: { required: true }
+  - type: dropdown
+    id: severity
+    attributes:
+      label: 심각도 (사람이 확정)
+      options:
+        - S1 — 서비스 중단·데이터 손실·보안
+        - S2 — 주요 기능이 틀리거나 늦음 (우회 가능)
+        - S3 — 사용자 영향 거의 없음·내부 정리
+    validations: { required: true }
