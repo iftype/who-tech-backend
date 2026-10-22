@@ -10,7 +10,9 @@ export function createBlogRouter(service: BlogAdminService, syncAdminService: Sy
 
   // 1. 블로그 동기화: 싱크 큐(블로그 레인)에 넣는다. 이미 대기·실행 중이면 그 작업을 돌려준다 (30분 cron이 겹쳐도 하나만)
   router.post('/blog/sync', async (req, res) => {
-    const source = req.get('X-Sync-Source') === 'github-actions' ? 'github-actions' : 'manual';
+    // 서버 crontab(scripts/sync-trigger.sh)은 scheduler, GitHub Actions는 github-actions, 그 밖(어드민)은 manual
+    const header = req.get('X-Sync-Source');
+    const source = header === 'github-actions' || header === 'scheduler' ? header : 'manual';
     const active = syncAdminService.findActiveJob('blog');
     const jobId = active?.id ?? syncAdminService.createJob('blog', { blogSource: source });
     const job = syncAdminService.getJob(jobId);

@@ -1,7 +1,7 @@
 Run TypeScript type check for the entire project.
 
 ```bash
-cd /Users/iftype/Projects/Side/who-tech-course/backend && npx tsc --noEmit --skipLibCheck 2>&1
+npx tsc --noEmit --skipLibCheck 2>&1
 ```
 
 Output rules:

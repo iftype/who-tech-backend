@@ -31,6 +31,20 @@
 | `/lint`                            | `lint:fix` + `format`                              |
 | `/migrate`                         | prisma status → 이름 확인 → migrate dev → generate |
 
+### 버그 처리 워크플로
+
+버그는 바로 고치지 않고 이 순서로 처리한다. Claude Code는 `/bugfix <이슈번호>`, 다른 도구는 이 절차를 그대로 따른다.
+사람이 정하는 것은 **심각도(②)와 머지(⑤)** 두 가지다.
+
+| 단계   | 하는 일                                                                                              | 남는 것                         |
+| ------ | ---------------------------------------------------------------------------------------------------- | ------------------------------- |
+| ① 발견 | 출처를 적는다: 직접 사용·운영 점검·CI/크론 실패·사용자 제보·코드 감사                                | —                               |
+| ② 기록 | `bug` Issue 양식(증상·재현·기대·영향·심각도). 에이전트가 초안, 사람이 심각도 확정                    | Issue                           |
+| ③ 재현 | 고치기 **전에** 실패하는 테스트를 쓴다. 테스트로 못 잡는 운영 문제는 수정 전 측정값을 Issue에 남긴다 | 실패 테스트 / 기준값            |
+| ④ 수정 | 원인만 고치는 최소 변경. `fix: … (#이슈)`, PR 본문 `closes #이슈`                                    | PR                              |
+| ⑤ 검증 | 재현 테스트 통과 + 기존 검사 전부 통과. 배포 후 운영에서 같은 방법으로 다시 확인                     | PR 본문·Issue 코멘트에 전/후 값 |
+| ⑥ 마감 | 원인 한 줄, 재발 방지(테스트·린트·문서), 발견→배포 시간. `node scripts/bug-metrics.mjs`              | Issue 닫기 코멘트, 지표         |
+
 ### 아키텍처
 
 ```
@@ -91,13 +105,13 @@ gh workflow run deploy.yml -R iftype/who-tech-backend   # main 최신 커밋 재
 
 ### GitHub Actions 워크플로우
 
-| 파일                  | 트리거        | 역할                                        |
-| --------------------- | ------------- | ------------------------------------------- |
-| `ci.yml`              | PR, main push | lint·format·tsc·test·build (필수 체크 `ci`) |
-| `deploy.yml`          | CI 성공(main) | 자동 배포 + `/health` 확인                  |
-| `release-please.yml`  | main push     | 릴리즈 PR·태그·CHANGELOG                    |
-| `continuous-sync.yml` | 10분 cron     | `POST /admin/sync/continuous`               |
-| `blog-check.yml`      | 30분마다      | `POST /admin/blog/sync` (큐 blog 레인)      |
+| 파일                  | 트리거                                        | 역할                                                                                      |
+| --------------------- | --------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `ci.yml`              | PR, main push                                 | lint·format·tsc·test·build (필수 체크 `ci`)                                               |
+| `deploy.yml`          | CI 성공(main)                                 | 자동 배포 + `/health` 확인                                                                |
+| `release-please.yml`  | main push                                     | 릴리즈 PR·태그·CHANGELOG                                                                  |
+| `continuous-sync.yml` | 10분 cron (백업)                              | `POST /admin/sync/continuous` — 주 트리거는 서버 crontab `scripts/sync-trigger.sh` (#229) |
+| `blog-check.yml`      | 30분마다 (싱크는 백업, Slack 새 글 알림 담당) | `POST /admin/blog/sync` (큐 blog 레인) — 주 트리거는 서버 crontab (#229)                  |
 
 ### 주의
 
