@@ -166,26 +166,22 @@ Members with `coach` or `reviewer` roles in any cohort keep those participations
 
 ---
 
-## 7. Planned Rate Limiting Rules
+## 7. Refresh Rate Limiting
 
-The following rate limiting rules are planned for refresh endpoints.
+### Public Refresh (`POST /members/:githubId/refresh`) — implemented
 
-### Individual Refresh (`POST /admin/members/:id/refresh-profile`)
+| Property            | Value                                                                       |
+| ------------------- | --------------------------------------------------------------------------- |
+| Per member          | 1 per minute (`activityLogService.checkRateLimit(githubId, 1)`)             |
+| All clients         | 30 per 10 minutes (`express-rate-limit`, `refreshLimit` option in tests)    |
+| 429 body            | `{ remainingSeconds, message }` for both limits (web countdown reads these) |
+| Log type on success | `refresh_member`                                                            |
+| Log type on limit   | `rate_limit_member`                                                         |
 
-| Property            | Value               |
-| ------------------- | ------------------- |
-| Window              | 1 minute per member |
-| Log type on success | `refresh_member`    |
-| Log type on limit   | `rate_limit_member` |
+### Admin Refresh — no server limit
 
-### Bulk Refresh (`POST /admin/members/refresh-profiles`)
-
-| Property            | Value                  |
-| ------------------- | ---------------------- |
-| Window              | 24 hours per workspace |
-| Restriction         | Admin only             |
-| Log type on success | `refresh_all`          |
-| Log type on limit   | `rate_limit_all`       |
+- `POST /admin/members/:id/refresh-profile`: the admin UI keeps a per-member cooldown. GitHub failure → **502** `{ message, member }` (member is saved with `profileRefreshError`).
+- `POST /admin/members/refresh-profiles`: bounded by `limit` (default 30), `cohort`, `staleHours`.
 
 ### Source Distinction
 
@@ -240,20 +236,12 @@ Tokens are sorted by count (desc), then by last seen date (desc).
 
 ## 10. Current Issues and Technical Debt
 
-1. **Console.log in production code**
-   - `member.profile-refresh.ts` lines 127, 129 contain `console.log` calls.
-   - These should be replaced with a proper logger or removed.
+1. **Cohort recalculation runs on every refresh**
+   - `applyDominantCohort` runs even when submission data hasn't changed.
+   - Expensive for members with many submissions.
 
-2. **No rate limiting on refresh endpoints**
-   - Both individual and bulk refresh endpoints lack rate limiting.
-   - This can lead to GitHub API abuse and excessive load.
-
-3. **Cohort recalculation runs on every refresh**
-   - The cohort recalculation logic executes even when submission data hasn't changed.
-   - This is expensive for members with many submissions.
-
-4. **Missing `minSubmissions` and `minDominance` enforcement**
-   - The cohort frequency parameters (3 submissions, 0.5 dominance) are documented but not yet implemented in the recalculation logic.
+Resolved (kept for history): `console.log` in `member.profile-refresh.ts` (removed), public refresh rate limiting (section 7),
+`MIN_SUBMISSIONS`·`MIN_DOMINANCE` enforcement (`member.cohort-recalc.ts`).
 
 ---
 

@@ -73,8 +73,9 @@ export function createMemberRouter(service: MemberService, syncAdminService: Syn
 
   router.post('/:id/refresh-profile', async (req, res) => {
     const result = await service.refreshMemberProfile(parseId(req.params['id']));
+    // GitHub 조회 실패는 서버 버그가 아니라 상위 서비스 실패 → 502. 멤버는 저장된 상태로 함께 돌려준다
     if (result.profileRefreshError) {
-      res.status(500).json({ message: result.profileRefreshError, member: result });
+      res.status(502).json({ message: result.profileRefreshError, member: result });
     } else {
       res.json(result);
     }

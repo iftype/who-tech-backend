@@ -28,7 +28,6 @@ export function createMemberPublicRouter(service: MemberPublicService, options: 
         Math.ceil(((resetTime?.getTime() ?? Date.now() + REFRESH_WINDOW_MS) - Date.now()) / 1000),
       );
       res.status(429).json({
-        error: 'Rate limited',
         remainingSeconds,
         message: `${remainingSeconds}초 후에 다시 시도해주세요`,
       });

@@ -324,27 +324,20 @@ Tokens matching banned words (from `BannedWordRepository`) are excluded from sta
 
 ### Current Issues
 
-1. **`sync.repo-sync.ts` is too large (267 lines)**
+1. **`sync.repo-sync.ts` is too large (279 lines)**
    - It handles fetching, parsing, profile resolution, nickname stats, and upserts
    - Should be split into smaller focused modules (e.g., `profile-resolver.ts`, `nickname-merger.ts`)
 
-2. **`console.log` in member profile refresh**
-   - `member.profile-refresh.ts` (called from the sync flow) contains `console.log` statements
-   - Should migrate all sync logging to `ActivityLogService`
-
-3. **Cohort detection is date-based, not frequency-based**
-   - Currently uses the year of a single PR's `created_at`
-   - A member who submits PRs across multiple years could be misclassified
-   - **Planned:** determine cohort by aggregating all PRs and picking the most frequent cohort
+2. **Cohort detection per PR is date-based**
+   - `detectCohort` maps one PR's date to a cohort via workspace `cohortRules`
+   - Member-level cohort is then fixed by frequency: `applyDominantCohort` (`member/member.cohort-recalc.ts`, ≥3 merged, ≥50%)
 
 ### Planned Improvements
 
-| Improvement                             | Description                                                                           |
-| --------------------------------------- | ------------------------------------------------------------------------------------- |
-| Frequency-based cohort determination    | Count cohort occurrences across all member PRs at sync time, assign the most frequent |
-| `console.log` → `activityLog` migration | Replace all direct logging with structured `ActivityLogService` calls                 |
-| Split `sync.repo-sync.ts`               | Extract profile resolution and nickname logic into separate modules                   |
-| Profile refresh batching                | Currently resolves profiles one-by-one during sync; could batch stale profile checks  |
+| Improvement               | Description                                                                          |
+| ------------------------- | ------------------------------------------------------------------------------------ |
+| Split `sync.repo-sync.ts` | Extract profile resolution and nickname logic into separate modules                  |
+| Profile refresh batching  | Currently resolves profiles one-by-one during sync; could batch stale profile checks |
 
 ---
 
