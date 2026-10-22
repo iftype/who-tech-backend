@@ -77,6 +77,22 @@ describe('member public routes', () => {
     });
   });
 
+  // #230: track=all(또는 모르는 트랙)이 필터로 그대로 넘어가 0건이 되던 것 → 필터 없음(전체)
+  describe('track 파라미터', () => {
+    it('should drop track=all and unknown tracks on search, list and feed', async () => {
+      const { app, service } = makeApp();
+
+      await request(app).get('/members/search?track=all&cohort=8');
+      await request(app).get('/members?track=ios');
+      await request(app).get('/members/feed?track=all&days=30');
+      await request(app).get('/members/search?track=android');
+
+      expect(service.searchMembersPage.mock.calls.map((c) => c[0])).toEqual([{ cohort: 8 }, { track: 'android' }]);
+      expect(service.searchMembers).toHaveBeenCalledWith({});
+      expect(service.getFeed).toHaveBeenCalledWith({ days: 30, limit: 30 });
+    });
+  });
+
   describe('GET /members/feed', () => {
     it('should use 20 items for a recent window and 30 otherwise', async () => {
       const { app, service } = makeApp();

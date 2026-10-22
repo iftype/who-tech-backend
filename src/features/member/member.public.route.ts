@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { rateLimit } from 'express-rate-limit';
 
-import { parseOptionalNumberQuery } from '../../shared/validation.js';
+import { parseOptionalNumberQuery, parseTrackQuery } from '../../shared/validation.js';
 import type { MemberPublicService } from './member.public.service.js';
 import { NotFoundError } from '../../shared/errors.js';
 import { badRequest } from '../../shared/http.js';
@@ -39,7 +39,7 @@ export function createMemberPublicRouter(service: MemberPublicService, options: 
   router.get('/search', async (req, res) => {
     const q = typeof req.query['q'] === 'string' ? req.query['q'] : undefined;
     const cohort = parseOptionalNumberQuery(req.query['cohort']);
-    const track = typeof req.query['track'] === 'string' ? req.query['track'] : undefined;
+    const track = parseTrackQuery(req.query['track']);
     const role = typeof req.query['role'] === 'string' ? req.query['role'] : undefined;
     const roleGroup =
       typeof req.query['roleGroup'] === 'string' ? (req.query['roleGroup'] as 'crew' | 'staff') : undefined;
@@ -66,7 +66,7 @@ export function createMemberPublicRouter(service: MemberPublicService, options: 
   router.get('/', async (req, res) => {
     const q = typeof req.query['q'] === 'string' ? req.query['q'] : undefined;
     const cohort = parseOptionalNumberQuery(req.query['cohort']);
-    const track = typeof req.query['track'] === 'string' ? req.query['track'] : undefined;
+    const track = parseTrackQuery(req.query['track']);
     const role = typeof req.query['role'] === 'string' ? req.query['role'] : undefined;
     const roleGroup =
       typeof req.query['roleGroup'] === 'string' ? (req.query['roleGroup'] as 'crew' | 'staff') : undefined;
@@ -83,7 +83,7 @@ export function createMemberPublicRouter(service: MemberPublicService, options: 
 
   router.get('/feed', async (req, res) => {
     const cohort = parseOptionalNumberQuery(req.query['cohort']);
-    const track = typeof req.query['track'] === 'string' ? req.query['track'] : undefined;
+    const track = parseTrackQuery(req.query['track']);
     const days = parseOptionalNumberQuery(req.query['days']);
     const cursor = typeof req.query['cursor'] === 'string' ? req.query['cursor'] : undefined;
     const limit = days != null && days <= 7 ? 20 : 30;

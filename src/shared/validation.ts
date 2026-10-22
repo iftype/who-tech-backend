@@ -1,4 +1,5 @@
 import { badRequest } from './http.js';
+import { TRACKS, isOneOf } from './domain.js';
 
 /** 쿼리 파라미터 → 숫자 (필수). 문자열이 아니거나 NaN이면 NaN 반환 */
 export function parseNumberQuery(value: unknown): number {
@@ -39,4 +40,9 @@ export function isRecord(value: unknown): value is Record<string, unknown> {
 
 export function isNumberArray(value: unknown): value is number[] {
   return Array.isArray(value) && value.every((v) => typeof v === 'number');
+}
+
+/** 쿼리의 트랙. 정해진 트랙(TRACKS)이 아니면(`all`·오타 등) 필터 없음 — 웹의 parseTrack과 같은 규칙 (#230) */
+export function parseTrackQuery(value: unknown): (typeof TRACKS)[number] | undefined {
+  return isOneOf(TRACKS, value) ? value : undefined;
 }
