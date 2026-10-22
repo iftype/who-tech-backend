@@ -32,7 +32,7 @@ export function TecoTalkPanel({ tecoTalks }: { tecoTalks: TecoTalkAdminItem[] })
           <SectionTitle as="h3" size="sm">
             테코톡
           </SectionTitle>
-          <p className="text-[11px] text-base-400 mt-1">
+          <p className="text-2xs text-base-400 mt-1">
             최신 업로드:{' '}
             {latestTecoTalk ? `${latestTecoTalk.title} · ${formatDate(latestTecoTalk.uploadedAt)}` : '없음'}
           </p>

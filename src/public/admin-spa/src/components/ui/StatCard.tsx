@@ -11,7 +11,7 @@ const valueVariants = cva('mt-1 font-semibold text-base-900', {
 });
 
 // 카드·헤더의 작은 상태 배지 (GitHub API 정상/오류 등)
-export const statBadgeVariants = cva('text-[10px] px-1.5 py-0.5 rounded font-medium', {
+export const statBadgeVariants = cva('text-2xs px-1.5 py-0.5 rounded font-medium', {
   variants: {
     tone: {
       base: 'bg-base-100 text-base-500',
@@ -41,7 +41,7 @@ export function StatCard({ label, value, aside, hint, size, className }: StatCar
         {aside}
       </div>
       <p className={valueVariants({ size })}>{value}</p>
-      {hint && <p className="text-[10px] text-base-400">{hint}</p>}
+      {hint && <p className="text-2xs text-base-400">{hint}</p>}
     </Panel>
   );
 }

@@ -30,9 +30,7 @@ export function SyncScheduleStatus({
               {workspace?.blogSyncEnabled ? '활성' : '비활성'}
             </span>
           </div>
-          {workspace?.blogSyncEnabled && (
-            <p className="text-[10px] text-base-400 mt-1">다음 싱크까지 {remainingTime}</p>
-          )}
+          {workspace?.blogSyncEnabled && <p className="text-2xs text-base-400 mt-1">다음 싱크까지 {remainingTime}</p>}
         </Panel>
         <Panel>
           <div className="flex items-center justify-between">
@@ -46,10 +44,10 @@ export function SyncScheduleStatus({
             </span>
           </div>
           {workspace?.profileRefreshEnabled && (
-            <p className="text-[10px] text-base-400 mt-1">다음 새로고침까지 {remainingTime}</p>
+            <p className="text-2xs text-base-400 mt-1">다음 새로고침까지 {remainingTime}</p>
           )}
           {status?.lastProfileRefreshAt && (
-            <p className="text-[10px] text-base-400 mt-1">
+            <p className="text-2xs text-base-400 mt-1">
               마지막:{' '}
               {new Date(status.lastProfileRefreshAt).toLocaleString('ko-KR', {
                 month: '2-digit',

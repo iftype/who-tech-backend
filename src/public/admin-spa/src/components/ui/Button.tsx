@@ -1,18 +1,23 @@
 import type { ComponentProps } from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 
-// 색으로 채운 실행 버튼. tone은 동작의 성격, size는 놓이는 자리(툴바·폼)에 맞춰 고른다.
-export const buttonVariants = cva('text-white rounded disabled:opacity-40', {
+// 실행 버튼. 색은 세 가지만: 주요(primary)·보조(secondary)·위험(danger). 대시보드에서 버튼 색이 의미를 갖게 한다.
+// 예전 tone 이름(neutral·accent·success·positive·dangerSoft)은 셋 중 하나로 모았다 — 새 코드는 세 이름만 쓴다
+const PRIMARY = 'bg-primary-600 text-white hover:bg-primary-700';
+const SECONDARY = 'border border-base-300 bg-white text-base-700 hover:bg-base-50';
+const DANGER = 'bg-danger-600 text-white hover:bg-danger-700';
+
+export const buttonVariants = cva('rounded transition-colors disabled:opacity-40', {
   variants: {
     tone: {
-      primary: 'bg-primary-600 hover:bg-primary-700',
-      neutral: 'bg-base-700 hover:bg-base-800',
-      accent: 'bg-accent-600 hover:bg-accent-700',
-      success: 'bg-success-600 hover:bg-success-700',
-      positive: 'bg-positive-600 hover:bg-positive-700',
-      danger: 'bg-danger-600 hover:bg-danger-700',
-      // 확인 모달처럼 한 번 더 묻는 자리의 삭제
-      dangerSoft: 'bg-danger-500 hover:bg-danger-600',
+      primary: PRIMARY,
+      secondary: SECONDARY,
+      danger: DANGER,
+      neutral: SECONDARY,
+      accent: PRIMARY,
+      success: PRIMARY,
+      positive: PRIMARY,
+      dangerSoft: DANGER,
     },
     size: {
       xs: 'text-xs px-2 py-1',

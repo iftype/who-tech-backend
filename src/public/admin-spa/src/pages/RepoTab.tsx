@@ -11,16 +11,16 @@ import { useRepoSync } from './repo/useRepoSync.js';
 import { adminApi } from '../lib/admin-api.js';
 import { queryKeys } from '../lib/query-keys.js';
 import { Badge } from '../components/ui/Badge.js';
+import { Button } from '../components/ui/Button.js';
 import { EmptyState, ErrorState } from '../components/ui/Section.js';
 
 const STATUS_FILTERS: StatusFilter[] = ['', 'active', 'candidate', 'excluded'];
 const TAB_CATEGORY_FILTERS: TabCategoryFilter[] = ['', 'base', 'common', 'precourse', 'excluded'];
+// 필터는 버튼이 아니라 작은 칩 — 실행 버튼과 구분된다
 const filterButtonClass = (active: boolean) =>
-  `rounded-lg px-4 py-2 text-sm font-semibold ${
-    active ? 'bg-console-900 text-white' : 'bg-console-100 text-console-500 hover:bg-console-200'
+  `rounded-md border px-2.5 py-1 text-xs font-medium ${
+    active ? 'border-base-900 bg-base-900 text-white' : 'border-base-200 bg-white text-base-600 hover:bg-base-50'
   }`;
-const brandButtonClass =
-  'bg-gradient-to-br from-brand-teal to-brand-sky text-white rounded-xl px-3 py-1.5 text-sm hover:opacity-90 disabled:opacity-40';
 
 function RepoStatusLegend() {
   return (
@@ -129,23 +129,25 @@ export default function RepoTab() {
         />
         <span className="text-xs text-base-400">{filteredRepos.length}개</span>
         <div className="ml-auto flex gap-2">
-          <button
+          <Button
+            tone="secondary"
+            size="md"
             onClick={() => void continuousSyncMutation.mutate()}
             disabled={continuousSyncMutation.isPending || sync.isBusy}
-            className="bg-accent-600 text-white rounded-xl px-3 py-1.5 text-sm hover:bg-accent-700 disabled:opacity-40"
           >
             {continuousSyncMutation.isPending ? '연속 싱크 중...' : '연속 싱크'}
-          </button>
-          <button onClick={() => void sync.syncAllBase(repos)} disabled={sync.isBusy} className={brandButtonClass}>
+          </Button>
+          <Button tone="secondary" size="md" onClick={() => void sync.syncAllBase(repos)} disabled={sync.isBusy}>
             Base 전체 싱크
-          </button>
-          <button
+          </Button>
+          <Button
+            tone="secondary"
+            size="md"
             onClick={() => discoverMutation.mutate()}
             disabled={discoverMutation.isPending}
-            className={brandButtonClass}
           >
             {discoverMutation.isPending ? '탐색 중...' : '레포 탐색'}
-          </button>
+          </Button>
         </div>
       </div>
 

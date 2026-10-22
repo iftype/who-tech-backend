@@ -24,10 +24,10 @@ describe('StatCard', () => {
 
   it('should keep the small status badge classes the cards and header used', () => {
     expect(set(statBadgeVariants({ tone: 'danger' }))).toEqual(
-      set('text-[10px] px-1.5 py-0.5 rounded font-medium bg-danger-100 text-danger-700'),
+      set('text-2xs px-1.5 py-0.5 rounded font-medium bg-danger-100 text-danger-700'),
     );
     expect(set(statBadgeVariants())).toEqual(
-      set('text-[10px] px-1.5 py-0.5 rounded font-medium bg-base-100 text-base-500'),
+      set('text-2xs px-1.5 py-0.5 rounded font-medium bg-base-100 text-base-500'),
     );
   });
 });

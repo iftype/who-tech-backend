@@ -56,13 +56,13 @@ export function MemberRow({ member: m, edit, actions, onOpenCohorts, onOpenSubmi
           title="기수/역할 편집"
         >
           {m.cohorts.length === 0 ? (
-            <span className="text-base-300 text-[10px]">—</span>
+            <span className="text-base-300 text-2xs">—</span>
           ) : (
             <div className="flex flex-wrap gap-0.5">
               {m.cohorts.map((c) => (
                 <span
                   key={c.cohort}
-                  className="text-[10px] bg-primary-50 text-primary-700 border border-primary-200 rounded px-1 py-0 whitespace-nowrap"
+                  className="text-2xs bg-primary-50 text-primary-700 border border-primary-200 rounded px-1 py-0 whitespace-nowrap"
                 >
                   {c.cohort}기
                   {c.roles.length > 0 && (
@@ -87,7 +87,7 @@ export function MemberRow({ member: m, edit, actions, onOpenCohorts, onOpenSubmi
                 edit.saveNow(m.id, { track: e.target.value || null });
               }}
               onKeyDown={edit.handleKeyDown}
-              className="border border-primary-400 rounded px-1 py-0.5 text-[10px] focus:outline-none focus:ring-1 focus:ring-primary-500 w-16"
+              className="border border-primary-400 rounded px-1 py-0.5 text-2xs focus:outline-none focus:ring-1 focus:ring-primary-500 w-16"
               disabled={edit.isSaving}
             >
               {TRACK_OPTIONS.map((t) => (
@@ -100,7 +100,7 @@ export function MemberRow({ member: m, edit, actions, onOpenCohorts, onOpenSubmi
         ) : (
           <button
             onClick={() => edit.startEdit(m, 'track')}
-            className={`text-[10px] px-1 py-0 rounded border whitespace-nowrap ${m.track ? 'bg-base-100 text-base-700 border-base-200 hover:bg-base-200' : 'text-base-300 border-transparent hover:text-primary-600'}`}
+            className={`text-2xs px-1 py-0 rounded border whitespace-nowrap ${m.track ? 'bg-base-100 text-base-700 border-base-200 hover:bg-base-200' : 'text-base-300 border-transparent hover:text-primary-600'}`}
             title="트랙 편집"
           >
             {m.track || '—'}
@@ -124,7 +124,7 @@ export function MemberRow({ member: m, edit, actions, onOpenCohorts, onOpenSubmi
         ) : m.blog ? (
           <button
             onClick={() => edit.startEdit(m, 'blog')}
-            className="text-[10px] text-primary-600 hover:underline truncate block text-left max-w-[100px]"
+            className="text-2xs text-primary-600 hover:underline truncate block text-left max-w-[100px]"
             title={m.blog}
           >
             {m.blog.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')}
@@ -132,7 +132,7 @@ export function MemberRow({ member: m, edit, actions, onOpenCohorts, onOpenSubmi
         ) : (
           <button
             onClick={() => edit.startEdit(m, 'blog')}
-            className="text-base-300 text-[10px] hover:text-primary-600"
+            className="text-base-300 text-2xs hover:text-primary-600"
             title="블로그 추가"
           >
             —
@@ -141,15 +141,15 @@ export function MemberRow({ member: m, edit, actions, onOpenCohorts, onOpenSubmi
       </Td>
       <Td density="compact" className="text-center">
         {m.rssStatus === 'ok' ? (
-          <span className="text-[10px] text-success-600" title="RSS 정상">
+          <span className="text-2xs text-success-600" title="RSS 정상">
             ✅
           </span>
         ) : m.rssStatus === 'error' ? (
-          <span className="text-[10px] text-danger-500" title="RSS 오류">
+          <span className="text-2xs text-danger-500" title="RSS 오류">
             ❌
           </span>
         ) : (
-          <span className="text-[10px] text-base-300" title="RSS 미설정">
+          <span className="text-2xs text-base-300" title="RSS 미설정">
             —
           </span>
         )}
@@ -157,8 +157,9 @@ export function MemberRow({ member: m, edit, actions, onOpenCohorts, onOpenSubmi
       <Td density="compact" className="text-center">
         <button
           onClick={() => onOpenSubmissions(m)}
-          className="text-[10px] text-base-600 hover:text-primary-600 font-medium"
+          className="text-2xs text-base-600 hover:text-primary-600 font-medium"
           title="PR 확인"
+          aria-label="PR 확인"
         >
           {m._count.submissions}
         </button>
@@ -166,8 +167,9 @@ export function MemberRow({ member: m, edit, actions, onOpenCohorts, onOpenSubmi
       <Td density="compact" className="text-center">
         <button
           onClick={() => onOpenBlogPosts(m)}
-          className="text-[10px] text-base-600 hover:text-primary-600"
+          className="text-2xs text-base-600 hover:text-primary-600"
           title="블로그 글 보기"
+          aria-label="블로그 글 보기"
         >
           {m._count.blogPosts}
         </button>
@@ -177,31 +179,35 @@ export function MemberRow({ member: m, edit, actions, onOpenCohorts, onOpenSubmi
           <button
             onClick={() => void actions.refreshProfile(m)}
             disabled={refreshing === m.id || !!(cooldowns[m.id] && cooldowns[m.id] > 0)}
-            className="text-[10px] text-base-500 hover:text-primary-600 disabled:opacity-40 px-0.5 min-w-[20px]"
+            className="text-2xs text-base-500 hover:text-primary-600 disabled:opacity-40 px-0.5 min-w-[20px]"
             title={cooldowns[m.id] ? `${cooldowns[m.id]}초 후 가능` : '프로필 새로고침'}
+            aria-label="프로필 새로고침"
           >
             {refreshing === m.id ? '⟳' : cooldowns[m.id] ? `${cooldowns[m.id]}s` : '↺'}
           </button>
           <button
             onClick={() => void actions.resyncSubmissions(m)}
             disabled={resyncing === m.id}
-            className="text-[10px] text-base-500 hover:text-success-600 disabled:opacity-40 px-0.5"
+            className="text-2xs text-base-500 hover:text-success-600 disabled:opacity-40 px-0.5"
             title="PR 재수집"
+            aria-label="PR 재수집"
           >
             {resyncing === m.id ? '⟳' : '↻'}
           </button>
           <button
             onClick={() => void actions.recalculateCohorts(m)}
             disabled={recalculating === m.id}
-            className="text-[10px] text-base-500 hover:text-warning-600 disabled:opacity-40 px-0.5"
+            className="text-2xs text-base-500 hover:text-warning-600 disabled:opacity-40 px-0.5"
             title="기수 재계산"
+            aria-label="기수 재계산"
           >
             {recalculating === m.id ? '⟳' : '⚡'}
           </button>
           <button
             onClick={() => actions.deleteMember(m)}
-            className="text-[10px] text-base-400 hover:text-danger-500 disabled:opacity-40 px-0.5"
+            className="text-2xs text-base-400 hover:text-danger-500 disabled:opacity-40 px-0.5"
             title="삭제"
+            aria-label="삭제"
           >
             ✕
           </button>

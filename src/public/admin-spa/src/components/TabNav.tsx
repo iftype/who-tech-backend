@@ -12,12 +12,15 @@ const TABS = [
   { path: '/settings', label: '설정' },
 ] as const;
 
-// 좁은 화면에서는 탭이 줄을 바꾸지 않고 가로로 넘어간다
+// 좁은 화면: 가로 탭(줄을 바꾸지 않고 가로로 넘김), 넓은 화면: 사이드바 세로 목록
 export function TabNav() {
   const [location, navigate] = useHashLocation();
 
   return (
-    <nav aria-label="어드민 탭" className="flex overflow-x-auto border-b border-base-200 bg-white px-4">
+    <nav
+      aria-label="어드민 탭"
+      className="flex overflow-x-auto border-t border-base-200 px-4 md:flex-col md:gap-0.5 md:overflow-visible md:border-t-0 md:px-2"
+    >
       {TABS.map((tab) => {
         const active = location === tab.path || (location === '/' && tab.path === '/members');
         return (

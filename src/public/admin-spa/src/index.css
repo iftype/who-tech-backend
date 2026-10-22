@@ -81,6 +81,9 @@
   /* brand: 동기화 버튼·진행 막대 그라데이션 */
   --color-brand-teal: var(--color-teal-700);
   --color-brand-sky: var(--color-sky-700);
+  /* 글자 크기: Tailwind 스케일(xs=12px) 아래 한 단계. 임의 px(text-[10px]) 대신 이 이름만 쓴다 (lint:tokens) */
+  --text-2xs: 0.6875rem;
+  --text-2xs--line-height: 1rem;
 }
 
 body {

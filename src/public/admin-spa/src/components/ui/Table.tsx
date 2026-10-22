@@ -20,7 +20,7 @@ const thVariants = cva('text-left font-medium text-base-500', {
   variants: {
     density: cellDensity,
     // inherit: 표 크기(text-sm/xs)를 그대로 따른다
-    size: { xs: 'text-xs', '11': 'text-[11px]', inherit: '' },
+    size: { xs: 'text-xs', '11': 'text-2xs', inherit: '' },
   },
   defaultVariants: { density: 'md', size: 'xs' },
 });

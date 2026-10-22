@@ -101,7 +101,7 @@ export function SyncProgress({ job }: { job: SyncJob }) {
   const phase = job.progress?.phase ?? job.message ?? '';
   return (
     <div className="mt-1">
-      <div className="text-[11px] text-console-500 mb-0.5">
+      <div className="text-2xs text-console-500 mb-0.5">
         {pct}% — {phase}
       </div>
       <div className="w-full h-1.5 bg-console-200 rounded-full overflow-hidden">

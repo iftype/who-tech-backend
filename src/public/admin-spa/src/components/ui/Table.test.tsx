@@ -44,7 +44,7 @@ describe('Table', () => {
     expect(classSet(container.querySelector('tbody'))).toEqual(new Set(['divide-y', 'divide-base-100']));
     expect(classSet(th1)).toEqual(new Set(['text-left', 'text-xs', 'font-medium', 'text-base-500', 'px-3', 'py-2']));
     expect(classSet(th2)).toEqual(
-      new Set(['text-left', 'text-[11px]', 'font-medium', 'text-base-500', 'px-1.5', 'py-1', 'w-6']),
+      new Set(['text-left', 'text-2xs', 'font-medium', 'text-base-500', 'px-1.5', 'py-1', 'w-6']),
     );
     expect(classSet(th3)).toEqual(new Set(['text-left', 'font-medium', 'text-base-500', 'px-2', 'py-1']));
     expect(classSet(td1)).toEqual(new Set(['px-3', 'py-2', 'text-xs']));
