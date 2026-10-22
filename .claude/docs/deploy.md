@@ -79,6 +79,7 @@ mkdir -p ~/logs
 crontab -l 2>/dev/null | { cat; \
   echo '*/10 * * * * /home/ubuntu/app/who-tech-backend/scripts/sync-trigger.sh continuous >> /home/ubuntu/logs/sync-trigger.log 2>&1'; \
   echo '7,37 * * * * /home/ubuntu/app/who-tech-backend/scripts/sync-trigger.sh blog >> /home/ubuntu/logs/sync-trigger.log 2>&1'; \
+  echo '23 * * * * /home/ubuntu/app/who-tech-backend/scripts/sync-trigger.sh activity >> /home/ubuntu/logs/sync-trigger.log 2>&1'; \
 } | crontab -
 ```
 
