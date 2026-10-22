@@ -105,4 +105,23 @@ describe('blog sync jobs route', () => {
     finish({ synced: 0, deleted: 0, failures: [] });
     await flush();
   });
+
+  // #229: 서버 crontab 트리거는 scheduler로 기록된다 (모르는 값은 manual)
+  it('should record the scheduler source from the server cron and fall back to manual', async () => {
+    const { app, syncAdminService, finish } = makeApp();
+
+    const scheduled = await request(app).post('/admin/blog/sync').set('X-Sync-Source', 'scheduler');
+    expect(scheduled.body.source).toBe('scheduler');
+    await flush();
+    finish({ synced: 0, deleted: 0, failures: [] });
+    await flush();
+    await flush();
+
+    const other = await request(app).post('/admin/blog/sync').set('X-Sync-Source', 'cron-x');
+    expect(other.body.source).toBe('manual');
+    expect(syncAdminService.getJobs().map((j) => j.blogSource)).toEqual(['scheduler', 'manual']);
+    await flush();
+    finish({ synced: 0, deleted: 0, failures: [] });
+    await flush();
+  });
 });
