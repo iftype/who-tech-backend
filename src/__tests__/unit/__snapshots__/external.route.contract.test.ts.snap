@@ -213,6 +213,20 @@ exports[`external-service routes contract POST /admin/repos/abc/sync {} 1`] = `
 }
 `;
 
+exports[`external-service routes contract POST /admin/repos/activity null 1`] = `
+{
+  "body": {
+    "from": "repo.refreshRepoActivity",
+  },
+  "calls": {
+    "repo.refreshRepoActivity": [
+      [],
+    ],
+  },
+  "status": 200,
+}
+`;
+
 exports[`external-service routes contract POST /admin/repos/discover null 1`] = `
 {
   "body": {

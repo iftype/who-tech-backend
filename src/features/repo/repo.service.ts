@@ -4,6 +4,7 @@ import type { WorkspaceService } from '../workspace/index.js';
 import type { SyncService } from '../sync/index.js';
 import { parseCohorts } from '../../shared/cohort-regex.js';
 import { discoverMissionRepos, fetchOrgRepos } from './repo-discovery.service.js';
+import { classifyActiveRepo, fetchRecentRepoActivity, planRepoActivity } from './repo-activity.service.js';
 
 export function createRepoService(deps: {
   missionRepoRepo: MissionRepoRepository;
@@ -110,6 +111,46 @@ export function createRepoService(deps: {
       } catch {
         return null;
       }
+    },
+
+    /**
+     * 최근 PR 활동으로 레포 자동 분류 (#236). 서버 crontab이 1시간마다 부른다(scripts/sync-trigger.sh activity).
+     * 처음 보는 레포 → 미분류 추가, active 레포 → 활동 중이면 continuous·14일 조용하면 once
+     */
+    refreshRepoActivity: async () => {
+      const workspace = await workspaceService.getOrThrow();
+      const activity = await fetchRecentRepoActivity(octokit, workspace.githubOrg);
+      const known = await missionRepoRepo.findMany({ workspaceId: workspace.id });
+      const plan = planRepoActivity(known, activity);
+
+      const created: string[] = [];
+      for (const item of plan.toCreate) {
+        const { data } = await octokit.rest.repos.get({ owner: workspace.githubOrg, repo: item.name });
+        if (data.archived || data.private) continue;
+        const repo = classifyActiveRepo(
+          {
+            id: data.id,
+            name: data.name,
+            html_url: data.html_url,
+            description: data.description,
+            language: data.language ?? null,
+            archived: data.archived,
+            private: data.private,
+          },
+          item,
+        );
+        await missionRepoRepo.create({ ...repo, syncMode: 'once', workspaceId: workspace.id });
+        created.push(repo.name);
+      }
+      for (const repo of plan.toContinuous) await missionRepoRepo.update(repo.id, { syncMode: 'continuous' });
+      for (const repo of plan.toOnce) await missionRepoRepo.update(repo.id, { syncMode: 'once' });
+
+      return {
+        activeRepos: activity.length,
+        created,
+        toContinuous: plan.toContinuous.map((r) => r.name),
+        toOnce: plan.toOnce.map((r) => r.name),
+      };
     },
 
     refreshRepoCandidates: async (): Promise<{ discovered: number; created: number; updated: number }> => {
