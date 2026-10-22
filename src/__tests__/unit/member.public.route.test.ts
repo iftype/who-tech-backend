@@ -234,10 +234,9 @@ describe('member public routes', () => {
 
       // 웹은 429 본문의 remainingSeconds·message로 카운트다운을 띄운다 → 아이디별 제한과 같은 모양
       expect(blocked.status).toBe(429);
-      expect(blocked.body).toMatchObject({
-        error: 'Rate limited',
-        message: expect.stringContaining('초 후에 다시 시도해주세요'),
-      });
+      // 아이디별 429와 같은 모양: remainingSeconds·message만 (error 필드 없음, #219)
+      expect(Object.keys(blocked.body).sort()).toEqual(['message', 'remainingSeconds']);
+      expect(blocked.body.message).toContain('초 후에 다시 시도해주세요');
       expect(blocked.body.remainingSeconds).toBeGreaterThan(0);
       expect(service.refreshMemberProfile).toHaveBeenCalledTimes(2);
     });
