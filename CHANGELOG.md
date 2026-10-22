@@ -1,5 +1,30 @@
 # Changelog
 
+## [1.5.0](https://github.com/iftype/who-tech-backend/compare/v1.4.0...v1.5.0) (2026-10-22)
+
+
+### 기능
+
+* 최근 PR 활동으로 미션 레포 자동 분류 — 미분류 추가, active는 활동 중 continuous ([#236](https://github.com/iftype/who-tech-backend/issues/236)) ([#237](https://github.com/iftype/who-tech-backend/issues/237)) ([312662f](https://github.com/iftype/who-tech-backend/commit/312662f7af572f306de1cdad887892a510764aae))
+* 하네스 변경 검사 — 턴 종료 시 바뀐 파일 typecheck·eslint·관련 테스트 (Stop 훅) ([#241](https://github.com/iftype/who-tech-backend/issues/241)) ([bf79d51](https://github.com/iftype/who-tech-backend/commit/bf79d51a3cc809b78629a31574f6325dd878dd82))
+
+
+### 버그 수정
+
+* Deploy 확인이 트리거 커밋보다 새 커밋 배포도 성공으로 — 머지가 겹칠 때 오탐 ([#239](https://github.com/iftype/who-tech-backend/issues/239)) ([#240](https://github.com/iftype/who-tech-backend/issues/240)) ([cb304c7](https://github.com/iftype/who-tech-backend/commit/cb304c7c9cd2295d076993de38125e4f19e01135))
+* 공개 API의 track=all·모르는 트랙을 필터 없음으로 ([#230](https://github.com/iftype/who-tech-backend/issues/230)) ([#233](https://github.com/iftype/who-tech-backend/issues/233)) ([4f01bbb](https://github.com/iftype/who-tech-backend/commit/4f01bbbf6b43f222dce3c945d40f0d2d5a684c2d))
+* 싱크 트리거를 서버 crontab으로 — GitHub Actions 크론이 3~4시간씩 밀림 ([#229](https://github.com/iftype/who-tech-backend/issues/229)) ([#235](https://github.com/iftype/who-tech-backend/issues/235)) ([02f2a35](https://github.com/iftype/who-tech-backend/commit/02f2a352412a68e54cd110b6e4b0ac928ba392e5))
+* 작업 기록 복원 테스트의 시계를 고정 — 날짜가 지나면 깨지던 테스트 ([#231](https://github.com/iftype/who-tech-backend/issues/231)) ([#232](https://github.com/iftype/who-tech-backend/issues/232)) ([047365a](https://github.com/iftype/who-tech-backend/commit/047365ac8afeea9194548146aaba6f7887c56bb3))
+* 프로필 새로고침 실패 응답 정리 — 어드민 502, 공개 429 error 필드 제거 ([#243](https://github.com/iftype/who-tech-backend/issues/243)) ([b7018a6](https://github.com/iftype/who-tech-backend/commit/b7018a68260beb5c632fcd10b7dace8ff6855166))
+
+
+### 리팩토링
+
+* **admin:** 대시보드형 정리 — 사이드바 내비, 로그 콘솔 접힘, 버튼 색 3종 ([#242](https://github.com/iftype/who-tech-backend/issues/242)) ([088b0f1](https://github.com/iftype/who-tech-backend/commit/088b0f17f4d5d40d4363cb81dd20ca635e61bd1a))
+* **admin:** 브라우저 confirm() 9곳을 앱 안 확인 창으로 ([#244](https://github.com/iftype/who-tech-backend/issues/244)) ([7d37206](https://github.com/iftype/who-tech-backend/commit/7d372062d2b009881cab004a9f4ffe677b1b439a))
+* **admin:** 설정 탭 210줄을 워크스페이스 폼·태그 목록 편집기로 ([#245](https://github.com/iftype/who-tech-backend/issues/245)) ([0b19b97](https://github.com/iftype/who-tech-backend/commit/0b19b97c680934d8fce6fe4e1be3c366e1acf643))
+* **admin:** 전역 CSS를 [@layer](https://github.com/layer) base로 옮기고 안 쓰는 클래스 삭제 ([#246](https://github.com/iftype/who-tech-backend/issues/246)) ([26727d2](https://github.com/iftype/who-tech-backend/commit/26727d2b5341be614fdb7439bf9ccc6861044171))
+
 ## [1.4.0](https://github.com/iftype/who-tech-backend/compare/v1.3.0...v1.4.0) (2026-10-21)
 
 
