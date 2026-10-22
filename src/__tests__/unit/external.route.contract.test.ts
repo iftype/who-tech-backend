@@ -85,6 +85,7 @@ const steps: Step[] = [
   ['post', '/admin/blog/team/sync'],
   ['post', '/admin/blog/backfill', {}],
   ['post', '/admin/repos/discover'],
+  ['post', '/admin/repos/activity'],
   ['post', '/admin/repos/1/sync', {}],
   ['post', '/admin/repos/abc/sync', {}],
   // GET /admin/repos/sync-jobs/:id 는 실제 큐로 repo.sync-jobs.route.test.ts 가 고정한다
