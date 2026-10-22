@@ -7,6 +7,7 @@ import { adminApi } from '../lib/admin-api.js';
 import { queryKeys } from '../lib/query-keys.js';
 import { EmptyState, ErrorState } from '../components/ui/Section.js';
 import { TextInput } from '../components/ui/Field.js';
+import { confirmAction } from '../components/ui/ConfirmDialog.js';
 
 type LogCategory = 'all' | 'repo' | 'blog' | 'refresh';
 
@@ -82,8 +83,9 @@ export default function LogTab() {
           <span className="text-xs text-base-400">{filtered.length}개</span>
         </div>
         <button
-          onClick={() => {
-            if (confirm('전체 로그를 삭제하시겠습니까?')) clearMutation.mutate();
+          onClick={async () => {
+            if (await confirmAction('전체 로그를 삭제하시겠습니까?', { confirmLabel: '삭제', danger: true }))
+              clearMutation.mutate();
           }}
           className="text-xs text-danger-500 hover:text-danger-600 border border-danger-200 rounded px-3 py-1.5 hover:bg-danger-50"
         >

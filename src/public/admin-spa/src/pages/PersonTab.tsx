@@ -6,6 +6,7 @@ import { queryKeys } from '../lib/query-keys.js';
 import { Button } from '../components/ui/Button.js';
 import { Select, TextInput } from '../components/ui/Field.js';
 import { EmptyState, ErrorState, Panel, SectionTitle } from '../components/ui/Section.js';
+import { confirmAction } from '../components/ui/ConfirmDialog.js';
 
 export default function PersonTab() {
   const queryClient = useQueryClient();
@@ -105,8 +106,14 @@ export default function PersonTab() {
                   {p.note && <span className="text-xs text-base-500 ml-2">{p.note}</span>}
                 </div>
                 <button
-                  onClick={() => {
-                    if (confirm('삭제하시겠습니까?')) deleteMutation.mutate(p.id);
+                  onClick={async () => {
+                    if (
+                      await confirmAction(`${p.displayName ?? `Person #${p.id}`}을(를) 삭제하시겠습니까?`, {
+                        confirmLabel: '삭제',
+                        danger: true,
+                      })
+                    )
+                      deleteMutation.mutate(p.id);
                   }}
                   className="text-xs text-base-400 hover:text-danger-500"
                 >

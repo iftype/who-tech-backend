@@ -4,6 +4,9 @@ import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Member } from '../../lib/types';
 
+// 확인 창은 ConfirmDialog.test가 따로 검사한다. 여기서는 항상 '확인'
+vi.mock('../../components/ui/ConfirmDialog.js', () => ({ confirmAction: vi.fn(async () => true) }));
+
 const remove = vi.fn();
 const resyncSubmissions = vi.fn();
 vi.mock('../../lib/admin-api.js', () => ({
@@ -40,7 +43,6 @@ beforeEach(() => {
   remove.mockReset();
   resyncSubmissions.mockReset();
   vi.mocked(showToast).mockReset();
-  vi.stubGlobal('confirm', () => true);
 });
 
 afterEach(() => {
@@ -53,7 +55,9 @@ describe('useMemberActions.deleteMember', () => {
     remove.mockReturnValue(new Promise<void>((r) => (resolve = r)));
     const { client, result } = setup();
 
-    act(() => result.current.deleteMember(members[0]!));
+    await act(async () => {
+      await result.current.deleteMember(members[0]!);
+    });
 
     await waitFor(() => expect(client.getQueryData<Member[]>(LIST_KEY)?.map((m) => m.id)).toEqual([2]));
     resolve();
@@ -63,7 +67,9 @@ describe('useMemberActions.deleteMember', () => {
     remove.mockRejectedValue(new Error('boom'));
     const { client, result } = setup();
 
-    act(() => result.current.deleteMember(members[0]!));
+    await act(async () => {
+      await result.current.deleteMember(members[0]!);
+    });
 
     await waitFor(() => expect(client.getQueryData<Member[]>(LIST_KEY)?.map((m) => m.id)).toEqual([1, 2]));
   });
@@ -73,7 +79,9 @@ describe('useMemberActions.deleteMember', () => {
     const { client, onRefresh, result } = setup();
     const invalidate = vi.spyOn(client, 'invalidateQueries');
 
-    act(() => result.current.deleteMember(members[0]!));
+    await act(async () => {
+      await result.current.deleteMember(members[0]!);
+    });
 
     await waitFor(() => expect(invalidate).toHaveBeenCalledTimes(1));
     expect(onRefresh).not.toHaveBeenCalled();
