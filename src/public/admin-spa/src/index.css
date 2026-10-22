@@ -86,121 +86,47 @@
   --text-2xs--line-height: 1rem;
 }
 
-body {
-  background-color: #f3f4f6;
-  font-family:
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    Roboto,
-    'Helvetica Neue',
-    Arial,
-    'Noto Sans KR',
-    sans-serif;
-  font-size: 13px;
-  color: #111827;
-}
+/* 전역 기본값. @layer base 안에 두어 컴포넌트의 Tailwind 클래스가 항상 이긴다
+   (예전엔 레이어 밖이라 표·입력의 px-*·text-* 클래스가 이 값에 덮였다) */
+@layer base {
+  body {
+    background-color: #f3f4f6;
+    font-family:
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      'Segoe UI',
+      Roboto,
+      'Helvetica Neue',
+      Arial,
+      'Noto Sans KR',
+      sans-serif;
+    font-size: 13px;
+    color: #111827;
+  }
 
-button {
-  cursor: pointer;
-}
+  button {
+    cursor: pointer;
+  }
 
-table th,
-table td {
-  padding: 6px 10px;
-  font-size: 12px;
-}
+  table th,
+  table td {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
 
-.badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 11px;
-  font-weight: 500;
-  line-height: 1.4;
-}
+  input,
+  select {
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    padding: 5px 10px;
+    font-size: 12px;
+  }
 
-.badge-track-frontend {
-  background-color: #dbeafe;
-  color: #1e40af;
-}
-
-.badge-track-backend {
-  background-color: #ede9fe;
-  color: #5b21b6;
-}
-
-.badge-track-android {
-  background-color: #d1fae5;
-  color: #065f46;
-}
-
-.badge-status-active {
-  background-color: #d1fae5;
-  color: #065f46;
-}
-
-.badge-status-candidate {
-  background-color: #fef3c7;
-  color: #92400e;
-}
-
-.badge-status-excluded {
-  background-color: #fee2e2;
-  color: #991b1b;
-}
-
-.card {
-  background-color: white;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
-  padding: 16px;
-}
-
-.btn-primary {
-  background-color: #0d9488;
-  color: white;
-  padding: 6px 14px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.btn-primary:hover {
-  background-color: #0f766e;
-}
-
-.btn-danger {
-  background-color: #ef4444;
-  color: white;
-  padding: 4px 10px;
-  border-radius: 4px;
-  font-size: 11px;
-}
-
-.btn-danger:hover {
-  background-color: #dc2626;
-}
-
-.btn-sm {
-  padding: 3px 8px;
-  font-size: 11px;
-  border-radius: 4px;
-}
-
-input,
-select {
-  border: 1px solid #d1d5db;
-  border-radius: 4px;
-  padding: 5px 10px;
-  font-size: 12px;
-}
-
-input:focus,
-select:focus {
-  outline: none;
-  border-color: #0d9488;
-  box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.1);
+  input:focus,
+  select:focus {
+    outline: none;
+    border-color: #0d9488;
+    box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.1);
+  }
 }
