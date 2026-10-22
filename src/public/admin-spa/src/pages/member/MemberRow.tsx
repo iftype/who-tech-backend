@@ -1,6 +1,8 @@
 import type { Member } from '../../lib/types.js';
 import { Td, Tr } from '../../components/ui/Table.js';
-import { ROLE_LABELS, TRACK_OPTIONS } from './member-labels.js';
+import { TRACK_OPTIONS } from './member-labels.js';
+import { CohortPills, RssStatusIcon } from './MemberCells.js';
+import { MemberRowActions } from './MemberRowActions.js';
 import type { MemberActions } from './useMemberActions.js';
 import type { MemberInlineEdit } from './useMemberInlineEdit.js';
 
@@ -14,8 +16,6 @@ interface Props {
 }
 
 export function MemberRow({ member: m, edit, actions, onOpenCohorts, onOpenSubmissions, onOpenBlogPosts }: Props) {
-  const { cooldowns, refreshing, resyncing, recalculating } = actions;
-
   return (
     <Tr>
       <Td density="compact">
@@ -55,25 +55,7 @@ export function MemberRow({ member: m, edit, actions, onOpenCohorts, onOpenSubmi
           className="hover:opacity-70 transition-opacity text-left"
           title="기수/역할 편집"
         >
-          {m.cohorts.length === 0 ? (
-            <span className="text-base-300 text-2xs">—</span>
-          ) : (
-            <div className="flex flex-wrap gap-0.5">
-              {m.cohorts.map((c) => (
-                <span
-                  key={c.cohort}
-                  className="text-2xs bg-primary-50 text-primary-700 border border-primary-200 rounded px-1 py-0 whitespace-nowrap"
-                >
-                  {c.cohort}기
-                  {c.roles.length > 0 && (
-                    <span className="text-primary-400 ml-0.5">
-                      ({c.roles.map((r) => ROLE_LABELS[r] ?? r).join(',')})
-                    </span>
-                  )}
-                </span>
-              ))}
-            </div>
-          )}
+          <CohortPills cohorts={m.cohorts} />
         </button>
       </Td>
       <Td density="compact">
@@ -140,19 +122,7 @@ export function MemberRow({ member: m, edit, actions, onOpenCohorts, onOpenSubmi
         )}
       </Td>
       <Td density="compact" className="text-center">
-        {m.rssStatus === 'ok' ? (
-          <span className="text-2xs text-success-600" title="RSS 정상">
-            ✅
-          </span>
-        ) : m.rssStatus === 'error' ? (
-          <span className="text-2xs text-danger-500" title="RSS 오류">
-            ❌
-          </span>
-        ) : (
-          <span className="text-2xs text-base-300" title="RSS 미설정">
-            —
-          </span>
-        )}
+        <RssStatusIcon status={m.rssStatus} />
       </Td>
       <Td density="compact" className="text-center">
         <button
@@ -175,43 +145,7 @@ export function MemberRow({ member: m, edit, actions, onOpenCohorts, onOpenSubmi
         </button>
       </Td>
       <Td density="compact">
-        <div className="flex gap-0.5">
-          <button
-            onClick={() => void actions.refreshProfile(m)}
-            disabled={refreshing === m.id || !!(cooldowns[m.id] && cooldowns[m.id] > 0)}
-            className="text-2xs text-base-500 hover:text-primary-600 disabled:opacity-40 px-0.5 min-w-[20px]"
-            title={cooldowns[m.id] ? `${cooldowns[m.id]}초 후 가능` : '프로필 새로고침'}
-            aria-label="프로필 새로고침"
-          >
-            {refreshing === m.id ? '⟳' : cooldowns[m.id] ? `${cooldowns[m.id]}s` : '↺'}
-          </button>
-          <button
-            onClick={() => void actions.resyncSubmissions(m)}
-            disabled={resyncing === m.id}
-            className="text-2xs text-base-500 hover:text-success-600 disabled:opacity-40 px-0.5"
-            title="PR 재수집"
-            aria-label="PR 재수집"
-          >
-            {resyncing === m.id ? '⟳' : '↻'}
-          </button>
-          <button
-            onClick={() => void actions.recalculateCohorts(m)}
-            disabled={recalculating === m.id}
-            className="text-2xs text-base-500 hover:text-warning-600 disabled:opacity-40 px-0.5"
-            title="기수 재계산"
-            aria-label="기수 재계산"
-          >
-            {recalculating === m.id ? '⟳' : '⚡'}
-          </button>
-          <button
-            onClick={() => void actions.deleteMember(m)}
-            className="text-2xs text-base-400 hover:text-danger-500 disabled:opacity-40 px-0.5"
-            title="삭제"
-            aria-label="삭제"
-          >
-            ✕
-          </button>
-        </div>
+        <MemberRowActions member={m} actions={actions} />
       </Td>
     </Tr>
   );
