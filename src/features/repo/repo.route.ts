@@ -18,6 +18,11 @@ export function createRepoRouter(service: RepoService, syncAdminService: SyncAdm
     res.json(await service.refreshRepoCandidates());
   });
 
+  // 최근 PR 활동으로 미분류 추가·continuous 전환 (#236). 서버 crontab이 1시간마다
+  router.post('/activity', async (_req, res) => {
+    res.json(await service.refreshRepoActivity());
+  });
+
   router.post('/', async (req, res) => {
     res.status(201).json(await service.createRepo(parseRepoCreateInput(req.body)));
   });

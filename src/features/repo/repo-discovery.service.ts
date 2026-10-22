@@ -1,6 +1,6 @@
 import type { Octokit } from '@octokit/rest';
 
-type OrgRepo = {
+export type OrgRepo = {
   id: number;
   name: string;
   html_url: string;
@@ -89,7 +89,7 @@ export function discoverMissionRepos(repos: OrgRepo[]): DiscoveredRepo[] {
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
-function classifyMissionRepo(repo: OrgRepo): DiscoveredRepo {
+export function classifyMissionRepo(repo: OrgRepo): DiscoveredRepo {
   const lowerName = repo.name.toLowerCase();
   const lowerDescription = repo.description?.toLowerCase() ?? '';
 
