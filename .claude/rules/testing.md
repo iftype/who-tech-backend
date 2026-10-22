@@ -43,3 +43,7 @@ describe('SyncService', () => {
 
 - lines / functions 60% 미달 → `npm run test:coverage` 실패
 - 새 서비스 파일 추가 시 unit 테스트 파일 필수
+
+## 시간
+
+- TTL·만료·"N분 전" 비교처럼 **현재 시각**에 따라 결과가 바뀌는 코드를 테스트할 때는 `jest.useFakeTimers({ doNotFake: ['setImmediate', 'nextTick', 'queueMicrotask'] })` + `jest.setSystemTime(...)`으로 시계를 고정한다. 고정 날짜 데이터 + 실제 시계 조합은 날짜가 지나면 깨진다 (#231)
