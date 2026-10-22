@@ -8,7 +8,7 @@ Run Jest tests. Scope is determined by $ARGUMENTS:
 | `all`                  | `npm test`                 |
 
 ```bash
-cd /Users/iftype/Projects/Side/who-tech-course/backend && npm run test:<scope>
+npm run test:<scope>
 ```
 
 Report:
