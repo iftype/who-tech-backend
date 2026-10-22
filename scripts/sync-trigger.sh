@@ -3,6 +3,7 @@
 # GitHub Actions 워크플로(continuous-sync·blog-check)는 백업으로 남는다. 겹쳐도 큐가 같은 작업에 합류시킨다
 #   */10 * * * *     /home/ubuntu/app/who-tech-backend/scripts/sync-trigger.sh continuous >> /home/ubuntu/logs/sync-trigger.log 2>&1
 #   7,37 * * * *     /home/ubuntu/app/who-tech-backend/scripts/sync-trigger.sh blog       >> /home/ubuntu/logs/sync-trigger.log 2>&1
+#   23 * * * *       /home/ubuntu/app/who-tech-backend/scripts/sync-trigger.sh activity   >> /home/ubuntu/logs/sync-trigger.log 2>&1  (#236)
 set -euo pipefail
 
 repo_dir="$(cd "$(dirname "$0")/.." && pwd)"
@@ -16,7 +17,9 @@ fi
 case "${1:-}" in
   continuous) path="/admin/sync/continuous"; extra=() ;;
   blog) path="/admin/blog/sync"; extra=(-H "X-Sync-Source: scheduler") ;;
-  *) echo "usage: $0 continuous|blog" >&2; exit 2 ;;
+  # 최근 PR 활동으로 미분류 추가·continuous 전환. 끝나면 200 (#236)
+  activity) path="/admin/repos/activity"; extra=() ;;
+  *) echo "usage: $0 continuous|blog|activity" >&2; exit 2 ;;
 esac
 
 # continuous는 끝날 때까지 최대 240초 기다린 뒤 200(완료) 또는 202(큐에 남음), blog는 바로 202
