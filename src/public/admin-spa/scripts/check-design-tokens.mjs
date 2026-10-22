@@ -37,4 +37,4 @@ if (violations.length > 0) {
   for (const v of violations) console.error(`  ${v}`);
   process.exit(1);
 }
-console.log('색상 토큰 위반 없음');
+console.log('디자인 토큰 위반 없음 (색상·글자 크기)');

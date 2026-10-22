@@ -4,6 +4,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { MissionRepo, SyncJob } from '../lib/types';
 
+// 확인 창은 ConfirmDialog.test가 따로 검사한다. 여기서는 항상 '확인'
+vi.mock('../components/ui/ConfirmDialog.js', () => ({ confirmAction: vi.fn(async () => true) }));
+
 // 레포 관리 흐름: 칸 편집, 모드 전환·삭제·초기화, 레포별 싱크 진행(폴링), base 전체 싱크, 선택·일괄 변경
 const apiFetch = vi.fn();
 const showToast = vi.fn();
@@ -83,7 +86,6 @@ describe('RepoTab flow', () => {
     addLog.mockReset();
     polls.clear();
     stopped.length = 0;
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
     apiFetch.mockImplementation(async (path: string, init?: RequestInit) => {
       const sync = /^\/admin\/repos\/(\d+)\/sync$/.exec(path);
       if (sync) return job(`job-${sync[1]}`, Number(sync[1]), 'queued');

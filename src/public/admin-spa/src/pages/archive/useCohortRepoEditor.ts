@@ -5,6 +5,7 @@ import { showToast } from '../../components/ui/Toast.js';
 import type { CohortRepo } from '../../lib/types.js';
 import { adminApi } from '../../lib/admin-api.js';
 import { queryKeys } from '../../lib/query-keys.js';
+import { confirmAction } from '../../components/ui/ConfirmDialog.js';
 
 // 기수 레포의 순서·레벨 칸 편집(Enter 저장, Esc 취소, 값이 같으면 저장 생략)과 삭제
 export function useCohortRepoEditor() {
@@ -115,8 +116,9 @@ export function useCohortRepoEditor() {
       save: saveLevel,
       cancel: () => setEditingLevelId(null),
     },
-    remove: (cr: CohortRepo) => {
-      if (confirm(`${cr.missionRepo.name}을(를) 삭제하시겠습니까?`)) deleteMutation.mutate(cr.id);
+    remove: async (cr: CohortRepo) => {
+      if (await confirmAction(`${cr.missionRepo.name}을(를) 삭제하시겠습니까?`, { confirmLabel: '삭제', danger: true }))
+        deleteMutation.mutate(cr.id);
     },
     isRemoving: deleteMutation.isPending,
   };

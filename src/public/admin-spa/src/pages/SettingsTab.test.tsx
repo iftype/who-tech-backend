@@ -48,4 +48,33 @@ describe('SettingsTab', () => {
 
     await waitFor(() => expect(showToast).toHaveBeenCalledWith('추가 실패', 'error'));
   });
+
+  // 분리 전후 동작 고정: 추가 성공 시 입력 비움, ✕로 삭제, 워크스페이스 저장 본문
+  it('should clear the input after adding, remove by the chip button, and save parsed cohort rules', async () => {
+    apiFetch.mockImplementation(async (path: string, init?: RequestInit) => {
+      if (path === '/admin/workspace' && !init?.method)
+        return { cohortRules: [{ year: 2026, cohort: 8 }], blogSyncEnabled: false };
+      if (path === '/admin/banned-words' && !init?.method) return [{ id: 7, word: '광고' }];
+      if (path === '/admin/ignored-domains' && !init?.method) return [];
+      return {};
+    });
+    renderTab();
+
+    const input = await screen.findByPlaceholderText('추가할 금지어');
+    await userEvent.type(input, ' 스팸 ');
+    await userEvent.click(screen.getAllByRole('button', { name: '추가' })[0]!);
+    await waitFor(() => expect(input).toHaveValue(''));
+
+    await userEvent.click(await screen.findByText('✕'));
+    await userEvent.click(screen.getByRole('button', { name: '저장' }));
+
+    const writes = apiFetch.mock.calls
+      .filter(([, init]) => (init as RequestInit | undefined)?.method)
+      .map(([path, init]) => [(init as RequestInit).method, path, (init as RequestInit).body ?? null]);
+    expect(writes).toEqual([
+      ['POST', '/admin/banned-words', JSON.stringify({ word: '스팸' })],
+      ['DELETE', '/admin/banned-words/7', null],
+      ['PUT', '/admin/workspace', JSON.stringify({ cohortRules: [{ year: 2026, cohort: 8 }], blogSyncEnabled: false })],
+    ]);
+  });
 });
