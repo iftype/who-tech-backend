@@ -68,3 +68,19 @@ Environment: `production`
 - 서버 배포 로그: `ssh oracle "ls -t /tmp/who-tech-deploy-*.log | head -1 | xargs tail -30"`
 - 서버 상태: `ssh oracle "pm2 status"`
 - 에러 로그: `ssh oracle "pm2 logs backend"`
+
+## 서버 crontab (싱크 트리거, #229)
+
+GitHub Actions `schedule`은 짧은 주기를 지키지 못한다(2026-10-22 측정: 10분 설정이 중앙값 201분, 30분 설정이 250분).
+그래서 싱크 트리거는 서버 crontab이 `localhost`로 부르고, GitHub Actions 워크플로는 백업으로 남긴다.
+
+```sh
+mkdir -p ~/logs
+crontab -l 2>/dev/null | { cat; \
+  echo '*/10 * * * * /home/ubuntu/app/who-tech-backend/scripts/sync-trigger.sh continuous >> /home/ubuntu/logs/sync-trigger.log 2>&1'; \
+  echo '7,37 * * * * /home/ubuntu/app/who-tech-backend/scripts/sync-trigger.sh blog >> /home/ubuntu/logs/sync-trigger.log 2>&1'; \
+} | crontab -
+```
+
+확인: `tail ~/logs/sync-trigger.log`, 어드민 싱크 탭 최근 작업(blog 소스 `scheduler`). 되돌리기: `crontab -e`에서 두 줄 삭제.
+uptime 감시는 서버 밖에 있어야 하므로 GitHub Actions에 남는다(실제 간격이 4시간대 — 외부 모니터 도입은 별도 결정).
