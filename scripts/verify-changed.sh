@@ -41,13 +41,14 @@ run() { # 이름 명령...
   checks_json+="${checks_json:+,}{\"name\":\"$name\",\"ok\":$ok,\"ms\":$ms}"
 }
 
+# 훅은 논리 오류를 잡는 용도. 기계가 바쁠 때 5초 타임아웃으로 막지 않게 테스트는 시간·작업자를 넉넉히 (속도 회귀는 CI 몫)
 if [ -n "$server_ts" ]; then
   # 증분 정보를 .git/harness에 둬 두 번째 실행부터 빠르다 (저장소에는 안 남음)
   run typecheck npx tsc --noEmit -p . --incremental --tsBuildInfoFile "$state/tsc-server.tsbuildinfo"
   # shellcheck disable=SC2086
   run eslint npx eslint --no-warn-ignored $server_ts
   # shellcheck disable=SC2086
-  run jest-related env NODE_OPTIONS=--experimental-vm-modules npx jest --findRelatedTests $server_ts --passWithNoTests --silent
+  run jest-related env NODE_OPTIONS=--experimental-vm-modules npx jest --findRelatedTests $server_ts --passWithNoTests --silent --testTimeout=30000 --maxWorkers=2
 fi
 if [ -n "$admin" ]; then
   # tsconfig.json은 files:[] + references 묶음이라 -p로 부르면 아무것도 검사하지 않는다 → 실제 설정 tsconfig.app.json
@@ -55,7 +56,7 @@ if [ -n "$admin" ]; then
   run admin-tokens node src/public/admin-spa/scripts/check-design-tokens.mjs
   abs="$(echo "$admin" | sed "s#^#$root/#" | tr '\n' ' ')"
   # shellcheck disable=SC2086
-  run admin-vitest bash -c "cd src/public/admin-spa && npx vitest related --run $abs --passWithNoTests"
+  run admin-vitest bash -c "cd src/public/admin-spa && npx vitest related --run $abs --passWithNoTests --testTimeout=30000 --maxWorkers=2"
 fi
 [ -n "$schema" ] && run prisma-validate npx prisma validate
 for f in $scripts_sh; do run "bash-n:$f" bash -n "$f"; done
