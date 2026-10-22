@@ -73,7 +73,7 @@ export function CohortRepoTable({ repos, editor }: { repos: CohortRepo[]; editor
               </Td>
               <Td>
                 <button
-                  onClick={() => editor.remove(cr)}
+                  onClick={() => void editor.remove(cr)}
                   disabled={editor.isRemoving}
                   className="text-xs text-base-400 hover:text-danger-500 disabled:opacity-40 px-1"
                   title="삭제"

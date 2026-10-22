@@ -8,6 +8,7 @@ import { adminApi } from '../../lib/admin-api.js';
 import { queryKeys } from '../../lib/query-keys.js';
 import { TextLink } from '../../components/ui/TextLink.js';
 import { toErrorMessage } from '../../lib/query-client.js';
+import { confirmAction } from '../../components/ui/ConfirmDialog.js';
 
 export interface SubmissionsModalState {
   member: Member;
@@ -23,8 +24,15 @@ interface Props {
 export function MemberSubmissionsModal({ state, onChange, onRefresh }: Props) {
   const queryClient = useQueryClient();
 
-  const removeSubmission = (s: Submission) => {
-    if (!state || !confirm(`PR #${s.prNumber} ${s.title}을(를) 삭제하시겠습니까?`)) return;
+  const removeSubmission = async (s: Submission) => {
+    if (!state) return;
+    if (
+      !(await confirmAction(`PR #${s.prNumber} ${s.title}을(를) 삭제하시겠습니까?`, {
+        confirmLabel: '삭제',
+        danger: true,
+      }))
+    )
+      return;
     adminApi.members
       .removeSubmission(state.member.id, s.id)
       .then(() => {
@@ -63,7 +71,7 @@ export function MemberSubmissionsModal({ state, onChange, onRefresh }: Props) {
                   </p>
                 </div>
                 <button
-                  onClick={() => removeSubmission(s)}
+                  onClick={() => void removeSubmission(s)}
                   className="text-xs text-base-400 hover:text-danger-500 px-1"
                   title="PR 삭제"
                 >
