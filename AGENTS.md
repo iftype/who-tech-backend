@@ -31,6 +31,11 @@
 | `/lint`                            | `lint:fix` + `format`                              |
 | `/migrate`                         | prisma status → 이름 확인 → migrate dev → generate |
 
+### 변경 검사 (하네스)
+
+작업을 끝내기 전에 `scripts/verify-changed.sh`가 바뀐 파일 기준으로 typecheck·eslint·관련 테스트·어드민 토큰 린트를 돌린다.
+Claude Code는 Stop 훅이 자동으로 부르고 실패하면 끝내지 못한다. 다른 도구는 끝내기 전에 직접 실행한다. 구조·측정: `docs/harness/README.md`
+
 ### 버그 처리 워크플로
 
 버그는 바로 고치지 않고 이 순서로 처리한다. Claude Code는 `/bugfix <이슈번호>`, 다른 도구는 이 절차를 그대로 따른다.
