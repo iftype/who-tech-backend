@@ -104,6 +104,15 @@ describe('블로그 싱크 job', () => {
     expect(found.status).toBe(200);
     expect(found.body.id).toBe(created.body.id);
     expect(found.body.source).toBe('github-actions');
+
+    // job은 응답 뒤에도 백그라운드에서 돈다. 끝나기 전에 afterAll이 workspace를 지우면 FK 오류로 스위트가 깨진다
+    for (let i = 0; i < 100; i++) {
+      const polled = await request(app)
+        .get(`/admin/blog/sync-jobs/${created.body.id}`)
+        .set('Authorization', `Bearer ${ADMIN_SECRET}`);
+      if (polled.body.status === 'completed' || polled.body.status === 'failed') break;
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
   });
 });
 
