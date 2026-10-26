@@ -11,7 +11,7 @@
     "lint:tokens": "node scripts/check-design-tokens.mjs"
   },
   "dependencies": {
-    "@tanstack/react-query": "^5.104.3",
+    "@tanstack/react-query": "^5.104.5",
     "class-variance-authority": "^0.7.1",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"
@@ -27,7 +27,7 @@
     "jsdom": "^27.4.0",
     "tailwindcss": "^4.1.4",
     "typescript": "~5.9.3",
-    "vite": "^6.3.4",
+    "vite": "^6.4.5",
     "vitest": "^4.1.12"
   }
 }
