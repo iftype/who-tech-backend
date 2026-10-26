@@ -26,7 +26,7 @@
 
 ## 서버 환경
 
-- **Node**: nvm Node 24.22.0 (`.nvmrc`), pm2 7 데몬도 Node 24. backend interpreter = `~/.who-tech-backend-node`(deploy-run.sh가 갱신하는 링크)
+- **Node**: nvm Node 24.22.1 (`.nvmrc`), pm2 7 데몬도 Node 24. backend interpreter = `~/.who-tech-backend-node`(deploy-run.sh가 갱신하는 링크)
 - **롤백 (수동)**: `ln -sfn /usr/bin/node ~/.who-tech-backend-node && pm2 reload backend` → 시스템 Node 20으로 즉시 전환
 
 - **호스트**: Oracle Cloud AMD Free Tier
