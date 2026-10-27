@@ -179,21 +179,6 @@ export function createBlogPostRepository(db: PrismaClient) {
       return Promise.resolve();
     },
 
-    deleteExcessByMember: async (memberId: number, maxCount: number) => {
-      const excessPosts = await db.blogPost.findMany({
-        where: { memberId },
-        orderBy: { publishedAt: 'desc' },
-        skip: maxCount,
-        select: { id: true },
-      });
-
-      if (excessPosts.length === 0) return { count: 0 };
-
-      return db.blogPost.deleteMany({
-        where: { id: { in: excessPosts.map((p) => p.id) } },
-      });
-    },
-
     deleteExcessPerDayByMember: async (memberId: number, perDayLimit: number) => {
       const posts = await db.blogPost.findMany({
         where: { memberId },

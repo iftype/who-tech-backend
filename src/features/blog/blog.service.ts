@@ -13,7 +13,8 @@ export { sanitizeXml, resolveRSSUrlsForBlog, probeRss, isNonPostPageUrl } from '
 
 // 기간이 지난 글은 지우지 않는다. 이 기간 안의 글만 "RSS에서 빠졌으면 삭제" 대상이다
 const FEED_REMOVAL_WINDOW_DAYS = 90;
-const MAX_POSTS_PER_MEMBER = 100;
+// 하루에 남길 글 수. 한 사람이 글을 몰아 올려 피드를 덮지 않게 하는 장치라 개인 블로그에만 건다.
+// 팀 블로그(리로그)는 여러 크루가 함께 쓰므로 제외한다. 멤버당 총 개수 한도(예전 100개)는 두지 않는다
 const MAX_POSTS_PER_DAY = 3;
 export const DEFAULT_TEAM_BLOG_RSS_URL = 'https://www.rilog.kr/rss.xml';
 
@@ -198,28 +199,18 @@ export function createBlogService(deps: {
       }
     }
 
-    try {
-      const perDayResult = await blogPostRepo.deleteExcessPerDayByMember(member.id, MAX_POSTS_PER_DAY);
-      deleted += perDayResult.count;
-    } catch (error) {
-      failures.push({
-        githubId: member.githubId,
-        blog: member.blog!,
-        step: 'cleanup',
-        error: errorMessage(error),
-      });
-    }
-
-    try {
-      const excessResult = await blogPostRepo.deleteExcessByMember(member.id, MAX_POSTS_PER_MEMBER);
-      deleted += excessResult.count;
-    } catch (error) {
-      failures.push({
-        githubId: member.githubId,
-        blog: member.blog!,
-        step: 'cleanup',
-        error: errorMessage(error),
-      });
+    if (!member.isTeamBlog) {
+      try {
+        const perDayResult = await blogPostRepo.deleteExcessPerDayByMember(member.id, MAX_POSTS_PER_DAY);
+        deleted += perDayResult.count;
+      } catch (error) {
+        failures.push({
+          githubId: member.githubId,
+          blog: member.blog!,
+          step: 'cleanup',
+          error: errorMessage(error),
+        });
+      }
     }
 
     return { synced, deleted, failures };

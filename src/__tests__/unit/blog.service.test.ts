@@ -285,4 +285,48 @@ describe('createBlogService - syncBlogs', () => {
     expect(deleteByMemberNotInUrls).not.toHaveBeenCalled();
     fetchSpy.mockRestore();
   });
+
+  // 글 보존 한도 (#블로그 한도): 멤버당 100개 삭제는 없앴고, 하루 3개는 개인 블로그만. 팀 블로그는 여러 크루가 함께 쓴다
+  describe('post limits', () => {
+    function depsWithCleanup() {
+      const deps = makeMockDeps();
+      const deleteExcessByMember = (jest.fn() as Mock<() => Promise<{ count: number }>>).mockResolvedValue({
+        count: 0,
+      });
+      const deleteExcessPerDayByMember = (jest.fn() as Mock<() => Promise<{ count: number }>>).mockResolvedValue({
+        count: 0,
+      });
+      Object.assign(deps.blogPostRepo as object, { deleteExcessByMember, deleteExcessPerDayByMember });
+      return { deps, deleteExcessByMember, deleteExcessPerDayByMember };
+    }
+
+    it('should not cap the number of stored posts per member', async () => {
+      jest
+        .spyOn(global, 'fetch')
+        .mockResolvedValue({ ok: true, status: 200, text: async () => validRssXml } as Response);
+      const { deps, deleteExcessByMember } = depsWithCleanup();
+      (deps.memberRepo.findWithFilters as Mock<() => Promise<MemberWithRelations[]>>).mockResolvedValue([mockMember]);
+
+      const result = await createBlogService(deps).syncBlogs(1);
+
+      expect(deleteExcessByMember).not.toHaveBeenCalled();
+      expect(result.failures).toEqual([]);
+    });
+
+    it('should keep the 3 posts per day limit for personal blogs only', async () => {
+      jest
+        .spyOn(global, 'fetch')
+        .mockResolvedValue({ ok: true, status: 200, text: async () => validRssXml } as Response);
+      const { deps, deleteExcessPerDayByMember } = depsWithCleanup();
+      const teamBlog = { ...mockMember, id: 2, githubId: 'rilog', isTeamBlog: true } as unknown as MemberWithRelations;
+      (deps.memberRepo.findWithFilters as Mock<() => Promise<MemberWithRelations[]>>).mockResolvedValue([
+        mockMember,
+        teamBlog,
+      ]);
+
+      await createBlogService(deps).syncBlogs(1);
+
+      expect(deleteExcessPerDayByMember.mock.calls).toEqual([[1, 3]]);
+    });
+  });
 });
