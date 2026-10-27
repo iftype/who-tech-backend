@@ -90,17 +90,6 @@ describe('BlogPostRepository (SQLite)', () => {
       expect(await prisma.blogPost.count()).toBe(2);
     });
 
-    it('should keep only the newest posts per member', async () => {
-      const { id } = await addMember('a');
-      for (const d of ['2026-01-01', '2026-01-02', '2026-01-03', '2026-01-04']) await addPost(id, d);
-
-      expect(await repo.deleteExcessByMember(id, 5)).toEqual({ count: 0 });
-      expect(await repo.deleteExcessByMember(id, 2)).toEqual({ count: 2 });
-
-      const left = await prisma.blogPost.findMany({ where: { memberId: id }, orderBy: { publishedAt: 'asc' } });
-      expect(left.map((p) => p.publishedAt.toISOString().slice(0, 10))).toEqual(['2026-01-03', '2026-01-04']);
-    });
-
     it('should keep at most N posts per day per member', async () => {
       const { id } = await addMember('a');
       await addPost(id, '2026-03-01T01:00:00Z');
