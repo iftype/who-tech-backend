@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.1](https://github.com/iftype/who-tech-backend/compare/v1.5.0...v1.5.1) (2026-10-27)
+
+
+### 버그 수정
+
+* 블로그 글 100개 한도 제거, 하루 3개 한도는 개인 블로그만 ([#254](https://github.com/iftype/who-tech-backend/issues/254)) ([73dfd67](https://github.com/iftype/who-tech-backend/commit/73dfd67fa9be75b86d161340111c28a21e2565e2))
+
 ## [1.5.0](https://github.com/iftype/who-tech-backend/compare/v1.4.0...v1.5.0) (2026-10-26)
 
 
