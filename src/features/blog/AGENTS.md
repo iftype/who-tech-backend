@@ -49,7 +49,8 @@ createBlogAdminService({ memberRepo, blogPostRepo, workspaceService, blogService
 ## 주요 비즈니스 규칙
 
 - 저장 기한 90일 (`RETENTION_DAYS = 90`). 조회 기한 7일/30일 (`days` 파라미터).
-- 멤버당 총 개수 제한 없음 (예전 100개 제한은 2026-10 제거). 하루 3개 제한(`MAX_POSTS_PER_DAY`)은 개인 블로그만, 팀 블로그(`isTeamBlog`)는 여러 크루가 쓰므로 제외.
+- 멤버당 총 개수 제한 없음 (예전 100개 제한은 2026-10 제거). 하루 3개 제한(`MAX_POSTS_PER_DAY`)은 모든 멤버에 건다.
+- 팀 블로그(Rilog)는 수집과 노출을 껐다(2026-11). `Member.isTeamBlog` 컬럼과 `TeamBlog` 테이블, 예전에 모은 글은 DB에 남기고, 피드와 멤버 상세 조회에서 `isTeamBlog` 멤버를 걸러 낸다.
 - RSS URL이 변경되면 기존 글 전체 삭제 후 재수집.
 - 피드에서 사라진 글은 90일 이내 데이터만 삭제 대상.
 - sync 완료 후 멤버별 초과분 병렬 삭제 (`Promise.all`).

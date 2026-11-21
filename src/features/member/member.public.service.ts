@@ -142,7 +142,7 @@ export function createMemberPublicService(deps: {
     getMemberDetail: async (githubId: string) => {
       const workspace = await workspaceService.getOrThrow();
       const member = await memberRepo.findByGithubId(githubId, workspace.id);
-      if (!member) return null;
+      if (!member || member.isTeamBlog) return null;
 
       const nickname = resolveDisplayNickname(member.manualNickname, member.nicknameStats, member.nickname);
       const cohorts = buildCohortList(member.memberCohorts);
@@ -181,7 +181,7 @@ export function createMemberPublicService(deps: {
     getMemberBlogPosts: async (githubId: string) => {
       const workspace = await workspaceService.getOrThrow();
       const member = await memberRepo.findByGithubId(githubId, workspace.id);
-      if (!member) return null;
+      if (!member || member.isTeamBlog) return null;
       return blogPostRepo.findByMember(member.id, 1, 100);
     },
 
@@ -214,12 +214,8 @@ export function createMemberPublicService(deps: {
           publishedAt: p.publishedAt,
           member: {
             githubId: p.member.githubId,
-            nickname:
-              p.member.isTeamBlog && p.authorName
-                ? p.authorName
-                : resolveDisplayNickname(p.member.manualNickname, p.member.nicknameStats, p.member.nickname),
+            nickname: resolveDisplayNickname(p.member.manualNickname, p.member.nicknameStats, p.member.nickname),
             avatarUrl: p.member.avatarUrl,
-            isTeamBlog: p.member.isTeamBlog,
             cohort: targetCohort?.cohort ?? null,
             roles: targetCohort?.roles ?? ['crew'],
             cohorts,

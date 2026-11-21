@@ -38,23 +38,6 @@ export interface NewBlogPost {
   member: { githubId: string; nickname: string | null };
 }
 
-export interface TeamBlogStatus {
-  id: number;
-  slug: string;
-  name: string;
-  blogUrl: string;
-  rssUrl: string;
-  avatarUrl: string | null;
-  enabled: boolean;
-  memberId: number;
-  workspaceId: number;
-  rssStatus: string;
-  rssCheckedAt: string | null;
-  rssError: string | null;
-  lastPostedAt: string | null;
-  posts: BlogPost[];
-}
-
 export interface AdminStatus {
   ok: boolean;
   memberCount: number;

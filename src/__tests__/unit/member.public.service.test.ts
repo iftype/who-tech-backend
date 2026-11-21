@@ -257,6 +257,12 @@ describe('MemberPublicService', () => {
       await expect(createMemberPublicService(deps).getMemberDetail('nobody')).resolves.toBeNull();
     });
 
+    it('should hide a team blog member that is still stored', async () => {
+      const { deps, memberRepo } = makeDeps();
+      memberRepo.findByGithubId.mockResolvedValue(detailMember({ isTeamBlog: true }));
+      await expect(createMemberPublicService(deps).getMemberDetail('team')).resolves.toBeNull();
+    });
+
     it('should build the archive by cohort and level with precourse and unregistered repos', async () => {
       const { deps, memberRepo, cohortRepoRepo, tecoTalkRepo } = makeDeps();
       const racing = { name: 'java-racingcar', tabCategory: 'base' };
@@ -339,23 +345,28 @@ describe('MemberPublicService', () => {
       await service.getMemberBlogPosts('crew1');
       expect(blogPostRepo.findByMember).toHaveBeenCalledWith(10, 1, 100);
     });
+
+    it('should return null for a team blog member that is still stored', async () => {
+      const { deps, memberRepo, blogPostRepo } = makeDeps();
+      memberRepo.findByGithubId.mockResolvedValue(detailMember({ isTeamBlog: true }));
+      await expect(createMemberPublicService(deps).getMemberBlogPosts('team')).resolves.toBeNull();
+      expect(blogPostRepo.findByMember).not.toHaveBeenCalled();
+    });
   });
 
   describe('getFeed', () => {
-    function feedPost(id: number, member: Record<string, unknown>, authorName: string | null = null) {
+    function feedPost(id: number, member: Record<string, unknown>) {
       return {
         id,
         url: `https://post/${id}`,
         title: `글 ${id}`,
         publishedAt: new Date('2026-05-01'),
-        authorName,
         member: {
           githubId: 'crew1',
           nickname: 'fallback',
           manualNickname: null,
           nicknameStats: null,
           avatarUrl: null,
-          isTeamBlog: false,
           track: null,
           memberCohorts: participations([8, 'crew'], [7, 'reviewer']),
           submissions: [],
@@ -367,11 +378,7 @@ describe('MemberPublicService', () => {
     it('should pass only provided filters and map posts', async () => {
       const { deps, blogPostRepo } = makeDeps();
       blogPostRepo.findFeed.mockResolvedValue({
-        posts: [
-          feedPost(1, { manualNickname: '수동' }),
-          feedPost(2, { isTeamBlog: true, githubId: 'team' }, '작성자'),
-          feedPost(3, { isTeamBlog: true, githubId: 'team2', nickname: '팀' }),
-        ],
+        posts: [feedPost(1, { manualNickname: '수동' }), feedPost(2, { nickname: '닉네임' })],
         nextCursor: 'c2',
         totalCount: 30,
       });
@@ -381,7 +388,7 @@ describe('MemberPublicService', () => {
       expect(blogPostRepo.findFeed).toHaveBeenCalledWith(1, { cohort: 7, cursor: 'c1', limit: 3 });
       expect(result.nextCursor).toBe('c2');
       expect(result.totalCount).toBe(30);
-      expect(result.posts.map((p) => p.member.nickname)).toEqual(['수동', '작성자', '팀']);
+      expect(result.posts.map((p) => p.member.nickname)).toEqual(['수동', '닉네임']);
       expect(result.posts[0]!.member).toMatchObject({ cohort: 7, roles: ['reviewer'] });
     });
 

@@ -5,7 +5,6 @@ const feedPostSelect = {
   id: true,
   url: true,
   title: true,
-  authorName: true,
   publishedAt: true,
   viewCount: true,
   member: {
@@ -16,7 +15,6 @@ const feedPostSelect = {
       nickname: true,
       avatarUrl: true,
       blog: true,
-      isTeamBlog: true,
       track: true,
       memberCohorts: {
         select: {
@@ -129,7 +127,8 @@ export function createBlogPostRepository(db: PrismaClient) {
       const cursorDate = cursorDateStr ? new Date(cursorDateStr) : null;
       const hasValidCursor = cursorDate !== null && !isNaN(cursorDate.getTime());
 
-      const memberWhere: Record<string, unknown> = {};
+      // 예전에 수집한 팀 블로그(Rilog) 글은 DB에 남아 있어도 피드에 보이지 않는다
+      const memberWhere: Record<string, unknown> = { isTeamBlog: false };
       if (filters?.cohort) {
         memberWhere.memberCohorts = {
           some: { cohort: { number: filters.cohort } },
@@ -138,12 +137,11 @@ export function createBlogPostRepository(db: PrismaClient) {
       if (filters?.track) {
         memberWhere.OR = [{ track: filters.track }, { track: null }];
       }
-      const hasMemberFilter = Object.keys(memberWhere).length > 0;
 
       const baseWhere = {
         ...(since ? { publishedAt: { gte: since } } : {}),
         workspaceId,
-        ...(hasMemberFilter ? { member: memberWhere } : {}),
+        member: memberWhere,
       };
 
       const posts = await db.blogPost.findMany({

@@ -110,34 +110,9 @@ exports[`API contract admin GET GET /admin/blog/sync-jobs 1`] = `
 
 exports[`API contract admin GET GET /admin/blog/team 1`] = `
 {
-  "body": [
-    {
-      "avatarUrl": null,
-      "blogUrl": "https://team.example.com",
-      "createdAt": "2026-02-01T00:00:00.000Z",
-      "enabled": true,
-      "id": 1,
-      "lastPostedAt": "2026-09-28T08:00:00.000Z",
-      "memberId": 6,
-      "name": "우리팀 블로그",
-      "posts": [
-        {
-          "publishedAt": "2026-09-28T08:00:00.000Z",
-          "title": "팀 회고",
-          "url": "https://team.example.com/posts/1",
-        },
-      ],
-      "rssCheckedAt": "2026-09-30T04:00:00.000Z",
-      "rssError": null,
-      "rssStatus": "available",
-      "rssUrl": "https://team.example.com/rss",
-      "slug": "team-a",
-      "updatedAt": "2026-09-30T04:00:00.000Z",
-      "workspaceId": 1,
-    },
-  ],
+  "body": {},
   "location": undefined,
-  "status": 200,
+  "status": 404,
 }
 `;
 
@@ -2853,74 +2828,7 @@ exports[`API contract mutations (sequential) 45 GET /admin/repos 1`] = `
 }
 `;
 
-exports[`API contract mutations (sequential) 46 PATCH /admin/blog/team/1 1`] = `
-{
-  "body": {
-    "avatarUrl": null,
-    "blogUrl": "https://team.example.com",
-    "createdAt": "2026-02-01T00:00:00.000Z",
-    "enabled": false,
-    "id": 1,
-    "lastPostedAt": "2026-09-28T08:00:00.000Z",
-    "memberId": 6,
-    "name": "새 이름",
-    "rssCheckedAt": "2026-09-30T04:00:00.000Z",
-    "rssError": null,
-    "rssStatus": "available",
-    "rssUrl": "https://team.example.com/rss",
-    "slug": "team-a",
-    "updatedAt": "<now>",
-    "workspaceId": 1,
-  },
-  "location": undefined,
-  "status": 200,
-}
-`;
-
-exports[`API contract mutations (sequential) 47 PATCH /admin/blog/team/abc 1`] = `
-{
-  "body": {
-    "message": "invalid team blog id",
-  },
-  "location": undefined,
-  "status": 400,
-}
-`;
-
-exports[`API contract mutations (sequential) 48 GET /admin/blog/team 1`] = `
-{
-  "body": [
-    {
-      "avatarUrl": null,
-      "blogUrl": "https://team.example.com",
-      "createdAt": "2026-02-01T00:00:00.000Z",
-      "enabled": false,
-      "id": 1,
-      "lastPostedAt": "2026-09-28T08:00:00.000Z",
-      "memberId": 6,
-      "name": "새 이름",
-      "posts": [
-        {
-          "publishedAt": "2026-09-28T08:00:00.000Z",
-          "title": "팀 회고",
-          "url": "https://team.example.com/posts/1",
-        },
-      ],
-      "rssCheckedAt": "2026-09-30T04:00:00.000Z",
-      "rssError": null,
-      "rssStatus": "available",
-      "rssUrl": "https://team.example.com/rss",
-      "slug": "team-a",
-      "updatedAt": "<now>",
-      "workspaceId": 1,
-    },
-  ],
-  "location": undefined,
-  "status": 200,
-}
-`;
-
-exports[`API contract mutations (sequential) 49 POST /admin/logs 1`] = `
+exports[`API contract mutations (sequential) 46 POST /admin/logs 1`] = `
 {
   "body": {
     "createdAt": "<now>",
@@ -2937,7 +2845,7 @@ exports[`API contract mutations (sequential) 49 POST /admin/logs 1`] = `
 }
 `;
 
-exports[`API contract mutations (sequential) 50 GET /admin/logs 1`] = `
+exports[`API contract mutations (sequential) 47 GET /admin/logs 1`] = `
 {
   "body": [
     {
@@ -2973,7 +2881,7 @@ exports[`API contract mutations (sequential) 50 GET /admin/logs 1`] = `
 }
 `;
 
-exports[`API contract mutations (sequential) 51 DELETE /admin/logs 1`] = `
+exports[`API contract mutations (sequential) 48 DELETE /admin/logs 1`] = `
 {
   "body": {},
   "location": undefined,
@@ -2981,7 +2889,7 @@ exports[`API contract mutations (sequential) 51 DELETE /admin/logs 1`] = `
 }
 `;
 
-exports[`API contract mutations (sequential) 52 GET /admin/logs 1`] = `
+exports[`API contract mutations (sequential) 49 GET /admin/logs 1`] = `
 {
   "body": [],
   "location": undefined,
@@ -2989,7 +2897,7 @@ exports[`API contract mutations (sequential) 52 GET /admin/logs 1`] = `
 }
 `;
 
-exports[`API contract mutations (sequential) 53 GET /members/blog-posts/1/visit 1`] = `
+exports[`API contract mutations (sequential) 50 GET /members/blog-posts/1/visit 1`] = `
 {
   "body": {},
   "location": "https://haru.example.com/posts/1",
@@ -2997,7 +2905,7 @@ exports[`API contract mutations (sequential) 53 GET /members/blog-posts/1/visit 
 }
 `;
 
-exports[`API contract mutations (sequential) 54 GET /members/blog-posts/999/visit 1`] = `
+exports[`API contract mutations (sequential) 51 GET /members/blog-posts/999/visit 1`] = `
 {
   "body": {
     "message": "Blog post not found",
@@ -3007,7 +2915,7 @@ exports[`API contract mutations (sequential) 54 GET /members/blog-posts/999/visi
 }
 `;
 
-exports[`API contract mutations (sequential) 55 GET /members/fe-crew/blog-posts 1`] = `
+exports[`API contract mutations (sequential) 52 GET /members/fe-crew/blog-posts 1`] = `
 {
   "body": {
     "archive": [
@@ -3031,7 +2939,7 @@ exports[`API contract mutations (sequential) 55 GET /members/fe-crew/blog-posts 
 }
 `;
 
-exports[`API contract mutations (sequential) 56 DELETE /admin/sync/jobs/no-such-job 1`] = `
+exports[`API contract mutations (sequential) 53 DELETE /admin/sync/jobs/no-such-job 1`] = `
 {
   "body": {
     "message": "job not found or already completed",
@@ -3041,7 +2949,7 @@ exports[`API contract mutations (sequential) 56 DELETE /admin/sync/jobs/no-such-
 }
 `;
 
-exports[`API contract mutations (sequential) 57 DELETE /admin/members/5 1`] = `
+exports[`API contract mutations (sequential) 54 DELETE /admin/members/5 1`] = `
 {
   "body": {},
   "location": undefined,
@@ -3049,7 +2957,7 @@ exports[`API contract mutations (sequential) 57 DELETE /admin/members/5 1`] = `
 }
 `;
 
-exports[`API contract mutations (sequential) 58 GET /admin/members 1`] = `
+exports[`API contract mutations (sequential) 55 GET /admin/members 1`] = `
 {
   "body": [
     {
@@ -3298,7 +3206,7 @@ exports[`API contract mutations (sequential) 58 GET /admin/members 1`] = `
 }
 `;
 
-exports[`API contract mutations (sequential) 59 DELETE /admin/members 1`] = `
+exports[`API contract mutations (sequential) 56 DELETE /admin/members 1`] = `
 {
   "body": {},
   "location": undefined,
@@ -3306,7 +3214,7 @@ exports[`API contract mutations (sequential) 59 DELETE /admin/members 1`] = `
 }
 `;
 
-exports[`API contract mutations (sequential) 60 GET /admin/members 1`] = `
+exports[`API contract mutations (sequential) 57 GET /admin/members 1`] = `
 {
   "body": [],
   "location": undefined,
@@ -3529,7 +3437,6 @@ exports[`API contract public GET GET /members/feed?cohort=8&track=frontend 1`] =
             },
           ],
           "githubId": "fe-crew",
-          "isTeamBlog": false,
           "nickname": "하루",
           "roles": [
             "crew",
@@ -3557,7 +3464,6 @@ exports[`API contract public GET GET /members/feed?cohort=8&track=frontend 1`] =
             },
           ],
           "githubId": "fe-crew",
-          "isTeamBlog": false,
           "nickname": "하루",
           "roles": [
             "crew",
@@ -3598,7 +3504,6 @@ exports[`API contract public GET GET /members/feed?days=30&limit=50 1`] = `
             },
           ],
           "githubId": "fe-crew",
-          "isTeamBlog": false,
           "nickname": "하루",
           "roles": [
             "crew",
@@ -3611,25 +3516,6 @@ exports[`API contract public GET GET /members/feed?days=30&limit=50 1`] = `
         "publishedAt": "2026-09-29T12:00:00.000Z",
         "title": "로또 미션 회고",
         "url": "https://haru.example.com/posts/1",
-      },
-      {
-        "id": 3,
-        "member": {
-          "avatarUrl": null,
-          "cohort": null,
-          "cohorts": [],
-          "githubId": "team-blog-a",
-          "isTeamBlog": true,
-          "nickname": "하루",
-          "roles": [
-            "crew",
-          ],
-          "track": null,
-          "tracks": [],
-        },
-        "publishedAt": "2026-09-28T08:00:00.000Z",
-        "title": "팀 회고",
-        "url": "https://team.example.com/posts/1",
       },
       {
         "id": 2,
@@ -3645,7 +3531,6 @@ exports[`API contract public GET GET /members/feed?days=30&limit=50 1`] = `
             },
           ],
           "githubId": "be-crew",
-          "isTeamBlog": false,
           "nickname": "바다",
           "roles": [
             "crew",
@@ -3660,7 +3545,7 @@ exports[`API contract public GET GET /members/feed?days=30&limit=50 1`] = `
         "url": "https://bada.example.com/posts/1",
       },
     ],
-    "totalCount": 3,
+    "totalCount": 2,
   },
   "location": undefined,
   "status": 200,
@@ -3686,7 +3571,6 @@ exports[`API contract public GET GET /members/feed?limit=2 1`] = `
             },
           ],
           "githubId": "fe-crew",
-          "isTeamBlog": false,
           "nickname": "하루",
           "roles": [
             "crew",
@@ -3699,25 +3583,6 @@ exports[`API contract public GET GET /members/feed?limit=2 1`] = `
         "publishedAt": "2026-09-29T12:00:00.000Z",
         "title": "로또 미션 회고",
         "url": "https://haru.example.com/posts/1",
-      },
-      {
-        "id": 3,
-        "member": {
-          "avatarUrl": null,
-          "cohort": null,
-          "cohorts": [],
-          "githubId": "team-blog-a",
-          "isTeamBlog": true,
-          "nickname": "하루",
-          "roles": [
-            "crew",
-          ],
-          "track": null,
-          "tracks": [],
-        },
-        "publishedAt": "2026-09-28T08:00:00.000Z",
-        "title": "팀 회고",
-        "url": "https://team.example.com/posts/1",
       },
       {
         "id": 2,
@@ -3733,7 +3598,6 @@ exports[`API contract public GET GET /members/feed?limit=2 1`] = `
             },
           ],
           "githubId": "be-crew",
-          "isTeamBlog": false,
           "nickname": "바다",
           "roles": [
             "crew",
@@ -3761,7 +3625,6 @@ exports[`API contract public GET GET /members/feed?limit=2 1`] = `
             },
           ],
           "githubId": "fe-crew",
-          "isTeamBlog": false,
           "nickname": "하루",
           "roles": [
             "crew",
@@ -3776,7 +3639,7 @@ exports[`API contract public GET GET /members/feed?limit=2 1`] = `
         "url": "https://haru.example.com/posts/old",
       },
     ],
-    "totalCount": 4,
+    "totalCount": 3,
   },
   "location": undefined,
   "status": 200,
@@ -4131,20 +3994,10 @@ exports[`API contract public GET GET /members/search?roleGroup=crew&limit=120 1`
 exports[`API contract public GET GET /members/team-blog-a 1`] = `
 {
   "body": {
-    "archive": [],
-    "avatarUrl": null,
-    "blog": "https://team.example.com",
-    "cohorts": [],
-    "githubId": "team-blog-a",
-    "lastPostedAt": "2026-09-28T08:00:00.000Z",
-    "nickname": "우리팀",
-    "person": null,
-    "tecoTalks": [],
-    "track": null,
-    "tracks": [],
+    "message": "Member not found",
   },
   "location": undefined,
-  "status": 200,
+  "status": 404,
 }
 `;
 

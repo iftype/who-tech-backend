@@ -26,7 +26,6 @@ export const queryKeys = {
   bannedWords: () => ['banned-words'] as const,
   ignoredDomains: () => ['ignored-domains'] as const,
   blog: {
-    teamStatus: () => ['team-blog-status'] as const,
     syncJobs: () => ['blog-sync-jobs'] as const,
     newPostsAll: () => ['blog-new-posts'] as const,
     newPosts: (sinceMinutes: number) => ['blog-new-posts', sinceMinutes] as const,

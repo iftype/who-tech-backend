@@ -212,10 +212,6 @@ describe('API contract', () => {
       ['delete', '/admin/repos/4'],
       ['get', '/admin/repos'],
 
-      ['patch', '/admin/blog/team/1', { name: '새 이름', enabled: false }],
-      ['patch', '/admin/blog/team/abc', { name: 'x' }],
-      ['get', '/admin/blog/team'],
-
       ['post', '/admin/logs', { type: 'note', message: '수동 기록' }],
       ['get', '/admin/logs'],
       ['delete', '/admin/logs'],

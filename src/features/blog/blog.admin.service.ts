@@ -1,26 +1,23 @@
 import type { Octokit } from '@octokit/rest';
 import type { MemberRepository } from '../../db/repositories/member.repository.js';
 import type { BlogPostRepository } from '../../db/repositories/blog-post.repository.js';
-import type { TeamBlogRepository } from '../../db/repositories/team-blog.repository.js';
 import type { WorkspaceService } from '../workspace/index.js';
 import type { BlogService } from './blog.service.js';
 import type { ActivityLogService } from '../activity-log/index.js';
 import { resolveDisplayNickname } from '../../shared/nickname.js';
 import { buildCohortList } from '../../shared/member-cohort.js';
-import { HttpError } from '../../shared/http.js';
 import type { BlogSyncResult, BlogSyncSource, SyncProgress } from '../sync/index.js';
 import { backfillMemberBlogLinks } from './blog.backfill.js';
 
 export function createBlogAdminService(deps: {
   memberRepo: MemberRepository;
   blogPostRepo: BlogPostRepository;
-  teamBlogRepo: TeamBlogRepository;
   workspaceService: WorkspaceService;
   blogService: BlogService;
   activityLogService: ActivityLogService;
   octokit: Octokit;
 }) {
-  const { memberRepo, blogPostRepo, teamBlogRepo, workspaceService, blogService, activityLogService, octokit } = deps;
+  const { memberRepo, blogPostRepo, workspaceService, blogService, activityLogService, octokit } = deps;
   const runWorkspaceBlogSync = async (
     source: BlogSyncSource,
     onProgress?: (progress: SyncProgress) => void,
@@ -62,16 +59,6 @@ export function createBlogAdminService(deps: {
   };
 
   return {
-    syncTeamBlogs: async () => {
-      const workspace = await workspaceService.getOrThrow();
-      const result = await blogService.syncTeamBlogs(workspace.id);
-      await activityLogService.addLog(
-        result.failures.length > 0 ? 'blog_sync_error' : 'blog_sync',
-        `팀 블로그 수동 Sync 완료 — 수집 ${result.synced}건, 삭제 ${result.deleted}건, 실패 ${result.failures.length}건`,
-      );
-      return result;
-    },
-
     // 싱크 큐(블로그 레인)가 부르는 실행 함수. 작업 상태·진행·결과는 큐가 들고 있다
     executeWorkspaceBlogSync: async (
       source: BlogSyncSource = 'manual',
@@ -99,33 +86,6 @@ export function createBlogAdminService(deps: {
             cohort: cohorts[0]?.cohort ?? null,
           },
         };
-      });
-    },
-
-    getTeamBlogStatus: async () => {
-      const workspace = await workspaceService.getOrThrow();
-      const teamBlogs = await blogService.ensureTeamBlogs(workspace.id);
-      return Promise.all(
-        teamBlogs.map(async (teamBlog) => {
-          const posts = await blogPostRepo.findByMember(teamBlog.memberId, 1, 20);
-          return { ...teamBlog, posts: posts.archive };
-        }),
-      );
-    },
-
-    updateTeamBlog: async (
-      id: number,
-      input: { name?: string; blogUrl?: string; rssUrl?: string; avatarUrl?: string | null; enabled?: boolean },
-    ) => {
-      const workspace = await workspaceService.getOrThrow();
-      const teamBlog = await teamBlogRepo.findAll(workspace.id).then((blogs) => blogs.find((blog) => blog.id === id));
-      if (!teamBlog) throw new HttpError(404, 'team blog not found');
-      return teamBlogRepo.update(id, {
-        ...(input.name !== undefined ? { name: input.name.trim() } : {}),
-        ...(input.blogUrl !== undefined ? { blogUrl: input.blogUrl.trim() } : {}),
-        ...(input.rssUrl !== undefined ? { rssUrl: input.rssUrl.trim() } : {}),
-        ...(input.avatarUrl !== undefined ? { avatarUrl: input.avatarUrl } : {}),
-        ...(input.enabled !== undefined ? { enabled: input.enabled } : {}),
       });
     },
   };
