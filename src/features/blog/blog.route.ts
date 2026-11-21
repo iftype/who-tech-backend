@@ -41,35 +41,6 @@ export function createBlogRouter(service: BlogAdminService, syncAdminService: Sy
     res.json(await service.getNewPosts(Number.isFinite(sinceMinutes) && sinceMinutes > 0 ? sinceMinutes : 65));
   });
 
-  router.get('/blog/team', async (_req, res) => {
-    res.json(await service.getTeamBlogStatus());
-  });
-
-  router.post('/blog/team/sync', async (_req, res) => {
-    res.json(await service.syncTeamBlogs());
-  });
-
-  router.patch('/blog/team/:id', async (req, res) => {
-    const id = Number(req.params['id']);
-    if (!Number.isInteger(id) || id < 1) return badRequest('invalid team blog id');
-    const body = req.body as {
-      name?: unknown;
-      blogUrl?: unknown;
-      rssUrl?: unknown;
-      avatarUrl?: unknown;
-      enabled?: unknown;
-    };
-    res.json(
-      await service.updateTeamBlog(id, {
-        ...(typeof body.name === 'string' ? { name: body.name } : {}),
-        ...(typeof body.blogUrl === 'string' ? { blogUrl: body.blogUrl } : {}),
-        ...(typeof body.rssUrl === 'string' ? { rssUrl: body.rssUrl } : {}),
-        ...(body.avatarUrl === null || typeof body.avatarUrl === 'string' ? { avatarUrl: body.avatarUrl } : {}),
-        ...(typeof body.enabled === 'boolean' ? { enabled: body.enabled } : {}),
-      }),
-    );
-  });
-
   // 3. 블로그 링크 백필 (RSS 후보 검사 및 자동 등록)
   router.post('/blog/backfill', async (req, res) => {
     // Limit 처리

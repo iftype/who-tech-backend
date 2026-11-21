@@ -45,6 +45,6 @@ node --env-file=.env dist/scripts/check-db-consistency.js   # 일관성 검사 (
 - **상태값에 CHECK 제약을 쓰지 않는다**: Prisma는 SQLite CHECK를 스키마로 표현하지 못해, Prisma가 테이블을 다시 만드는 마이그레이션에서 제약이 소리 없이 사라진다. 허용 목록(`src/shared/domain.ts`) 하나로 입력을 검증하고 `src/db/consistency.ts`로 감시한다
 - **기수 번호에 FK를 걸지 않는다**: `CohortRepo`·`BlogPost`·`TecoTalk.cohort`는 기수 번호(정수)다. FK는 SQLite 테이블 재생성이 필요하고 운영 위반이 0이라 이득이 작다 → 일관성 검사로 감시
 - **`MissionRepo.cohorts`는 유지**: `CohortRepo`와 의미가 다른 auto-fill 힌트 (중복 아님)
-- **`TeamBlog`의 RSS 상태 필드는 유지**: 팀 동기화가 `TeamBlog`(어드민 팀 블로그 화면)와 대표 멤버(피드 표시) 양쪽을 갱신한다. 합치는 이득이 작다
+- **`TeamBlog` 테이블과 `Member.isTeamBlog`는 유지**: 팀 블로그(Rilog) 수집과 노출은 껐지만 DB 삭제는 하지 않았다. 피드와 멤버 조회가 `isTeamBlog`로 걸러 내므로 컬럼은 필요하다
 - **`BlogPost.cohort`·`track`(비정규화)은 유지**: 쓰기만 하고 읽는 곳이 없다 (피드 필터는 멤버 관계를 읽는다). 사용자 결정으로 남겨 둔다
 - **`Member.previousGithubIds` 컬럼 삭제 (#196)**: 읽기·쓰기를 모두 테이블로 옮긴 뒤, 배포 당일 운영 복사본으로 리허설(지문 동일, 일관성 0, 행 수 동일)하고 머지 직전 수동 백업을 남겨 삭제했다. 사용자 승인 2026-10-19

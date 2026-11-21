@@ -14,7 +14,6 @@ import type {
   RecentSyncJob,
   SyncJob,
   SyncQueueJob,
-  TeamBlogStatus,
   TecoTalkAdminItem,
   Workspace,
 } from './types.js';
@@ -103,10 +102,6 @@ export const adminApi = {
   },
 
   blog: {
-    teamStatus: () => apiFetch<TeamBlogStatus[]>('/admin/blog/team'),
-    updateTeam: (id: number | undefined, form: object) => apiFetch(`/admin/blog/team/${id}`, json('PATCH', form)),
-    syncTeam: () =>
-      apiFetch<{ synced: number; deleted: number; failures: unknown[] }>('/admin/blog/team/sync', json('POST')),
     newPosts: (sinceMinutes: number) => apiFetch<NewBlogPost[]>(`/admin/blog/new-posts?sinceMinutes=${sinceMinutes}`),
     sync: () => apiFetch<{ id: string; status: string }>('/admin/blog/sync', json('POST')),
     backfill: () => apiFetch<{ updated: number }>('/admin/blog/backfill', json('POST')),

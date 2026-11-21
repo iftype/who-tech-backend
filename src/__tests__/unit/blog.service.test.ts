@@ -313,20 +313,23 @@ describe('createBlogService - syncBlogs', () => {
       expect(result.failures).toEqual([]);
     });
 
-    it('should keep the 3 posts per day limit for personal blogs only', async () => {
+    it('should apply the 3 posts per day limit to every synced member', async () => {
       jest
         .spyOn(global, 'fetch')
         .mockResolvedValue({ ok: true, status: 200, text: async () => validRssXml } as Response);
       const { deps, deleteExcessPerDayByMember } = depsWithCleanup();
-      const teamBlog = { ...mockMember, id: 2, githubId: 'rilog', isTeamBlog: true } as unknown as MemberWithRelations;
+      const other = { ...mockMember, id: 2, githubId: 'other' } as unknown as MemberWithRelations;
       (deps.memberRepo.findWithFilters as Mock<() => Promise<MemberWithRelations[]>>).mockResolvedValue([
         mockMember,
-        teamBlog,
+        other,
       ]);
 
       await createBlogService(deps).syncBlogs(1);
 
-      expect(deleteExcessPerDayByMember.mock.calls).toEqual([[1, 3]]);
+      expect(deleteExcessPerDayByMember.mock.calls).toEqual([
+        [1, 3],
+        [2, 3],
+      ]);
     });
   });
 });

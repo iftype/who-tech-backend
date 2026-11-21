@@ -1,98 +1,21 @@
 import type { MemberRepository, MemberDetailWithRelations } from '../../db/repositories/member.repository.js';
 import type { BlogPostRepository } from '../../db/repositories/blog-post.repository.js';
-import type { TeamBlogRepository } from '../../db/repositories/team-blog.repository.js';
 import { HttpError } from '../../shared/http.js';
 import { buildCohortList } from '../../shared/member-cohort.js';
 import { computeDominantTrack } from '../../shared/member-track.js';
 import { decodeHtml } from '../../shared/html.js';
 import { fetchRSSItems, errorMessage, isNonPostPageUrl } from '../../infra/rss/rss.js';
-import type { BlogSyncFailure } from '../../infra/rss/rss.js';
 
 export type { BlogSyncFailure, BlogSyncProgress, RssCheckResult } from '../../infra/rss/rss.js';
 export { sanitizeXml, resolveRSSUrlsForBlog, probeRss, isNonPostPageUrl } from '../../infra/rss/rss.js';
 
 // 기간이 지난 글은 지우지 않는다. 이 기간 안의 글만 "RSS에서 빠졌으면 삭제" 대상이다
 const FEED_REMOVAL_WINDOW_DAYS = 90;
-// 하루에 남길 글 수. 한 사람이 글을 몰아 올려 피드를 덮지 않게 하는 장치라 개인 블로그에만 건다.
-// 팀 블로그(리로그)는 여러 크루가 함께 쓰므로 제외한다. 멤버당 총 개수 한도(예전 100개)는 두지 않는다
+// 하루에 남길 글 수. 한 사람이 글을 몰아 올려 피드를 덮지 않게 하는 장치다. 멤버당 총 개수 한도(예전 100개)는 두지 않는다
 const MAX_POSTS_PER_DAY = 3;
-export const DEFAULT_TEAM_BLOG_RSS_URL = 'https://www.rilog.kr/rss.xml';
 
-export function createBlogService(deps: {
-  memberRepo: MemberRepository;
-  blogPostRepo: BlogPostRepository;
-  teamBlogRepo?: TeamBlogRepository;
-}) {
-  const { memberRepo, blogPostRepo, teamBlogRepo } = deps;
-
-  async function ensureDefaultTeamBlog(workspaceId: number) {
-    const repository = teamBlogRepo;
-    if (!repository) throw new Error('team blog repository is not configured');
-    const existingTeamBlog = await repository.findBySlug(workspaceId, 'rilog');
-    if (existingTeamBlog) return existingTeamBlog;
-
-    const existing = await memberRepo.findByGithubId('__team_rilog__', workspaceId);
-    const member = existing
-      ? await memberRepo.patch(existing.id, {
-          nickname: 'Rilog',
-          manualNickname: 'Rilog',
-          avatarUrl: '/rilog-avatar.png',
-          blog: 'https://www.rilog.kr/feeds',
-          isTeamBlog: true,
-        })
-      : await memberRepo.create({
-          githubId: '__team_rilog__',
-          nickname: 'Rilog',
-          manualNickname: 'Rilog',
-          avatarUrl: '/rilog-avatar.png',
-          blog: 'https://www.rilog.kr/feeds',
-          rssStatus: 'unknown',
-          isTeamBlog: true,
-          workspaceId,
-        });
-
-    return repository.create({
-      slug: 'rilog',
-      name: 'Rilog',
-      blogUrl: 'https://www.rilog.kr/feeds',
-      rssUrl: DEFAULT_TEAM_BLOG_RSS_URL,
-      avatarUrl: '/rilog-avatar.png',
-      memberId: member.id,
-      workspaceId,
-    });
-  }
-
-  async function ensureTeamBlogs(workspaceId: number) {
-    const repository = teamBlogRepo;
-    if (!repository) return [];
-    const existing = await repository.findAll(workspaceId);
-    return existing.length > 0 ? existing : [await ensureDefaultTeamBlog(workspaceId)];
-  }
-
-  async function syncTeamBlogs(workspaceId: number) {
-    const repository = teamBlogRepo;
-    if (!repository) return { synced: 0, deleted: 0, failures: [] as BlogSyncFailure[] };
-    const teamBlogs = await ensureTeamBlogs(workspaceId);
-    let synced = 0;
-    let deleted = 0;
-    const failures: BlogSyncFailure[] = [];
-
-    for (const teamBlog of teamBlogs.filter((blog) => blog.enabled)) {
-      const member = await memberRepo.findByIdWithRelations(teamBlog.memberId);
-      if (!member) continue;
-      const result = await doSyncMemberBlog({ ...member, blog: teamBlog.rssUrl }, workspaceId);
-      synced += result.synced;
-      deleted += result.deleted;
-      failures.push(...result.failures);
-      await repository.update(teamBlog.id, {
-        rssStatus: result.failures.some((failure) => failure.step === 'rss_fetch') ? 'error' : 'available',
-        rssCheckedAt: new Date(),
-        rssError: result.failures.find((failure) => failure.step === 'rss_fetch')?.error ?? null,
-      });
-    }
-
-    return { synced, deleted, failures };
-  }
+export function createBlogService(deps: { memberRepo: MemberRepository; blogPostRepo: BlogPostRepository }) {
+  const { memberRepo, blogPostRepo } = deps;
 
   async function doSyncMemberBlog(
     member: MemberDetailWithRelations,
@@ -172,7 +95,6 @@ export function createBlogService(deps: {
           create: {
             url: item.link,
             title: decodedTitle,
-            ...(member.isTeamBlog ? { authorName: item.authorName ?? null } : {}),
             publishedAt,
             memberId: member.id,
             cohort: primaryCohort,
@@ -181,7 +103,6 @@ export function createBlogService(deps: {
           },
           update: {
             title: decodedTitle,
-            ...(member.isTeamBlog ? { authorName: item.authorName ?? null } : {}),
             publishedAt,
             cohort: primaryCohort,
             track: memberTrack,
@@ -199,28 +120,22 @@ export function createBlogService(deps: {
       }
     }
 
-    if (!member.isTeamBlog) {
-      try {
-        const perDayResult = await blogPostRepo.deleteExcessPerDayByMember(member.id, MAX_POSTS_PER_DAY);
-        deleted += perDayResult.count;
-      } catch (error) {
-        failures.push({
-          githubId: member.githubId,
-          blog: member.blog!,
-          step: 'cleanup',
-          error: errorMessage(error),
-        });
-      }
+    try {
+      const perDayResult = await blogPostRepo.deleteExcessPerDayByMember(member.id, MAX_POSTS_PER_DAY);
+      deleted += perDayResult.count;
+    } catch (error) {
+      failures.push({
+        githubId: member.githubId,
+        blog: member.blog!,
+        step: 'cleanup',
+        error: errorMessage(error),
+      });
     }
 
     return { synced, deleted, failures };
   }
 
   return {
-    ensureTeamBlogs: async (workspaceId: number) => {
-      return ensureTeamBlogs(workspaceId);
-    },
-    syncTeamBlogs: async (workspaceId: number) => syncTeamBlogs(workspaceId),
     syncBlogs: async (
       workspaceId: number,
       onProgress?: (progress: {
@@ -261,12 +176,6 @@ export function createBlogService(deps: {
       };
 
       emitProgress(total === 0 ? '수집 대상 없음' : 'RSS 수집 준비 중', total === 0 ? 100 : 0);
-
-      // 팀 피드는 멤버 블로그가 많아도 먼저 처리해, 전체 팀 글이 싱크 지연의 영향을 받지 않게 한다.
-      const teamResult = await syncTeamBlogs(workspaceId);
-      synced += teamResult.synced;
-      deleted += teamResult.deleted;
-      failures.push(...teamResult.failures);
 
       for (const member of members) {
         const result = await doSyncMemberBlog(member, workspaceId);

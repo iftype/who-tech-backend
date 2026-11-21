@@ -31,20 +31,6 @@ exports[`external-service routes contract POST /admin/blog/backfill {} 1`] = `
 }
 `;
 
-exports[`external-service routes contract POST /admin/blog/team/sync null 1`] = `
-{
-  "body": {
-    "from": "blog.syncTeamBlogs",
-  },
-  "calls": {
-    "blog.syncTeamBlogs": [
-      [],
-    ],
-  },
-  "status": 200,
-}
-`;
-
 exports[`external-service routes contract POST /admin/members {"githubId":"new-crew","cohort":8,"roles":["crew"],"track":"frontend"} 1`] = `
 {
   "body": {

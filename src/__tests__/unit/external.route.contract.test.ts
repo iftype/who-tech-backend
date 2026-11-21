@@ -82,7 +82,6 @@ const steps: Step[] = [
   ['post', '/admin/sync/jobs', { type: 'workspace' }],
   ['post', '/admin/sync/jobs', { type: 'repo', repoId: 1 }],
   // POST /admin/blog/sync · GET /admin/blog/sync-jobs/:id 는 실제 큐로 blog.sync-jobs.route.test.ts 가 고정한다
-  ['post', '/admin/blog/team/sync'],
   ['post', '/admin/blog/backfill', {}],
   ['post', '/admin/repos/discover'],
   ['post', '/admin/repos/activity'],
