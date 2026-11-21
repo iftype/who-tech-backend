@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://github.com/iftype/who-tech-backend/compare/v1.5.1...v1.6.0) (2026-11-21)
+
+
+### 기능
+
+* **blog:** Rilog 팀 블로그 수집과 노출을 끈다 ([#264](https://github.com/iftype/who-tech-backend/issues/264)) ([4b4a457](https://github.com/iftype/who-tech-backend/commit/4b4a457da93d94d016968cdb8f9a5616f493ae43))
+
 ## [1.5.1](https://github.com/iftype/who-tech-backend/compare/v1.5.0...v1.5.1) (2026-10-27)
 
 
