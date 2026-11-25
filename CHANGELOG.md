@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.6.0](https://github.com/iftype/who-tech-backend/compare/v1.5.1...v1.6.0) (2026-11-25)
+
+
+### 기능
+
+* **blog:** Rilog 팀 블로그 수집과 노출을 끈다 ([#264](https://github.com/iftype/who-tech-backend/issues/264)) ([4b4a457](https://github.com/iftype/who-tech-backend/commit/4b4a457da93d94d016968cdb8f9a5616f493ae43))
+
+
+### 버그 수정
+
+* **db:** 풀리지 않는 SQLite 잠금을 커넥션 풀을 닫아 스스로 푼다 ([#268](https://github.com/iftype/who-tech-backend/issues/268), [#267](https://github.com/iftype/who-tech-backend/issues/267)) ([#269](https://github.com/iftype/who-tech-backend/issues/269)) ([c22f462](https://github.com/iftype/who-tech-backend/commit/c22f4624f69eeb702ce368c98846813126973951))
+
 ## [1.5.1](https://github.com/iftype/who-tech-backend/compare/v1.5.0...v1.5.1) (2026-10-27)
 
 
