@@ -29,11 +29,14 @@ import { createMemberPublicService } from './features/member/member.public.servi
 import { createArchiveService } from './features/archive/archive.service.js';
 import { createTecoTalkService } from './features/tecotalk/tecotalk.service.js';
 import { createOctokit } from './infra/github/github.client.js';
+import { createDbLockRecovery } from './db/sqlite-lock-recovery.js';
 
 // 객체 그래프 조립 (Composition Root). 저장소 → 서비스 순서로 만들고 서로 주입한다.
 // sync 작업 큐에는 repo·blog 서비스를 포트(RepoSyncRunner·WorkspaceBlogSyncRunner)로 꽂는다
 export function createContainer() {
   const db = new PrismaClient();
+  // 커밋 못 한 트랜잭션이 SQLite 잠금을 쥐고 남으면 풀을 닫아 푼다 (#268)
+  const dbLockRecovery = createDbLockRecovery({ reset: () => db.$disconnect() });
   const octokit = createOctokit(process.env['GITHUB_TOKEN']);
 
   const workspaceRepo = createWorkspaceRepository(db);
@@ -103,10 +106,12 @@ export function createContainer() {
     repoService,
     blogAdminService,
     syncJobRepo,
+    dbLockRecovery,
   });
 
   return {
     db,
+    dbLockRecovery,
     octokit,
     workspaceRepo,
     memberRepo,

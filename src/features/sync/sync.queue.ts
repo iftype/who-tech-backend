@@ -5,6 +5,7 @@ import type { ActivityLogService } from '../activity-log/index.js';
 import type { WorkspaceService } from '../workspace/index.js';
 import { CancelledError } from '../../shared/errors.js';
 import type { SyncJobRecordData, SyncJobRepository } from '../../db/repositories/sync-job.repository.js';
+import type { DbLockRecovery } from '../../db/sqlite-lock-recovery.js';
 import type {
   BlogSyncResult,
   BlogSyncSource,
@@ -105,9 +106,12 @@ export function createSyncQueue(deps: {
   blogAdminService: WorkspaceBlogSyncRunner;
   /** 있으면 작업 상태를 DB에 적어 재시작 뒤에도 남긴다. 없으면(테스트) 메모리만 */
   syncJobRepo?: SyncJobRepository;
+  /** 있으면 작업 성공·실패를 알려 SQLite 잠금이 풀리지 않을 때 스스로 풀게 한다 (#268) */
+  dbLockRecovery?: DbLockRecovery;
 }) {
   const { syncService, activityLogService, workspaceService, octokit, repoService, blogAdminService, syncJobRepo } =
     deps;
+  const dbLockRecovery = deps.dbLockRecovery;
 
   const jobs: SyncJob[] = [];
   const processing: Record<SyncLane, boolean> = { github: false, blog: false };
@@ -149,6 +153,7 @@ export function createSyncQueue(deps: {
     try {
       await activityLogService.addLog(type, message);
     } catch (error) {
+      dbLockRecovery?.onError(error);
       console.error('[sync-queue] 활동 로그 기록 실패', error);
     }
   };
@@ -361,6 +366,7 @@ export function createSyncQueue(deps: {
         try {
           const result = await handlers[job.type](job, { signal: job.abortController.signal, onProgress, onStep });
 
+          dbLockRecovery?.onSuccess();
           job.status = 'completed';
           job.result = result;
           job.completedAt = new Date();
@@ -376,6 +382,7 @@ export function createSyncQueue(deps: {
             job.completedAt = new Date();
             await log('sync', `Job cancelled: ${job.type} (id=${job.id})`);
           } else {
+            dbLockRecovery?.onError(err);
             job.status = 'failed';
             job.error = err instanceof Error ? err.message : String(err);
             failures.set(job.id, err);
