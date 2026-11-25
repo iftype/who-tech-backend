@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { type NextFunction, type Request, type Response } from 'express';
 import compression from 'compression';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -47,6 +47,7 @@ const appCommit = (() => {
 // --- Composition Root (src/container.ts) ---
 const {
   db,
+  dbLockRecovery,
   memberRepo,
   personRepo,
   bannedWordRepo,
@@ -122,6 +123,11 @@ app.use('/admin/ignored-domains', createIgnoredDomainRouter({ ignoredDomainRepo,
 app.use('/admin/archive', createArchiveRouter(archiveService));
 app.use('/admin/tecotalk', createTecoTalkRouter(tecoTalkService));
 
+// 요청이 DB 잠금(P1008)으로 실패해도 알린다 (잠금이 풀리지 않으면 풀을 닫아 스스로 푼다, #267)
+app.use((error: unknown, _req: Request, _res: Response, next: NextFunction) => {
+  dbLockRecovery.onError(error);
+  next(error);
+});
 app.use(errorHandler);
 
 export default app;

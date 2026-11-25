@@ -16,6 +16,7 @@ import type {
 } from './sync.queue.js';
 import { createSyncQueue } from './sync.queue.js';
 import type { SyncJobRepository } from '../../db/repositories/sync-job.repository.js';
+import type { DbLockRecovery } from '../../db/sqlite-lock-recovery.js';
 
 // 운영 nginx의 proxy_read_timeout(300초)보다 짧게: 그 전에 응답해야 cron이 504로 실패하지 않는다
 export const REQUEST_WAIT_MS = 240_000;
@@ -35,6 +36,7 @@ export function createSyncAdminService(deps: {
   repoService: RepoSyncRunner;
   blogAdminService: WorkspaceBlogSyncRunner;
   syncJobRepo?: SyncJobRepository;
+  dbLockRecovery?: DbLockRecovery;
   requestWaitMs?: number;
 }) {
   const { requestWaitMs = REQUEST_WAIT_MS } = deps;
@@ -48,6 +50,7 @@ export function createSyncAdminService(deps: {
     repoService,
     blogAdminService,
     syncJobRepo,
+    dbLockRecovery,
   } = deps;
 
   const queue: SyncQueue = createSyncQueue({
@@ -58,6 +61,7 @@ export function createSyncAdminService(deps: {
     repoService,
     blogAdminService,
     ...(syncJobRepo ? { syncJobRepo } : {}),
+    ...(dbLockRecovery ? { dbLockRecovery } : {}),
   });
 
   // 직접 부르던 싱크도 큐를 거친다: 큐 작업과 같은 레포를 동시에 쓰지 않게 하고,
